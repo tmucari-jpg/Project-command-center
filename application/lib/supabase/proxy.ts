@@ -39,9 +39,8 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const {
-    data: { claims },
-  } = await supabase.auth.getClaims();
+  const claimsResult = await supabase.auth.getClaims();
+  const claims = claimsResult.data?.claims;
 
   const isAuthenticated = Boolean(claims?.sub);
   const pathname = request.nextUrl.pathname;

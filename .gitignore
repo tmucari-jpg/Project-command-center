@@ -5,6 +5,9 @@ application/node_modules/
 # Next.js
 application/.next/
 application/out/
+*.tsbuildinfo
+application/next-env.d.ts
+supabase/.temp/
 
 # environment / secrets
 .env

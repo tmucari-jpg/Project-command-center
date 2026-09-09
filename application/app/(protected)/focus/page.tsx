@@ -12,6 +12,10 @@ import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/co
 import { requireUser } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 
+function relatedTitle(relation: { title: string } | { title: string }[] | null) {
+  return Array.isArray(relation) ? relation[0]?.title : relation?.title;
+}
+
 export default async function FocusPage({
   searchParams,
 }: {
@@ -147,7 +151,9 @@ export default async function FocusPage({
                 <div key={action.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center">
                   <div>
                     <p className="text-sm font-medium text-slate-900">{action.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{action.projects?.title ?? "Sem projecto"} · {formatDateTime(action.due_at)}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {relatedTitle(action.projects) ?? "Sem projecto"} · {formatDateTime(action.due_at)}
+                    </p>
                   </div>
                   <form action={setNextAction}>
                     <input type="hidden" name="id" value={action.id} />

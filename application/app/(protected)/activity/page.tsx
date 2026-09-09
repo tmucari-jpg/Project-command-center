@@ -3,6 +3,10 @@ import { Card, EmptyState } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 
+function relatedTitle(relation: { title: string } | { title: string }[] | null) {
+  return Array.isArray(relation) ? relation[0]?.title : relation?.title;
+}
+
 export default async function ActivityPage() {
   const { supabase, user } = await requireUser();
 
@@ -63,7 +67,9 @@ export default async function ActivityPage() {
               <div className="divide-y divide-slate-100">
                 {sessions.map((session) => (
                   <div key={session.id} className="py-3 first:pt-0">
-                    <p className="text-sm font-medium text-slate-900">{session.actions?.title ?? "Acção"}</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {relatedTitle(session.actions) ?? "Acção"}
+                    </p>
                     <p className="mt-1 text-xs text-slate-500">
                       {formatDateTime(session.started_at)} · {session.duration_seconds ? Math.round(session.duration_seconds / 60) : 0} min
                     </p>

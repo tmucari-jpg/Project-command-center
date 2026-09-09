@@ -12,16 +12,21 @@ function formatElapsed(seconds: number) {
 
 export function LiveTimer({ startedAt }: { startedAt: string }) {
   const started = useMemo(() => new Date(startedAt).getTime(), [startedAt]);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const initialTick = window.setTimeout(tick, 0);
+    const id = window.setInterval(tick, 1000);
+    return () => {
+      window.clearTimeout(initialTick);
+      window.clearInterval(id);
+    };
   }, []);
 
   return (
     <div className="font-mono text-4xl font-semibold tracking-tight text-slate-950">
-      {formatElapsed((now - started) / 1000)}
+      {formatElapsed(now === null ? 0 : (now - started) / 1000)}
     </div>
   );
 }
