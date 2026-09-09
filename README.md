@@ -652,3 +652,29 @@ O Project Command Center será bem-sucedido quando conseguir ajudar o utilizador
 «Não queremos mais uma ferramenta para guardar tarefas.
 
 Queremos um sistema que ajude a transformar intenção em resultado.»
+
+---
+
+## Implementação actual
+
+A aplicação executável encontra-se em `application/`.
+
+A base de dados é gerida por migrations em `supabase/migrations/`.
+
+Para desenvolvimento local:
+
+```bash
+cd application
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+Antes do primeiro deploy, consulte `docs/12_DEPLOYMENT.md`.
+
+Na Vercel, configure **Root Directory = `application`**.
+
+
+## Deploy imediato
+
+Siga a sequência curta em [`DEPLOY_NOW.md`](DEPLOY_NOW.md).
