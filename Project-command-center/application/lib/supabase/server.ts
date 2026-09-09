@@ -1,0 +1,25 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { requirePublicSupabaseEnv } from "@/lib/env";
+
+export async function createClient() {
+  const cookieStore = await cookies();
+  const { url, key } = requirePublicSupabaseEnv();
+
+  return createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet, _headers) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // Server Components cannot write cookies. The root proxy refreshes sessions.
+        }
+      },
+    },
+  });
+}
