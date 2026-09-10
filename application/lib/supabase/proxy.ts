@@ -3,7 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requirePublicSupabaseEnv } from "@/lib/env";
 
 const AUTH_PATHS = ["/auth/login", "/auth/sign-up", "/auth/forgot-password"];
-const PUBLIC_PATHS = ["/", ...AUTH_PATHS, "/auth/callback"];
+const PUBLIC_PATHS = [
+  "/",
+  ...AUTH_PATHS,
+  "/auth/callback",
+  "/manifest.webmanifest",
+  "/sw.js",
+  "/offline.html",
+];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
