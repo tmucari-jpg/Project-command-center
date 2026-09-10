@@ -419,13 +419,9 @@ Backend / Data
 - Supabase Realtime
 - Edge Functions quando necessário
 
-AI
+Email
 
-- AI API
-
-Search
-
-- Brave Search API
+- Supabase Auth com SMTP Brevo
 
 Development
 
@@ -446,20 +442,12 @@ Deployment
                       ↓
               APPLICATION LOGIC
                       ↓
-          ┌───────────┴───────────┐
-          ↓                       ↓
-      SUPABASE                    AI
-          ↓                       ↓
-      DATABASE               AI SERVICES
-          ↓
-      STORAGE
-          
-          ↓
-   EXTERNAL INTEGRATIONS
-      ↙             ↘
-   GitHub          Brave
                       ↓
-                  Web Search
+                  SUPABASE
+              ↙       ↓       ↘
+       DATABASE     AUTH     STORAGE
+                       ↓
+                 BREVO SMTP
 
 ---
 

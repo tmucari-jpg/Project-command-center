@@ -49,7 +49,6 @@ Preencha `application/.env.local`:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJECT_REF.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-BRAVE_SEARCH_API_KEY=...
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
@@ -80,15 +79,9 @@ Redirect URL: http://localhost:3000/auth/update-password
 
 Depois do deploy, acrescente os equivalentes `https://SEU-DOMINIO/...`.
 
-## 6. Configurar Brave
+## 6. Configurar emails com Brevo
 
-Crie uma Brave Search API key e use-a somente em:
-
-```text
-BRAVE_SEARCH_API_KEY
-```
-
-A aplicação envia a chave ao Brave apenas a partir do backend.
+Configure no Supabase Auth o SMTP do Brevo. As credenciais SMTP permanecem no Supabase e nunca são incluídas no frontend ou no GitHub.
 
 ## 7. Deploy na Vercel
 
@@ -101,7 +94,6 @@ Na Vercel:
 5. Adicionar:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   - `BRAVE_SEARCH_API_KEY`
    - `NEXT_PUBLIC_SITE_URL`
 6. Fazer **Deploy**
 
@@ -118,8 +110,6 @@ Use pelo menos dois utilizadores diferentes e confirme:
 - Next Best Action;
 - Focus timer e actualização de tempo;
 - blockers, evidence, metrics e ideas;
-- Brave Search autenticado;
-- pesquisa inválida / rate limit;
 - acesso a `/dashboard` sem login redirecciona para login;
 - layout em telemóvel.
 

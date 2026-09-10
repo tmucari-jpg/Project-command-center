@@ -10,11 +10,3 @@ export function requirePublicSupabaseEnv() {
 
   return { url, key };
 }
-
-export function requireBraveKey() {
-  const key = process.env.BRAVE_SEARCH_API_KEY;
-  if (!key) {
-    throw new Error("Brave Search is not configured. Set BRAVE_SEARCH_API_KEY.");
-  }
-  return key;
-}

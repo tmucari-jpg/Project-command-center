@@ -15,9 +15,10 @@ Required runtime variables:
 ```text
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-BRAVE_SEARCH_API_KEY
 NEXT_PUBLIC_SITE_URL
 ```
+
+Os emails de autenticação são enviados pelo Supabase Auth através do SMTP configurado no Brevo.
 
 The database schema and RLS policies are managed from the repository root under
 `../supabase/migrations`.

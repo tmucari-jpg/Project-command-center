@@ -8,7 +8,6 @@ import {
   Lightbulb,
   ListTodo,
   PackageCheck,
-  Search,
   ShieldCheck,
   Target,
   TimerReset,
@@ -25,7 +24,6 @@ const navigation = [
   { href: "/evidence", label: "Evidências", icon: ShieldCheck },
   { href: "/metrics", label: "Métricas", icon: BarChart3 },
   { href: "/ideas", label: "Ideias", icon: Lightbulb },
-  { href: "/search", label: "Pesquisa externa", icon: Search },
   { href: "/activity", label: "Actividade", icon: ListTodo },
 ];
 
@@ -62,7 +60,7 @@ export function MobileNav() {
   return (
     <div className="overflow-x-auto border-b border-slate-200 bg-white px-3 py-2 lg:hidden">
       <nav className="flex min-w-max gap-1">
-        {navigation.slice(0, 10).map(({ href, label }) => (
+        {navigation.map(({ href, label }) => (
           <Link
             key={href}
             href={href}

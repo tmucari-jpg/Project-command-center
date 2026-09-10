@@ -14,7 +14,7 @@ ficam em `/supabase/migrations`.
 - Supabase CLI
 - Projecto Supabase
 - Conta Vercel
-- Brave Search API key
+- Conta Brevo configurada como SMTP do Supabase Auth
 
 ## 3. Variáveis de ambiente
 
@@ -23,7 +23,6 @@ Criar `application/.env.local` apenas no computador local:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
-BRAVE_SEARCH_API_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
@@ -56,7 +55,6 @@ Migrations:
 4. `202609090004_relational_ownership_hardening.sql`
 
 As migrations de hardening adicionam:
-- rate limiting persistente;
 - cálculo de duração;
 - actualização automática de tempo real;
 - uma única sessão de tempo aberta por utilizador;
@@ -81,25 +79,9 @@ Produção:
 - Redirect URL: `https://SEU-DOMINIO/auth/callback`
 - Redirect URL: `https://SEU-DOMINIO/auth/update-password`
 
-## 7. Brave Search
+## 7. Brevo
 
-Criar a API key no Brave Search API Dashboard.
-
-A chave é lida apenas por `/app/api/search/route.ts`.
-
-O browser nunca recebe `BRAVE_SEARCH_API_KEY`.
-
-O endpoint implementado:
-`GET https://api.search.brave.com/res/v1/web/search`
-
-O sistema:
-- exige utilizador autenticado;
-- valida a query;
-- limita 20 pesquisas/minuto/utilizador;
-- aplica timeout de 8 segundos;
-- valida a resposta;
-- apresenta URLs de origem;
-- classifica o conteúdo como `untrusted_external_data`.
+Configure o SMTP do Brevo no Supabase Auth para envio de confirmação de conta e recuperação de palavra-passe. As credenciais ficam exclusivamente no Supabase.
 
 ## 8. Vercel
 
@@ -109,7 +91,6 @@ O sistema:
 4. Adicionar as variáveis:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   - `BRAVE_SEARCH_API_KEY`
    - `NEXT_PUBLIC_SITE_URL`
 5. Fazer Deploy.
 6. Actualizar os redirect URLs do Supabase para o domínio Vercel.
@@ -134,7 +115,6 @@ Depois testar manualmente:
 - timer;
 - evidência;
 - blockers;
-- Brave Search;
 - acesso não autenticado;
 - responsive/mobile.
 
@@ -147,5 +127,5 @@ Ainda não foram implementados:
 - webhooks avançados;
 - notificações em tempo real.
 
-Estes itens não são necessários para ligar a base de dados, Brave Search e Vercel, mas
+Estes itens não são necessários para ligar a base de dados, autenticação por email e Vercel, mas
 devem permanecer como milestones posteriores.
