@@ -83,8 +83,9 @@ export async function searchBrave(query: string, signal: AbortSignal): Promise<B
     throw new BraveSearchError("Limite do Brave Search atingido.", "RATE_LIMITED");
   }
   if (!response.ok) {
+    const detail = (await response.text()).replace(/\s+/g, " ").trim().slice(0, 300);
     throw new BraveSearchError(
-      `Brave Search respondeu com HTTP ${response.status}.`,
+      `Brave Search respondeu com HTTP ${response.status}${detail ? `: ${detail}` : "."}`,
       "INTEGRATION_UNAVAILABLE",
     );
   }
