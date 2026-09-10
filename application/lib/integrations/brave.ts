@@ -55,7 +55,8 @@ export async function searchBrave(query: string, signal: AbortSignal): Promise<B
   const params = new URLSearchParams({
     q: query,
     count: "10",
-    search_lang: "pt",
+    // Brave accepts regional Portuguese codes (pt-pt/pt-br), not plain "pt".
+    search_lang: "pt-pt",
     safesearch: "moderate",
   });
 
@@ -65,7 +66,6 @@ export async function searchBrave(query: string, signal: AbortSignal): Promise<B
       method: "GET",
       headers: {
         Accept: "application/json",
-        "Accept-Encoding": "gzip",
         "X-Subscription-Token": key,
       },
       signal,
