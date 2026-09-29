@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   Target,
   TimerReset,
+  Bot,
+  WalletCards,
 } from "lucide-react";
 
 const navigation = [
@@ -20,6 +22,8 @@ const navigation = [
   { href: "/deliverables", label: "Entregáveis", icon: PackageCheck },
   { href: "/actions", label: "Acções", icon: CheckSquare2 },
   { href: "/focus", label: "Modo foco", icon: TimerReset },
+  { href: "/agents", label: "Força agêntica", icon: Bot },
+  { href: "/portfolio", label: "Monetização", icon: WalletCards },
   { href: "/blockers", label: "Bloqueios", icon: Blocks },
   { href: "/evidence", label: "Evidências", icon: ShieldCheck },
   { href: "/metrics", label: "Métricas", icon: BarChart3 },
