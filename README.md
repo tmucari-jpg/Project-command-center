@@ -666,3 +666,7 @@ Na Vercel, configure **Root Directory = `application`**.
 ## Deploy imediato
 
 Siga a sequência curta em [`DEPLOY_NOW.md`](DEPLOY_NOW.md).
+
+## Força agêntica e monetização
+
+Depois de aplicar a migration mais recente, use **Força agêntica** para analisar prioridades e aprovar propostas individualmente. Em **Monetização**, consulte e importe as acções iniciais dos projectos. Consulte [`docs/14_AGENT_WORKFORCE.md`](docs/14_AGENT_WORKFORCE.md) para o comportamento, limites e passos de activação.
