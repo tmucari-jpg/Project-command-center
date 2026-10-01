@@ -3,18 +3,11 @@ import { RegisterServiceWorker } from "@/components/register-service-worker";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: {
-    default: "Project Command Center",
-    template: "%s · Project Command Center",
-  },
+  title: { default: "Project Command Center", template: "%s · Project Command Center" },
   description: "Centro de execução de projectos com foco em resultados, evidência e próxima acção.",
   applicationName: "Project Command Center",
   manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Command Center",
-  },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Command Center" },
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -28,16 +21,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0f172a",
+  themeColor: "#f5f5f7",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <html lang="pt">
-      <body>
-        {children}
-        <RegisterServiceWorker />
-      </body>
-    </html>
-  );
+  return <html lang="pt"><body>{children}<RegisterServiceWorker /></body></html>;
 }
