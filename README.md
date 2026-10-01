@@ -666,3 +666,16 @@ Na Vercel, configure **Root Directory = `application`**.
 ## Deploy imediato
 
 Siga a sequência curta em [`DEPLOY_NOW.md`](DEPLOY_NOW.md).
+
+
+---
+
+## Integração: Briefing Diário
+
+O **Briefing Diário** é acompanhado pelo Command Center como um projecto editorial automatizado. A unidade de trabalho é o **evento**, não o alerta individual.
+
+Fluxo editorial: **alertas → relevância → agrupamento de eventos → cruzamento de fontes → selecção → briefing → impacto para Moçambique**.
+
+O Command Center acompanha estado, evidência, última execução, volume de eventos e qualidade editorial. Não duplica manualmente as notícias.
+
+A especificação completa está em `docs/15_BRIEFING_DIARIO_INTEGRATION.md`.
