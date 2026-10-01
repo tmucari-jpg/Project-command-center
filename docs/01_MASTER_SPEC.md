@@ -1191,3 +1191,39 @@ Em qualquer momento, o sistema deve conseguir responder claramente:
 3. O que prova que avancei?
 
 Se a plataforma não conseguir responder a estas três perguntas, a implementação não está suficientemente orientada para execução.
+
+
+---
+
+51. DESIGN SYSTEM E HERANÇA VISUAL
+
+O Project Command Center possui um Design System central em `docs/14_DESIGN_SYSTEM.md`.
+
+Este Design System é obrigatório para o Command Center e serve como padrão de base para todos os projectos geridos pela plataforma.
+
+Os projectos podem manter a sua identidade visual própria, mas devem herdar os princípios de:
+
+- hierarquia visual;
+- tipografia legível;
+- espaçamento consistente;
+- alinhamento;
+- acessibilidade;
+- estados de interface;
+- áreas de toque confortáveis;
+- responsividade;
+- movimento funcional;
+- redução de decoração desnecessária.
+
+A regra é:
+
+COMMAND CENTER
+→ define os padrões de interação e acessibilidade
+
+PROJECTO
+→ mantém a sua identidade e conteúdo
+
+COMPONENTE LOCAL
+→ só diverge quando houver razão funcional ou de marca documentada.
+
+Nenhum projecto deve ser considerado visualmente concluído sem passar por uma revisão contra o Design System central.
+
