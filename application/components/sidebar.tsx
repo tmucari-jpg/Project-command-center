@@ -1,17 +1,5 @@
 import Link from "next/link";
-import {
-  BarChart3,
-  Blocks,
-  CheckSquare2,
-  FolderKanban,
-  Gauge,
-  Lightbulb,
-  ListTodo,
-  PackageCheck,
-  ShieldCheck,
-  Target,
-  TimerReset,
-} from "lucide-react";
+import { BarChart3, Blocks, CheckSquare2, FolderKanban, Gauge, Lightbulb, ListTodo, PackageCheck, ShieldCheck, Target, TimerReset } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -29,25 +17,16 @@ const navigation = [
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block">
-      <div className="sticky top-0 h-screen overflow-y-auto p-5">
-        <Link href="/dashboard" className="block px-2 py-3">
-          <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
-            Project
-          </span>
-          <span className="text-lg font-semibold tracking-tight text-slate-950">
-            Command Center
-          </span>
+    <aside className="hidden w-64 shrink-0 border-r border-[var(--cc-border)] bg-white lg:block">
+      <div className="sticky top-0 h-screen overflow-y-auto px-4 py-5">
+        <Link href="/dashboard" className="block rounded-[12px] px-3 py-3">
+          <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cc-accent)]">Project</span>
+          <span className="text-lg font-semibold tracking-tight text-[var(--cc-foreground)]">Command Center</span>
         </Link>
-        <nav className="mt-5 space-y-1">
+        <nav className="mt-5 space-y-1" aria-label="Navegação principal">
           {navigation.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
-            >
-              <Icon size={18} />
-              {label}
+            <Link key={href} href={href} className="flex min-h-11 items-center gap-3 rounded-[12px] px-3 text-sm font-medium text-[var(--cc-secondary)] transition hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]">
+              <Icon size={18} strokeWidth={1.8} />{label}
             </Link>
           ))}
         </nav>
@@ -58,16 +37,10 @@ export function Sidebar() {
 
 export function MobileNav() {
   return (
-    <div className="overflow-x-auto border-b border-slate-200 bg-white px-3 py-2 lg:hidden">
-      <nav className="flex min-w-max gap-1">
+    <div className="overflow-x-auto border-b border-[var(--cc-border)] bg-white px-3 py-2 lg:hidden">
+      <nav className="flex min-w-max gap-1" aria-label="Navegação principal">
         {navigation.map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-          >
-            {label}
-          </Link>
+          <Link key={href} href={href} className="flex min-h-11 items-center rounded-[10px] px-3 text-sm font-medium text-[var(--cc-secondary)] hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]">{label}</Link>
         ))}
       </nav>
     </div>
