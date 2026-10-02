@@ -2,27 +2,41 @@
 
 :root {
   --cc-background: #f5f5f7;
-  --cc-surface: #ffffff;
+  --cc-surface: rgba(255, 255, 255, 0.82);
+  --cc-surface-strong: #ffffff;
   --cc-surface-muted: #f2f2f7;
   --cc-foreground: #1d1d1f;
   --cc-secondary: #6e6e73;
   --cc-tertiary: #86868b;
-  --cc-border: #d2d2d7;
-  --cc-accent: #0071e3;
-  --cc-radius-sm: 10px;
-  --cc-radius-md: 12px;
-  --cc-radius-lg: 16px;
-  --cc-content-max: 1200px;
+  --cc-border: rgba(60, 60, 67, 0.18);
+  --cc-accent: #007aff;
+  --cc-accent-strong: #006edc;
+  --cc-danger: #ff3b30;
+  --cc-success: #34c759;
+  --cc-warning: #ff9f0a;
+  --cc-radius-sm: 12px;
+  --cc-radius-md: 16px;
+  --cc-radius-lg: 22px;
+  --cc-content-max: 1180px;
+  --cc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 24px rgba(0, 0, 0, 0.04);
+  --cc-glass: rgba(255, 255, 255, 0.72);
 }
 
 * { box-sizing: border-box; }
-html { background: var(--cc-background); color-scheme: light; }
+html {
+  background: var(--cc-background);
+  color-scheme: light;
+  min-height: 100%;
+}
 
 body {
   margin: 0;
-  background: var(--cc-background);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(0, 122, 255, 0.055), transparent 32rem),
+    var(--cc-background);
   color: var(--cc-foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, ui-sans-serif, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Segoe UI", Inter, ui-sans-serif, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -31,12 +45,62 @@ button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 
 :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--cc-accent) 42%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--cc-accent) 38%, transparent);
   outline-offset: 2px;
 }
 
-::selection { background: #b9d9ff; }
+::selection { background: rgba(0, 122, 255, 0.2); }
 .table-scroll { overflow-x: auto; }
+
+.cc-glass {
+  background: var(--cc-glass);
+  border: 1px solid var(--cc-border);
+  box-shadow: var(--cc-shadow-sm);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+.cc-safe-top {
+  padding-top: max(0px, env(safe-area-inset-top));
+}
+
+.cc-safe-bottom {
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cc-background: #000000;
+    --cc-surface: rgba(28, 28, 30, 0.8);
+    --cc-surface-strong: #1c1c1e;
+    --cc-surface-muted: #2c2c2e;
+    --cc-foreground: #f5f5f7;
+    --cc-secondary: #aeaeb2;
+    --cc-tertiary: #8e8e93;
+    --cc-border: rgba(235, 235, 245, 0.16);
+    --cc-accent: #0a84ff;
+    --cc-accent-strong: #409cff;
+    --cc-glass: rgba(28, 28, 30, 0.72);
+    --cc-shadow-sm: none;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at top right, rgba(10, 132, 255, 0.12), transparent 32rem),
+      var(--cc-background);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --cc-glass: var(--cc-surface-strong);
+  }
+
+  .cc-glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
