@@ -23,6 +23,30 @@ export const FOUNDATION_PROMPTS = {
     role: "weekly_review",
     purpose: "Sintetizar progresso, entregas, bloqueios, métricas e prioridades da semana.",
   },
+  P05: {
+    code: "P05",
+    name: "Plano de monetização por projecto",
+    role: "monetization",
+    purpose: "Estruturar oferta, cliente, preço, canal, validação e próximos passos comerciais.",
+  },
+  G01: {
+    code: "G01",
+    name: "Prospecção B2B",
+    role: "prospecting",
+    purpose: "Apoiar prospecção sem inventar contactos ou empresas quando os dados não existem.",
+  },
+  G02: {
+    code: "G02",
+    name: "Pipeline comercial",
+    role: "pipeline",
+    purpose: "Rever oportunidades, etapas, próximos passos, riscos e informação em falta.",
+  },
+  E14: {
+    code: "E14",
+    name: "Pricing e unit economics",
+    role: "pricing",
+    purpose: "Analisar preços e sustentabilidade apenas com custos, receitas e premissas fornecidas.",
+  },
 } as const;
 
 export type FoundationPromptCode = keyof typeof FOUNDATION_PROMPTS;
