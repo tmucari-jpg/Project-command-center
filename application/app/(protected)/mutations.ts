@@ -14,6 +14,9 @@ import {
   projectSchema,
   projectMemorySchema,
   decisionSchema,
+  commercialProfileSchema,
+  commercialLeadSchema,
+  financialEntrySchema,
   zodMessage,
 } from "@/lib/validation";
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
@@ -271,6 +274,63 @@ export async function createDecision(formData: FormData) {
   revalidatePath(path);
   if (parsed.data.project_id) revalidatePath(`/projects/${parsed.data.project_id}`);
   redirect(`${path}?created=1`);
+}
+
+export async function upsertCommercialProfile(formData: FormData) {
+  const path = "/monetization";
+  const parsed = commercialProfileSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const payload = { ...parsed.data, user_id: user.id };
+
+  const { error } = await supabase
+    .from("project_commercial_profiles")
+    .upsert(payload, { onConflict: "project_id" });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath(`/projects/${parsed.data.project_id}`);
+  redirect(`${path}?saved=1`);
+}
+
+export async function createCommercialLead(formData: FormData) {
+  const path = "/monetization";
+  const parsed = commercialLeadSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { error } = await supabase.from("commercial_leads").insert({
+    ...parsed.data,
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?lead=created`);
+}
+
+export async function createFinancialEntry(formData: FormData) {
+  const path = "/monetization";
+  const parsed = financialEntrySchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { error } = await supabase.from("financial_entries").insert({
+    ...parsed.data,
+    occurred_on: parsed.data.occurred_on ?? new Date().toISOString().slice(0, 10),
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?entry=created`);
 }
 
 export async function updateMetricCurrentValue(formData: FormData) {
