@@ -116,6 +116,9 @@ export default async function ProjectHubPage({
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
           prioridade {project.priority}
         </span>
+        <Link className={secondaryButtonClass} href="/monetization">
+          Monetização
+        </Link>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">

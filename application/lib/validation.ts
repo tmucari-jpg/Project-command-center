@@ -197,6 +197,44 @@ export const decisionSchema = z.object({
   outcome: optionalText(6000),
 });
 
+export const commercialProfileSchema = z.object({
+  project_id: z.string().uuid(),
+  is_priority: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+  offer: optionalText(6000),
+  ideal_customer: optionalText(4000),
+  price: optionalNumber,
+  currency: optionalText(8),
+  channel: optionalText(1000),
+  validation_status: z.enum(["not_ready", "draft", "ready_to_validate", "validating", "validated"]),
+});
+
+export const commercialLeadSchema = z.object({
+  project_id: z.string().uuid(),
+  name: z.string().trim().min(2).max(180),
+  organisation: optionalText(180),
+  contact_reference: optionalText(500),
+  source: optionalText(500),
+  stage: z.enum(["lead", "contacted", "qualified", "proposal", "negotiation", "won", "lost"]),
+  value: optionalNumber,
+  currency: optionalText(8),
+  next_action: optionalText(1000),
+  next_action_at: optionalDateTime,
+  risk: optionalText(1000),
+  information_missing: optionalText(2000),
+});
+
+export const financialEntrySchema = z.object({
+  project_id: z.string().uuid(),
+  entry_type: z.enum(["revenue", "cost"]),
+  category: optionalText(180),
+  description: z.string().trim().min(2).max(1000),
+  amount: z.coerce.number().finite().min(0),
+  currency: z.string().trim().min(2).max(8),
+  occurred_on: optionalDate,
+  status: z.enum(["actual", "forecast", "pending"]),
+  evidence_reference: optionalText(1000),
+});
+
 export function zodMessage(error: z.ZodError) {
   return error.issues[0]?.message ?? "Dados inválidos.";
 }
