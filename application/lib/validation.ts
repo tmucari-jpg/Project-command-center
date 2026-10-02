@@ -254,6 +254,17 @@ export const agentRunSchema = z.object({
   objective: z.string().trim().min(3).max(4000),
 });
 
+export const intelligenceSignalSchema = z.object({
+  project_id: optionalUuid,
+  signal_type: z.enum(["briefing", "opportunity", "risk", "market", "customer", "operational"]),
+  title: z.string().trim().min(3).max(240),
+  summary: optionalText(6000),
+  source_reference: optionalText(1000),
+  confidence: z.enum(["unverified", "low", "medium", "high", "verified"]),
+  status: z.enum(["new", "reviewed", "actionable", "dismissed", "converted"]),
+  action_hint: optionalText(2000),
+});
+
 export function zodMessage(error: z.ZodError) {
   return error.issues[0]?.message ?? "Dados inválidos.";
 }

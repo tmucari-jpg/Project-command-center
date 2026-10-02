@@ -19,6 +19,7 @@ import {
   financialEntrySchema,
   subscriptionFunnelMetricSchema,
   agentRunSchema,
+  intelligenceSignalSchema,
   zodMessage,
 } from "@/lib/validation";
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
@@ -376,6 +377,25 @@ export async function createAgentRun(formData: FormData) {
 
   if (error) fail(path, error.message);
   revalidatePath(path);
+  redirect(`${path}?created=1`);
+}
+
+export async function createIntelligenceSignal(formData: FormData) {
+  const path = "/intelligence";
+  const parsed = intelligenceSignalSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { error } = await supabase.from("intelligence_signals").insert({
+    ...parsed.data,
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath("/dashboard");
   redirect(`${path}?created=1`);
 }
 
