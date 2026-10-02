@@ -47,6 +47,12 @@ export const FOUNDATION_PROMPTS = {
     role: "pricing",
     purpose: "Analisar preços e sustentabilidade apenas com custos, receitas e premissas fornecidas.",
   },
+  E02: {
+    code: "E02",
+    name: "Briefing Diário — crescimento e subscrições",
+    role: "briefing_growth",
+    purpose: "Acompanhar planos, canais, aquisição, pagamento, activação, retenção, testes e KPIs do Briefing Diário.",
+  },
 } as const;
 
 export type FoundationPromptCode = keyof typeof FOUNDATION_PROMPTS;

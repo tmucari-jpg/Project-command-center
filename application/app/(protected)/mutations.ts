@@ -17,6 +17,7 @@ import {
   commercialProfileSchema,
   commercialLeadSchema,
   financialEntrySchema,
+  subscriptionFunnelMetricSchema,
   zodMessage,
 } from "@/lib/validation";
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
@@ -331,6 +332,29 @@ export async function createFinancialEntry(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   redirect(`${path}?entry=created`);
+}
+
+export async function upsertSubscriptionFunnelMetric(formData: FormData) {
+  const path = "/monetization/briefing-diario";
+  const parsed = subscriptionFunnelMetricSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const payload = {
+    ...parsed.data,
+    metric_date: parsed.data.metric_date ?? new Date().toISOString().slice(0, 10),
+    user_id: user.id,
+  };
+
+  const { error } = await supabase
+    .from("subscription_funnel_metrics")
+    .upsert(payload, { onConflict: "project_id,metric_date" });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?saved=1`);
 }
 
 export async function updateMetricCurrentValue(formData: FormData) {

@@ -235,6 +235,18 @@ export const financialEntrySchema = z.object({
   evidence_reference: optionalText(1000),
 });
 
+export const subscriptionFunnelMetricSchema = z.object({
+  project_id: z.string().uuid(),
+  metric_date: optionalDate,
+  acquired: z.coerce.number().int().min(0),
+  payment_started: z.coerce.number().int().min(0),
+  paid: z.coerce.number().int().min(0),
+  activated: z.coerce.number().int().min(0),
+  retained: z.coerce.number().int().min(0),
+  churned: z.coerce.number().int().min(0),
+  notes: optionalText(4000),
+});
+
 export function zodMessage(error: z.ZodError) {
   return error.issues[0]?.message ?? "Dados inválidos.";
 }

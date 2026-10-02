@@ -77,10 +77,17 @@ export default async function MonetizationPage({
       />
 
       <Card className="mb-6 p-5">
-        <h2 className="text-lg font-semibold text-slate-950">Preparação para validação/venda</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          A prioridade comercial é escolhida manualmente. O sistema não altera prioridades estratégicas sozinho.
-        </p>
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Preparação para validação/venda</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              A prioridade comercial é escolhida manualmente. O sistema não altera prioridades estratégicas sozinho.
+            </p>
+          </div>
+          <Link className={secondaryButtonClass} href="/monetization/briefing-diario">
+            Briefing Diário — subscrições
+          </Link>
+        </div>
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {(projects ?? []).map((project) => {
             const profile = profileByProject.get(project.id);
