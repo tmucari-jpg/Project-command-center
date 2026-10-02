@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Blocks, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, FolderKanban, Gauge, Lightbulb, ListTodo, PackageCheck, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
+import { BarChart3, Blocks, Bot, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, FolderKanban, Gauge, Lightbulb, ListTodo, PackageCheck, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -8,6 +8,7 @@ const navigation = [
   { href: "/objectives", label: "Objectivos", icon: Target },
   { href: "/projects", label: "Projectos", icon: FolderKanban },
   { href: "/monetization", label: "Monetização", icon: CircleDollarSign },
+  { href: "/agents", label: "Agentic Core", icon: Bot },
   { href: "/deliverables", label: "Entregáveis", icon: PackageCheck },
   { href: "/actions", label: "Acções", icon: CheckSquare2 },
   { href: "/focus", label: "Modo foco", icon: TimerReset },
