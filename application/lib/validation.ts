@@ -179,6 +179,24 @@ export const metricSchema = z.object({
   measurement_date: optionalDate,
 });
 
+export const projectMemorySchema = z.object({
+  project_id: z.string().uuid(),
+  memory_type: z.enum(["context", "decision_context", "constraint", "assumption", "learning", "reference"]),
+  title: z.string().trim().min(2).max(180),
+  content: z.string().trim().min(2).max(12000),
+  source: optionalText(1000),
+});
+
+export const decisionSchema = z.object({
+  project_id: optionalUuid,
+  title: z.string().trim().min(2).max(180),
+  context: optionalText(6000),
+  options_considered: optionalText(6000),
+  decision: z.string().trim().min(2).max(6000),
+  rationale: optionalText(6000),
+  outcome: optionalText(6000),
+});
+
 export function zodMessage(error: z.ZodError) {
   return error.issues[0]?.message ?? "Dados inválidos.";
 }
