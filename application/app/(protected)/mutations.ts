@@ -12,6 +12,8 @@ import {
   metricSchema,
   objectiveSchema,
   projectSchema,
+  projectMemorySchema,
+  decisionSchema,
   zodMessage,
 } from "@/lib/validation";
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
@@ -232,6 +234,44 @@ export async function createMetric(formData: FormData) {
   redirect(`${path}?created=1`);
 }
 
+
+export async function createProjectMemory(formData: FormData) {
+  const parsed = projectMemorySchema.safeParse(values(formData));
+  const fallbackPath = "/projects";
+  if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
+
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { error } = await supabase.from("project_memory").insert({
+    ...parsed.data,
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?memory=created`);
+}
+
+export async function createDecision(formData: FormData) {
+  const path = "/decisions";
+  const parsed = decisionSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { error } = await supabase.from("decisions").insert({
+    ...parsed.data,
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  if (parsed.data.project_id) revalidatePath(`/projects/${parsed.data.project_id}`);
+  redirect(`${path}?created=1`);
+}
 
 export async function updateMetricCurrentValue(formData: FormData) {
   const path = "/metrics";
