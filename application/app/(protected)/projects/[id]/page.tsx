@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, CheckSquare2, PackageCheck, ShieldCheck, TriangleAlert } from "lucide-react";
+import { createProjectMemory } from "@/app/(protected)/mutations";
+import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
-import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
+import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { projectHealth, progressLabel } from "@/lib/project-metrics";
@@ -31,6 +33,8 @@ export default async function ProjectHubPage({
     { data: blockers },
     { data: evidence },
     { data: metrics },
+    { data: memory },
+    { data: decisions },
   ] = await Promise.all([
     supabase
       .from("actions")
@@ -64,6 +68,21 @@ export default async function ProjectHubPage({
       .eq("user_id", user.id)
       .eq("project_id", id)
       .order("measurement_date", { ascending: false, nullsFirst: false }),
+    supabase
+      .from("project_memory")
+      .select("id,memory_type,title,content,source,created_at")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .eq("is_current", true)
+      .order("created_at", { ascending: false })
+      .limit(12),
+    supabase
+      .from("decisions")
+      .select("id,title,decision,rationale,outcome,decided_at")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("decided_at", { ascending: false })
+      .limit(6),
   ]);
 
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
@@ -118,6 +137,8 @@ export default async function ProjectHubPage({
             <p className="flex justify-between gap-4"><span className="text-slate-500">Bloqueios abertos</span><strong>{openBlockers.length}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-slate-500">Evidências</span><strong>{evidence?.length ?? 0}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-slate-500">Métricas</span><strong>{metrics?.length ?? 0}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-slate-500">Memórias</span><strong>{memory?.length ?? 0}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-slate-500">Decisões</span><strong>{decisions?.length ?? 0}</strong></p>
           </div>
         </Card>
       </div>
@@ -204,6 +225,70 @@ export default async function ProjectHubPage({
           </div>
         </Card>
       </div>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <Card className="p-5">
+          <h2 className="text-lg font-semibold text-slate-950">Project Memory</h2>
+          <p className="mt-1 text-sm text-slate-500">Contexto persistente deste projecto. Não substitui os dados operacionais.</p>
+          <form action={createProjectMemory} className="mt-5 space-y-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <Select label="Tipo" name="memory_type" defaultValue="context">
+              <option value="context">Contexto</option>
+              <option value="decision_context">Contexto de decisão</option>
+              <option value="constraint">Restrição</option>
+              <option value="assumption">Hipótese</option>
+              <option value="learning">Aprendizagem</option>
+              <option value="reference">Referência</option>
+            </Select>
+            <Field label="Título" name="title" required />
+            <TextArea label="Conteúdo" name="content" />
+            <Field label="Fonte / referência" name="source" />
+            <button className={primaryButtonClass} type="submit">Guardar memória</button>
+          </form>
+        </Card>
+
+        <Card>
+          <div className="border-b border-slate-200 p-5">
+            <h2 className="text-lg font-semibold text-slate-950">Memória actual</h2>
+          </div>
+          <div className="p-5">
+            {!memory?.length ? <EmptyState>Sem memória persistente neste projecto.</EmptyState> : (
+              <div className="space-y-3">
+                {memory.map((item) => (
+                  <article key={item.id} className="rounded-xl border border-slate-200 p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-medium text-slate-900">{item.title}</p>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">{item.memory_type.replaceAll("_", " ")}</span>
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{item.content}</p>
+                    {item.source && <p className="mt-2 text-xs text-slate-500">Fonte: {item.source}</p>}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <Card className="mt-6">
+        <div className="flex items-center justify-between border-b border-slate-200 p-5">
+          <h2 className="font-semibold text-slate-950">Decisões recentes</h2>
+          <Link className={secondaryButtonClass} href="/decisions">Gerir decisões</Link>
+        </div>
+        <div className="p-5">
+          {!decisions?.length ? <EmptyState>Sem decisões registadas para este projecto.</EmptyState> : (
+            <div className="space-y-3">
+              {decisions.map((item) => (
+                <article key={item.id} className="rounded-xl border border-slate-200 p-3">
+                  <p className="text-sm font-medium text-slate-900">{item.title}</p>
+                  <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.decided_at)}</p>
+                  <p className="mt-2 text-sm text-slate-700">{item.decision}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
 
       <Card className="mt-6">
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
