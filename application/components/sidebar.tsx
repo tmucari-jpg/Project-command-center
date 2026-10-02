@@ -1,10 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BarChart3, Blocks, Bot, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
-  { href: "/agenda", label: "Agenda diária", icon: CalendarCheck2 },
-  { href: "/weekly-review", label: "Revisão semanal", icon: ClipboardList },
+  { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
+  { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
   { href: "/objectives", label: "Objectivos", icon: Target },
   { href: "/projects", label: "Projectos", icon: FolderKanban },
   { href: "/monetization", label: "Monetização", icon: CircleDollarSign },
@@ -24,20 +27,36 @@ const navigation = [
   { href: "/activity", label: "Actividade", icon: ListTodo },
 ];
 
+function isActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(\`\${href}/\`);
+}
+
 export function Sidebar() {
+  const pathname = usePathname();
+
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-[var(--cc-border)] bg-white lg:block">
+    <aside className="hidden w-[270px] shrink-0 border-r border-[var(--cc-border)] bg-[var(--cc-glass)] backdrop-blur-2xl lg:block">
       <div className="sticky top-0 h-screen overflow-y-auto px-4 py-5">
-        <Link href="/dashboard" className="block rounded-[12px] px-3 py-3">
-          <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cc-accent)]">Project</span>
-          <span className="text-lg font-semibold tracking-tight text-[var(--cc-foreground)]">Command Center</span>
+        <Link href="/dashboard" className="block rounded-[18px] px-3 py-3">
+          <span className="block text-xs font-semibold tracking-[0.01em] text-[var(--cc-accent)]">Project</span>
+          <span className="text-lg font-semibold tracking-[-0.025em] text-[var(--cc-foreground)]">Command Center</span>
         </Link>
+
         <nav className="mt-5 space-y-1" aria-label="Navegação principal">
-          {navigation.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} className="flex min-h-11 items-center gap-3 rounded-[12px] px-3 text-sm font-medium text-[var(--cc-secondary)] transition hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]">
-              <Icon size={18} strokeWidth={1.8} />{label}
-            </Link>
-          ))}
+          {navigation.map(({ href, label, icon: Icon }) => {
+            const active = isActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={\`flex min-h-12 items-center gap-3 rounded-[14px] px-3.5 text-sm font-medium transition \${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-foreground)] shadow-sm" : "text-[var(--cc-secondary)] hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]"}\`}
+              >
+                <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </aside>
@@ -45,12 +64,25 @@ export function Sidebar() {
 }
 
 export function MobileNav() {
+  const pathname = usePathname();
+
   return (
-    <div className="overflow-x-auto border-b border-[var(--cc-border)] bg-white px-3 py-2 lg:hidden">
+    <div className="cc-safe-bottom overflow-x-auto border-t border-[var(--cc-border)] bg-[var(--cc-glass)] px-2 py-2 backdrop-blur-2xl lg:hidden">
       <nav className="flex min-w-max gap-1" aria-label="Navegação principal">
-        {navigation.map(({ href, label }) => (
-          <Link key={href} href={href} className="flex min-h-11 items-center rounded-[10px] px-3 text-sm font-medium text-[var(--cc-secondary)] hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]">{label}</Link>
-        ))}
+        {navigation.slice(0, 7).map(({ href, label, icon: Icon }) => {
+          const active = isActive(pathname, href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={\`flex min-h-12 min-w-[72px] flex-col items-center justify-center gap-1 rounded-[14px] px-3 text-[11px] font-medium transition \${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-accent)] shadow-sm" : "text-[var(--cc-secondary)]"}\`}
+            >
+              <Icon aria-hidden="true" size={18} strokeWidth={1.9} />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </div>
   );
