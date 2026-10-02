@@ -138,7 +138,7 @@ cross join (
     ('semiannual', 'Semestral', 1250::numeric, 'semiannual'),
     ('annual', 'Anual', 2500::numeric, 'annual')
 ) as seed(code, name, price, billing_period)
-where lower(unaccent(p.title)) = 'briefing diario'
+where lower(p.title) in ('briefing diário', 'briefing diario')
 on conflict (project_id, code) do nothing;
 
 insert into public.payment_channels (user_id, project_id, provider, channel_label, status, notes)
@@ -150,5 +150,5 @@ cross join (
     ('emola', 'e-Mola / Movitel Paga Já', 'Integração/pagamento a validar no ambiente real.'),
     ('payizi', 'Pay IZI', 'Integração/pagamento a validar no ambiente real.')
 ) as seed(provider, channel_label, notes)
-where lower(unaccent(p.title)) = 'briefing diario'
+where lower(p.title) in ('briefing diário', 'briefing diario')
 on conflict (project_id, provider) do nothing;
