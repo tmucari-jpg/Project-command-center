@@ -18,6 +18,7 @@ import {
   commercialLeadSchema,
   financialEntrySchema,
   subscriptionFunnelMetricSchema,
+  agentRunSchema,
   zodMessage,
 } from "@/lib/validation";
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
@@ -355,6 +356,27 @@ export async function upsertSubscriptionFunnelMetric(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   redirect(`${path}?saved=1`);
+}
+
+export async function createAgentRun(formData: FormData) {
+  const path = "/agents";
+  const parsed = agentRunSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { error } = await supabase.from("agent_runs").insert({
+    ...parsed.data,
+    input_context: {},
+    proposed_actions: [],
+    status: "draft",
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?created=1`);
 }
 
 export async function updateMetricCurrentValue(formData: FormData) {
