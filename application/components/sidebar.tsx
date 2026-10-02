@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Blocks, Bot, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
+import { BarChart3, Blocks, Bot, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -12,6 +12,7 @@ const navigation = [
   { href: "/intelligence", label: "Intelligence", icon: Radar },
   { href: "/ai-providers", label: "Offline + IA", icon: HardDrive },
   { href: "/security", label: "Segurança", icon: LockKeyhole },
+  { href: "/optimization", label: "Optimização", icon: Repeat2 },
   { href: "/deliverables", label: "Entregáveis", icon: PackageCheck },
   { href: "/actions", label: "Acções", icon: CheckSquare2 },
   { href: "/focus", label: "Modo foco", icon: TimerReset },
