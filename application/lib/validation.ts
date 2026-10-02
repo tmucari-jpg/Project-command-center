@@ -247,6 +247,13 @@ export const subscriptionFunnelMetricSchema = z.object({
   notes: optionalText(4000),
 });
 
+export const agentRunSchema = z.object({
+  project_id: optionalUuid,
+  agent_type: z.enum(["command", "research", "business", "marketing", "product", "qa", "analytics"]),
+  prompt_code: optionalText(40),
+  objective: z.string().trim().min(3).max(4000),
+});
+
 export function zodMessage(error: z.ZodError) {
   return error.issues[0]?.message ?? "Dados inválidos.";
 }
