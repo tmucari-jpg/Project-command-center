@@ -4,6 +4,8 @@ import {
   textareaClass,
 } from "@/components/ui";
 
+const labelClass = "block text-sm font-semibold text-[var(--cc-foreground)]";
+
 export function Field({
   label,
   name,
@@ -26,7 +28,7 @@ export function Field({
   defaultValue?: string | number;
 }) {
   return (
-    <label className="block text-sm font-medium text-slate-700">
+    <label className={labelClass}>
       {label}
       <input
         className={inputClass}
@@ -53,7 +55,7 @@ export function TextArea({
   placeholder?: string;
 }) {
   return (
-    <label className="block text-sm font-medium text-slate-700">
+    <label className={labelClass}>
       {label}
       <textarea className={textareaClass} name={name} placeholder={placeholder} />
     </label>
@@ -74,7 +76,7 @@ export function Select({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block text-sm font-medium text-slate-700">
+    <label className={labelClass}>
       {label}
       <select
         className={selectClass}
