@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Blocks, CalendarCheck2, CheckSquare2, FolderKanban, Gauge, Lightbulb, ListTodo, PackageCheck, ShieldCheck, Target, TimerReset } from "lucide-react";
+import { BarChart3, Blocks, CalendarCheck2, CheckSquare2, FolderKanban, Gauge, Lightbulb, ListTodo, PackageCheck, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -13,6 +13,7 @@ const navigation = [
   { href: "/evidence", label: "Evidências", icon: ShieldCheck },
   { href: "/metrics", label: "Métricas", icon: BarChart3 },
   { href: "/ideas", label: "Ideias", icon: Lightbulb },
+  { href: "/decisions", label: "Decisões", icon: Scale },
   { href: "/activity", label: "Actividade", icon: ListTodo },
 ];
 
