@@ -5,6 +5,9 @@ export type AgendaAction = {
   priority: string | null;
   due_at: string | null;
   is_next_action: boolean | null;
+  project_id?: string | null;
+  estimated_minutes?: number | null;
+  projects?: { title: string } | { title: string }[] | null;
 };
 
 const priorityScore: Record<string, number> = {
