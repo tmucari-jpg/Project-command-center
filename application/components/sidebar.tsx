@@ -28,7 +28,7 @@ const navigation = [
 ];
 
 function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(\`\${href}/\`);
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function Sidebar() {
@@ -50,7 +50,7 @@ export function Sidebar() {
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={\`flex min-h-12 items-center gap-3 rounded-[14px] px-3.5 text-sm font-medium transition \${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-foreground)] shadow-sm" : "text-[var(--cc-secondary)] hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]"}\`}
+                className={`flex min-h-12 items-center gap-3 rounded-[14px] px-3.5 text-sm font-medium transition ${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-foreground)] shadow-sm" : "text-[var(--cc-secondary)] hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]"}`}
               >
                 <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
                 <span>{label}</span>
@@ -76,7 +76,7 @@ export function MobileNav() {
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={\`flex min-h-12 min-w-[72px] flex-col items-center justify-center gap-1 rounded-[14px] px-3 text-[11px] font-medium transition \${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-accent)] shadow-sm" : "text-[var(--cc-secondary)]"}\`}
+              className={`flex min-h-12 min-w-[72px] flex-col items-center justify-center gap-1 rounded-[14px] px-3 text-[11px] font-medium transition ${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-accent)] shadow-sm" : "text-[var(--cc-secondary)]"}`}
             >
               <Icon aria-hidden="true" size={18} strokeWidth={1.9} />
               <span>{label}</span>
