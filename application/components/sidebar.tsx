@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { BarChart3, Blocks, CheckSquare2, FolderKanban, Gauge, Lightbulb, ListTodo, PackageCheck, ShieldCheck, Target, TimerReset } from "lucide-react";
+import { BarChart3, Blocks, CalendarCheck2, CheckSquare2, ClipboardList, FolderKanban, Gauge, Lightbulb, ListTodo, PackageCheck, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
+  { href: "/agenda", label: "Agenda diária", icon: CalendarCheck2 },
+  { href: "/weekly-review", label: "Revisão semanal", icon: ClipboardList },
   { href: "/objectives", label: "Objectivos", icon: Target },
   { href: "/projects", label: "Projectos", icon: FolderKanban },
   { href: "/deliverables", label: "Entregáveis", icon: PackageCheck },
@@ -12,6 +14,7 @@ const navigation = [
   { href: "/evidence", label: "Evidências", icon: ShieldCheck },
   { href: "/metrics", label: "Métricas", icon: BarChart3 },
   { href: "/ideas", label: "Ideias", icon: Lightbulb },
+  { href: "/decisions", label: "Decisões", icon: Scale },
   { href: "/activity", label: "Actividade", icon: ListTodo },
 ];
 

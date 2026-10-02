@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { createProject } from "@/app/(protected)/mutations";
 import { DeleteForm } from "@/components/delete-form";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { StatusProgressForm } from "@/components/status-progress-form";
-import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
+import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
@@ -119,7 +120,7 @@ export default async function ProjectsPage({
                             </p>
                           )}
                         </div>
-                        <DeleteForm table="projects" id={project.id} />
+                        <div className="flex items-start gap-2">\n                          <Link className={secondaryButtonClass} href={`/projects/${project.id}`}>Abrir Hub</Link>\n                          <DeleteForm table="projects" id={project.id} />\n                        </div>
                       </div>
                       <div className="mt-4 border-t border-slate-100 pt-4">
                         <StatusProgressForm
