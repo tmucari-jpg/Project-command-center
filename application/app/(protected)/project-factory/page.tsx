@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { createFactoryIntake } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
-import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
+import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -103,6 +104,12 @@ export default async function ProjectFactoryPage({
                         Competitive Intelligence obrigatória antes da decisão final.
                       </p>
                     )}
+
+                    <div className="mt-4">
+                      <Link className={secondaryButtonClass} href={`/project-factory/${item.id}`}>
+                        Abrir Factory
+                      </Link>
+                    </div>
                   </article>
                 ))}
               </div>
