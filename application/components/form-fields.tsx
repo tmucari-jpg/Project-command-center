@@ -49,15 +49,17 @@ export function TextArea({
   label,
   name,
   placeholder,
+  required,
 }: {
   label: string;
   name: string;
   placeholder?: string;
+  required?: boolean;
 }) {
   return (
     <label className={labelClass}>
       {label}
-      <textarea className={textareaClass} name={name} placeholder={placeholder} />
+      <textarea className={textareaClass} name={name} placeholder={placeholder} required={required} />
     </label>
   );
 }
