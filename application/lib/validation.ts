@@ -170,6 +170,16 @@ export const competitiveIntelligenceSchema = z.object({
   intent: z.enum(["save", "complete"]),
 });
 
+export const orchestratorRouteSchema = z.object({
+  factory_case_id: optionalUuid,
+  project_id: optionalUuid,
+  task_type: z.enum(["command", "research", "competitive_intelligence", "business", "marketing", "product", "qa", "analytics"]),
+  objective: z.string().trim().min(3).max(4000),
+  risk_level: z.enum(["low", "medium", "high", "critical"]),
+  factuality: z.enum(["standard", "high"]),
+  cost_sensitivity: z.enum(["low", "medium", "high"]),
+});
+
 export const evidenceSchema = z
   .object({
     action_id: optionalUuid,

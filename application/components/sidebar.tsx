@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Blocks, Bot, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, Factory, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
+import { BarChart3, Blocks, Bot, BrainCircuit, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, Factory, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -13,6 +13,7 @@ const navigation = [
   { href: "/projects", label: "Projectos", icon: FolderKanban },
   { href: "/monetization", label: "Monetização", icon: CircleDollarSign },
   { href: "/agents", label: "Agentic Core", icon: Bot },
+  { href: "/orchestrator", label: "Orchestrator", icon: BrainCircuit },
   { href: "/intelligence", label: "Intelligence", icon: Radar },
   { href: "/ai-providers", label: "Offline + IA", icon: HardDrive },
   { href: "/security", label: "Segurança", icon: LockKeyhole },
