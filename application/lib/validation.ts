@@ -180,6 +180,34 @@ export const orchestratorRouteSchema = z.object({
   cost_sensitivity: z.enum(["low", "medium", "high"]),
 });
 
+export const executionArenaTrialSchema = z.object({
+  factory_case_id: optionalUuid,
+  orchestrator_route_id: optionalUuid,
+  scenario: z.string().trim().min(3).max(4000),
+  candidate_label: z.string().trim().min(2).max(180),
+  model_label: optionalText(180),
+  agent_type: z.enum(["command", "research", "business", "marketing", "product", "qa", "analytics"]),
+  strategy: z.string().trim().min(2).max(180),
+  tool_label: optionalText(180),
+  quality_score: z.coerce.number().int().min(0).max(100),
+  factuality_score: z.coerce.number().int().min(0).max(100),
+  task_success_score: z.coerce.number().int().min(0).max(100),
+  duration_ms: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    z.coerce.number().int().min(0).optional(),
+  ),
+  cost_amount: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    z.coerce.number().min(0).optional(),
+  ),
+  cost_currency: optionalText(8),
+  human_correction_minutes: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    z.coerce.number().int().min(0).optional(),
+  ),
+  review_notes: optionalText(4000),
+});
+
 export const evidenceSchema = z
   .object({
     action_id: optionalUuid,
