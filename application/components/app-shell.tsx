@@ -17,16 +17,18 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
               </div>
               <div className="flex items-center gap-2">
                 <InstallAppButton />
-                <form action={logoutAction}>
-                  <button
-                    type="submit"
-                    aria-label="Terminar sessão"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface)] px-3.5 py-2 text-sm font-semibold text-[var(--cc-foreground)] shadow-sm backdrop-blur-xl transition hover:bg-[var(--cc-surface-muted)]"
-                  >
-                    <LogOut aria-hidden="true" size={16} />
-                    <span className="hidden sm:inline">Sair</span>
-                  </button>
-                </form>
+                {process.env.NODE_ENV !== "development" && (
+                  <form action={logoutAction}>
+                    <button
+                      type="submit"
+                      aria-label="Terminar sessão"
+                      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--cc-border)] bg-[var(--cc-surface)] px-3.5 py-2 text-sm font-semibold text-[var(--cc-foreground)] shadow-sm backdrop-blur-xl transition hover:bg-[var(--cc-surface-muted)]"
+                    >
+                      <LogOut aria-hidden="true" size={16} />
+                      <span className="hidden sm:inline">Sair</span>
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           </header>
