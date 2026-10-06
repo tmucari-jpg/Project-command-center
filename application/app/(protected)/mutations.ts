@@ -8,6 +8,7 @@ import {
   blockerSchema,
   deliverableSchema,
   evidenceSchema,
+  factoryIntakeSchema,
   ideaSchema,
   metricSchema,
   objectiveSchema,
@@ -178,6 +179,24 @@ export async function createBlocker(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   revalidatePath("/dashboard");
+  redirect(`${path}?created=1`);
+}
+
+export async function createFactoryIntake(formData: FormData) {
+  const path = "/project-factory";
+  const parsed = factoryIntakeSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("project_factory_cases").insert({
+    ...parsed.data,
+    user_id: user.id,
+    stage: "viability",
+    competitive_intelligence_required: parsed.data.project_type === "commercial",
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
   redirect(`${path}?created=1`);
 }
 

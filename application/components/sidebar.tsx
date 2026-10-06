@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Blocks, Bot, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
+import { BarChart3, Blocks, Bot, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, Factory, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
   { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
   { href: "/objectives", label: "Objectivos", icon: Target },
+  { href: "/project-factory", label: "Project Factory", icon: Factory },
   { href: "/projects", label: "Projectos", icon: FolderKanban },
   { href: "/monetization", label: "Monetização", icon: CircleDollarSign },
   { href: "/agents", label: "Agentic Core", icon: Bot },
