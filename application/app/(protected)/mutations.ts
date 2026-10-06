@@ -12,6 +12,7 @@ import {
   ideaSchema,
   metricSchema,
   objectiveSchema,
+  orchestratorRouteSchema,
   projectSchema,
   projectMemorySchema,
   decisionSchema,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/validation";
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { selectExecutionRoute } from "@/lib/orchestrator";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -54,6 +56,38 @@ async function ensureOwned(
   if (error || !data) {
     fail(path, "A relação seleccionada não existe ou não lhe pertence.");
   }
+}
+
+export async function createOrchestratorRoute(formData: FormData) {
+  const path = "/orchestrator";
+  const parsed = orchestratorRouteSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  await ensureOwned(supabase, "project_factory_cases", parsed.data.factory_case_id, user.id, path);
+
+  const route = selectExecutionRoute({
+    taskType: parsed.data.task_type,
+    riskLevel: parsed.data.risk_level,
+    factuality: parsed.data.factuality,
+    costSensitivity: parsed.data.cost_sensitivity,
+  });
+
+  const { error } = await supabase.from("orchestrator_routes").insert({
+    ...parsed.data,
+    selected_agent: route.selectedAgent,
+    selected_dots: route.selectedDots,
+    provider_policy: route.providerPolicy,
+    strategy: route.strategy,
+    approval_required: route.approvalRequired,
+    rationale: route.rationale,
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?created=1`);
 }
 
 export async function createObjective(formData: FormData) {
