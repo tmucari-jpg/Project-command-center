@@ -8,6 +8,7 @@ import {
   blockerSchema,
   deliverableSchema,
   evidenceSchema,
+  executionArenaTrialSchema,
   factoryIntakeSchema,
   ideaSchema,
   metricSchema,
@@ -56,6 +57,38 @@ async function ensureOwned(
   if (error || !data) {
     fail(path, "A relação seleccionada não existe ou não lhe pertence.");
   }
+}
+
+export async function createExecutionArenaTrial(formData: FormData) {
+  const path = "/execution-arena";
+  const parsed = executionArenaTrialSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "project_factory_cases", parsed.data.factory_case_id, user.id, path);
+  await ensureOwned(supabase, "orchestrator_routes", parsed.data.orchestrator_route_id, user.id, path);
+
+  const { error } = await supabase.from("execution_arena_trials").insert({
+    ...parsed.data,
+    status: "measured",
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+
+  if (parsed.data.factory_case_id) {
+    const { error: stageError } = await supabase
+      .from("project_factory_cases")
+      .update({ stage: "execution_arena" })
+      .eq("id", parsed.data.factory_case_id)
+      .eq("user_id", user.id);
+
+    if (stageError) fail(path, stageError.message);
+  }
+
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  redirect(`${path}?created=1`);
 }
 
 export async function createOrchestratorRoute(formData: FormData) {
