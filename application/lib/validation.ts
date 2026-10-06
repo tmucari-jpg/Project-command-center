@@ -146,6 +146,17 @@ export const ideaSchema = z.object({
   next_decision: optionalText(1000),
 });
 
+export const factoryIntakeSchema = z.object({
+  title: z.string().trim().min(2).max(180),
+  description: optionalText(6000),
+  problem: z.string().trim().min(3).max(6000),
+  project_type: z.enum(["commercial", "non_commercial"]),
+  target_user: optionalText(2000),
+  expected_value: optionalText(4000),
+  constraints: optionalText(4000),
+  source: optionalText(1000),
+});
+
 export const evidenceSchema = z
   .object({
     action_id: optionalUuid,
