@@ -17,6 +17,7 @@ import {
   decisionSchema,
   commercialProfileSchema,
   commercialLeadSchema,
+  competitiveIntelligenceSchema,
   financialEntrySchema,
   subscriptionFunnelMetricSchema,
   agentRunSchema,
@@ -198,6 +199,64 @@ export async function createFactoryIntake(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   redirect(`${path}?created=1`);
+}
+
+export async function saveCompetitiveIntelligence(formData: FormData) {
+  const parsed = competitiveIntelligenceSchema.safeParse(values(formData));
+  const fallbackPath = "/project-factory";
+  if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
+
+  const path = `/project-factory/${parsed.data.factory_case_id}`;
+  const { supabase, user } = await requireUser();
+
+  const { data: factoryCase, error: caseError } = await supabase
+    .from("project_factory_cases")
+    .select("id,project_type")
+    .eq("id", parsed.data.factory_case_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (caseError || !factoryCase) fail(path, "Caso da Factory não encontrado.");
+  if (factoryCase.project_type !== "commercial") {
+    fail(path, "Competitive Intelligence aplica-se apenas a projectos comerciais.");
+  }
+
+  const { intent, ...report } = parsed.data;
+  const { error } = await supabase
+    .from("factory_competitive_intelligence")
+    .upsert(
+      {
+        ...report,
+        user_id: user.id,
+        status: intent === "complete" ? "complete" : "draft",
+        completed_at: intent === "complete" ? new Date().toISOString() : null,
+      },
+      { onConflict: "factory_case_id" },
+    );
+
+  if (error) fail(path, error.message);
+
+  if (intent === "complete") {
+    const { error: stageError } = await supabase
+      .from("project_factory_cases")
+      .update({ stage: "validation" })
+      .eq("id", parsed.data.factory_case_id)
+      .eq("user_id", user.id);
+
+    if (stageError) fail(path, stageError.message);
+  } else {
+    const { error: stageError } = await supabase
+      .from("project_factory_cases")
+      .update({ stage: "competitive_intelligence" })
+      .eq("id", parsed.data.factory_case_id)
+      .eq("user_id", user.id);
+
+    if (stageError) fail(path, stageError.message);
+  }
+
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  redirect(`${path}?${intent === "complete" ? "completed" : "saved"}=1`);
 }
 
 export async function createIdea(formData: FormData) {
