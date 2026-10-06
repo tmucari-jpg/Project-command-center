@@ -157,6 +157,19 @@ export const factoryIntakeSchema = z.object({
   source: optionalText(1000),
 });
 
+export const competitiveIntelligenceSchema = z.object({
+  factory_case_id: z.string().uuid(),
+  market_summary: z.string().trim().min(3).max(8000),
+  competitors: z.string().trim().min(3).max(8000),
+  existing_solutions: z.string().trim().min(3).max(8000),
+  differentiation: z.string().trim().min(3).max(8000),
+  trends: z.string().trim().min(3).max(8000),
+  risks_barriers: z.string().trim().min(3).max(8000),
+  sources: z.string().trim().min(3).max(8000),
+  confidence: z.enum(["low", "medium", "high", "verified"]),
+  intent: z.enum(["save", "complete"]),
+});
+
 export const evidenceSchema = z
   .object({
     action_id: optionalUuid,
