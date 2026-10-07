@@ -12,6 +12,7 @@ import {
   evidenceSchema,
   executionArenaTrialSchema,
   factoryIntakeSchema,
+  factoryLibraryItemSchema,
   ideaSchema,
   metricSchema,
   objectiveSchema,
@@ -60,6 +61,48 @@ async function ensureOwned(
   if (error || !data) {
     fail(path, "A relação seleccionada não existe ou não lhe pertence.");
   }
+}
+
+export async function createFactoryLibraryItem(formData: FormData) {
+  const path = "/factory-library";
+  const parsed = factoryLibraryItemSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  const behaviorChanging = ["workflow", "template", "prompt", "strategy"].includes(parsed.data.asset_type);
+
+  const { error } = await supabase.from("factory_library_items").insert({
+    user_id: user.id,
+    asset_type: parsed.data.asset_type,
+    title: parsed.data.title,
+    summary: parsed.data.summary,
+    content: { text: parsed.data.content_text },
+    source_type: "manual",
+    behavior_changing: behaviorChanging,
+    status: behaviorChanging ? "candidate" : "approved",
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?created=1`);
+}
+
+export async function approveFactoryLibraryItem(formData: FormData) {
+  const path = "/factory-library";
+  const itemId = z.string().uuid().safeParse(formData.get("item_id"));
+  if (!itemId.success) fail(path, "Activo inválido.");
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("factory_library_items")
+    .update({ status: "approved" })
+    .eq("id", itemId.data)
+    .eq("user_id", user.id)
+    .eq("status", "candidate");
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?approved=1`);
 }
 
 export async function createAutomationWorkflow(formData: FormData) {
