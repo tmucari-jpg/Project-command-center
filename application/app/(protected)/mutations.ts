@@ -13,6 +13,7 @@ import {
   executionArenaTrialSchema,
   factoryIntakeSchema,
   factoryLibraryItemSchema,
+  factoryValidationSchema,
   ideaSchema,
   metricSchema,
   objectiveSchema,
@@ -436,6 +437,53 @@ export async function createBlocker(formData: FormData) {
   revalidatePath(path);
   revalidatePath("/dashboard");
   redirect(`${path}?created=1`);
+}
+
+export async function saveFactoryValidation(formData: FormData) {
+  const parsed = factoryValidationSchema.safeParse(values(formData));
+  const fallbackPath = "/project-factory";
+  if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
+
+  const path = `/project-factory/${parsed.data.factory_case_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "project_factory_cases", parsed.data.factory_case_id, user.id, path);
+
+  const { arena_required, ...validation } = parsed.data;
+  const { error } = await supabase
+    .from("factory_validations")
+    .upsert(
+      {
+        ...validation,
+        arena_required,
+        user_id: user.id,
+        status: "complete",
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: "factory_case_id" },
+    );
+
+  if (error) fail(path, error.message);
+
+  const nextStage =
+    parsed.data.recommendation === "modify"
+      ? "validation"
+      : parsed.data.recommendation === "hold"
+        ? "on_hold"
+        : arena_required
+          ? "execution_arena"
+          : "factory_report";
+
+  const { error: stageError } = await supabase
+    .from("project_factory_cases")
+    .update({ stage: nextStage })
+    .eq("id", parsed.data.factory_case_id)
+    .eq("user_id", user.id);
+
+  if (stageError) fail(path, stageError.message);
+
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  redirect(`${path}?validated=1`);
 }
 
 export async function createFactoryIntake(formData: FormData) {
