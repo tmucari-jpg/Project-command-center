@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { saveCompetitiveIntelligence, saveFactoryValidation } from "@/app/(protected)/mutations";
-import { Select, TextArea } from "@/components/form-fields";
+import { finalizeFactoryDecision, saveCompetitiveIntelligence, saveFactoryReport, saveFactoryValidation } from "@/app/(protected)/mutations";
+import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
@@ -12,13 +12,13 @@ export default async function FactoryCasePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string; completed?: string; validated?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; completed?: string; validated?: string; report?: string; decision?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
   const { supabase, user } = await requireUser();
 
-  const [{ data: factoryCase }, { data: report }, { data: validation }] = await Promise.all([
+  const [{ data: factoryCase }, { data: report }, { data: validation }, { data: factoryReport }] = await Promise.all([
     supabase
       .from("project_factory_cases")
       .select("*")
@@ -33,6 +33,12 @@ export default async function FactoryCasePage({
       .maybeSingle(),
     supabase
       .from("factory_validations")
+      .select("*")
+      .eq("factory_case_id", id)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("factory_reports")
       .select("*")
       .eq("factory_case_id", id)
       .eq("user_id", user.id)
@@ -57,13 +63,17 @@ export default async function FactoryCasePage({
 
       <FlashMessage
         error={query.error}
-        created={query.saved ?? query.completed ?? query.validated}
+        created={query.saved ?? query.completed ?? query.validated ?? query.report ?? query.decision}
         message={
-          query.validated
-            ? "Validation concluída e etapa seguinte definida."
-            : query.completed
-              ? "Competitive Intelligence concluída. O caso avançou para Validation."
-              : "Competitive Intelligence guardada como draft."
+          query.decision
+            ? "Decisão final da Factory registada."
+            : query.report
+              ? "Factory Report consolidado. O caso avançou para Decision."
+              : query.validated
+                ? "Validation concluída e etapa seguinte definida."
+                : query.completed
+                  ? "Competitive Intelligence concluída. O caso avançou para Validation."
+                  : "Competitive Intelligence guardada como draft."
         }
       />
 
@@ -194,6 +204,57 @@ export default async function FactoryCasePage({
             <button className={primaryButtonClass} type="submit">
               Concluir Validation
             </button>
+          </form>
+        </Card>
+      )}
+
+      {["factory_report", "decision", "converted_to_project", "on_hold", "killed"].includes(factoryCase.stage) && (
+        <Card className="mt-6 p-5">
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Factory Report</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+            Consolide a evidência antes da decisão final. Os campos de mercado são pré-preenchidos com a Competitive Intelligence quando disponível.
+          </p>
+
+          <form action={saveFactoryReport} className="mt-5 space-y-4">
+            <input type="hidden" name="factory_case_id" value={factoryCase.id} />
+            <TextArea label="Problema identificado" name="problem_identified" required defaultValue={factoryReport?.problem_identified ?? factoryCase.problem ?? ""} />
+            <TextArea label="Mercado" name="market" defaultValue={factoryReport?.market ?? report?.market_summary ?? ""} />
+            <TextArea label="Concorrentes" name="competitors" defaultValue={factoryReport?.competitors ?? report?.competitors ?? ""} />
+            <TextArea label="Soluções existentes" name="existing_solutions" defaultValue={factoryReport?.existing_solutions ?? report?.existing_solutions ?? ""} />
+            <TextArea label="Diferenciação possível" name="differentiation" defaultValue={factoryReport?.differentiation ?? report?.differentiation ?? ""} />
+            <TextArea label="Tendência de mercado" name="market_trend" defaultValue={factoryReport?.market_trend ?? report?.trends ?? ""} />
+            <TextArea label="Tecnologia necessária" name="technology_required" defaultValue={factoryReport?.technology_required ?? ""} />
+            <TextArea label="Custo estimado" name="estimated_cost" defaultValue={factoryReport?.estimated_cost ?? ""} />
+            <TextArea label="Modelo de receita" name="revenue_model" defaultValue={factoryReport?.revenue_model ?? ""} />
+            <TextArea label="Riscos" name="risks" defaultValue={factoryReport?.risks ?? report?.risks_barriers ?? ""} />
+            <TextArea label="Regulamentação" name="regulation" defaultValue={factoryReport?.regulation ?? ""} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Probabilidade de execução (%)" name="execution_probability" type="number" min={0} max={100} defaultValue={factoryReport?.execution_probability ?? undefined} />
+              <Field label="Probabilidade de adopção (%)" name="adoption_probability" type="number" min={0} max={100} defaultValue={factoryReport?.adoption_probability ?? undefined} />
+            </div>
+            <TextArea label="Hipóteses críticas" name="critical_hypotheses" defaultValue={factoryReport?.critical_hypotheses ?? validation?.critical_hypotheses ?? ""} />
+            <TextArea label="Testes necessários" name="tests_required" defaultValue={factoryReport?.tests_required ?? validation?.validation_plan ?? ""} />
+            <button className={primaryButtonClass} type="submit">Consolidar Factory Report</button>
+          </form>
+        </Card>
+      )}
+
+      {["decision", "converted_to_project", "on_hold", "killed"].includes(factoryCase.stage) && factoryReport && (
+        <Card className="mt-6 p-5">
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Decision</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+            GO cria o projecto em Planning. MODIFY devolve o caso à Validation. HOLD e KILL preservam todo o histórico sem criar projecto.
+          </p>
+          <form action={finalizeFactoryDecision} className="mt-5 space-y-4">
+            <input type="hidden" name="factory_case_id" value={factoryCase.id} />
+            <Select label="Decisão final" name="decision" defaultValue={factoryReport.final_decision ?? "go"}>
+              <option value="go">GO</option>
+              <option value="modify">MODIFY</option>
+              <option value="hold">HOLD</option>
+              <option value="kill">KILL</option>
+            </Select>
+            <TextArea label="Justificação da decisão" name="decision_rationale" required defaultValue={factoryReport.decision_rationale ?? ""} />
+            <button className={primaryButtonClass} type="submit">Registar decisão</button>
           </form>
         </Card>
       )}

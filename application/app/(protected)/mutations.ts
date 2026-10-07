@@ -14,6 +14,8 @@ import {
   factoryIntakeSchema,
   factoryLibraryItemSchema,
   factoryValidationSchema,
+  factoryReportSchema,
+  factoryDecisionSchema,
   ideaSchema,
   metricSchema,
   objectiveSchema,
@@ -437,6 +439,123 @@ export async function createBlocker(formData: FormData) {
   revalidatePath(path);
   revalidatePath("/dashboard");
   redirect(`${path}?created=1`);
+}
+
+export async function saveFactoryReport(formData: FormData) {
+  const parsed = factoryReportSchema.safeParse(values(formData));
+  const fallbackPath = "/project-factory";
+  if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
+
+  const path = `/project-factory/${parsed.data.factory_case_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "project_factory_cases", parsed.data.factory_case_id, user.id, path);
+
+  const { error } = await supabase.from("factory_reports").upsert(
+    {
+      ...parsed.data,
+      user_id: user.id,
+      status: "ready",
+    },
+    { onConflict: "factory_case_id" },
+  );
+
+  if (error) fail(path, error.message);
+
+  const { error: stageError } = await supabase
+    .from("project_factory_cases")
+    .update({ stage: "decision" })
+    .eq("id", parsed.data.factory_case_id)
+    .eq("user_id", user.id);
+
+  if (stageError) fail(path, stageError.message);
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  redirect(`${path}?report=1`);
+}
+
+export async function finalizeFactoryDecision(formData: FormData) {
+  const parsed = factoryDecisionSchema.safeParse(values(formData));
+  const fallbackPath = "/project-factory";
+  if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
+
+  const path = `/project-factory/${parsed.data.factory_case_id}`;
+  const { supabase, user } = await requireUser();
+
+  const { data: factoryCase, error: caseError } = await supabase
+    .from("project_factory_cases")
+    .select("*")
+    .eq("id", parsed.data.factory_case_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (caseError || !factoryCase) fail(path, "Caso da Factory não encontrado.");
+
+  const { error: reportError } = await supabase
+    .from("factory_reports")
+    .update({
+      status: "decided",
+      final_decision: parsed.data.decision,
+      decision_rationale: parsed.data.decision_rationale,
+      decided_at: new Date().toISOString(),
+    })
+    .eq("factory_case_id", parsed.data.factory_case_id)
+    .eq("user_id", user.id);
+
+  if (reportError) fail(path, reportError.message);
+
+  if (parsed.data.decision === "go") {
+    let projectId = factoryCase.project_id as string | null;
+
+    if (!projectId) {
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .insert({
+          user_id: user.id,
+          title: factoryCase.title,
+          description: factoryCase.description,
+          expected_result: factoryCase.expected_value,
+          priority: "medium",
+          status: "planning",
+          progress: 0,
+          notes: `Criado pela Project Factory. Origem: ${factoryCase.source ?? "não indicada"}`,
+        })
+        .select("id")
+        .single();
+
+      if (projectError || !project) {
+        fail(path, projectError?.message ?? "Não foi possível criar o projecto.");
+      }
+      projectId = project.id;
+    }
+
+    const { error: stageError } = await supabase
+      .from("project_factory_cases")
+      .update({ stage: "converted_to_project", project_id: projectId })
+      .eq("id", parsed.data.factory_case_id)
+      .eq("user_id", user.id);
+
+    if (stageError) fail(path, stageError.message);
+  } else {
+    const nextStage =
+      parsed.data.decision === "modify"
+        ? "validation"
+        : parsed.data.decision === "hold"
+          ? "on_hold"
+          : "killed";
+
+    const { error: stageError } = await supabase
+      .from("project_factory_cases")
+      .update({ stage: nextStage })
+      .eq("id", parsed.data.factory_case_id)
+      .eq("user_id", user.id);
+
+    if (stageError) fail(path, stageError.message);
+  }
+
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  revalidatePath("/projects");
+  redirect(`${path}?decision=1`);
 }
 
 export async function saveFactoryValidation(formData: FormData) {

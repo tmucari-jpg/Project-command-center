@@ -180,6 +180,37 @@ export const factoryValidationSchema = z.object({
   arena_required: z.preprocess((value) => value === "true" || value === "on", z.boolean()),
 });
 
+export const factoryReportSchema = z.object({
+  factory_case_id: z.string().uuid(),
+  problem_identified: z.string().trim().min(3).max(8000),
+  market: optionalText(8000),
+  competitors: optionalText(8000),
+  existing_solutions: optionalText(8000),
+  differentiation: optionalText(8000),
+  market_trend: optionalText(8000),
+  technology_required: optionalText(8000),
+  estimated_cost: optionalText(4000),
+  revenue_model: optionalText(4000),
+  risks: optionalText(8000),
+  regulation: optionalText(8000),
+  execution_probability: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    z.coerce.number().int().min(0).max(100).optional(),
+  ),
+  adoption_probability: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    z.coerce.number().int().min(0).max(100).optional(),
+  ),
+  critical_hypotheses: optionalText(8000),
+  tests_required: optionalText(8000),
+});
+
+export const factoryDecisionSchema = z.object({
+  factory_case_id: z.string().uuid(),
+  decision: z.enum(["go", "modify", "hold", "kill"]),
+  decision_rationale: z.string().trim().min(3).max(8000),
+});
+
 export const orchestratorRouteSchema = z.object({
   factory_case_id: optionalUuid,
   project_id: optionalUuid,
