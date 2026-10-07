@@ -1,15 +1,15 @@
-import { createAutomationJob, createAutomationWorkflow } from "@/app/(protected)/mutations";
+import { approveAutomationJob, createAutomationJob, createAutomationWorkflow, dispatchAutomationJob } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
-import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
+import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { n8nConfigured } from "@/lib/n8n";
 
 export default async function AutomationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string; workflow?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; workflow?: string; dispatched?: string; approved?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
@@ -44,7 +44,7 @@ export default async function AutomationPage({
       .order("title"),
     supabase
       .from("automation_jobs")
-      .select("*,automation_workflows(name,code)")
+      .select("*,automation_workflows(name,code,requires_approval)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -59,8 +59,18 @@ export default async function AutomationPage({
       />
       <FlashMessage
         error={params.error ?? error?.message}
-        created={params.created ?? params.workflow}
-        message={params.workflow ? "Workflow registado." : params.created ? "Job colocado na fila de execução." : undefined}
+        created={params.created ?? params.workflow ?? params.dispatched ?? params.approved}
+        message={
+          params.workflow
+            ? "Workflow registado."
+            : params.created
+              ? "Job colocado na fila de execução."
+              : params.approved
+                ? "Job aprovado para execução."
+                : params.dispatched
+                  ? "Job enviado para o n8n."
+                  : undefined
+        }
       />
 
       <Card className="mb-6 p-4">
@@ -167,6 +177,22 @@ export default async function AutomationPage({
                         {job.status}
                       </span>
                     </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {job.status === "queued" && relation?.requires_approval && (
+                        <form action={approveAutomationJob}>
+                          <input type="hidden" name="job_id" value={job.id} />
+                          <button className={secondaryButtonClass} type="submit">Aprovar</button>
+                        </form>
+                      )}
+                      {n8nConfigured() && ["queued", "approved", "failed"].includes(job.status) && (
+                        <form action={dispatchAutomationJob}>
+                          <input type="hidden" name="job_id" value={job.id} />
+                          <button className={primaryButtonClass} type="submit">Executar no n8n</button>
+                        </form>
+                      )}
+                    </div>
+
                     {job.last_error && (
                       <p className="mt-3 text-xs leading-5 text-red-700">{job.last_error}</p>
                     )}
