@@ -170,6 +170,16 @@ export const competitiveIntelligenceSchema = z.object({
   intent: z.enum(["save", "complete"]),
 });
 
+export const factoryValidationSchema = z.object({
+  factory_case_id: z.string().uuid(),
+  critical_hypotheses: z.string().trim().min(3).max(8000),
+  validation_plan: z.string().trim().min(3).max(8000),
+  evidence: z.string().trim().min(3).max(12000),
+  result_summary: z.string().trim().min(3).max(8000),
+  recommendation: z.enum(["proceed", "modify", "hold"]),
+  arena_required: z.preprocess((value) => value === "true" || value === "on", z.boolean()),
+});
+
 export const orchestratorRouteSchema = z.object({
   factory_case_id: optionalUuid,
   project_id: optionalUuid,

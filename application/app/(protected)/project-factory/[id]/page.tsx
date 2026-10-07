@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { saveCompetitiveIntelligence } from "@/app/(protected)/mutations";
+import { saveCompetitiveIntelligence, saveFactoryValidation } from "@/app/(protected)/mutations";
 import { Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
@@ -12,13 +12,13 @@ export default async function FactoryCasePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string; completed?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; completed?: string; validated?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
   const { supabase, user } = await requireUser();
 
-  const [{ data: factoryCase }, { data: report }] = await Promise.all([
+  const [{ data: factoryCase }, { data: report }, { data: validation }] = await Promise.all([
     supabase
       .from("project_factory_cases")
       .select("*")
@@ -27,6 +27,12 @@ export default async function FactoryCasePage({
       .maybeSingle(),
     supabase
       .from("factory_competitive_intelligence")
+      .select("*")
+      .eq("factory_case_id", id)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("factory_validations")
       .select("*")
       .eq("factory_case_id", id)
       .eq("user_id", user.id)
@@ -51,11 +57,13 @@ export default async function FactoryCasePage({
 
       <FlashMessage
         error={query.error}
-        created={query.saved ?? query.completed}
+        created={query.saved ?? query.completed ?? query.validated}
         message={
-          query.completed
-            ? "Competitive Intelligence concluída. O caso avançou para Validation."
-            : "Competitive Intelligence guardada como draft."
+          query.validated
+            ? "Validation concluída e etapa seguinte definida."
+            : query.completed
+              ? "Competitive Intelligence concluída. O caso avançou para Validation."
+              : "Competitive Intelligence guardada como draft."
         }
       />
 
@@ -132,6 +140,63 @@ export default async function FactoryCasePage({
           )}
         </Card>
       </div>
+
+      {["validation", "execution_arena", "factory_report", "on_hold"].includes(factoryCase.stage) && (
+        <Card className="mt-6 p-5">
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Validation</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+            Registe as hipóteses críticas, o teste realizado e a evidência observada. A Execution Arena só deve ser usada quando existir dúvida material entre estratégias de execução.
+          </p>
+
+          <form action={saveFactoryValidation} className="mt-5 space-y-4">
+            <input type="hidden" name="factory_case_id" value={factoryCase.id} />
+            <TextArea
+              label="Hipóteses críticas"
+              name="critical_hypotheses"
+              required
+              defaultValue={validation?.critical_hypotheses ?? ""}
+            />
+            <TextArea
+              label="Plano de validação"
+              name="validation_plan"
+              required
+              defaultValue={validation?.validation_plan ?? ""}
+            />
+            <TextArea
+              label="Evidência observada"
+              name="evidence"
+              required
+              defaultValue={validation?.evidence ?? ""}
+            />
+            <TextArea
+              label="Resultado da validação"
+              name="result_summary"
+              required
+              defaultValue={validation?.result_summary ?? ""}
+            />
+            <Select
+              label="Recomendação"
+              name="recommendation"
+              defaultValue={validation?.recommendation ?? "proceed"}
+            >
+              <option value="proceed">Prosseguir</option>
+              <option value="modify">Modificar e validar novamente</option>
+              <option value="hold">Colocar em espera</option>
+            </Select>
+            <label className="flex min-h-12 items-center gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] px-4 text-sm text-[var(--cc-foreground)]">
+              <input
+                type="checkbox"
+                name="arena_required"
+                defaultChecked={validation?.arena_required ?? false}
+              />
+              Execution Arena necessária antes do Factory Report
+            </label>
+            <button className={primaryButtonClass} type="submit">
+              Concluir Validation
+            </button>
+          </form>
+        </Card>
+      )}
     </>
   );
 }
