@@ -117,6 +117,24 @@ export async function createAutomationJob(formData: FormData) {
   redirect(`${path}?created=1`);
 }
 
+export async function approveAutomationJob(formData: FormData) {
+  const path = "/automation";
+  const jobId = z.string().uuid().safeParse(formData.get("job_id"));
+  if (!jobId.success) fail(path, "Job inválido.");
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("automation_jobs")
+    .update({ status: "approved" })
+    .eq("id", jobId.data)
+    .eq("user_id", user.id)
+    .eq("status", "queued");
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?approved=1`);
+}
+
 export async function dispatchAutomationJob(formData: FormData) {
   const path = "/automation";
   const jobId = z.string().uuid().safeParse(formData.get("job_id"));
