@@ -208,6 +208,24 @@ export const executionArenaTrialSchema = z.object({
   review_notes: optionalText(4000),
 });
 
+export const automationWorkflowSchema = z.object({
+  code: z.string().trim().min(2).max(120).regex(/^[a-z0-9_-]+$/i, "Código inválido."),
+  name: z.string().trim().min(2).max(180),
+  description: optionalText(4000),
+  trigger_mode: z.enum(["webhook", "poll"]),
+  requires_approval: z.preprocess((value) => value === "true" || value === "on", z.boolean()),
+});
+
+export const automationJobSchema = z.object({
+  workflow_id: optionalUuid,
+  orchestrator_route_id: optionalUuid,
+  factory_case_id: optionalUuid,
+  project_id: optionalUuid,
+  objective: z.string().trim().min(3).max(4000),
+  payload_json: optionalText(12000),
+  priority: z.enum(["low", "normal", "high"]),
+});
+
 export const evidenceSchema = z
   .object({
     action_id: optionalUuid,
