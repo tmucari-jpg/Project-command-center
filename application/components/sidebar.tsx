@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Blocks, Bot, BrainCircuit, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, Factory, FlaskConical, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset, Workflow } from "lucide-react";
+import { BarChart3, Blocks, BookOpenCheck, Bot, BrainCircuit, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, Factory, FlaskConical, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset, Workflow } from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
@@ -16,6 +16,7 @@ const navigation = [
   { href: "/orchestrator", label: "Orchestrator", icon: BrainCircuit },
   { href: "/execution-arena", label: "Execution Arena", icon: FlaskConical },
   { href: "/automation", label: "Automação n8n", icon: Workflow },
+  { href: "/factory-library", label: "Factory Library", icon: BookOpenCheck },
   { href: "/intelligence", label: "Intelligence", icon: Radar },
   { href: "/ai-providers", label: "Offline + IA", icon: HardDrive },
   { href: "/security", label: "Segurança", icon: LockKeyhole },
