@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
   actionSchema,
+  automationJobSchema,
+  automationWorkflowSchema,
   blockerSchema,
   deliverableSchema,
   evidenceSchema,
@@ -29,6 +31,7 @@ import {
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { selectExecutionRoute } from "@/lib/orchestrator";
+import { dispatchToN8n } from "@/lib/n8n";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -57,6 +60,130 @@ async function ensureOwned(
   if (error || !data) {
     fail(path, "A relação seleccionada não existe ou não lhe pertence.");
   }
+}
+
+export async function createAutomationWorkflow(formData: FormData) {
+  const path = "/automation";
+  const parsed = automationWorkflowSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from("automation_workflows").insert({
+    ...parsed.data,
+    engine: "n8n",
+    is_active: true,
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?workflow=1`);
+}
+
+export async function createAutomationJob(formData: FormData) {
+  const path = "/automation";
+  const parsed = automationJobSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "automation_workflows", parsed.data.workflow_id, user.id, path);
+  await ensureOwned(supabase, "orchestrator_routes", parsed.data.orchestrator_route_id, user.id, path);
+  await ensureOwned(supabase, "project_factory_cases", parsed.data.factory_case_id, user.id, path);
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  let payload: Record<string, unknown> = {};
+  if (parsed.data.payload_json) {
+    try {
+      const decoded = JSON.parse(parsed.data.payload_json);
+      if (!decoded || typeof decoded !== "object" || Array.isArray(decoded)) {
+        fail(path, "O payload deve ser um objecto JSON.");
+      }
+      payload = decoded as Record<string, unknown>;
+    } catch {
+      fail(path, "Payload JSON inválido.");
+    }
+  }
+
+  const { payload_json: _payloadJson, ...job } = parsed.data;
+  const { error } = await supabase.from("automation_jobs").insert({
+    ...job,
+    payload,
+    status: "queued",
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?created=1`);
+}
+
+export async function dispatchAutomationJob(formData: FormData) {
+  const path = "/automation";
+  const jobId = z.string().uuid().safeParse(formData.get("job_id"));
+  if (!jobId.success) fail(path, "Job inválido.");
+
+  const { supabase, user } = await requireUser();
+  const { data: job, error: jobError } = await supabase
+    .from("automation_jobs")
+    .select("id,objective,payload,status,workflow_id,attempt_count,automation_workflows(code,requires_approval)")
+    .eq("id", jobId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (jobError || !job) fail(path, "Job não encontrado.");
+  if (!["queued", "approved", "failed"].includes(job.status)) {
+    fail(path, "Este job não está disponível para execução.");
+  }
+
+  const workflow = Array.isArray(job.automation_workflows)
+    ? job.automation_workflows[0]
+    : job.automation_workflows;
+
+  if (workflow?.requires_approval && job.status !== "approved") {
+    fail(path, "Este workflow exige aprovação humana antes da execução.");
+  }
+
+  await supabase
+    .from("automation_jobs")
+    .update({
+      status: "dispatching",
+      attempt_count: (job.attempt_count ?? 0) + 1,
+      last_error: null,
+      started_at: new Date().toISOString(),
+    })
+    .eq("id", job.id)
+    .eq("user_id", user.id);
+
+  try {
+    const result = await dispatchToN8n({
+      jobId: job.id,
+      workflowCode: workflow?.code,
+      objective: job.objective,
+      payload: (job.payload ?? {}) as Record<string, unknown>,
+    });
+
+    const { error } = await supabase
+      .from("automation_jobs")
+      .update({
+        status: "running",
+        external_run_id: result.externalRunId ?? null,
+      })
+      .eq("id", job.id)
+      .eq("user_id", user.id);
+
+    if (error) fail(path, error.message);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao contactar o n8n.";
+    await supabase
+      .from("automation_jobs")
+      .update({ status: "failed", last_error: message })
+      .eq("id", job.id)
+      .eq("user_id", user.id);
+    fail(path, message);
+  }
+
+  revalidatePath(path);
+  redirect(`${path}?dispatched=1`);
 }
 
 export async function createExecutionArenaTrial(formData: FormData) {
