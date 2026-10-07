@@ -35,7 +35,7 @@ import {
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { selectExecutionRoute } from "@/lib/orchestrator";
-import { dispatchToN8n } from "@/lib/n8n";
+import { createN8nCallback, dispatchToN8n } from "@/lib/n8n";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -207,6 +207,8 @@ export async function dispatchAutomationJob(formData: FormData) {
     fail(path, "Este workflow exige aprovação humana antes da execução.");
   }
 
+  const callback = createN8nCallback(job.id);
+
   await supabase
     .from("automation_jobs")
     .update({
@@ -214,6 +216,9 @@ export async function dispatchAutomationJob(formData: FormData) {
       attempt_count: (job.attempt_count ?? 0) + 1,
       last_error: null,
       started_at: new Date().toISOString(),
+      completed_at: null,
+      result: {},
+      callback_token_hash: callback.tokenHash,
     })
     .eq("id", job.id)
     .eq("user_id", user.id);
@@ -224,6 +229,8 @@ export async function dispatchAutomationJob(formData: FormData) {
       workflowCode: workflow?.code,
       objective: job.objective,
       payload: (job.payload ?? {}) as Record<string, unknown>,
+      callbackUrl: callback.url,
+      callbackToken: callback.token,
     });
 
     const { error } = await supabase
