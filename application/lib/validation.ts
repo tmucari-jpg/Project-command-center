@@ -226,6 +226,13 @@ export const automationJobSchema = z.object({
   priority: z.enum(["low", "normal", "high"]),
 });
 
+export const factoryLibraryItemSchema = z.object({
+  asset_type: z.enum(["component", "workflow", "template", "prompt", "strategy", "lesson"]),
+  title: z.string().trim().min(2).max(180),
+  summary: optionalText(4000),
+  content_text: z.string().trim().min(2).max(12000),
+});
+
 export const evidenceSchema = z
   .object({
     action_id: optionalUuid,
