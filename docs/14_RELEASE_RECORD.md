@@ -24,12 +24,19 @@ PASS:
 - mobile login usability
 - Supabase project health
 
-OPERATOR CHECK:
-- authenticated login
-- dashboard after login
-- create project/action/evidence
-- persistence after logout/login
-- authenticated AI operation where applicable
+PASS — authenticated smoke and database persistence:
+- authenticated dashboard loaded;
+- project created successfully;
+- action created and updated to in_progress;
+- evidence created successfully;
+- logout completed;
+- direct database verification confirmed the project, action and evidence persist after logout.
+
+OBSERVED FUNCTIONAL FOLLOW-UP:
+- the smoke-test action persisted, but its project_id is null. This does not invalidate persistence, but entity-linking behavior should be reviewed separately.
+
+DEFERRED ACCESS CHECK:
+- automatic re-login after logout was blocked by unavailable saved credentials; access/session handling will be addressed separately as agreed.
 
 REQUIRES_FIX:
 - current off-site logical database backup evidence
@@ -59,7 +66,7 @@ Database:
 ## Known issues / limitations
 
 1. No evidenced current logical production database backup yet.
-2. Authenticated operator smoke test still required.
+2. Authenticated re-login automation is deferred to the separate access workstream; persistence has been independently verified in the database.
 3. Leaked-password protection requires Supabase Pro.
 4. Local/private AI runtime is not included in this cloud production acceptance.
 
@@ -68,9 +75,12 @@ Database:
 **REQUIRES_FIX**
 
 Reason:
-The security gate is approved and production is live/healthy, but full production acceptance requires:
-1. an evidenced current logical backup;
-2. one authenticated operator smoke test.
+The security gate is approved, production is live/healthy, authenticated smoke operations passed, and persistence was verified directly in the database.
+
+Full production acceptance now requires:
+1. an evidenced current logical backup.
+
+The separate access/re-login workstream remains a follow-up and is not being treated as a persistence failure.
 
 Once both are recorded, this release can move to:
 
