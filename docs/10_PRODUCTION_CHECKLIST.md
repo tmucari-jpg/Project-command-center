@@ -727,3 +727,74 @@ O objectivo é colocar online uma versão que:
 FUNCIONA → É SEGURA → É TESTÁVEL → É RECUPERÁVEL → GERA RESULTADOS
 
 A velocidade deve vir da boa arquitectura e da execução incremental, não da eliminação de controlos.
+
+
+---
+
+## 45. CURRENT PRODUCTION ACCEPTANCE — 2026-10-08
+
+### PASS WITH EVIDENCE
+
+- [x] Repository and main branch identified.
+- [x] Code versioned and release commit identified.
+- [x] Supabase project ACTIVE_HEALTHY.
+- [x] Database migrations applied.
+- [x] RLS enabled across public application tables.
+- [x] Cross-user SELECT isolation tested.
+- [x] Cross-user UPDATE isolation tested.
+- [x] Cross-user DELETE isolation tested.
+- [x] No obvious privileged-key/secret patterns found in accessible repository search.
+- [x] TypeScript PASS.
+- [x] Automated tests PASS.
+- [x] Lint PASS.
+- [x] Production build PASS.
+- [x] Security Gate APPROVED for the current cloud release.
+- [x] Vercel production deployment READY on approved release commit.
+- [x] Production application login route reachable.
+- [x] Unauthenticated dashboard access blocked.
+- [x] Mobile/narrow login layout PASS.
+- [x] Rollback strategy documented.
+- [x] Incident-response procedure documented.
+- [x] Operations runbook documented.
+- [x] Release Record created.
+
+### ACCEPTED / NOT A CURRENT CLOUD RELEASE BLOCKER
+
+- [x] Supabase leaked-password protection is unavailable on the current Free plan. Enable after upgrade to Pro.
+- [x] Local Qwen/KoboldCPP runtime is outside the current cloud-release scope.
+- [x] Real offline sync validation is deferred with the local runtime and is not claimed as production-ready in this release.
+
+### OPERATOR CHECK REQUIRED
+
+- [ ] Authenticated login with the real operator account.
+- [ ] Dashboard after authenticated login.
+- [ ] Create a real test project.
+- [ ] Create/update an action.
+- [ ] Record evidence.
+- [ ] Confirm dashboard reflects the operation.
+- [ ] Logout/login and confirm persistence.
+- [ ] Exercise an authenticated AI operation where applicable.
+- [ ] Review production runtime logs after the smoke test.
+
+### REQUIRES FIX BEFORE FULL PRODUCTION ACCEPTANCE
+
+- [ ] Create a current logical database backup.
+- [ ] Store the backup off the production database.
+- [ ] Record backup timestamp and source commit.
+- [ ] Verify backup readability/restore procedure.
+
+Supabase documentation states that automatic daily backups are for Pro, Team and Enterprise plans and recommends regular `supabase db dump` exports for Free-tier projects.
+
+### CURRENT RESULT
+
+**SECURITY GATE: APPROVED**
+
+**CLOUD DEPLOYMENT: LIVE / READY**
+
+**PRODUCTION ACCEPTANCE: REQUIRES_FIX**
+
+Remaining blockers:
+1. current evidenced logical database backup;
+2. authenticated operator end-to-end smoke test.
+
+Do not change Production Acceptance to APPROVED until both have evidence.
