@@ -119,3 +119,87 @@ GitHub Actions run 154: **PASS**
 - tests: PASS
 - lint: PASS
 - build: PASS
+
+
+## Final closure evidence — 2026-10-08
+
+### Cross-user RLS
+
+Result: **PASS**
+
+A transaction-scoped authenticated context was used to validate ownership policies without creating permanent test users or modifying production data.
+
+Observed:
+- User A context: 7 projects, 2 objectives, 29 actions visible.
+- User B context: 0 projects, 0 objectives, 0 actions visible.
+- User B UPDATE against a User A project: 0 rows affected.
+- User B DELETE against a User A project: 0 rows affected.
+- All write checks were executed inside a transaction and rolled back.
+
+### Production deployment
+
+Result: **PASS**
+
+Vercel production deployment:
+- state: READY;
+- target: production;
+- application login route reachable;
+- unauthenticated dashboard access redirects to the application login route.
+
+### Mobile login validation
+
+Result: **PASS**
+
+The production login page was checked at narrow/mobile width:
+- no horizontal overflow;
+- no clipped text;
+- controls remain usable;
+- no broken layout observed.
+
+### Leaked Password Protection disposition
+
+Supabase Security Advisor still reports Leaked Password Protection disabled.
+
+The Supabase organization is currently on the **Free plan**. Supabase documentation states that leaked-password protection is available on **Pro Plan and above**.
+
+Disposition: **ACCEPTED PLATFORM LIMITATION FOR CURRENT RELEASE**
+
+Compensating controls already in place:
+- application authentication;
+- protected private routes;
+- RLS on all public application tables;
+- server/client separation;
+- no privileged key in the browser;
+- Vercel deployment controls;
+- audit/security logging architecture.
+
+Upgrade to Supabase Pro should include enabling leaked-password protection as a hardening action.
+
+### Offline / private AI release disposition
+
+The local Qwen/KoboldCPP runtime and real offline sync remain hardware/local-runtime capabilities.
+
+Disposition for the current cloud production release: **NOT A RELEASE BLOCKER / DEFERRED VALIDATION**
+
+The implementation foundation and automated provider-selection tests are present and pass CI. Physical runtime validation remains required before claiming the local/offline capability itself as production-ready.
+
+## Final Security Gate
+
+**APPROVED FOR CURRENT CLOUD PRODUCTION RELEASE**
+
+Approved scope:
+- cloud application;
+- Supabase-backed data layer;
+- authentication boundary;
+- RLS isolation;
+- automated CI/build;
+- Vercel production deployment;
+- unauthenticated-route protection;
+- mobile login usability.
+
+Accepted/deferred items:
+- Supabase leaked-password check: unavailable on current Free plan; enable after Pro upgrade.
+- local Qwen/KoboldCPP and real offline synchronization: deferred to local-runtime acceptance and not claimed as production-ready in this release.
+- authenticated operator UI smoke remains an operational post-login check and should be recorded on the first operator session.
+
+This approval does not expand the release scope beyond capabilities with evidence.
