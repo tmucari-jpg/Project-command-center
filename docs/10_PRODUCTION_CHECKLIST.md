@@ -798,3 +798,28 @@ Remaining blockers:
 2. authenticated operator end-to-end smoke test.
 
 Do not change Production Acceptance to APPROVED until both have evidence.
+
+
+### AUTHENTICATED SMOKE / PERSISTENCE UPDATE — 2026-10-08
+
+Result: **PASS FOR PERSISTENCE**
+
+Production authenticated smoke:
+- [x] Dashboard loaded.
+- [x] Test project created.
+- [x] Test action created.
+- [x] Action status updated to in_progress.
+- [x] Evidence created.
+- [x] Logout completed.
+- [x] Project persistence verified directly in PostgreSQL after logout.
+- [x] Action persistence verified directly in PostgreSQL after logout.
+- [x] Evidence persistence verified directly in PostgreSQL after logout.
+
+Observed follow-up:
+- [ ] Review why the smoke-test action persisted with `project_id = null` even though it was created during the project-flow test.
+
+Access follow-up:
+- [ ] Re-login/session automation will be handled in the separate access workstream.
+
+Current remaining Production Acceptance blocker:
+- [ ] Current logical database backup with off-database evidence.
