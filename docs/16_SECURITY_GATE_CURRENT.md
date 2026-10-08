@@ -58,3 +58,42 @@ These are optimization tasks and are not classified as current security blockers
 5. Validate mobile/responsive smoke test.
 6. Re-run Supabase Security Advisor.
 7. Update final Production Checklist and Security Gate.
+
+
+## CI validation — 2026-10-08
+
+Draft PR #28 triggered GitHub Actions run 152.
+
+Result: **PASS**
+
+Validated successfully:
+- npm ci;
+- TypeScript/typecheck;
+- automated tests;
+- lint;
+- production build.
+
+## Offline / private AI validation
+
+Current database state:
+- `sync_queue`: 0 records;
+- configured AI providers: 0 records.
+
+Conclusion:
+- Provider Adapter and sync-queue foundation are implemented.
+- Automated provider-selection tests exist and pass in CI.
+- Real offline sync cannot be marked PASS without creating and synchronizing a real queue item through the local runtime.
+- Qwen/KoboldCPP cannot be marked PASS until the physical/local runtime is connected and health-checked.
+
+These items remain external-runtime validation dependencies and must not be represented as completed prematurely.
+
+## Updated gate
+
+**SECURITY GATE: REQUIRES_FIX**
+
+Build quality gate is now PASS. Remaining final-gate dependencies:
+1. enable or formally disposition Leaked Password Protection;
+2. real User A / User B cross-user acceptance test;
+3. real offline sync/local AI runtime validation;
+4. Vercel Preview/Production and post-deploy smoke test;
+5. final mobile/responsive smoke test.
