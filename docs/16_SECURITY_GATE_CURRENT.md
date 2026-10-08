@@ -97,3 +97,25 @@ Build quality gate is now PASS. Remaining final-gate dependencies:
 3. real offline sync/local AI runtime validation;
 4. Vercel Preview/Production and post-deploy smoke test;
 5. final mobile/responsive smoke test.
+
+
+## Deployment evidence — 2026-10-08
+
+GitHub deployment status reports **Vercel: success** for the current audit branch.
+
+This confirms the Vercel build/deployment integration is functioning. A browser-level authenticated smoke test is still required before marking post-deployment acceptance as PASS.
+
+## Cross-user acceptance constraint
+
+The current Supabase environment contains only **1 profile**.
+
+Therefore the mandatory User A / User B acceptance scenario cannot yet be executed against two real authenticated identities without creating an additional test account. The RLS policies are present and structurally enforce ownership, but the real two-user test remains **NOT TESTED** rather than being falsely marked PASS.
+
+## Latest CI
+
+GitHub Actions run 154: **PASS**
+- install: PASS
+- typecheck: PASS
+- tests: PASS
+- lint: PASS
+- build: PASS
