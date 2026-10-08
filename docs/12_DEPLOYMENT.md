@@ -49,19 +49,15 @@ npx supabase db push
 
 Migrations:
 
-1. `202609090001_initial_schema.sql`
-2. `202609090002_rls_policies.sql`
-3. `202609090003_security_and_execution_hardening.sql`
-4. `202609090004_relational_ownership_hardening.sql`
+A lista executável e actual encontra-se em `/supabase/migrations` e deve ser tratada como a referência operacional. Não manter uma lista manual fechada neste documento, porque o projecto já possui fases e migrations posteriores às quatro migrations iniciais.
 
-As migrations de hardening adicionam:
-- cálculo de duração;
-- actualização automática de tempo real;
-- uma única sessão de tempo aberta por utilizador;
-- audit trail;
-- índices de dashboard;
-- validação de ownership nas relações entre tabelas;
-- apenas uma Next Best Action explícita por utilizador.
+Antes de deployment:
+- confirmar que as migrations versionadas no repositório correspondem ao ambiente Supabase;
+- executar dry-run quando aplicável;
+- rever qualquer alteração destrutiva;
+- confirmar backup/rollback antes de alterações de risco.
+
+As migrations de hardening e fases posteriores incluem controlos de ownership/RLS, execução, auditoria, componentes agentic/intelligence, offline/private AI, segurança/escala, Project Factory e automação. A presença de uma migration não substitui os respectivos testes de aceitação.
 
 ## 6. Supabase Auth
 
@@ -118,14 +114,15 @@ Depois testar manualmente:
 - acesso não autenticado;
 - responsive/mobile.
 
-## 10. Limites desta entrega
+## 10. Estado actual e validação
 
-Ainda não foram implementados:
-- AI Copilot / comandos em linguagem natural;
-- upload real para Supabase Storage;
-- integração GitHub dentro da aplicação;
-- webhooks avançados;
-- notificações em tempo real.
+Este documento não deve ser usado como inventário estático de funcionalidades implementadas. O projecto evolui por migrations e commits versionados e já recebeu fases posteriores à entrega inicial.
 
-Estes itens não são necessários para ligar a base de dados, autenticação por email e Vercel, mas
-devem permanecer como milestones posteriores.
+Para determinar o estado real:
+1. consultar o código e as migrations actuais;
+2. consultar `docs/09_ACCEPTANCE_TESTS.md`;
+3. consultar `docs/10_PRODUCTION_CHECKLIST.md`;
+4. consultar o Security Gate mais recente;
+5. exigir evidência de teste antes de marcar qualquer capacidade como PASS.
+
+No fecho actual, funcionalidades que dependem de ambiente externo ou runtime físico/local permanecem pendentes até existir evidência real, mesmo que a fundação técnica esteja implementada.
