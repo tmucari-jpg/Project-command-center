@@ -1,7 +1,7 @@
 # Release Record — Project Command Center
 
-VERSION: Cloud Production Release 2026-10-08
-DATE: 2026-10-08
+VERSION: Cloud Production Release 2026-10-09
+DATE: 2026-10-09
 COMMIT: c8c64dc339bf80eaf812353ea5643ff1cc9cf783
 DEPLOYMENT: Vercel production — READY
 PROJECT: project-command-center
@@ -38,8 +38,11 @@ OBSERVED FUNCTIONAL FOLLOW-UP:
 DEFERRED ACCESS CHECK:
 - automatic re-login after logout was blocked by unavailable saved credentials; access/session handling will be addressed separately as agreed.
 
-REQUIRES_FIX:
-- current off-site logical database backup evidence
+PASS — logical backup gate:
+- logical backup created 2026-10-09;
+- stored on removable/off-production storage;
+- readability verified using pg_restore --list;
+- SHA-256: CA3772BA30B8C814FB163AB888DA1D6CA39DFF9F1C2EA82DCDA978CDF3286990
 
 ## Security result
 
@@ -65,20 +68,23 @@ Database:
 
 ## Known issues / limitations
 
-1. No evidenced current logical production database backup yet.
 2. Authenticated re-login automation is deferred to the separate access workstream; persistence has been independently verified in the database.
 3. Leaked-password protection requires Supabase Pro.
 4. Local/private AI runtime is not included in this cloud production acceptance.
 
 ## Production acceptance status
 
-**REQUIRES_FIX**
+**PRODUCTION ACCEPTANCE: APPROVED**
 
 Reason:
 The security gate is approved, production is live/healthy, authenticated smoke operations passed, and persistence was verified directly in the database.
 
-Full production acceptance now requires:
-1. an evidenced current logical backup.
+Production acceptance criteria for the current cloud release are satisfied:
+1. Security Gate approved.
+2. Production is live/healthy.
+3. Authenticated smoke passed.
+4. Persistence verified directly in PostgreSQL.
+5. Current logical backup created off-production with readability and checksum evidence.
 
 The separate access/re-login workstream remains a follow-up and is not being treated as a persistence failure.
 
