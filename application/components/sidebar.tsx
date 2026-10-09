@@ -2,34 +2,40 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Blocks, BookOpenCheck, Bot, BrainCircuit, CalendarCheck2, CheckSquare2, CircleDollarSign, ClipboardList, Factory, FlaskConical, FolderKanban, Gauge, HardDrive, Lightbulb, ListTodo, LockKeyhole, PackageCheck, Radar, Repeat2, Scale, ShieldCheck, Target, TimerReset, Workflow } from "lucide-react";
+import {
+  BarChart3,
+  Blocks,
+  CalendarCheck2,
+  CheckSquare2,
+  ClipboardList,
+  Factory,
+  FolderKanban,
+  Gauge,
+  Lightbulb,
+  PackageCheck,
+  Scale,
+  ShieldCheck,
+  Target,
+  TimerReset,
+  Workflow,
+} from "lucide-react";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-  { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
+  { href: "/focus", label: "Foco", icon: TimerReset },
   { href: "/objectives", label: "Objectivos", icon: Target },
-  { href: "/project-factory", label: "Project Factory", icon: Factory },
+  { href: "/project-factory", label: "Novo projecto", icon: Factory },
   { href: "/projects", label: "Projectos", icon: FolderKanban },
-  { href: "/monetization", label: "Monetização", icon: CircleDollarSign },
-  { href: "/agents", label: "Agentic Core", icon: Bot },
-  { href: "/orchestrator", label: "Orchestrator", icon: BrainCircuit },
-  { href: "/execution-arena", label: "Execution Arena", icon: FlaskConical },
-  { href: "/automation", label: "Automação n8n", icon: Workflow },
-  { href: "/factory-library", label: "Factory Library", icon: BookOpenCheck },
-  { href: "/intelligence", label: "Intelligence", icon: Radar },
-  { href: "/ai-providers", label: "Offline + IA", icon: HardDrive },
-  { href: "/security", label: "Segurança", icon: LockKeyhole },
-  { href: "/optimization", label: "Optimização", icon: Repeat2 },
-  { href: "/deliverables", label: "Entregáveis", icon: PackageCheck },
   { href: "/actions", label: "Acções", icon: CheckSquare2 },
-  { href: "/focus", label: "Modo foco", icon: TimerReset },
+  { href: "/deliverables", label: "Entregáveis", icon: PackageCheck },
   { href: "/blockers", label: "Bloqueios", icon: Blocks },
   { href: "/evidence", label: "Evidências", icon: ShieldCheck },
   { href: "/metrics", label: "Métricas", icon: BarChart3 },
+  { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
   { href: "/ideas", label: "Ideias", icon: Lightbulb },
   { href: "/decisions", label: "Decisões", icon: Scale },
-  { href: "/activity", label: "Actividade", icon: ListTodo },
+  { href: "/automation", label: "Automações", icon: Workflow },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -63,6 +69,12 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        <div className="mt-5 border-t border-[var(--cc-border)] pt-4">
+          <p className="px-3 text-xs leading-5 text-[var(--cc-secondary)]">
+            Ferramentas técnicas e de administração ficam fora do fluxo diário.
+          </p>
+        </div>
       </div>
     </aside>
   );
@@ -70,11 +82,12 @@ export function Sidebar() {
 
 export function MobileNav() {
   const pathname = usePathname();
+  const mobileItems = navigation.slice(0, 7);
 
   return (
     <div className="cc-safe-bottom overflow-x-auto border-t border-[var(--cc-border)] bg-[var(--cc-glass)] px-2 py-2 backdrop-blur-2xl lg:hidden">
       <nav className="flex min-w-max gap-1" aria-label="Navegação principal">
-        {navigation.slice(0, 7).map(({ href, label, icon: Icon }) => {
+        {mobileItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
             <Link
