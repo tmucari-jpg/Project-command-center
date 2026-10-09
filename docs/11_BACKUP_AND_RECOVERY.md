@@ -1,6 +1,6 @@
 # Backup & Recovery — Project Command Center
 
-Date: 2026-10-08
+Date: 2026-10-09
 Scope: Current cloud production release
 
 ## 1. Current platform constraint
@@ -73,8 +73,13 @@ A backup control is PASS only when:
 
 ## 7. Current status
 
-**BACKUP GATE: REQUIRES_FIX**
+**BACKUP GATE: PASS**
 
-Reason: backup strategy is defined, but an actual current logical database dump has not yet been evidenced through the available connected tools.
+Evidence:
+- logical backup created on 2026-10-09;
+- stored on removable/off-production storage;
+- readability verified with pg_restore --list;
+- table objects detected;
+- SHA-256: CA3772BA30B8C814FB163AB888DA1D6CA39DFF9F1C2EA82DCDA978CDF3286990.
 
-This is the main operational blocker remaining before declaring full production acceptance.
+The backup gate is satisfied for the current cloud production release.
