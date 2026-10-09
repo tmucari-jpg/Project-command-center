@@ -12,7 +12,7 @@ import { formatDateTime } from "@/lib/format";
 export default async function ActionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
@@ -28,6 +28,10 @@ export default async function ActionsPage({
     supabase.from("deliverables").select("id,title,project_id").eq("user_id", user.id).order("title"),
   ]);
 
+  const selectedProjectId = (projects ?? []).some((project) => project.id === params.project_id)
+    ? params.project_id
+    : "";
+
   return (
     <>
       <PageHeader
@@ -42,7 +46,7 @@ export default async function ActionsPage({
           <h2 className="text-lg font-semibold text-slate-950">Nova acção</h2>
           <form action={createAction} className="mt-5 space-y-4">
             <Field label="Título" name="title" required placeholder="Ex.: Enviar proposta ao cliente" />
-            <Select label="Projecto" name="project_id" defaultValue="">
+            <Select label="Projecto" name="project_id" defaultValue={selectedProjectId}>
               <option value="">Sem projecto</option>
               {(projects ?? []).map((project) => (
                 <option key={project.id} value={project.id}>{project.title}</option>
