@@ -731,7 +731,7 @@ A velocidade deve vir da boa arquitectura e da execução incremental, não da e
 
 ---
 
-## 45. CURRENT PRODUCTION ACCEPTANCE — 2026-10-08
+## 45. CURRENT PRODUCTION ACCEPTANCE — 2026-10-09
 
 ### PASS WITH EVIDENCE
 
@@ -778,10 +778,10 @@ A velocidade deve vir da boa arquitectura e da execução incremental, não da e
 
 ### REQUIRES FIX BEFORE FULL PRODUCTION ACCEPTANCE
 
-- [ ] Create a current logical database backup.
-- [ ] Store the backup off the production database.
-- [ ] Record backup timestamp and source commit.
-- [ ] Verify backup readability/restore procedure.
+- [x] Create a current logical database backup.
+- [x] Store the backup off the production database.
+- [x] Record backup timestamp and source commit.
+- [x] Verify backup readability/restore procedure.
 
 Supabase documentation states that automatic daily backups are for Pro, Team and Enterprise plans and recommends regular `supabase db dump` exports for Free-tier projects.
 
@@ -791,13 +791,15 @@ Supabase documentation states that automatic daily backups are for Pro, Team and
 
 **CLOUD DEPLOYMENT: LIVE / READY**
 
-**PRODUCTION ACCEPTANCE: REQUIRES_FIX**
+**PRODUCTION ACCEPTANCE: APPROVED**
 
-Remaining blockers:
-1. current evidenced logical database backup;
-2. authenticated operator end-to-end smoke test.
+Current cloud production acceptance criteria are satisfied.
 
-Do not change Production Acceptance to APPROVED until both have evidence.
+Backup evidence:
+- created 2026-10-09;
+- stored on removable/off-production storage;
+- readability verified with pg_restore --list;
+- SHA-256: CA3772BA30B8C814FB163AB888DA1D6CA39DFF9F1C2EA82DCDA978CDF3286990.
 
 
 ### AUTHENTICATED SMOKE / PERSISTENCE UPDATE — 2026-10-08
@@ -822,4 +824,7 @@ Access follow-up:
 - [ ] Re-login/session automation will be handled in the separate access workstream.
 
 Current remaining Production Acceptance blocker:
-- [ ] Current logical database backup with off-database evidence.
+- [x] Current logical database backup with off-database evidence.
+
+**BACKUP GATE: PASS**
+**PRODUCTION ACCEPTANCE: APPROVED**
