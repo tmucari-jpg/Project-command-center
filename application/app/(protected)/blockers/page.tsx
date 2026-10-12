@@ -3,6 +3,7 @@ import { DeleteForm } from "@/components/delete-form";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
+import { ManualEntry } from "@/components/manual-entry";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { STATUS_OPTIONS } from "@/lib/constants";
@@ -37,8 +38,8 @@ export default async function BlockersPage({
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
-      <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
-        <Card className="p-5">
+      <div className="space-y-6">
+        <ManualEntry>
           <h2 className="text-lg font-semibold text-slate-950">Novo bloqueio</h2>
           <form action={createBlocker} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
@@ -64,7 +65,7 @@ export default async function BlockersPage({
             <TextArea label="Solução" name="solution" />
             <button className={primaryButtonClass} type="submit">Criar bloqueio</button>
           </form>
-        </Card>
+        </ManualEntry>
 
         <Card>
           <div className="border-b border-slate-200 p-5">
