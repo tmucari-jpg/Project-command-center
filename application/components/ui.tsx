@@ -25,13 +25,13 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
 }
 
 export const inputClass =
-  "mt-1.5 min-h-12 w-full rounded-[14px] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-4 py-3 text-[16px] text-[var(--cc-foreground)] shadow-sm outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--cc-tertiary)] focus:border-[var(--cc-accent)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--cc-accent)_14%,transparent)] sm:text-sm";
+  "mt-1.5 min-h-12 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-4 py-3 text-[15px] text-[var(--cc-foreground)] shadow-sm outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--cc-tertiary)] focus:border-[var(--cc-accent)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--cc-accent)_14%,transparent)] ";
 
 export const textareaClass = `${inputClass} min-h-28 resize-y`;
 export const selectClass = inputClass;
 
 export const primaryButtonClass =
-  "inline-flex min-h-12 items-center justify-center rounded-[14px] bg-[var(--cc-accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--cc-accent-strong)] hover:shadow-[var(--cc-shadow-sm)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--cc-gold)_22%,transparent)] disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-12 items-center justify-center rounded-[var(--cc-radius-md)] bg-[var(--cc-accent)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--cc-accent-strong)] hover:shadow-[var(--cc-shadow-sm)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--cc-gold)_22%,transparent)] disabled:cursor-not-allowed disabled:opacity-50";
 
 export const secondaryButtonClass =
-  "inline-flex min-h-12 items-center justify-center rounded-[14px] border border-[var(--cc-border)] bg-[var(--cc-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--cc-accent)] shadow-sm transition hover:border-[color-mix(in_srgb,var(--cc-gold)_45%,var(--cc-border))] hover:bg-[var(--cc-surface-muted)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--cc-gold)_18%,transparent)]";
+  "inline-flex min-h-12 items-center justify-center rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--cc-accent)] shadow-sm transition hover:border-[color-mix(in_srgb,var(--cc-gold)_45%,var(--cc-border))] hover:bg-[var(--cc-surface-muted)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[color-mix(in_srgb,var(--cc-gold)_18%,transparent)]";
