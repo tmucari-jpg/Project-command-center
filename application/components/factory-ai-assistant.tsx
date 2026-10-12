@@ -79,8 +79,9 @@ export function FactoryAIAssistant() {
       setSuggestion(parsed);
       setSource(provider);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro desconhecido";
-      setError(`Não foi possível obter sugestões. ${message}`);
+      const message = error instanceof Error ? error.message : "erro desconhecido";
+      console.error("Assistente IA:", message);
+      setError("Não foi possível obter sugestões. Tente novamente ou use o preenchimento manual.");
     } finally {
       setBusy(false);
     }
@@ -95,7 +96,7 @@ export function FactoryAIAssistant() {
     <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
       <p className="text-sm font-semibold text-[var(--cc-foreground)]">Assistente IA</p>
       <p className="mt-1 text-xs leading-5 text-[var(--cc-secondary)]">
-        Escreva a ideia como falaria normalmente. O PCC tenta cloud primeiro e Qwen local como fallback.
+        Descreva a ideia de forma simples. O PCC ajuda a organizar a informação necessária.
       </p>
       <textarea
         value={idea}
