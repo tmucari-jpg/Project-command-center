@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState } from "@/components/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
 
 export default async function DashboardPage() {
@@ -96,7 +97,7 @@ export default async function DashboardPage() {
     <>
       <PageHeader
         eyebrow="Visão geral"
-        title="Dashboard"
+        title="Resumo"
         description="Resumo operacional vivo do PCC, baseado exclusivamente nos dados registados no sistema."
       />
 
@@ -218,7 +219,7 @@ export default async function DashboardPage() {
         <div className="space-y-6">
           <Card className="p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
-              Next best action
+              Próxima melhor acção
             </p>
             {nextActionResult.data ? (
               <div className="mt-3">
@@ -268,7 +269,7 @@ export default async function DashboardPage() {
                     className="block rounded-xl bg-red-50 px-3.5 py-3 transition hover:bg-red-100"
                   >
                     <p className="text-sm font-medium text-red-900">{blocker.title}</p>
-                    <p className="mt-1 text-xs text-red-700">{blocker.status}</p>
+                    <p className="mt-1 text-xs text-red-700">{displayLabel(blocker.status)}</p>
                   </Link>
                 ))
               )}
