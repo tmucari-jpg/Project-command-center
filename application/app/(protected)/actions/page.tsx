@@ -8,6 +8,7 @@ import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
 
 export default async function ActionsPage({
@@ -62,10 +63,10 @@ export default async function ActionsPage({
             <TextArea label="Descrição" name="description" />
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="Prioridade" name="priority" defaultValue="medium">
-                {PRIORITIES.map((value) => <option key={value} value={value}>{value}</option>)}
+                {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <Select label="Estado" name="status" defaultValue="pending">
-                {STATUS_OPTIONS.actions.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+                {STATUS_OPTIONS.actions.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <Field label="Prazo" name="due_at" type="datetime-local" />
               <Field label="Tempo estimado (min)" name="estimated_minutes" type="number" min={1} max={100000} />
