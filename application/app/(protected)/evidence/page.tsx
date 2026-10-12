@@ -67,7 +67,7 @@ export default async function EvidencePage({
               {(actions ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
             <Field label="URL" name="url" type="url" placeholder="https://..." />
-            <Field label="Storage path" name="storage_path" />
+            <Field label="Caminho de armazenamento" name="storage_path" />
             <Field label="Valor numérico" name="numeric_value" type="number" step="any" />
             <button className={primaryButtonClass} type="submit">Registar evidência</button>
           </form>
