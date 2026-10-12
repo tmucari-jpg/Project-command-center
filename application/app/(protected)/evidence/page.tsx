@@ -7,6 +7,7 @@ import { ManualEntry } from "@/components/manual-entry";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { EVIDENCE_TYPES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
 
 export default async function EvidencePage({
@@ -48,7 +49,7 @@ export default async function EvidencePage({
           <form action={createEvidence} className="mt-5 space-y-4">
             <Select label="Tipo" name="evidence_type" defaultValue="comment">
               {EVIDENCE_TYPES.map((value) => (
-                <option key={value} value={value}>{value.replaceAll("_", " ")}</option>
+                <option key={value} value={value}>{displayLabel(value)}</option>
               ))}
             </Select>
             <Field label="Título" name="title" />
@@ -86,7 +87,7 @@ export default async function EvidencePage({
                     <div className="flex flex-col justify-between gap-3 md:flex-row">
                       <div className="min-w-0">
                         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
-                          {item.evidence_type.replaceAll("_", " ")}
+                          {displayLabel(item.evidence_type)}
                         </p>
                         <h3 className="mt-1 font-semibold text-slate-950">{item.title || "Evidência"}</h3>
                         <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)}</p>
