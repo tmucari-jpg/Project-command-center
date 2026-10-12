@@ -28,14 +28,14 @@ export default function AdminPage() {
     <>
       <PageHeader
         eyebrow="Admin"
-        title="Ferramentas avançadas"
-        description="Configuração técnica e ferramentas especializadas ficam concentradas aqui para não sobrecarregar a navegação diária."
+        title="Admin"
+        description="Configuração técnica, segurança e ferramentas internas do PCC."
       />
 
-      <Card className="mb-6 border-amber-200 bg-amber-50/50 p-5">
-        <p className="font-semibold text-amber-900">Área avançada</p>
-        <p className="mt-2 text-sm leading-6 text-amber-900/80">
-          Alterações de providers, segurança, automação técnica ou execução especializada devem ser feitas apenas quando necessárias. O fluxo normal do PCC não depende de abrir estas páginas.
+      <Card className="mb-6 p-5">
+        <p className="font-semibold text-[var(--cc-foreground)]">Configuração do sistema</p>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          Use esta área apenas para configuração técnica, segurança e manutenção interna. As Automações fazem parte do fluxo principal do PCC.
         </p>
       </Card>
 
