@@ -3,7 +3,7 @@ import { DeleteForm } from "@/components/delete-form";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { StatusProgressForm } from "@/components/status-progress-form";
-import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
+import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
@@ -42,23 +42,9 @@ export default async function ProjectsPage({
       <PageHeader
         eyebrow="Portfólio"
         title="Projectos"
-        description="Acompanhe os projectos já aprovados e em execução. Novos projectos entram pela Project Factory para serem estruturados antes da criação."
+        description="Lista completa dos projectos registados no PCC, com estado, progresso, prazo e próximo passo."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
-
-      <Card className="mb-6 p-5">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Quer iniciar um novo projecto?</h2>
-            <p className="mt-1 text-sm leading-6 text-[var(--cc-secondary)]">
-              Diga apenas o que pretende fazer. A Factory organiza a ideia e prepara o projecto para revisão.
-            </p>
-          </div>
-          <Link href="/project-factory" className={primaryButtonClass}>
-            Novo projecto
-          </Link>
-        </div>
-      </Card>
 
       <Card>
         <div className="border-b border-[var(--cc-border)] p-5">
@@ -67,7 +53,7 @@ export default async function ProjectsPage({
         <div className="p-5">
           {!projects?.length ? (
             <EmptyState>
-              Ainda não existem projectos. Use “Novo projecto” para iniciar pela Project Factory.
+              Ainda não existem projectos registados.
             </EmptyState>
           ) : (
             <div className="space-y-4">
