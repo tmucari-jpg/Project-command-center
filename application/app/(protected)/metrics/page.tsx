@@ -91,26 +91,31 @@ export default async function MetricsPage({
                           <span>Alvo: {metric.target_value ?? "—"}</span>
                           <span className="font-semibold">Actual: {metric.current_value ?? "—"} {metric.unit ?? ""}</span>
                         </div>
-                        <form action={updateMetricCurrentValue} className="mt-4 flex flex-wrap items-end gap-2">
-                          <input type="hidden" name="id" value={metric.id} />
-                          <label className="text-xs font-medium text-slate-600">
-                            Novo valor actual
-                            <input
-                              name="current_value"
-                              type="number"
-                              step="any"
-                              required
-                              defaultValue={metric.current_value ?? ""}
-                              className="mt-1 block w-32 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
-                            />
-                          </label>
-                          <button
-                            type="submit"
-                            className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
-                          >
-                            Actualizar
-                          </button>
-                        </form>
+                        <details className="mt-4">
+                          <summary className="w-fit cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[var(--cc-accent)] hover:bg-[var(--cc-surface-muted)]">
+                            Actualizar valor
+                          </summary>
+                          <form action={updateMetricCurrentValue} className="mt-3 flex flex-wrap items-end gap-2">
+                            <input type="hidden" name="id" value={metric.id} />
+                            <label className="text-xs font-medium text-slate-600">
+                              Novo valor actual
+                              <input
+                                name="current_value"
+                                type="number"
+                                step="any"
+                                required
+                                defaultValue={metric.current_value ?? ""}
+                                className="mt-1 block w-32 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
+                              />
+                            </label>
+                            <button
+                              type="submit"
+                              className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                            >
+                              Guardar
+                            </button>
+                          </form>
+                        </details>
                       </div>
                       <DeleteForm table="metrics" id={metric.id} />
                     </div>
