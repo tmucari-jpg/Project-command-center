@@ -24,6 +24,9 @@ function parseSuggestion(text: string): Suggestion | null {
 }
 
 async function callLocal(input: string) {
+  const health = await fetch("http://127.0.0.1:8080/health", { cache: "no-store" }).catch(() => null);
+  if (!health?.ok) throw new Error("Qwen local não está acessível neste browser.");
+
   const response = await fetch("http://127.0.0.1:8080/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -81,16 +84,23 @@ export function FactoryAIAssistant() {
         const data = await cloud.json();
         text = String(data.text ?? "");
       } else {
-        provider = "Qwen local";
-        text = await callLocal(idea);
+        const cloudError = await cloud.json().catch(() => ({ error: `HTTP ${cloud.status}` }));
+        try {
+          provider = "Qwen local";
+          text = await callLocal(idea);
+        } catch (localError) {
+          const localMessage = localError instanceof Error ? localError.message : "Qwen local indisponível";
+          throw new Error(`Cloud: ${String(cloudError.error ?? cloud.status)} | Local: ${localMessage}`);
+        }
       }
 
       const parsed = parseSuggestion(text);
       if (!parsed) throw new Error("INVALID_AI_JSON");
       setSuggestion(parsed);
       setSource(provider);
-    } catch {
-      setError("Não foi possível obter sugestões. Pode continuar a preencher manualmente.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro desconhecido";
+      setError(`Não foi possível obter sugestões. ${message}`);
     } finally {
       setBusy(false);
     }
