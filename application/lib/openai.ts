@@ -26,47 +26,60 @@ export async function generateWithOpenAI(input: string, instructions?: string) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_NOT_CONFIGURED");
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: openAIModel(),
-      input,
-      instructions,
-      text: {
-        format: {
-          type: "json_schema",
-          name: "pcc_factory_suggestion",
-          strict: true,
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              title: { type: "string" },
-              problem: { type: "string" },
-              expected_value: { type: "string" },
-              target_user: { type: "string" },
-              description: { type: "string" },
-              constraints: { type: "string" },
-            },
-            required: ["title", "problem", "expected_value", "target_user", "description", "constraints"],
+  const requestBody = JSON.stringify({
+    model: openAIModel(),
+    input,
+    instructions,
+    text: {
+      format: {
+        type: "json_schema",
+        name: "pcc_factory_suggestion",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            title: { type: "string" },
+            problem: { type: "string" },
+            expected_value: { type: "string" },
+            target_user: { type: "string" },
+            description: { type: "string" },
+            constraints: { type: "string" },
           },
+          required: ["title", "problem", "expected_value", "target_user", "description", "constraints"],
         },
       },
-    }),
-    cache: "no-store",
+    },
   });
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`OPENAI_ERROR_${response.status}: ${body.slice(0, 500)}`);
+  let lastStatus = 0;
+  let lastBody = "";
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: requestBody,
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+
+    if (response.ok) {
+      const data = (await response.json()) as OpenAIResponse;
+      const text = extractText(data);
+      if (!text) throw new Error("OPENAI_EMPTY_RESPONSE");
+      return text;
+    }
+
+    lastStatus = response.status;
+    lastBody = await response.text();
+
+    if (![502, 503, 504].includes(response.status) || attempt === 1) break;
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  const data = (await response.json()) as OpenAIResponse;
-  const text = extractText(data);
-  if (!text) throw new Error("OPENAI_EMPTY_RESPONSE");
-  return text;
+  throw new Error(`OPENAI_ERROR_${lastStatus}: ${lastBody.slice(0, 500)}`);
 }
