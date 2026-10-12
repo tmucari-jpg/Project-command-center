@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
 import { projectHealth } from "@/lib/project-metrics";
 import { StatusBadge } from "@/components/status-badge";
@@ -86,7 +87,7 @@ export default async function ProjectsPage({
                           <StatusBadge status={health} />
                         </div>
                         <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-                          Prazo {formatDate(project.due_date)} · Prioridade {project.priority}
+                          Prazo {formatDate(project.due_date)} · Prioridade {displayLabel(project.priority)}
                         </p>
                         {project.objectives?.title && (
                           <p className="mt-1 text-xs text-[var(--cc-accent)]">
