@@ -8,6 +8,7 @@ import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 
 export default async function IdeasPage({
   searchParams,
@@ -48,10 +49,10 @@ export default async function IdeasPage({
             </Select>
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="Prioridade" name="priority" defaultValue="medium">
-                {PRIORITIES.map((value) => <option key={value} value={value}>{value}</option>)}
+                {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <Select label="Estado" name="status" defaultValue="captured">
-                {STATUS_OPTIONS.ideas.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+                {STATUS_OPTIONS.ideas.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
             </div>
             <TextArea label="Próxima decisão" name="next_decision" />
@@ -74,7 +75,7 @@ export default async function IdeasPage({
                       <div>
                         <h3 className="font-semibold text-slate-950">{idea.title}</h3>
                         <p className="mt-1 text-sm text-slate-500">
-                          Prioridade {idea.priority} · {idea.projects?.title ?? "Sem projecto"}
+                          Prioridade {displayLabel(idea.priority)} · {idea.projects?.title ?? "Sem projecto"}
                         </p>
                         {idea.next_decision && (
                           <p className="mt-3 text-sm text-slate-700">
