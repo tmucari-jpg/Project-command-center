@@ -2,26 +2,9 @@
 
 import { useState } from "react";
 import { secondaryButtonClass } from "@/components/ui";
-
-type Suggestion = {
-  title?: string;
-  problem?: string;
-  expected_value?: string;
-  target_user?: string;
-  description?: string;
-  constraints?: string;
-};
+import { parseFactorySuggestion, type FactorySuggestion } from "@/lib/factory-ai";
 
 const INSTRUCTIONS = `Actua como assistente do Project Command Center. A partir da ideia do utilizador, devolve APENAS JSON válido com as chaves: title, problem, expected_value, target_user, description, constraints. Escreve em português claro, executivo e conciso. Não uses markdown.`;
-
-function parseSuggestion(text: string): Suggestion | null {
-  try {
-    const clean = text.replace(/^\`\`\`(?:json)?/i, "").replace(/\`\`\`$/i, "").trim();
-    return JSON.parse(clean) as Suggestion;
-  } catch {
-    return null;
-  }
-}
 
 async function callLocal(input: string) {
   const response = await fetch("http://127.0.0.1:8080/v1/chat/completions", {
@@ -58,7 +41,7 @@ export function FactoryAIAssistant() {
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
   const [source, setSource] = useState<string | null>(null);
-  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [suggestion, setSuggestion] = useState<FactorySuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function generate() {
@@ -91,7 +74,7 @@ export function FactoryAIAssistant() {
         }
       }
 
-      const parsed = parseSuggestion(text);
+      const parsed = parseFactorySuggestion(text);
       if (!parsed) throw new Error("INVALID_AI_JSON");
       setSuggestion(parsed);
       setSource(provider);

@@ -11,7 +11,7 @@ export function openAIModel() {
   return process.env.OPENAI_MODEL || "gpt-6-luna";
 }
 
-function extractText(data: OpenAIResponse) {
+export function extractText(data: OpenAIResponse) {
   if (typeof data.output_text === "string" && data.output_text.trim()) return data.output_text.trim();
 
   return (data.output ?? [])
@@ -36,6 +36,26 @@ export async function generateWithOpenAI(input: string, instructions?: string) {
       model: openAIModel(),
       input,
       instructions,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "pcc_factory_suggestion",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              title: { type: "string" },
+              problem: { type: "string" },
+              expected_value: { type: "string" },
+              target_user: { type: "string" },
+              description: { type: "string" },
+              constraints: { type: "string" },
+            },
+            required: ["title", "problem", "expected_value", "target_user", "description", "constraints"],
+          },
+        },
+      },
     }),
     cache: "no-store",
   });
