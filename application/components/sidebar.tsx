@@ -7,6 +7,7 @@ import {
   Blocks,
   CalendarCheck2,
   CheckSquare2,
+  CircleHelp,
   ClipboardList,
   Factory,
   FolderKanban,
@@ -14,6 +15,7 @@ import {
   Lightbulb,
   PackageCheck,
   Scale,
+  Settings,
   ShieldCheck,
   Target,
   TimerReset,
@@ -38,8 +40,27 @@ const navigation = [
   { href: "/automation", label: "Automações", icon: Workflow },
 ];
 
+const supportNavigation = [
+  { href: "/help", label: "Ajuda", icon: CircleHelp },
+  { href: "/admin", label: "Admin / Avançado", icon: Settings },
+];
+
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function NavLink({ pathname, href, label, Icon }: { pathname: string; href: string; label: string; Icon: typeof Gauge }) {
+  const active = isActive(pathname, href);
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`flex min-h-12 items-center gap-3 rounded-[14px] px-3.5 text-sm font-medium transition ${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-foreground)] shadow-sm" : "text-[var(--cc-secondary)] hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]"}`}
+    >
+      <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
+      <span>{label}</span>
+    </Link>
+  );
 }
 
 export function Sidebar() {
@@ -54,27 +75,16 @@ export function Sidebar() {
         </Link>
 
         <nav className="mt-5 space-y-1" aria-label="Navegação principal">
-          {navigation.map(({ href, label, icon: Icon }) => {
-            const active = isActive(pathname, href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 items-center gap-3 rounded-[14px] px-3.5 text-sm font-medium transition ${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-foreground)] shadow-sm" : "text-[var(--cc-secondary)] hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]"}`}
-              >
-                <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
-                <span>{label}</span>
-              </Link>
-            );
-          })}
+          {navigation.map(({ href, label, icon }) => (
+            <NavLink key={href} pathname={pathname} href={href} label={label} Icon={icon} />
+          ))}
         </nav>
 
-        <div className="mt-5 border-t border-[var(--cc-border)] pt-4">
-          <p className="px-3 text-xs leading-5 text-[var(--cc-secondary)]">
-            Ferramentas técnicas e de administração ficam fora do fluxo diário.
-          </p>
-        </div>
+        <nav className="mt-5 space-y-1 border-t border-[var(--cc-border)] pt-4" aria-label="Ajuda e administração">
+          {supportNavigation.map(({ href, label, icon }) => (
+            <NavLink key={href} pathname={pathname} href={href} label={label} Icon={icon} />
+          ))}
+        </nav>
       </div>
     </aside>
   );

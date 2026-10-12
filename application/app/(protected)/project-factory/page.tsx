@@ -48,10 +48,15 @@ export default async function ProjectFactoryPage({
 
       <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <Card className="p-5">
-          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">1. O que quer fazer?</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            Não precisa de ter o projecto todo definido. Um título, o problema e o resultado que procura são suficientes para começar.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">1. O que quer fazer?</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+                Não precisa de ter o projecto todo definido. Um título, o problema e o resultado que procura são suficientes para começar.
+              </p>
+            </div>
+            <Link href="/help#novo-projecto" className={secondaryButtonClass}>Ajuda a preencher</Link>
+          </div>
 
           <form action={createFactoryIntake} className="mt-5 space-y-4">
             <Field label="Nome da ideia ou projecto" name="title" required />
@@ -59,12 +64,12 @@ export default async function ProjectFactoryPage({
               label="Que problema quer resolver?"
               name="problem"
               required
-              placeholder="Explique de forma simples o problema ou oportunidade."
+              placeholder="Ex.: clientes demoram demasiado a receber propostas comerciais."
             />
             <TextArea
               label="O que espera conseguir?"
               name="expected_value"
-              placeholder="Ex.: lançar um serviço, aumentar vendas, automatizar um processo."
+              placeholder="Ex.: reduzir o tempo de resposta e aumentar a conversão."
             />
             <Select label="Tipo" name="project_type" defaultValue="commercial">
               <option value="commercial">Comercial / mercado</option>
@@ -83,15 +88,16 @@ export default async function ProjectFactoryPage({
               </div>
             </details>
 
-            <button className={primaryButtonClass} type="submit">
-              Analisar ideia
-            </button>
+            <button className={primaryButtonClass} type="submit">Analisar ideia</button>
           </form>
 
           <div className="mt-5 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
             <p className="text-sm font-semibold text-[var(--cc-foreground)]">Como funciona</p>
             <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
               1. Diz o que pretende. 2. A Factory analisa e estrutura. 3. Revê a proposta e decide se avança.
+            </p>
+            <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
+              Assistência IA para preenchimento automático está preparada como próxima capacidade, mas só será activada quando existir um provider operacional e validado.
             </p>
           </div>
         </Card>
@@ -106,28 +112,19 @@ export default async function ProjectFactoryPage({
             ) : (
               <div className="space-y-4">
                 {cases.map((item) => (
-                  <article
-                    key={item.id}
-                    className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-4"
-                  >
+                  <article key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-4">
                     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                       <div className="min-w-0">
                         <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
-                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-                          {STAGE_LABELS[item.stage] ?? item.stage}
-                        </p>
+                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">{STAGE_LABELS[item.stage] ?? item.stage}</p>
                       </div>
                       <span className="w-fit rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
                         {item.project_type === "commercial" ? "Comercial" : "Interno"}
                       </span>
                     </div>
-
                     <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">{item.problem}</p>
-
                     <div className="mt-4">
-                      <Link className={secondaryButtonClass} href={`/project-factory/${item.id}`}>
-                        Rever preparação
-                      </Link>
+                      <Link className={secondaryButtonClass} href={`/project-factory/${item.id}`}>Rever preparação</Link>
                     </div>
                   </article>
                 ))}
