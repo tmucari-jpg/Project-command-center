@@ -8,15 +8,42 @@ const requestSchema = z.object({
   instructions: z.string().trim().max(6000).optional(),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  return NextResponse.json({
+  const url = new URL(request.url);
+  const base = {
     provider: "openai",
     configured: openAIConfigured(),
     model: openAIModel(),
+  };
+
+  if (url.searchParams.get("probe") !== "1") {
+    return NextResponse.json(base);
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ ...base, probe: { ok: false, status: 0, code: "not_configured" } });
+  }
+
+  const response = await fetch(`https://api.openai.com/v1/models/${encodeURIComponent(openAIModel())}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  let code: string | null = null;
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { error?: { code?: string } } | null;
+    code = body?.error?.code ?? null;
+  }
+
+  return NextResponse.json({
+    ...base,
+    probe: { ok: response.ok, status: response.status, code },
   });
 }
 
