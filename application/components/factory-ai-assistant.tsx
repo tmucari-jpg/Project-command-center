@@ -24,9 +24,6 @@ function parseSuggestion(text: string): Suggestion | null {
 }
 
 async function callLocal(input: string) {
-  const health = await fetch("http://127.0.0.1:8080/health", { cache: "no-store" }).catch(() => null);
-  if (!health?.ok) throw new Error("Qwen local não está acessível neste browser.");
-
   const response = await fetch("http://127.0.0.1:8080/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
