@@ -1,3 +1,4 @@
+import { displayLabel } from "@/lib/display-label";
 import { updateStatusProgress } from "@/app/(protected)/mutations";
 import { STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
 
@@ -25,7 +26,7 @@ export function StatusProgressForm({
       >
         {STATUS_OPTIONS[entity].map((option) => (
           <option key={option} value={option}>
-            {option.replaceAll("_", " ")}
+            {displayLabel(option)}
           </option>
         ))}
       </select>
