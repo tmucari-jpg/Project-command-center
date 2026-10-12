@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createFactoryIntake } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
+import { FactoryAIAssistant } from "@/components/factory-ai-assistant";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -59,6 +60,7 @@ export default async function ProjectFactoryPage({
           </div>
 
           <form action={createFactoryIntake} className="mt-5 space-y-4">
+            <FactoryAIAssistant />
             <Field label="Nome da ideia ou projecto" name="title" required />
             <TextArea
               label="Que problema quer resolver?"
@@ -97,7 +99,7 @@ export default async function ProjectFactoryPage({
               1. Diz o que pretende. 2. A Factory analisa e estrutura. 3. Revê a proposta e decide se avança.
             </p>
             <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
-              Assistência IA para preenchimento automático está preparada como próxima capacidade, mas só será activada quando existir um provider operacional e validado.
+              O Assistente IA tenta o provider cloud primeiro e usa o Qwen local como fallback quando o runtime local estiver disponível.
             </p>
           </div>
         </Card>
