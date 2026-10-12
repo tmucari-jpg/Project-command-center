@@ -7,6 +7,7 @@ import { ManualEntry } from "@/components/manual-entry";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { METRIC_TYPES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
 
 export default async function MetricsPage({
@@ -43,7 +44,7 @@ export default async function MetricsPage({
           <form action={createMetric} className="mt-5 space-y-4">
             <Field label="Nome" name="name" required />
             <Select label="Tipo" name="metric_type" defaultValue="custom">
-              {METRIC_TYPES.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+              {METRIC_TYPES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
             </Select>
             <TextArea label="Descrição" name="description" />
             <Select label="Objectivo" name="objective_id" defaultValue="">
@@ -79,7 +80,7 @@ export default async function MetricsPage({
                     <div className="flex flex-col justify-between gap-3 sm:flex-row">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
-                          {metric.metric_type.replaceAll("_", " ")}
+                          {displayLabel(metric.metric_type)}
                         </p>
                         <h3 className="mt-1 font-semibold text-slate-950">{metric.name}</h3>
                         <p className="mt-1 text-sm text-slate-500">
