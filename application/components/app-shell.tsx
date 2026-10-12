@@ -12,7 +12,7 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
           <header className="cc-safe-top sticky top-0 z-40 border-b border-[var(--cc-border)] bg-[var(--cc-glass)] backdrop-blur-2xl">
             <div className="flex min-h-16 items-center justify-between gap-4 px-5 sm:px-8">
               <div className="min-w-0">
-                <p className="text-xs font-medium text-[var(--cc-tertiary)]">Centro de execução</p>
+                <p className="text-xs font-medium text-[var(--cc-tertiary)]">Project Command Center</p>
                 <p className="truncate text-sm font-semibold tracking-[-0.01em] text-[var(--cc-foreground)]">{email}</p>
               </div>
               <div className="flex items-center gap-2">
