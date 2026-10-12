@@ -185,7 +185,7 @@ export default async function DashboardPage() {
                 <h2 className="font-semibold text-slate-950">Execução</h2>
                 <p className="mt-1 text-sm text-slate-500">Acções abertas ordenadas por prazo.</p>
               </div>
-              <Link className="text-sm font-medium text-blue-700 hover:underline" href="/actions">
+              <Link className="text-sm font-medium text-[var(--cc-accent)] hover:underline" href="/actions">
                 Ver todas
               </Link>
             </div>
@@ -217,26 +217,26 @@ export default async function DashboardPage() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+          <Card className="cc-brand-pattern overflow-hidden border-[color-mix(in_srgb,var(--cc-gold)_35%,var(--cc-border))] bg-[var(--cc-accent)] p-5 text-white shadow-[var(--cc-shadow-md)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--cc-gold-soft)]">
               Próxima melhor acção
             </p>
             {nextActionResult.data ? (
               <div className="mt-3">
-                <h2 className="text-xl font-semibold tracking-tight text-slate-950">
+                <h2 className="text-xl font-semibold tracking-tight text-white">
                   {nextActionResult.data.title}
                 </h2>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-white/70">
                   Prazo: {formatDateTime(nextActionResult.data.due_at)}
                 </p>
                 {nextActionResult.data.completion_criteria && (
-                  <p className="mt-3 text-sm leading-6 text-slate-700">
+                  <p className="mt-3 text-sm leading-6 text-white/82">
                     Critério: {nextActionResult.data.completion_criteria}
                   </p>
                 )}
                 <Link
                   href="/focus"
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-700"
+                  className="mt-5 inline-flex items-center gap-2 rounded-[12px] bg-[var(--cc-gold)] px-4 py-2.5 text-sm font-semibold text-white"
                 >
                   Entrar em modo foco <ArrowRight size={16} />
                 </Link>
@@ -248,7 +248,7 @@ export default async function DashboardPage() {
                 </p>
                 <Link
                   href="/actions"
-                  className="mt-4 inline-flex text-sm font-semibold text-blue-700"
+                  className="mt-4 inline-flex text-sm font-semibold text-[var(--cc-accent)]"
                 >
                   Escolher uma acção
                 </Link>
