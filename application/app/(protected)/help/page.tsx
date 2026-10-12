@@ -12,7 +12,7 @@ export default function HelpPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="p-5" id="novo-projecto">
+        <div id="novo-projecto"><Card className="p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Criar um novo projecto</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
             Não precisa de definir o projecto inteiro. Comece com o problema e o resultado pretendido.
@@ -24,7 +24,7 @@ export default function HelpPage() {
             <p><strong>Tipo:</strong> Comercial quando envolve mercado/clientes; Interno quando melhora operações.</p>
           </div>
           <Link href="/project-factory" className={primaryButtonClass + " mt-5"}>Ir para Novo projecto</Link>
-        </Card>
+        </Card></div>
 
         <Card className="p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Fluxo recomendado</h2>
