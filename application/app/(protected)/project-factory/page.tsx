@@ -4,6 +4,7 @@ import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { FactoryAIAssistant } from "@/components/factory-ai-assistant";
 import { PageHeader } from "@/components/page-header";
+import { ManualEntry } from "@/components/manual-entry";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 
@@ -39,12 +40,12 @@ export default async function ProjectFactoryPage({
       <PageHeader
         eyebrow="Novo projecto"
         title="Diga o que pretende criar"
-        description="Preencha apenas o essencial. O Project Command Center organiza a ideia e prepara a análise antes de a transformar num projecto."
+        description="Descreva a ideia de forma simples. O PCC organiza a informação e prepara o projecto para análise."
       />
       <FlashMessage
         error={params.error ?? error?.message}
         created={params.created}
-        message={params.created ? "Ideia recebida. A Factory iniciou a análise." : undefined}
+        message={params.created ? "Ideia recebida. A análise foi iniciada." : undefined}
       />
 
       <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
@@ -56,50 +57,47 @@ export default async function ProjectFactoryPage({
                 Não precisa de ter o projecto todo definido. Um título, o problema e o resultado que procura são suficientes para começar.
               </p>
             </div>
-            <Link href="/help#novo-projecto" className={secondaryButtonClass}>Ajuda a preencher</Link>
+            
           </div>
 
           <form action={createFactoryIntake} className="mt-5 space-y-4">
             <FactoryAIAssistant />
-            <Field label="Nome da ideia ou projecto" name="title" required />
-            <TextArea
-              label="Que problema quer resolver?"
-              name="problem"
-              required
-              placeholder="Ex.: clientes demoram demasiado a receber propostas comerciais."
-            />
-            <TextArea
-              label="O que espera conseguir?"
-              name="expected_value"
-              placeholder="Ex.: reduzir o tempo de resposta e aumentar a conversão."
-            />
-            <Select label="Tipo" name="project_type" defaultValue="commercial">
-              <option value="commercial">Comercial / mercado</option>
-              <option value="non_commercial">Interno / não comercial</option>
-            </Select>
 
-            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
-              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">
-                Mais opções
-              </summary>
-              <div className="mt-4 space-y-4">
+            <ManualEntry>
+              <div className="space-y-4">
+                <Field label="Nome da ideia ou projecto" name="title" required />
+                <TextArea
+                  label="Que problema quer resolver?"
+                  name="problem"
+                  required
+                  placeholder="Ex.: clientes demoram demasiado a receber propostas comerciais."
+                />
+                <TextArea
+                  label="O que espera conseguir?"
+                  name="expected_value"
+                  placeholder="Ex.: reduzir o tempo de resposta e aumentar a conversão."
+                />
+                <Select label="Tipo" name="project_type" defaultValue="commercial">
+                  <option value="commercial">Comercial / mercado</option>
+                  <option value="non_commercial">Interno / não comercial</option>
+                </Select>
                 <TextArea label="Descrição adicional" name="description" />
                 <TextArea label="Utilizador / público-alvo" name="target_user" />
                 <TextArea label="Restrições conhecidas" name="constraints" />
                 <Field label="Origem da ideia" name="source" />
               </div>
-            </details>
+            </ManualEntry>
 
-            <button className={primaryButtonClass} type="submit">Analisar ideia</button>
+            <button className={primaryButtonClass} type="submit">Analisar projecto</button>
           </form>
 
           <div className="mt-5 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
             <p className="text-sm font-semibold text-[var(--cc-foreground)]">Como funciona</p>
             <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-              1. Diz o que pretende. 2. A Factory analisa e estrutura. 3. Revê a proposta e decide se avança.
+              1. Descreve o que pretende. 2. O PCC estrutura a ideia. 3. Revê e decide se avança.
             </p>
             <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
-              O Assistente IA tenta o provider cloud primeiro e usa o Qwen local como fallback quando o runtime local estiver disponível.
+              O Assistente IA usa a melhor opção disponível e mantém o preenchimento manual como alternativa.
             </p>
           </div>
         </Card>
@@ -110,7 +108,7 @@ export default async function ProjectFactoryPage({
           </div>
           <div className="p-5">
             {!cases?.length ? (
-              <EmptyState>Ainda não existem ideias na Project Factory.</EmptyState>
+              <EmptyState>Ainda não existem ideias em preparação.</EmptyState>
             ) : (
               <div className="space-y-4">
                 {cases.map((item) => (

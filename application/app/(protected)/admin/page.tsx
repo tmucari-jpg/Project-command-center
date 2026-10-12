@@ -13,12 +13,12 @@ import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui";
 
 const tools = [
-  { href: "/agents", label: "Agentes", description: "Runs especializados e aprovações humanas.", icon: Bot },
-  { href: "/orchestrator", label: "Orchestrator", description: "Rotas e decisões internas de execução.", icon: BrainCircuit },
-  { href: "/execution-arena", label: "Execution Arena", description: "Testes e execução controlada.", icon: FlaskConical },
-  { href: "/factory-library", label: "Factory Library", description: "Activos, prompts, estratégias e lições reutilizáveis.", icon: BookOpenCheck },
-  { href: "/intelligence", label: "Intelligence", description: "Inteligência e pesquisa de apoio.", icon: Radar },
-  { href: "/ai-providers", label: "Configuração de IA", description: "Providers, estado de IA local e sincronização.", icon: HardDrive },
+  { href: "/agents", label: "Agentes", description: "Execuções especializadas e aprovações humanas.", icon: Bot },
+  { href: "/orchestrator", label: "Orquestração", description: "Rotas e decisões internas de execução.", icon: BrainCircuit },
+  { href: "/execution-arena", label: "Área de testes", description: "Testes e execução controlada.", icon: FlaskConical },
+  { href: "/factory-library", label: "Biblioteca", description: "Activos, instruções, estratégias e lições reutilizáveis.", icon: BookOpenCheck },
+  { href: "/intelligence", label: "Inteligência", description: "Pesquisa e informação de apoio.", icon: Radar },
+  { href: "/ai-providers", label: "Configuração de IA", description: "Serviços de IA, estado local e sincronização.", icon: HardDrive },
   { href: "/security", label: "Segurança", description: "Controlo e revisão de segurança.", icon: LockKeyhole },
   { href: "/optimization", label: "Optimização", description: "Melhorias técnicas e operacionais.", icon: Repeat2 },
 ];
@@ -27,8 +27,8 @@ export default function AdminPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Admin"
-        title="Admin"
+        eyebrow="Administração"
+        title="Administração"
         description="Configuração técnica, segurança e ferramentas internas do PCC."
       />
 

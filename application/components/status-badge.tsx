@@ -1,3 +1,4 @@
+import { displayLabel } from "@/lib/display-label";
 const tone: Record<string, string> = {
   active: "bg-blue-50 text-blue-700 ring-blue-600/20",
   on_track: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
@@ -20,7 +21,7 @@ export function StatusBadge({ status }: { status: string }) {
         tone[status] ?? "bg-slate-50 text-slate-700 ring-slate-600/20"
       }`}
     >
-      {status.replaceAll("_", " ")}
+      {displayLabel(status)}
     </span>
   );
 }

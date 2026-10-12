@@ -2,6 +2,7 @@ import { createDecision } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
+import { ManualEntry } from "@/components/manual-entry";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
@@ -36,8 +37,8 @@ export default async function DecisionsPage({
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
-      <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
-        <Card className="p-5">
+      <div className="space-y-6">
+        <ManualEntry>
           <h2 className="text-lg font-semibold text-slate-950">Nova decisão</h2>
           <form action={createDecision} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
@@ -54,7 +55,7 @@ export default async function DecisionsPage({
             <TextArea label="Resultado / aprendizagem" name="outcome" />
             <button className={primaryButtonClass} type="submit">Registar decisão</button>
           </form>
-        </Card>
+        </ManualEntry>
 
         <Card>
           <div className="border-b border-slate-200 p-5">

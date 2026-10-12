@@ -3,10 +3,12 @@ import { DeleteForm } from "@/components/delete-form";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
+import { ManualEntry } from "@/components/manual-entry";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
 
 export default async function ObjectivesPage({
@@ -31,8 +33,8 @@ export default async function ObjectivesPage({
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
-      <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
-        <Card className="p-5">
+      <div className="space-y-6">
+        <ManualEntry>
           <h2 className="text-lg font-semibold text-slate-950">Novo objectivo</h2>
           <form action={createObjective} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
@@ -40,10 +42,10 @@ export default async function ObjectivesPage({
             <TextArea label="Resultado esperado" name="expected_result" />
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="Prioridade" name="priority" defaultValue="medium">
-                {PRIORITIES.map((value) => <option key={value} value={value}>{value}</option>)}
+                {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <Select label="Estado" name="status" defaultValue="draft">
-                {STATUS_OPTIONS.objectives.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+                {STATUS_OPTIONS.objectives.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <Field label="Data inicial" name="start_date" type="date" />
               <Field label="Prazo" name="due_date" type="date" />
@@ -56,7 +58,7 @@ export default async function ObjectivesPage({
             <TextArea label="Observações" name="notes" />
             <button className={primaryButtonClass} type="submit">Criar objectivo</button>
           </form>
-        </Card>
+        </ManualEntry>
 
         <Card>
           <div className="border-b border-slate-200 p-5">
@@ -73,7 +75,7 @@ export default async function ObjectivesPage({
                       <div>
                         <h3 className="font-semibold text-slate-950">{objective.title}</h3>
                         <p className="mt-1 text-sm text-slate-500">
-                          Prazo {formatDate(objective.due_date)} · Prioridade {objective.priority}
+                          Prazo {formatDate(objective.due_date)} · Prioridade {displayLabel(objective.priority)}
                         </p>
                         {objective.expected_result && (
                           <p className="mt-3 text-sm leading-6 text-slate-700">{objective.expected_result}</p>

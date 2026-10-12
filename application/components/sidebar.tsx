@@ -26,7 +26,7 @@ const navigationGroups = [
   {
     label: "Começar",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: Gauge },
+      { href: "/dashboard", label: "Resumo", icon: Gauge },
       { href: "/project-factory", label: "Novo projecto", icon: Factory },
       { href: "/objectives", label: "Objectivos", icon: Target },
       { href: "/projects", label: "Projectos", icon: FolderKanban },
@@ -62,7 +62,7 @@ const navigationGroups = [
 
 const supportNavigation = [
   { href: "/help", label: "Ajuda", icon: CircleHelp },
-  { href: "/admin", label: "Admin", icon: Settings },
+  { href: "/admin", label: "Administração", icon: Settings },
 ];
 
 const navigation = navigationGroups.flatMap((group) => group.items);
@@ -124,13 +124,13 @@ export function Sidebar() {
 export function MobileNav() {
   const pathname = usePathname();
   const mobileItems = [
-    { href: "/dashboard", label: "Dashboard", icon: Gauge },
+    { href: "/dashboard", label: "Resumo", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
     { href: "/actions", label: "Acções", icon: CheckSquare2 },
     { href: "/focus", label: "Foco", icon: TimerReset },
     { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-    { href: "/automation", label: "Autom.", icon: Workflow },
+    { href: "/automation", label: "Automação", icon: Workflow },
   ];
 
   return (

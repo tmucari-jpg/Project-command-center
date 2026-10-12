@@ -3,10 +3,12 @@ import { DeleteForm } from "@/components/delete-form";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
+import { ManualEntry } from "@/components/manual-entry";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
 
 export default async function ActionsPage({
@@ -41,8 +43,8 @@ export default async function ActionsPage({
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
-      <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
-        <Card className="p-5">
+      <div className="space-y-6">
+        <ManualEntry>
           <h2 className="text-lg font-semibold text-slate-950">Nova acção</h2>
           <form action={createAction} className="mt-5 space-y-4">
             <Field label="Título" name="title" required placeholder="Ex.: Enviar proposta ao cliente" />
@@ -61,10 +63,10 @@ export default async function ActionsPage({
             <TextArea label="Descrição" name="description" />
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="Prioridade" name="priority" defaultValue="medium">
-                {PRIORITIES.map((value) => <option key={value} value={value}>{value}</option>)}
+                {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <Select label="Estado" name="status" defaultValue="pending">
-                {STATUS_OPTIONS.actions.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}
+                {STATUS_OPTIONS.actions.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <Field label="Prazo" name="due_at" type="datetime-local" />
               <Field label="Tempo estimado (min)" name="estimated_minutes" type="number" min={1} max={100000} />
@@ -76,7 +78,7 @@ export default async function ActionsPage({
             </label>
             <button className={primaryButtonClass} type="submit">Criar acção</button>
           </form>
-        </Card>
+        </ManualEntry>
 
         <Card>
           <div className="border-b border-slate-200 p-5">
