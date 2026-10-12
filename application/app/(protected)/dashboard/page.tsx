@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Clock3 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { Card, EmptyState, StatCard } from "@/components/ui";
+import { Card, EmptyState } from "@/components/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
@@ -68,12 +68,47 @@ export default async function DashboardPage() {
         description="O que está activo, o que está em risco e qual é a próxima acção concreta."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Objectivos activos" value={activeObjectives} />
-        <StatCard label="Projectos activos" value={activeProjects} />
-        <StatCard label="Projectos em risco" value={atRiskProjects} />
-        <StatCard label="Bloqueios activos" value={blockers.length} />
-        <StatCard label="Ideias por decidir" value={pendingIdeas} />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Link href="/objectives" className="group">
+          <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md sm:p-6">
+            <p className="text-sm font-medium text-[var(--cc-secondary)]">Objectivos activos</p>
+            <p className="mt-2 text-[2rem] font-semibold leading-none tracking-[-0.03em] text-[var(--cc-foreground)]">{activeObjectives}</p>
+            <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--cc-accent)]">
+              Abrir objectivos <ArrowRight size={13} />
+            </p>
+          </Card>
+        </Link>
+
+        <Link href="/projects" className="group">
+          <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md sm:p-6">
+            <p className="text-sm font-medium text-[var(--cc-secondary)]">Projectos activos</p>
+            <p className="mt-2 text-[2rem] font-semibold leading-none tracking-[-0.03em] text-[var(--cc-foreground)]">{activeProjects}</p>
+            <p className="mt-3 text-xs text-[var(--cc-secondary)]">{atRiskProjects} em risco</p>
+            <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--cc-accent)]">
+              Abrir projectos <ArrowRight size={13} />
+            </p>
+          </Card>
+        </Link>
+
+        <Link href="/blockers" className="group">
+          <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md sm:p-6">
+            <p className="text-sm font-medium text-[var(--cc-secondary)]">Bloqueios activos</p>
+            <p className="mt-2 text-[2rem] font-semibold leading-none tracking-[-0.03em] text-[var(--cc-foreground)]">{blockers.length}</p>
+            <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--cc-accent)]">
+              Abrir bloqueios <ArrowRight size={13} />
+            </p>
+          </Card>
+        </Link>
+
+        <Link href="/ideas" className="group">
+          <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md sm:p-6">
+            <p className="text-sm font-medium text-[var(--cc-secondary)]">Ideias por decidir</p>
+            <p className="mt-2 text-[2rem] font-semibold leading-none tracking-[-0.03em] text-[var(--cc-foreground)]">{pendingIdeas}</p>
+            <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--cc-accent)]">
+              Abrir ideias <ArrowRight size={13} />
+            </p>
+          </Card>
+        </Link>
       </div>
 
       <div className="mt-7 grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
@@ -95,7 +130,11 @@ export default async function DashboardPage() {
             ) : (
               <div className="divide-y divide-slate-100">
                 {actions.map((action) => (
-                  <div key={action.id} className="flex flex-col gap-3 py-4 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
+                  <Link
+                    key={action.id}
+                    href="/actions"
+                    className="flex flex-col gap-3 rounded-xl py-4 transition hover:bg-[var(--cc-surface-muted)] first:pt-0 sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <div className="min-w-0">
                       <p className="font-medium text-slate-900">{action.title}</p>
                       <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
@@ -104,7 +143,7 @@ export default async function DashboardPage() {
                       </p>
                     </div>
                     <StatusBadge status={action.status} />
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -158,10 +197,14 @@ export default async function DashboardPage() {
                 <p className="text-sm text-slate-500">Sem bloqueios activos.</p>
               ) : (
                 blockers.slice(0, 4).map((blocker) => (
-                  <div key={blocker.id} className="rounded-xl bg-red-50 px-3.5 py-3">
+                  <Link
+                    key={blocker.id}
+                    href="/blockers"
+                    className="block rounded-xl bg-red-50 px-3.5 py-3 transition hover:bg-red-100"
+                  >
                     <p className="text-sm font-medium text-red-900">{blocker.title}</p>
                     <p className="mt-1 text-xs text-red-700">{blocker.status}</p>
-                  </div>
+                  </Link>
                 ))
               )}
             </div>
