@@ -1,28 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --cc-background: #f5f5f7;
-  --cc-surface: rgba(255, 255, 255, 0.82);
+  --cc-background: #f7f5ee;
+  --cc-surface: rgba(255, 255, 255, 0.94);
   --cc-surface-strong: #ffffff;
-  --cc-surface-muted: #f2f2f7;
-  --cc-foreground: #1d1d1f;
-  --cc-secondary: #6e6e73;
-  --cc-tertiary: #86868b;
-  --cc-border: rgba(60, 60, 67, 0.18);
-  --cc-accent: #007aff;
-  --cc-accent-strong: #006edc;
-  --cc-danger: #ff3b30;
-  --cc-success: #34c759;
-  --cc-warning: #ff9f0a;
+  --cc-surface-muted: #f2eee4;
+  --cc-foreground: #1f2937;
+  --cc-secondary: #667085;
+  --cc-tertiary: #98a2b3;
+  --cc-border: rgba(15, 61, 50, 0.12);
+
+  --cc-accent: #0f3d32;
+  --cc-accent-strong: #082e27;
+  --cc-accent-soft: #2e685a;
+  --cc-gold: #c8933c;
+  --cc-gold-soft: #e6c681;
+
+  --cc-danger: #c94b3c;
+  --cc-success: #2e7d5b;
+  --cc-warning: #c8933c;
+
   --cc-radius-sm: 12px;
   --cc-radius-md: 16px;
-  --cc-radius-lg: 22px;
-  --cc-content-max: 1180px;
-  --cc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 24px rgba(0, 0, 0, 0.04);
-  --cc-glass: rgba(255, 255, 255, 0.72);
+  --cc-radius-lg: 20px;
+  --cc-content-max: 1320px;
+
+  --cc-shadow-sm: 0 8px 28px rgba(15, 61, 50, 0.06);
+  --cc-shadow-md: 0 18px 48px rgba(15, 61, 50, 0.09);
+  --cc-glass: rgba(255, 255, 255, 0.9);
 }
 
 * { box-sizing: border-box; }
+
 html {
   background: var(--cc-background);
   color-scheme: light;
@@ -33,10 +42,11 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top right, rgba(0, 122, 255, 0.055), transparent 32rem),
+    radial-gradient(circle at 92% 3%, rgba(200, 147, 60, 0.10), transparent 24rem),
+    radial-gradient(circle at 72% 0%, rgba(15, 61, 50, 0.06), transparent 28rem),
     var(--cc-background);
   color: var(--cc-foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Segoe UI", Inter, ui-sans-serif, sans-serif;
+  font-family: "Plus Jakarta Sans", Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -45,57 +55,52 @@ button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 
 :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--cc-accent) 38%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--cc-gold) 32%, transparent);
   outline-offset: 2px;
 }
 
-::selection { background: rgba(0, 122, 255, 0.2); }
+::selection {
+  background: color-mix(in srgb, var(--cc-gold) 28%, white);
+}
+
 .table-scroll { overflow-x: auto; }
 
 .cc-glass {
   background: var(--cc-glass);
   border: 1px solid var(--cc-border);
   box-shadow: var(--cc-shadow-sm);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(120%);
+  backdrop-filter: blur(22px) saturate(120%);
 }
 
-.cc-safe-top {
-  padding-top: max(0px, env(safe-area-inset-top));
+.cc-safe-top { padding-top: max(0px, env(safe-area-inset-top)); }
+.cc-safe-bottom { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+
+.cc-brand-pattern {
+  background:
+    linear-gradient(135deg, transparent 0 55%, rgba(200,147,60,.22) 55% 58%, transparent 58%),
+    linear-gradient(45deg, rgba(15,61,50,.12), transparent 62%);
 }
 
-.cc-safe-bottom {
-  padding-bottom: max(0px, env(safe-area-inset-bottom));
+.cc-sidebar {
+  background:
+    linear-gradient(180deg, #0a332b 0%, #0f3d32 52%, #0b312a 100%);
+  color: white;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --cc-background: #000000;
-    --cc-surface: rgba(28, 28, 30, 0.8);
-    --cc-surface-strong: #1c1c1e;
-    --cc-surface-muted: #2c2c2e;
-    --cc-foreground: #f5f5f7;
-    --cc-secondary: #aeaeb2;
-    --cc-tertiary: #8e8e93;
-    --cc-border: rgba(235, 235, 245, 0.16);
-    --cc-accent: #0a84ff;
-    --cc-accent-strong: #409cff;
-    --cc-glass: rgba(28, 28, 30, 0.72);
-    --cc-shadow-sm: none;
-  }
-
-  body {
-    background:
-      radial-gradient(circle at top right, rgba(10, 132, 255, 0.12), transparent 32rem),
-      var(--cc-background);
-  }
+.cc-sidebar::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 190px;
+  pointer-events: none;
+  background:
+    linear-gradient(140deg, transparent 0 54%, rgba(200,147,60,.85) 54% 57%, transparent 57%),
+    linear-gradient(32deg, transparent 0 72%, rgba(255,255,255,.08) 72% 74%, transparent 74%);
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  :root {
-    --cc-glass: var(--cc-surface-strong);
-  }
-
+  :root { --cc-glass: var(--cc-surface-strong); }
   .cc-glass {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
