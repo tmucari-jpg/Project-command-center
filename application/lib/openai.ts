@@ -3,6 +3,10 @@ type OpenAIResponse = {
   output?: Array<{ content?: Array<{ type?: string; text?: string }> }>;
 };
 
+type ChatCompletionResponse = {
+  choices?: Array<{ message?: { content?: string | null } }>;
+};
+
 export function openAIConfigured() {
   return Boolean(process.env.OPENAI_API_KEY);
 }
@@ -100,6 +104,55 @@ export async function generateWithOpenAI(input: string, instructions?: string) {
 
     lastStatus = fallbackResponse.status;
     lastBody = await fallbackResponse.text();
+  }
+
+  if ([500, 502, 503, 504].includes(lastStatus)) {
+    const chatResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: openAIModel(),
+        messages: [
+          ...(instructions ? [{ role: "system", content: instructions }] : []),
+          { role: "user", content: input },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "pcc_factory_suggestion",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                title: { type: "string" },
+                problem: { type: "string" },
+                expected_value: { type: "string" },
+                target_user: { type: "string" },
+                description: { type: "string" },
+                constraints: { type: "string" },
+              },
+              required: ["title", "problem", "expected_value", "target_user", "description", "constraints"],
+            },
+          },
+        },
+      }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(20_000),
+    });
+
+    if (chatResponse.ok) {
+      const data = (await chatResponse.json()) as ChatCompletionResponse;
+      const text = data.choices?.[0]?.message?.content?.trim() ?? "";
+      if (!text) throw new Error("OPENAI_EMPTY_CHAT_FALLBACK_RESPONSE");
+      return text;
+    }
+
+    lastStatus = chatResponse.status;
+    lastBody = await chatResponse.text();
   }
 
   throw new Error(`OPENAI_ERROR_${lastStatus}: ${lastBody.slice(0, 500)}`);
