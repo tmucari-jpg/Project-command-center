@@ -77,7 +77,7 @@ function NavLink({ pathname, href, label, Icon }: { pathname: string; href: stri
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`flex min-h-12 items-center gap-3 rounded-[14px] px-3.5 text-sm font-medium transition ${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-foreground)] shadow-sm" : "text-[var(--cc-secondary)] hover:bg-[var(--cc-surface-muted)] hover:text-[var(--cc-foreground)]"}`}
+      className={`flex min-h-11 items-center gap-3 rounded-[12px] px-3.5 text-sm font-medium transition ${active ? "bg-white/10 text-white ring-1 ring-inset ring-[color-mix(in_srgb,var(--cc-gold)_55%,transparent)]" : "text-white/72 hover:bg-white/7 hover:text-white"}`}
     >
       <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
       <span>{label}</span>
@@ -89,17 +89,18 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-[270px] shrink-0 border-r border-[var(--cc-border)] bg-[var(--cc-glass)] backdrop-blur-2xl lg:block">
+    <aside className="cc-sidebar relative hidden w-[250px] shrink-0 overflow-hidden border-r border-white/10 lg:block">
       <div className="sticky top-0 h-screen overflow-y-auto px-4 py-5">
-        <Link href="/dashboard" className="block rounded-[18px] px-3 py-3">
-          <span className="block text-xs font-semibold tracking-[0.01em] text-[var(--cc-accent)]">Project</span>
-          <span className="text-lg font-semibold tracking-[-0.025em] text-[var(--cc-foreground)]">Command Center</span>
+        <Link href="/dashboard" className="relative z-10 block rounded-[18px] px-3 py-3 text-white">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--cc-gold-soft)]">PCC</span>
+          <span className="mt-1 block text-lg font-semibold tracking-[-0.025em]">Project Command Center</span>
+          <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] text-white/55">Da estratégia à execução</span>
         </Link>
 
-        <nav className="mt-5 space-y-5" aria-label="Navegação principal">
+        <nav className="relative z-10 mt-5 space-y-5" aria-label="Navegação principal">
           {navigationGroups.map((group) => (
             <div key={group.label}>
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--cc-tertiary)]">
+              <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/38">
                 {group.label}
               </p>
               <div className="space-y-1">
@@ -111,7 +112,7 @@ export function Sidebar() {
           ))}
         </nav>
 
-        <nav className="mt-5 space-y-1 border-t border-[var(--cc-border)] pt-4" aria-label="Ajuda e administração">
+        <nav className="relative z-10 mt-5 space-y-1 border-t border-white/10 pt-4" aria-label="Ajuda e administração">
           {supportNavigation.map(({ href, label, icon }) => (
             <NavLink key={href} pathname={pathname} href={href} label={label} Icon={icon} />
           ))}
