@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
+import { displayLabel } from "@/lib/display-label";
 
 export default async function AIFornecedoresPage() {
   const { supabase, user } = await requireAdmin();
@@ -18,16 +19,16 @@ export default async function AIFornecedoresPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Admin / Avançado"
+        eyebrow="Administração"
         title="Configuração de IA"
       />
 
       <Card className="mb-6 border-amber-200 bg-amber-50/50 p-5">
         <p className="font-semibold text-amber-900">
-          {operationalProviders.length ? "Existe pelo menos um fornecedor disponível." : "Assistente IA ainda não está operacional neste ambiente."}
+          {operationalProviders.length ? "Existe pelo menos um fornecedor disponível." : "Nenhum serviço inteligente está disponível neste ambiente."}
         </p>
         <p className="mt-2 text-sm leading-6 text-amber-900/80">
-          A base PWA existe, mas IA local real, RAG local e sincronização offline completa continuam pendentes do execução local. O PCC não deve apresentar estas capacidades como concluídas.
+          O PCC apresenta apenas capacidades que estejam efectivamente disponíveis e validadas.
         </p>
       </Card>
 
@@ -36,13 +37,13 @@ export default async function AIFornecedoresPage() {
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="p-5 xl:col-span-2">
           <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
-            <HardDrive size={19} /> Providers
+            <HardDrive size={19} /> Serviços disponíveis
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Credenciais não são guardadas nesta tabela. Fornecedores indisponíveis não devem ser usados pelo assistente.
+            Credenciais sensíveis permanecem fora desta área. Serviços indisponíveis não são usados pelo PCC.
           </p>
           {!providers?.length ? (
-            <div className="mt-4"><EmptyState>Nenhum provider foi activado neste ambiente.</EmptyState></div>
+            <div className="mt-4"><EmptyState>Nenhum serviço foi activado neste ambiente.</EmptyState></div>
           ) : (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {providers.map((provider) => (
@@ -50,11 +51,11 @@ export default async function AIFornecedoresPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium text-slate-950">{provider.label}</p>
-                      <p className="mt-1 text-xs text-slate-500">{provider.provider} · {provider.mode}</p>
+                      <p className="mt-1 text-xs text-slate-500">{provider.label}</p>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{provider.last_health_status}</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{displayLabel(provider.last_health_status)}</span>
                   </div>
-                  <p className="mt-3 text-xs text-slate-500">Prioridade {provider.priority} · custo {provider.cost_class}</p>
+                  <p className="mt-3 text-xs text-slate-500">Prioridade {provider.priority} · custo {displayLabel(provider.cost_class)}</p>
                 </div>
               ))}
             </div>
@@ -64,7 +65,7 @@ export default async function AIFornecedoresPage() {
         <Card className="p-5">
           <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><ShieldCheck size={18} /> Segurança</h2>
           <div className="mt-4 space-y-3 text-sm text-slate-600">
-            <p>• Secrets ficam fora do adaptador de fornecedores.</p>
+            <p>• Credenciais sensíveis ficam fora da aplicação.</p>
             <p>• Serviços na nuvem recebem apenas contexto necessário.</p>
             <p>• IA local só será marcada como activa após verificação real.</p>
             <p>• Ações críticas continuam sujeitas a aprovação humana.</p>
@@ -84,8 +85,8 @@ export default async function AIFornecedoresPage() {
               {queue.map((item) => (
                 <div key={item.id} className="rounded-xl border border-slate-200 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-950">{item.operation} · {item.entity_type}</p>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{item.status}</span>
+                    <p className="text-sm font-medium text-slate-950">{displayLabel(item.operation)} · {displayLabel(item.entity_type)}</p>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{displayLabel(item.status)}</span>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)} · tentativas {item.attempts}</p>
                   {item.last_error && <p className="mt-2 text-xs text-red-700">{item.last_error}</p>}
