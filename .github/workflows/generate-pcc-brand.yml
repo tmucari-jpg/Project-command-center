@@ -1,0 +1,48 @@
+name: Generate official PCC brand assets
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/generate-pcc-brand.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  brand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: application/package-lock.json
+
+      - name: Install dependencies
+        working-directory: application
+        run: npm ci
+
+      - name: Fetch official PCC logo
+        run: |
+          curl -fL 'https://files.openai.com/content?id=file_00000000d0a88211854f60c76347d67d&cdn=1&cp=pi&ma=31968000&ts=0&p=pi&cid=8&sig=0eb4aa234ddb6cbe2ef50fa18709fc32371e45b448ff94464db50138ce5764fb&v=0' -o /tmp/pcc-logo.png
+          test -s /tmp/pcc-logo.png
+
+      - name: Generate brand assets
+        working-directory: application
+        run: node scripts/generate-brand-assets.mjs /tmp/pcc-logo.png
+
+      - name: Commit generated assets
+        run: |
+          git config user.name "PCC Release Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add application/public/brand/pcc-logo.png application/public/icons/icon-192.png application/public/icons/icon-512.png application/public/icons/icon-maskable-512.png application/public/icons/apple-touch-icon.png
+          git diff --cached --quiet && exit 0
+          git commit -m "Apply official PCC brand assets"
+          git push origin main
