@@ -37,6 +37,34 @@ function setField(name: string, value?: string) {
   element.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+function deterministicSuggestion(input: string): FactorySuggestion {
+  const clean = input.trim().replace(/\s+/g, " ");
+  const title = clean.length <= 72 ? clean : clean.slice(0, 69).trimEnd() + "…";
+  const lower = clean.toLowerCase();
+
+  let targetUser = "Utilizadores ou equipa directamente envolvidos";
+  if (lower.includes("agente") && lower.includes("imobili")) targetUser = "Agentes imobiliários";
+  else if (lower.includes("cliente")) targetUser = "Clientes";
+  else if (lower.includes("empresa")) targetUser = "Empresas";
+  else if (lower.includes("colaborador") || lower.includes("equipa")) targetUser = "Equipa interna";
+
+  let expectedValue = "Transformar a ideia em execução mensurável e validar resultados.";
+  if (lower.includes("converter") || lower.includes("venda")) {
+    expectedValue = "Aumentar conversão e gerar resultados comerciais mensuráveis.";
+  } else if (lower.includes("demonstr") || lower.includes("workshop")) {
+    expectedValue = "Demonstrar valor na prática, recolher feedback e aumentar adopção.";
+  }
+
+  return {
+    title,
+    problem: `Necessidade de estruturar e executar: ${clean}`,
+    expected_value: expectedValue,
+    target_user: targetUser,
+    description: clean,
+    constraints: "Validar recursos, prazo, responsáveis, orçamento e critérios de sucesso antes da execução.",
+  };
+}
+
 export function FactoryAIAssistant() {
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
@@ -71,6 +99,17 @@ export function FactoryAIAssistant() {
           text = await callLocal(idea);
         } catch (localError) {
           const localMessage = localError instanceof Error ? localError.message : "Qwen local indisponível";
+          const isQuotaError =
+            cloudMessage.includes("credit_balance_exhausted") ||
+            cloudMessage.includes("insufficient_quota") ||
+            cloud.status === 429;
+
+          if (isQuotaError) {
+            setSuggestion(deterministicSuggestion(idea));
+            setSource("PCC gratuito");
+            return;
+          }
+
           throw new Error(`Cloud: ${cloudMessage} | Local: ${localMessage}`);
         }
       }
