@@ -65,12 +65,13 @@ export function FactoryAIAssistant() {
         text = String(data.text ?? "");
       } else {
         const cloudError = await cloud.json().catch(() => ({ error: `HTTP ${cloud.status}` }));
+        const cloudMessage = String(cloudError.error ?? `HTTP ${cloud.status}`).slice(0, 320);
         try {
           provider = "Qwen local";
           text = await callLocal(idea);
         } catch (localError) {
           const localMessage = localError instanceof Error ? localError.message : "Qwen local indisponível";
-          throw new Error(`Cloud: ${String(cloudError.error ?? cloud.status)} | Local: ${localMessage}`);
+          throw new Error(`Cloud: ${cloudMessage} | Local: ${localMessage}`);
         }
       }
 
@@ -81,7 +82,11 @@ export function FactoryAIAssistant() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "erro desconhecido";
       console.error("Assistente IA:", message);
-      setError("Não foi possível obter sugestões. Tente novamente ou use o preenchimento manual.");
+      const safeDiagnostic = message
+        .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]")
+        .replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]")
+        .slice(0, 420);
+      setError(`Não foi possível obter sugestões. Diagnóstico: ${safeDiagnostic}`);
     } finally {
       setBusy(false);
     }
