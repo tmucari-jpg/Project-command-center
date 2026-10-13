@@ -16,10 +16,24 @@ export async function requireUser() {
 }
 
 
+function isConfiguredAdminEmail(email?: string | null) {
+  if (!email) return false;
+
+  const allowed = (process.env.PCC_ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+
+  return allowed.includes(email.trim().toLowerCase());
+}
+
 export async function isAdminUser(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
+  email?: string | null,
 ) {
+  if (isConfiguredAdminEmail(email)) return true;
+
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
@@ -33,7 +47,7 @@ export async function isAdminUser(
 export async function requireAdmin() {
   const { supabase, user } = await requireUser();
 
-  if (!(await isAdminUser(supabase, user.id))) {
+  if (!(await isAdminUser(supabase, user.id, user.email))) {
     redirect("/dashboard");
   }
 
