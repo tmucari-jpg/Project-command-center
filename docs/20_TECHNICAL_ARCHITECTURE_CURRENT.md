@@ -129,3 +129,28 @@ Inferências automáticas actualmente implementadas:
 - aplicação: `/application`
 - migrations: `/supabase/migrations`
 - documentação oficial: documentos CURRENT definidos no índice oficial.
+
+
+## 9. Modo offline
+
+O PCC suporta trabalho offline em dispositivos que já tenham tido pelo menos uma sessão online autenticada.
+
+Arquitectura:
+- service worker fornece o workspace offline quando a navegação de rede falha;
+- IndexedDB guarda snapshot local e fila de alterações;
+- o snapshot inclui projectos, entregáveis e acções necessárias ao trabalho local;
+- alterações offline recebem UUID local e são sincronizadas de forma idempotente;
+- a API `/api/offline/sync` valida novamente autenticação, ownership e schemas antes de persistir;
+- `sync_queue` mantém evidência das operações sincronizadas;
+- o retorno da ligação dispara sincronização automática;
+- logout explícito limpa os dados offline do dispositivo.
+
+Operações offline suportadas:
+- criar Acção;
+- criar Ideia;
+- criar Evidência associada a Acção;
+- criar Bloqueio associado a Acção;
+- actualizar estado de Acção.
+
+Limite de segurança:
+um dispositivo que nunca autenticou online não pode validar credenciais Supabase offline. O primeiro acesso ao modo offline exige uma sessão online prévia nesse dispositivo.

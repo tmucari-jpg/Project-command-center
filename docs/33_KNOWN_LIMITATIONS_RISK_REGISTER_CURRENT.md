@@ -26,16 +26,28 @@
 **Estado:** intencional.  
 **Mitigação:** acesso exclusivamente por função controlada.
 
-## 5. Local/private AI e offline
+## 5. Modo offline
 
-**Estado:** não reivindicado como produção completa sem runtime real validado.
+**Estado:** implementação funcional incluída para o próximo release; validação real pós-deploy ainda obrigatória.
 
-## 6. Índices “unused”
+Modelo:
+- exige uma sessão online prévia no dispositivo;
+- snapshot e fila são locais;
+- sincronização ocorre ao recuperar rede;
+- logout explícito limpa dados locais.
+
+Não é permitido validar email/password Supabase do zero sem rede.
+
+## 6. Local/private AI
+
+**Estado:** runtime de IA local não reivindicado como produção completa sem runtime real validado.
+
+## 7. Índices “unused”
 
 Após criação, advisors podem marcar índices como não utilizados por falta de histórico.  
 Não remover sem observação real e análise.
 
-## 7. Próximo gate
+## 8. Próximo gate
 
 Depois do próximo deploy:
 - smoke real;

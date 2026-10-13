@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
+import { useSearchParams } from "next/navigation";
+import { clearOfflineData } from "@/lib/offline-client";
 import {
   forgotPasswordAction,
   loginAction,
@@ -30,6 +32,14 @@ function SubmitButton({ label }: { label: string }) {
 }
 
 export function AuthForm({ mode }: { mode: Mode }) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (mode === "login" && searchParams.get("logged_out") === "1") {
+      void clearOfflineData();
+    }
+  }, [mode, searchParams]);
+
   const action =
     mode === "login"
       ? loginAction

@@ -138,5 +138,5 @@ export async function updatePasswordAction(
 export async function logoutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/auth/login");
+  redirect("/auth/login?logged_out=1");
 }

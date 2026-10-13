@@ -2,6 +2,7 @@ import Image from "next/image";
 import { LogOut } from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
 import { InstallAppButton } from "@/components/install-app-button";
+import { OfflineSyncManager } from "@/components/offline-sync-manager";
 import { MobileNav, Sidebar } from "@/components/sidebar";
 
 export function AppShell({ children, isAdmin }: { children: React.ReactNode; isAdmin: boolean }) {
@@ -20,6 +21,7 @@ export function AppShell({ children, isAdmin }: { children: React.ReactNode; isA
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <OfflineSyncManager />
                 <InstallAppButton />
                 {process.env.NODE_ENV !== "development" && (
                   <form action={logoutAction}>

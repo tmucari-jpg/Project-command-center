@@ -85,7 +85,27 @@
 - [ ] Sem migration pendente destrutiva.
 - [ ] Backup/rollback conhecido.
 
-## I. Operações
+## I. Offline e sincronização
+
+- [ ] Abrir PCC online e activar snapshot local.
+- [ ] Desligar a internet.
+- [ ] Reabrir/navegar no PCC e obter workspace offline.
+- [ ] Snapshot mostra projectos/acções locais.
+- [ ] Criar uma Acção offline.
+- [ ] Criar uma Ideia offline.
+- [ ] Registar Evidência offline.
+- [ ] Registar Bloqueio offline.
+- [ ] Actualizar estado de uma Acção offline.
+- [ ] Fechar/reabrir a aplicação e confirmar persistência local.
+- [ ] Recuperar internet.
+- [ ] Sincronização inicia automaticamente.
+- [ ] Fila local fica vazia após sucesso.
+- [ ] Registos aparecem no Supabase/PCC.
+- [ ] Repetir sincronização não cria duplicados.
+- [ ] Logout online limpa o workspace offline local.
+- [ ] Dispositivo sem sessão online prévia não desbloqueia dados offline.
+
+## J. Operações
 
 - [ ] Runtime logs sem erro crítico após release.
 - [ ] Supabase healthy.
