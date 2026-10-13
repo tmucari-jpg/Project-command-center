@@ -264,10 +264,41 @@ export async function dispatchAutomationJob(formData: FormData) {
 
 export async function createExecutionArenaTrial(formData: FormData) {
   const path = "/execution-arena";
-  const parsed = executionArenaTrialSchema.safeParse(values(formData));
+  const raw = values(formData);
+  const { supabase, user } = await requireUser();
+
+  const routeId =
+    typeof raw.orchestrator_route_id === "string" && raw.orchestrator_route_id
+      ? raw.orchestrator_route_id
+      : undefined;
+
+  let routeDefaults = executionArenaDefaults();
+
+  if (routeId) {
+    const { data: route, error: routeError } = await supabase
+      .from("orchestrator_routes")
+      .select("objective,selected_agent,strategy")
+      .eq("id", routeId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (routeError) fail(path, routeError.message);
+    if (!route) fail(path, "Rota de execução inválida.");
+
+    routeDefaults = executionArenaDefaults({
+      objective: route.objective,
+      selectedAgent: route.selected_agent,
+      strategy: route.strategy,
+    });
+  }
+
+  raw.candidate_label = raw.candidate_label || routeDefaults.candidateLabel;
+  raw.agent_type = raw.agent_type || routeDefaults.agentType;
+  raw.strategy = raw.strategy || routeDefaults.strategy;
+
+  const parsed = executionArenaTrialSchema.safeParse(raw);
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
   await ensureOwned(supabase, "project_factory_cases", parsed.data.factory_case_id, user.id, path);
   await ensureOwned(supabase, "orchestrator_routes", parsed.data.orchestrator_route_id, user.id, path);
 
