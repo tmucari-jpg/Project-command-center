@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
-import { useSearchParams } from "next/navigation";
 import { clearOfflineData } from "@/lib/offline-client";
 import {
   forgotPasswordAction,
@@ -31,14 +30,12 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
-export function AuthForm({ mode }: { mode: Mode }) {
-  const searchParams = useSearchParams();
-
+export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; clearOfflineOnLoad?: boolean }) {
   useEffect(() => {
-    if (mode === "login" && searchParams.get("logged_out") === "1") {
+    if (mode === "login" && clearOfflineOnLoad) {
       void clearOfflineData();
     }
-  }, [mode, searchParams]);
+  }, [mode, clearOfflineOnLoad]);
 
   const action =
     mode === "login"

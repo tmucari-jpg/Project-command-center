@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ logged_out?: string }> }) {
+  const query = await searchParams;
   if (process.env.NODE_ENV === "development") {
     const supabase = await createClient();
     const {
@@ -20,7 +21,7 @@ export default async function Page() {
       <div className="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full border border-[color-mix(in_srgb,var(--cc-gold)_22%,transparent)]" />
       <div className="pointer-events-none absolute -right-28 top-20 h-80 w-80 rounded-full border border-[color-mix(in_srgb,var(--cc-accent)_10%,transparent)]" />
       <div className="relative z-10 w-full">
-        <AuthForm mode="login" />
+        <AuthForm mode="login" clearOfflineOnLoad={query.logged_out === "1"} />
       </div>
     </main>
   );
