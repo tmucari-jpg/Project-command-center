@@ -419,23 +419,26 @@ export async function createAction(formData: FormData) {
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
   const { supabase, user } = await requireUser();
-  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  let projectId = parsed.data.project_id;
+
+  await ensureOwned(supabase, "projects", projectId, user.id, path);
   await ensureOwned(supabase, "deliverables", parsed.data.deliverable_id, user.id, path);
 
   if (parsed.data.deliverable_id) {
-    const { data: deliverable } = await supabase
+    const { data: deliverable, error: deliverableError } = await supabase
       .from("deliverables")
       .select("project_id")
       .eq("id", parsed.data.deliverable_id)
       .eq("user_id", user.id)
       .maybeSingle();
-    if (
-      deliverable?.project_id &&
-      parsed.data.project_id &&
-      deliverable.project_id !== parsed.data.project_id
-    ) {
+
+    if (deliverableError || !deliverable) fail(path, "Entregável inválido.");
+
+    if (projectId && deliverable.project_id && projectId !== deliverable.project_id) {
       fail(path, "O entregável seleccionado não pertence ao projecto seleccionado.");
     }
+
+    projectId = deliverable.project_id ?? projectId;
   }
 
   const wantsNextAction = parsed.data.is_next_action;
@@ -443,6 +446,7 @@ export async function createAction(formData: FormData) {
     .from("actions")
     .insert({
       ...parsed.data,
+      project_id: projectId,
       is_next_action: false,
       user_id: user.id,
     })
@@ -470,12 +474,54 @@ export async function createBlocker(formData: FormData) {
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
   const { supabase, user } = await requireUser();
-  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
-  await ensureOwned(supabase, "deliverables", parsed.data.deliverable_id, user.id, path);
+  let projectId = parsed.data.project_id;
+  let deliverableId = parsed.data.deliverable_id;
+
+  await ensureOwned(supabase, "projects", projectId, user.id, path);
+  await ensureOwned(supabase, "deliverables", deliverableId, user.id, path);
   await ensureOwned(supabase, "actions", parsed.data.action_id, user.id, path);
+
+  if (parsed.data.action_id) {
+    const { data: action, error: actionError } = await supabase
+      .from("actions")
+      .select("project_id,deliverable_id")
+      .eq("id", parsed.data.action_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (actionError || !action) fail(path, "Acção inválida.");
+
+    if (deliverableId && action.deliverable_id && deliverableId !== action.deliverable_id) {
+      fail(path, "A acção seleccionada não pertence ao entregável seleccionado.");
+    }
+    if (projectId && action.project_id && projectId !== action.project_id) {
+      fail(path, "A acção seleccionada não pertence ao projecto seleccionado.");
+    }
+
+    deliverableId = action.deliverable_id ?? deliverableId;
+    projectId = action.project_id ?? projectId;
+  }
+
+  if (deliverableId) {
+    const { data: deliverable, error: deliverableError } = await supabase
+      .from("deliverables")
+      .select("project_id")
+      .eq("id", deliverableId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (deliverableError || !deliverable) fail(path, "Entregável inválido.");
+    if (projectId && deliverable.project_id && projectId !== deliverable.project_id) {
+      fail(path, "O entregável seleccionado não pertence ao projecto seleccionado.");
+    }
+
+    projectId = deliverable.project_id ?? projectId;
+  }
 
   const { error } = await supabase.from("blockers").insert({
     ...parsed.data,
+    project_id: projectId,
+    deliverable_id: deliverableId,
     user_id: user.id,
   });
 
@@ -782,12 +828,54 @@ export async function createEvidence(formData: FormData) {
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
   const { supabase, user } = await requireUser();
-  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
-  await ensureOwned(supabase, "deliverables", parsed.data.deliverable_id, user.id, path);
+  let projectId = parsed.data.project_id;
+  let deliverableId = parsed.data.deliverable_id;
+
+  await ensureOwned(supabase, "projects", projectId, user.id, path);
+  await ensureOwned(supabase, "deliverables", deliverableId, user.id, path);
   await ensureOwned(supabase, "actions", parsed.data.action_id, user.id, path);
+
+  if (parsed.data.action_id) {
+    const { data: action, error: actionError } = await supabase
+      .from("actions")
+      .select("project_id,deliverable_id")
+      .eq("id", parsed.data.action_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (actionError || !action) fail(path, "Acção inválida.");
+
+    if (deliverableId && action.deliverable_id && deliverableId !== action.deliverable_id) {
+      fail(path, "A acção seleccionada não pertence ao entregável seleccionado.");
+    }
+    if (projectId && action.project_id && projectId !== action.project_id) {
+      fail(path, "A acção seleccionada não pertence ao projecto seleccionado.");
+    }
+
+    deliverableId = action.deliverable_id ?? deliverableId;
+    projectId = action.project_id ?? projectId;
+  }
+
+  if (deliverableId) {
+    const { data: deliverable, error: deliverableError } = await supabase
+      .from("deliverables")
+      .select("project_id")
+      .eq("id", deliverableId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (deliverableError || !deliverable) fail(path, "Entregável inválido.");
+    if (projectId && deliverable.project_id && projectId !== deliverable.project_id) {
+      fail(path, "O entregável seleccionado não pertence ao projecto seleccionado.");
+    }
+
+    projectId = deliverable.project_id ?? projectId;
+  }
 
   const { error } = await supabase.from("evidence").insert({
     ...parsed.data,
+    project_id: projectId,
+    deliverable_id: deliverableId,
     user_id: user.id,
   });
 
