@@ -31,7 +31,6 @@ export default async function IdeasPage({
       <PageHeader
         eyebrow="Captura"
         title="Ideias"
-        description="Capture ideias sem as transformar automaticamente em trabalho activo."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
