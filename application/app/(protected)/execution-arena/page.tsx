@@ -42,7 +42,7 @@ export default async function ExecutionArenaPage({
   return (
     <>
       <PageHeader
-        eyebrow="Project Factory"
+        eyebrow="Fábrica de Projectos"
         title="Arena de Execução"
         description="Compara execuções reais por qualidade, exactidão, sucesso da tarefa, tempo, custo e correcção humana. Esta etapa só deve ser usada quando existe dúvida material entre formas de execução."
       />
@@ -93,7 +93,7 @@ export default async function ExecutionArenaPage({
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Qualidade (0–100)" name="quality_score" type="number" min={0} max={100} required />
-              <Field label="Factualidade (0–100)" name="factuality_score" type="number" min={0} max={100} required />
+              <Field label="Exactidão factual (0–100)" name="factuality_score" type="number" min={0} max={100} required />
               <Field label="Sucesso da tarefa (0–100)" name="task_success_score" type="number" min={0} max={100} required />
             </div>
 
@@ -145,7 +145,7 @@ export default async function ExecutionArenaPage({
 
                       <div className="mt-4 grid gap-2 text-xs text-[var(--cc-secondary)] sm:grid-cols-3">
                         <p>Qualidade: <strong>{trial.quality_score}</strong></p>
-                        <p>Factualidade: <strong>{trial.factuality_score}</strong></p>
+                        <p>Exactidão factual: <strong>{trial.factuality_score}</strong></p>
                         <p>Sucesso da tarefa: <strong>{trial.task_success_score}</strong></p>
                         <p>Tempo: <strong>{trial.duration_ms == null ? "—" : `${trial.duration_ms} ms`}</strong></p>
                         <p>Custo: <strong>{trial.cost_amount == null ? "—" : `${trial.cost_amount} ${trial.cost_currency ?? ""}`}</strong></p>
