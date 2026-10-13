@@ -33,7 +33,6 @@ export default async function DecisionsPage({
       <PageHeader
         eyebrow="Memória"
         title="Decisões"
-        description="Registe decisões relevantes com contexto, opções, racional e resultado posterior."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
