@@ -152,7 +152,7 @@ export default async function FactoryCasePage({
           query.decision
             ? "Decisão final registada."
             : query.report
-              ? "Relatório Final consolidado. O caso avançou para Decisão."
+              ? "Preparação final consolidada. O caso avançou para Decisão."
               : query.validated
                 ? "Validação concluída e etapa seguinte definida."
                 : query.completed
@@ -311,7 +311,7 @@ export default async function FactoryCasePage({
 
       {["factory_report", "decision", "converted_to_project", "on_hold", "killed"].includes(factoryCase.stage) && (
         <Card className="mt-6 p-5">
-          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Relatório Final</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Preparação final</h2>
           <form action={saveFactoryReport} className="mt-5 space-y-4">
             <input type="hidden" name="factory_case_id" value={factoryCase.id} />
             <input type="hidden" name="problem_identified" value={autoFactoryReport.problem_identified} />
@@ -339,7 +339,7 @@ export default async function FactoryCasePage({
               <Field label="Probabilidade de execução (%)" name="execution_probability" type="number" min={0} max={100} defaultValue={factoryReport?.execution_probability ?? undefined} />
               <Field label="Probabilidade de adopção (%)" name="adoption_probability" type="number" min={0} max={100} defaultValue={factoryReport?.adoption_probability ?? undefined} />
             </div>
-            <button className={primaryButtonClass} type="submit">Consolidar Relatório Final</button>
+            <button className={primaryButtonClass} type="submit">Consolidar preparação final</button>
           </form>
         </Card>
       )}
