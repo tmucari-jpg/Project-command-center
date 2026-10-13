@@ -60,7 +60,6 @@ export default async function MonetizationPage({
       <PageHeader
         eyebrow="Fase 2"
         title="Monetização"
-        description="Oferta, cliente, preço, canal, pipeline, leads, receita e custos por projecto."
       />
       <FlashMessage
         error={params.error ?? error}
