@@ -9,7 +9,7 @@ import { arenaOutcomeScore } from "@/lib/execution-arena";
 export default async function ExecutionArenaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; factory_case_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
@@ -17,7 +17,7 @@ export default async function ExecutionArenaPage({
   const [{ data: factoryCases }, { data: routes }, { data: trials, error }] = await Promise.all([
     supabase
       .from("project_factory_cases")
-      .select("id,title")
+      .select("id,title,problem,target_user,expected_value")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase
@@ -34,17 +34,22 @@ export default async function ExecutionArenaPage({
       .limit(60),
   ]);
 
+  const selectedCase = (factoryCases ?? []).find((item) => item.id === params.factory_case_id);
+  const autoScenario = selectedCase
+    ? `Validar a execução do projecto "${selectedCase.title}" para ${selectedCase.target_user || "o público-alvo definido"}, assegurando resposta ao problema "${selectedCase.problem}" e medindo se entrega o valor esperado: ${selectedCase.expected_value || "resultado definido no projecto"}.`
+    : "";
+
   return (
     <>
       <PageHeader
         eyebrow="Project Factory"
-        title="Execution Arena"
-        description="Compara execuções reais por qualidade, factualidade, sucesso da tarefa, tempo, custo e correcção humana. A Arena mede resultados; não mantém rankings estáticos de modelos."
+        title="Arena de Execução"
+        description="Compara execuções reais por qualidade, exactidão, sucesso da tarefa, tempo, custo e correcção humana. Esta etapa só deve ser usada quando existe dúvida material entre formas de execução."
       />
       <FlashMessage
         error={params.error ?? error?.message}
         created={params.created}
-        message="Resultado registado na Execution Arena."
+        message="Resultado registado na Arena de Execução."
       />
 
       <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
@@ -55,14 +60,14 @@ export default async function ExecutionArenaPage({
           </p>
 
           <form action={createExecutionArenaTrial} className="mt-5 space-y-4">
-            <Select label="Caso da Project Factory" name="factory_case_id" defaultValue="">
+            <Select label="Projecto em preparação" name="factory_case_id" defaultValue={selectedCase?.id ?? ""}>
               <option value="">Sem caso associado</option>
               {(factoryCases ?? []).map((item) => (
                 <option key={item.id} value={item.id}>{item.title}</option>
               ))}
             </Select>
 
-            <Select label="Rota do Orchestrator" name="orchestrator_route_id" defaultValue="">
+            <Select label="Rota de execução" name="orchestrator_route_id" defaultValue="">
               <option value="">Sem rota associada</option>
               {(routes ?? []).map((route) => (
                 <option key={route.id} value={route.id}>
@@ -71,19 +76,19 @@ export default async function ExecutionArenaPage({
               ))}
             </Select>
 
-            <TextArea label="Cenário / tarefa testada" name="scenario" required />
-            <Field label="Nome do candidato" name="candidate_label" required placeholder="Ex.: Pesquisa rápida A" />
-            <Field label="Modelo / provider usado" name="model_label" placeholder="Ex.: local, cloud, modelo X" />
+            <TextArea label="Cenário / tarefa testada · automático quando vem da Fábrica de Projectos" name="scenario" required defaultValue={autoScenario} />
+            <Field label="Nome da alternativa testada" name="candidate_label" required placeholder="Ex.: Abordagem A" />
+            <Field label="Modelo / fornecedor utilizado" name="model_label" placeholder="Ex.: local, nuvem, modelo X" />
             <Select label="Agente" name="agent_type" defaultValue="research">
-              <option value="command">Command</option>
-              <option value="research">Research</option>
-              <option value="business">Business</option>
+              <option value="command">Coordenação</option>
+              <option value="research">Pesquisa</option>
+              <option value="business">Negócio</option>
               <option value="marketing">Marketing</option>
-              <option value="product">Product</option>
-              <option value="qa">QA</option>
-              <option value="analytics">Analytics</option>
+              <option value="product">Produto</option>
+              <option value="qa">Qualidade</option>
+              <option value="analytics">Análise</option>
             </Select>
-            <Field label="Estratégia" name="strategy" required placeholder="Ex.: research_then_verify" />
+            <Field label="Estratégia" name="strategy" required placeholder="Ex.: pesquisar, verificar e comparar" />
             <Field label="Ferramenta principal" name="tool_label" placeholder="Ex.: web, n8n, Supabase" />
 
             <div className="grid gap-4 sm:grid-cols-3">
@@ -110,7 +115,7 @@ export default async function ExecutionArenaPage({
           </div>
           <div className="p-5">
             {!trials?.length ? (
-              <EmptyState>Ainda não existem testes na Execution Arena.</EmptyState>
+              <EmptyState>Ainda não existem testes na Arena de Execução.</EmptyState>
             ) : (
               <div className="space-y-4">
                 {trials.map((trial) => {
@@ -132,7 +137,7 @@ export default async function ExecutionArenaPage({
                           </p>
                         </div>
                         <span className="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-                          Outcome {score}/100
+                          Resultado {score}/100
                         </span>
                       </div>
 
@@ -141,7 +146,7 @@ export default async function ExecutionArenaPage({
                       <div className="mt-4 grid gap-2 text-xs text-[var(--cc-secondary)] sm:grid-cols-3">
                         <p>Qualidade: <strong>{trial.quality_score}</strong></p>
                         <p>Factualidade: <strong>{trial.factuality_score}</strong></p>
-                        <p>Task success: <strong>{trial.task_success_score}</strong></p>
+                        <p>Sucesso da tarefa: <strong>{trial.task_success_score}</strong></p>
                         <p>Tempo: <strong>{trial.duration_ms == null ? "—" : `${trial.duration_ms} ms`}</strong></p>
                         <p>Custo: <strong>{trial.cost_amount == null ? "—" : `${trial.cost_amount} ${trial.cost_currency ?? ""}`}</strong></p>
                         <p>Correcção humana: <strong>{trial.human_correction_minutes == null ? "—" : `${trial.human_correction_minutes} min`}</strong></p>
