@@ -161,9 +161,6 @@ export function FactoryAIAssistant() {
   return (
     <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
       <p className="text-sm font-semibold text-[var(--cc-foreground)]">Assistente IA</p>
-      <p className="mt-1 text-xs leading-5 text-[var(--cc-secondary)]">
-        Descreva a ideia de forma simples. O PCC ajuda a organizar a informação necessária.
-      </p>
       <textarea
         value={idea}
         onChange={(event) => setIdea(event.target.value)}
