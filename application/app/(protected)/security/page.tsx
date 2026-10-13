@@ -26,7 +26,6 @@ export default async function SecurityPage() {
       <PageHeader
         eyebrow="Fase 6"
         title="Segurança e escala"
-        description="RBAC, Vault metadata, security controls e eventos de segurança sem expor secrets."
       />
 
       {error && <Card className="mb-6 p-5 text-sm text-red-700">{error}</Card>}
