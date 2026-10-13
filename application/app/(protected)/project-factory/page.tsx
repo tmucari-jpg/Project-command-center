@@ -52,10 +52,7 @@ export default async function ProjectFactoryPage({
         <Card className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">1. O que quer fazer?</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-                Não precisa de ter o projecto todo definido. Um título, o problema e o resultado que procura são suficientes para começar.
-              </p>
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo projecto</h2>
             </div>
             
           </div>
@@ -88,18 +85,9 @@ export default async function ProjectFactoryPage({
               </div>
             </ManualEntry>
 
-            <button className={primaryButtonClass} type="submit">Analisar projecto</button>
+            <button className={primaryButtonClass} type="submit">Continuar para análise</button>
           </form>
 
-          <div className="mt-5 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
-            <p className="text-sm font-semibold text-[var(--cc-foreground)]">Como funciona</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-              1. Descreve o que pretende. 2. O PCC estrutura a ideia. 3. Revê e decide se avança.
-            </p>
-            <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
-              O Assistente IA usa a melhor opção disponível e mantém o preenchimento manual como alternativa.
-            </p>
-          </div>
         </Card>
 
         <Card>
