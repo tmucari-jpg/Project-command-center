@@ -1,9 +1,10 @@
+import Image from "next/image";
 import { LogOut } from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
 import { InstallAppButton } from "@/components/install-app-button";
 import { MobileNav, Sidebar } from "@/components/sidebar";
 
-export function AppShell({ children, email }: { children: React.ReactNode; email?: string | null }) {
+export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[var(--cc-background)]">
       <div className="flex min-h-screen">
@@ -11,9 +12,12 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
         <div className="min-w-0 flex-1">
           <header className="cc-safe-top sticky top-0 z-40 border-b border-[var(--cc-border)] bg-white/90 backdrop-blur-xl">
             <div className="flex min-h-16 items-center justify-between gap-4 px-5 sm:px-8">
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-gold)]">PCC · Da estratégia à execução</p>
-                <p className="truncate text-sm font-semibold tracking-[-0.01em] text-[var(--cc-foreground)]">{email}</p>
+              <div className="flex min-w-0 items-center gap-3">
+                <Image src="/icons/app-icon.svg" alt="PCC" width={36} height={36} className="rounded-[10px]" priority />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--cc-foreground)]">Project Command Center</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-gold)]">Da estratégia à execução</p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <InstallAppButton />
