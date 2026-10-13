@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
@@ -19,7 +20,7 @@ function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <button
-      className="w-full rounded-xl bg-slate-950 px-4 py-3 font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+      className="w-full rounded-[14px] bg-[var(--cc-accent)] px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-[var(--cc-accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
       type="submit"
       disabled={pending}
     >
@@ -59,20 +60,26 @@ export function AuthForm({ mode }: { mode: Mode }) {
           : "Actualizar palavra-passe";
 
   return (
-    <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <div className="mb-7">
-        <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-blue-600">
-          Project Command Center
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-950">{title}</h1>
+    <div className="w-full max-w-md rounded-[28px] border border-[color-mix(in_srgb,var(--cc-border)_82%,white)] bg-white/88 p-7 shadow-[0_24px_70px_rgba(7,63,54,0.10)] backdrop-blur-xl sm:p-9">
+      <div className="mb-8">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="rounded-[14px] border border-[color-mix(in_srgb,var(--cc-gold)_26%,var(--cc-border))] bg-white p-1.5 shadow-sm">
+            <Image src="/icons/app-icon.svg" alt="PCC" width={42} height={42} className="rounded-[11px]" priority />
+          </div>
+          <div>
+            <p className="text-sm font-semibold tracking-[-0.015em] text-[var(--cc-foreground)]">Project Command Center</p>
+            <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-gold)]">Da estratégia à execução</p>
+          </div>
+        </div>
+        <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--cc-foreground)]">{title}</h1>
       </div>
 
       <form action={formAction} className="space-y-4">
         {mode === "sign-up" && (
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-[var(--cc-foreground)]">
             Nome completo
             <input
-              className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 outline-none ring-blue-500 transition focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-[var(--cc-border)] px-3.5 py-3 outline-none ring-[var(--cc-gold)] transition focus:ring-2"
               name="fullName"
               type="text"
               autoComplete="name"
@@ -83,10 +90,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
         )}
 
         {mode !== "update-password" && (
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-[var(--cc-foreground)]">
             Email
             <input
-              className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 outline-none ring-blue-500 transition focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-[var(--cc-border)] px-3.5 py-3 outline-none ring-[var(--cc-gold)] transition focus:ring-2"
               name="email"
               type="email"
               autoComplete="email"
@@ -97,10 +104,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
         )}
 
         {(mode === "login" || mode === "sign-up" || mode === "update-password") && (
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-[var(--cc-foreground)]">
             Palavra-passe
             <input
-              className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-3 outline-none ring-blue-500 transition focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-[var(--cc-border)] px-3.5 py-3 outline-none ring-[var(--cc-gold)] transition focus:ring-2"
               name="password"
               type="password"
               autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -125,18 +132,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <SubmitButton label={button} />
       </form>
 
-      <div className="mt-6 space-y-2 text-sm text-slate-600">
+      <div className="mt-6 space-y-2 text-sm text-[var(--cc-secondary)]">
         {mode === "login" && (
           <>
             <p>
               Ainda não tem conta?{" "}
-              <Link className="font-medium text-blue-700 hover:underline" href="/auth/sign-up">
+              <Link className="font-medium text-[var(--cc-accent)] hover:underline" href="/auth/sign-up">
                 Criar conta
               </Link>
             </p>
             <p>
               <Link
-                className="font-medium text-blue-700 hover:underline"
+                className="font-medium text-[var(--cc-accent)] hover:underline"
                 href="/auth/forgot-password"
               >
                 Esqueci a palavra-passe
@@ -146,14 +153,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
         )}
         {mode !== "login" && mode !== "update-password" && (
           <p>
-            <Link className="font-medium text-blue-700 hover:underline" href="/auth/login">
+            <Link className="font-medium text-[var(--cc-accent)] hover:underline" href="/auth/login">
               Voltar ao login
             </Link>
           </p>
         )}
         {mode === "update-password" && state.success && (
           <p>
-            <Link className="font-medium text-blue-700 hover:underline" href="/dashboard">
+            <Link className="font-medium text-[var(--cc-accent)] hover:underline" href="/dashboard">
               Ir para o dashboard
             </Link>
           </p>
