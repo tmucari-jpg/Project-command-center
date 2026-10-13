@@ -27,14 +27,15 @@ async function callLocal(input: string) {
 }
 
 function setField(name: string, value?: string) {
-  if (!value) return;
+  if (!value) return false;
   const element = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`);
-  if (!element) return;
-  const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-  const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
-  setter?.call(element, value);
+  if (!element) return false;
+
+  element.value = value;
+  element.defaultValue = value;
   element.dispatchEvent(new Event("input", { bubbles: true }));
   element.dispatchEvent(new Event("change", { bubbles: true }));
+  return true;
 }
 
 function deterministicSuggestion(input: string): FactorySuggestion {
@@ -71,6 +72,7 @@ export function FactoryAIAssistant() {
   const [source, setSource] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<FactorySuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [appliedCount, setAppliedCount] = useState(0);
 
   async function generate() {
     if (idea.trim().length < 3) return;
@@ -133,7 +135,19 @@ export function FactoryAIAssistant() {
 
   function apply() {
     if (!suggestion) return;
-    Object.entries(suggestion).forEach(([name, value]) => setField(name, value));
+
+    const details = document.querySelector<HTMLDetailsElement>("details");
+    if (details) details.open = true;
+
+    let count = 0;
+    Object.entries(suggestion).forEach(([name, value]) => {
+      if (setField(name, value)) count += 1;
+    });
+
+    setAppliedCount(count);
+
+    const firstField = document.querySelector<HTMLElement>('[name="title"]');
+    firstField?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   return (
@@ -157,6 +171,11 @@ export function FactoryAIAssistant() {
         )}
       </div>
       {source && <p className="mt-3 text-xs text-[var(--cc-secondary)]">Sugestão gerada por {source}.</p>}
+      {appliedCount > 0 && (
+        <p className="mt-3 text-xs font-medium text-[var(--cc-foreground)]">
+          {appliedCount} campos preenchidos. Reveja abaixo antes de analisar o projecto.
+        </p>
+      )}
       {error && <p className="mt-3 text-xs text-red-700">{error}</p>}
     </div>
   );
