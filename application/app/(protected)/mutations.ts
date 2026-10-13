@@ -566,7 +566,39 @@ export async function finalizeFactoryDecision(formData: FormData) {
 }
 
 export async function saveFactoryValidation(formData: FormData) {
-  const parsed = factoryValidationSchema.safeParse(values(formData));
+  const raw = values(formData);
+  const evidence = String(raw.evidence ?? "").trim();
+  const recommendation = String(raw.recommendation ?? "");
+
+  if (!raw.result_summary) {
+    const conclusion =
+      recommendation === "proceed"
+        ? "Conclusão: a evidência registada suporta o avanço para a preparação final."
+        : recommendation === "modify"
+          ? "Conclusão: a evidência registada é parcial ou insuficiente e exige ajustes antes de uma nova validação."
+          : recommendation === "hold"
+            ? "Conclusão: a evidência registada não justifica avanço neste momento."
+            : "Conclusão: recomendação final ainda não seleccionada.";
+
+    const nextActions =
+      recommendation === "proceed"
+        ? "Acções seguintes: consolidar o relatório final, confirmar custos/recursos quando aplicável e preparar a decisão final."
+        : recommendation === "modify"
+          ? "Acções seguintes: corrigir as hipóteses mais fracas, ajustar a proposta e executar novo teste com critérios mensuráveis."
+          : recommendation === "hold"
+            ? "Acções seguintes: registar as razões da espera, definir o gatilho para reavaliação e preservar toda a evidência."
+            : "Acções seguintes: rever a evidência e seleccionar uma recomendação.";
+
+    raw.result_summary = [
+      "Evidência observada:",
+      evidence,
+      "",
+      conclusion,
+      nextActions,
+    ].join("\n");
+  }
+
+  const parsed = factoryValidationSchema.safeParse(raw);
   const fallbackPath = "/project-factory";
   if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
 
