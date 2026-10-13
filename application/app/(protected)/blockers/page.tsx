@@ -6,9 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { ManualEntry } from "@/components/manual-entry";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
-import { STATUS_OPTIONS } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
-import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
 
 export default async function BlockersPage({
@@ -59,9 +57,7 @@ export default async function BlockersPage({
             <TextArea label="Impacto" name="impact" />
             <Field label="Responsável" name="responsible" />
             <Field label="Prazo de resolução" name="resolution_due_at" type="datetime-local" />
-            <Select label="Estado" name="status" defaultValue="open">
-              {STATUS_OPTIONS.blockers.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
-            </Select>
+            <input type="hidden" name="status" value="open" />
             <TextArea label="Solução" name="solution" />
             <button className={primaryButtonClass} type="submit">Criar bloqueio</button>
           </form>
