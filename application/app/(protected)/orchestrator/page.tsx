@@ -59,21 +59,26 @@ export default async function OrchestratorPage({
               <option value="analytics">Análise</option>
             </Select>
             <TextArea label="Objectivo" name="objective" required />
-            <Select label="Risco" name="risk_level" defaultValue="medium">
-              <option value="low">Baixo</option>
-              <option value="medium">Médio</option>
-              <option value="high">Alto</option>
-              <option value="critical">Crítico</option>
-            </Select>
-            <Select label="Factualidade necessária" name="factuality" defaultValue="standard">
-              <option value="standard">Normal</option>
-              <option value="high">Alta</option>
-            </Select>
-            <Select label="Sensibilidade a custo" name="cost_sensitivity" defaultValue="medium">
-              <option value="low">Baixa</option>
-              <option value="medium">Média</option>
-              <option value="high">Alta</option>
-            </Select>
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Opções avançadas</summary>
+              <div className="mt-4 space-y-4">
+                <Select label="Risco" name="risk_level" defaultValue="medium">
+                  <option value="low">Baixo</option>
+                  <option value="medium">Médio</option>
+                  <option value="high">Alto</option>
+                  <option value="critical">Crítico</option>
+                </Select>
+                <Select label="Factualidade necessária" name="factuality" defaultValue="standard">
+                  <option value="standard">Normal</option>
+                  <option value="high">Alta</option>
+                </Select>
+                <Select label="Sensibilidade a custo" name="cost_sensitivity" defaultValue="medium">
+                  <option value="low">Baixa</option>
+                  <option value="medium">Média</option>
+                  <option value="high">Alta</option>
+                </Select>
+              </div>
+            </details>
             <button className={primaryButtonClass} type="submit">Seleccionar rota</button>
           </form>
         </Card>
