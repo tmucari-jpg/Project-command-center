@@ -4,7 +4,7 @@ import { Card, EmptyState } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 
-export default async function AIProvidersPage() {
+export default async function AIFornecedoresPage() {
   const { supabase, user } = await requireUser();
 
   const [{ data: providers, error: providerError }, { data: queue, error: queueError }] = await Promise.all([
@@ -20,15 +20,14 @@ export default async function AIProvidersPage() {
       <PageHeader
         eyebrow="Admin / Avançado"
         title="Configuração de IA"
-        description="Estado técnico dos providers de IA e da sincronização. Esta área não faz parte do fluxo diário."
       />
 
       <Card className="mb-6 border-amber-200 bg-amber-50/50 p-5">
         <p className="font-semibold text-amber-900">
-          {operationalProviders.length ? "Existe pelo menos um provider disponível." : "Assistente IA ainda não está operacional neste ambiente."}
+          {operationalProviders.length ? "Existe pelo menos um fornecedor disponível." : "Assistente IA ainda não está operacional neste ambiente."}
         </p>
         <p className="mt-2 text-sm leading-6 text-amber-900/80">
-          A base PWA existe, mas IA local real, RAG local e sincronização offline completa continuam pendentes do runtime local. O PCC não deve apresentar estas capacidades como concluídas.
+          A base PWA existe, mas IA local real, RAG local e sincronização offline completa continuam pendentes do execução local. O PCC não deve apresentar estas capacidades como concluídas.
         </p>
       </Card>
 
@@ -40,7 +39,7 @@ export default async function AIProvidersPage() {
             <HardDrive size={19} /> Providers
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Credenciais não são guardadas nesta tabela. Providers indisponíveis não devem ser usados pelo assistente.
+            Credenciais não são guardadas nesta tabela. Fornecedores indisponíveis não devem ser usados pelo assistente.
           </p>
           {!providers?.length ? (
             <div className="mt-4"><EmptyState>Nenhum provider foi activado neste ambiente.</EmptyState></div>
@@ -65,9 +64,9 @@ export default async function AIProvidersPage() {
         <Card className="p-5">
           <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><ShieldCheck size={18} /> Segurança</h2>
           <div className="mt-4 space-y-3 text-sm text-slate-600">
-            <p>• Secrets ficam fora do Provider Adapter.</p>
-            <p>• Providers cloud recebem apenas contexto necessário.</p>
-            <p>• IA local só será marcada como activa após health check real.</p>
+            <p>• Secrets ficam fora do adaptador de fornecedores.</p>
+            <p>• Serviços na nuvem recebem apenas contexto necessário.</p>
+            <p>• IA local só será marcada como activa após verificação real.</p>
             <p>• Ações críticas continuam sujeitas a aprovação humana.</p>
           </div>
         </Card>
