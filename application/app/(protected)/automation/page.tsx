@@ -64,7 +64,6 @@ export default async function AutomationPage({
         <Card className="p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Registar automação</h2>
           <form action={createAutomationWorkflow} className="mt-5 space-y-4">
-            <Field label="Código" name="code" required placeholder="Ex.: briefing_daily_publish" />
             <Field label="Nome" name="name" required placeholder="Ex.: Publicar Briefing Diário" />
             <TextArea label="Descrição" name="description" />
             <Select label="Modo de execução" name="trigger_mode" defaultValue="webhook">
