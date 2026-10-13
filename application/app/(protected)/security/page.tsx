@@ -1,11 +1,11 @@
 import { KeyRound, LockKeyhole, ShieldCheck, Users } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 
 export default async function SecurityPage() {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
 
   const [
     { data: roles, error: rolesError },
