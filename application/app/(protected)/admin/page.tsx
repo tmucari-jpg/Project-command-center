@@ -14,14 +14,14 @@ import { Card } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 
 const tools = [
-  { href: "/agents", label: "Agentes", description: "Execuções especializadas e aprovações humanas.", icon: Bot },
-  { href: "/orchestrator", label: "Orquestração", description: "Rotas e decisões internas de execução.", icon: BrainCircuit },
-  { href: "/execution-arena", label: "Área de testes", description: "Testes e execução controlada.", icon: FlaskConical },
-  { href: "/factory-library", label: "Biblioteca", description: "Activos, instruções, estratégias e lições reutilizáveis.", icon: BookOpenCheck },
-  { href: "/intelligence", label: "Inteligência", description: "Pesquisa e informação de apoio.", icon: Radar },
-  { href: "/ai-providers", label: "Configuração de IA", description: "Serviços de IA, estado local e sincronização.", icon: HardDrive },
-  { href: "/security", label: "Segurança", description: "Controlo e revisão de segurança.", icon: LockKeyhole },
-  { href: "/optimization", label: "Optimização", description: "Melhorias técnicas e operacionais.", icon: Repeat2 },
+  { href: "/agents", label: "Agentes", description: "Execuções especializadas e aprovações.", icon: Bot },
+  { href: "/orchestrator", label: "Orquestração", description: "Regras de encaminhamento e execução.", icon: BrainCircuit },
+  { href: "/execution-arena", label: "Área de testes", description: "Testes controlados antes da decisão final.", icon: FlaskConical },
+  { href: "/factory-library", label: "Biblioteca", description: "Conhecimento e activos reutilizáveis.", icon: BookOpenCheck },
+  { href: "/intelligence", label: "Inteligência", description: "Sinais, oportunidades e informação de apoio.", icon: Radar },
+  { href: "/ai-providers", label: "Configuração de IA", description: "Configuração dos serviços inteligentes do PCC.", icon: HardDrive },
+  { href: "/security", label: "Segurança", description: "Acessos, controlos e eventos de segurança.", icon: LockKeyhole },
+  { href: "/optimization", label: "Optimização", description: "Saúde operacional e melhoria contínua.", icon: Repeat2 },
 ];
 
 export default async function AdminPage() {
@@ -36,7 +36,7 @@ export default async function AdminPage() {
       <Card className="mb-6 p-5">
         <p className="font-semibold text-[var(--cc-foreground)]">Configuração do sistema</p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Use esta área apenas para configuração técnica, segurança e manutenção interna. As Automações fazem parte do fluxo principal do PCC.
+          Área reservada à configuração, segurança e manutenção do PCC.
         </p>
       </Card>
 
