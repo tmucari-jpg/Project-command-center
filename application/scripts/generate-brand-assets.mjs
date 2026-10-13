@@ -17,13 +17,10 @@ if (!meta.width || !meta.height) throw new Error("Invalid logo image.");
 await sharp(source).png({ compressionLevel: 9 }).toFile(path.join(publicDir, "brand", "pcc-logo.png"));
 
 // The official symbol is the left block of the supplied 550x182 artwork.
-const symbolWidth = Math.round(meta.width * 0.313);
 async function makeIcon(size, file, paddingRatio) {
   const inner = Math.round(size * (1 - paddingRatio * 2));
   const buffer = await sharp(source)
-    .extract({ left: 0, top: 0, width: symbolWidth, height: meta.height })
-    .trim({ background: "#ffffff", threshold: 10 })
-    .resize(inner, inner, { fit: "contain" })
+    .resize(inner, inner, { fit: "cover", position: "left" })
     .png()
     .toBuffer();
   await sharp({

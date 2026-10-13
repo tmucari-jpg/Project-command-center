@@ -32,7 +32,7 @@ jobs:
 
       - name: Generate brand assets
         working-directory: application
-        run: node scripts/generate-brand-assets.mjs public/brand/pcc-logo.webp
+        run: node scripts/generate-brand-assets.mjs public/brand/pcc-logo-source.webp
 
       - name: Commit generated assets
         run: |
