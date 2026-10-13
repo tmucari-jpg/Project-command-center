@@ -34,7 +34,6 @@ export default async function MetricsPage({
       <PageHeader
         eyebrow="Resultados"
         title="Métricas"
-        description="Registe medidas reais de execução, resultado, prazo, foco, tempo e saúde do projecto."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
