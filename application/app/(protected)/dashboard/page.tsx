@@ -164,14 +164,12 @@ export default async function DashboardPage() {
           <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <p className="text-sm font-medium text-[var(--cc-secondary)]">Entregáveis em atraso</p>
             <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{overdueDeliverables}</p>
-            <p className="mt-2 text-xs text-[var(--cc-secondary)]">Calculado pelos prazos registados no PCC</p>
           </Card>
         </Link>
         <Link href="/metrics" className="group">
           <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <p className="text-sm font-medium text-[var(--cc-secondary)]">Métricas registadas</p>
             <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{metrics.length}</p>
-            <p className="mt-2 text-xs text-[var(--cc-secondary)]">Últimos valores medidos</p>
           </Card>
         </Link>
       </div>
@@ -182,7 +180,6 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-slate-950">Execução</h2>
-                <p className="mt-1 text-sm text-slate-500">Acções abertas ordenadas por prazo.</p>
               </div>
               <Link className="text-sm font-medium text-[var(--cc-accent)] hover:underline" href="/actions">
                 Ver todas
@@ -283,7 +280,6 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-[var(--cc-foreground)]">Métricas recentes</h2>
-                <p className="mt-1 text-sm text-[var(--cc-secondary)]">Últimos valores registados no PCC.</p>
               </div>
               <Link href="/metrics" className="text-sm font-semibold text-[var(--cc-accent)]">Abrir métricas</Link>
             </div>
@@ -311,7 +307,6 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-[var(--cc-foreground)]">Decisões recentes</h2>
-                <p className="mt-1 text-sm text-[var(--cc-secondary)]">Últimas decisões registadas no sistema.</p>
               </div>
               <Link href="/decisions" className="text-sm font-semibold text-[var(--cc-accent)]">Abrir decisões</Link>
             </div>
