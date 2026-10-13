@@ -36,6 +36,7 @@ import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constant
 import { requireUser } from "@/lib/auth";
 import { selectExecutionRoute } from "@/lib/orchestrator";
 import { createN8nCallback, dispatchToN8n } from "@/lib/n8n";
+import { automationCodeFromName } from "@/lib/automation";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -112,13 +113,7 @@ export async function createAutomationWorkflow(formData: FormData) {
   const path = "/automation";
   const raw = values(formData);
   if (!raw.code && raw.name) {
-    raw.code = String(raw.name)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "")
-      .slice(0, 120);
+    raw.code = automationCodeFromName(String(raw.name));
   }
   const parsed = automationWorkflowSchema.safeParse(raw);
   if (!parsed.success) fail(path, zodMessage(parsed.error));
