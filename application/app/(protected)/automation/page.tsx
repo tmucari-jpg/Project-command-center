@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { n8nConfigured } from "@/lib/n8n";
+import { displayLabel } from "@/lib/display-label";
 
 export default async function AutomationPage({
   searchParams,
@@ -146,11 +147,11 @@ export default async function AutomationPage({
                       <div>
                         <p className="font-semibold text-[var(--cc-foreground)]">{job.objective}</p>
                         <p className="mt-1 text-xs text-[var(--cc-secondary)]">
-                          {relation?.name ?? "Automação não definida"} · prioridade {job.priority}
+                          {relation?.name ?? "Automação não definida"} · prioridade {displayLabel(job.priority)}
                         </p>
                       </div>
                       <span className="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
-                        {job.status}
+                        {displayLabel(job.status)}
                       </span>
                     </div>
 
