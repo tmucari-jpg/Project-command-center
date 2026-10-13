@@ -40,7 +40,6 @@ export default async function ProjectFactoryPage({
       <PageHeader
         eyebrow="Novo projecto"
         title="Diga o que pretende criar"
-        description="Descreva a ideia de forma simples. O PCC organiza a informação e prepara o projecto para análise."
       />
       <FlashMessage
         error={params.error ?? error?.message}
