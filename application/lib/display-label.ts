@@ -47,6 +47,44 @@ const LABELS: Record<string, string> = {
   time_efficiency: "Eficiência de tempo",
   project_health: "Saúde do projecto",
   custom: "Personalizada",
+
+  queued: "Na fila",
+  approved_for_run: "Aprovada",
+  dispatching: "A iniciar",
+  running: "Em execução",
+  failed: "Falhou",
+  measured: "Medido",
+
+  candidate: "Candidato",
+  manual: "Manual",
+  system: "Sistema",
+  generated: "Gerado",
+
+  lead: "Lead",
+  contacted: "Contactado",
+  qualified: "Qualificado",
+  proposal: "Proposta",
+  negotiation: "Negociação",
+  won: "Ganho",
+  lost: "Perdido",
+
+  not_ready: "Não preparado",
+  ready_to_validate: "Pronto para validar",
+  validating: "Em validação",
+  validated: "Validado",
+
+  actual: "Realizado",
+  forecast: "Previsão",
+  revenue: "Receita",
+  cost: "Custo",
+
+  command: "Coordenação",
+  research: "Pesquisa",
+  business: "Negócio",
+  marketing: "Marketing",
+  product: "Produto",
+  qa: "Qualidade",
+  analytics: "Análise",
 };
 
 export function displayLabel(value?: string | null) {
