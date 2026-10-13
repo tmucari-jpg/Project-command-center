@@ -4,6 +4,7 @@ import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 
 const TYPE_LABELS: Record<string, string> = {
   component: "Componente",
@@ -84,11 +85,11 @@ export default async function FactoryLibraryPage({
                         <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
                         <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                           {TYPE_LABELS[item.asset_type] ?? item.asset_type}
-                          {item.source_type ? ` · origem ${item.source_type}` : ""}
+                          {item.source_type ? ` · origem ${displayLabel(item.source_type)}` : ""}
                         </p>
                       </div>
                       <span className="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
-                        {item.status}
+                        {displayLabel(item.status)}
                       </span>
                     </div>
 
