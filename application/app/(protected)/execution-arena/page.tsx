@@ -55,9 +55,6 @@ export default async function ExecutionArenaPage({
       <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
         <Card className="p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Registar execução</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            Use a mesma tarefa/cenário para comparar candidatos diferentes em condições equivalentes.
-          </p>
 
           <form action={createExecutionArenaTrial} className="mt-5 space-y-4">
             <Select label="Projecto em preparação" name="factory_case_id" defaultValue={selectedCase?.id ?? ""}>
