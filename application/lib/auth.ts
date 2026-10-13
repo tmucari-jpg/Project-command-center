@@ -16,7 +16,7 @@ export async function requireUser() {
 }
 
 
-function isConfiguredAdminEmail(email?: string | null) {
+export function isConfiguredAdminEmail(email?: string | null) {
   if (!email) return false;
 
   const allowed = (process.env.PCC_ADMIN_EMAILS ?? "")
