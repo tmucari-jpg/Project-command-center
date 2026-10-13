@@ -62,14 +62,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
   return (
     <div className="w-full max-w-md rounded-[28px] border border-[color-mix(in_srgb,var(--cc-border)_82%,white)] bg-white/88 p-7 shadow-[0_24px_70px_rgba(7,63,54,0.10)] backdrop-blur-xl sm:p-9">
       <div className="mb-8">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="rounded-[14px] border border-[color-mix(in_srgb,var(--cc-gold)_26%,var(--cc-border))] bg-white p-1.5 shadow-sm">
-            <Image src="/icons/app-icon.svg" alt="PCC" width={42} height={42} className="rounded-[11px]" priority />
-          </div>
-          <div>
-            <p className="text-sm font-semibold tracking-[-0.015em] text-[var(--cc-foreground)]">Project Command Center</p>
-            <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-gold)]">Da estratégia à execução</p>
-          </div>
+        <div className="mb-7 flex justify-center">
+          <Image
+            src="/brand/pcc-logo.svg"
+            alt="Project Command Center"
+            width={300}
+            height={85}
+            className="h-auto w-full max-w-[300px]"
+            priority
+          />
         </div>
         <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--cc-foreground)]">{title}</h1>
       </div>
