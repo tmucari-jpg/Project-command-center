@@ -7,6 +7,7 @@ import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { AGENT_REGISTRY, AGENT_TYPES } from "@/lib/agentic-core";
 import { formatDateTime } from "@/lib/format";
+import { displayLabel } from "@/lib/display-label";
 
 export default async function AgentsPage({
   searchParams,
@@ -108,7 +109,7 @@ export default async function AgentsPage({
                           </p>
                         </div>
                         <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                          {run.status}
+                          {displayLabel(run.status)}
                         </span>
                       </div>
                     </article>
@@ -133,7 +134,7 @@ export default async function AgentsPage({
                 {approvals.map((approval) => (
                   <div key={approval.id} className="rounded-xl border border-amber-200 bg-amber-50/40 p-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
-                      {approval.action_type.replaceAll("_", " ")}
+                      {displayLabel(approval.action_type)}
                     </p>
                     <p className="mt-2 text-sm text-slate-800">{approval.description}</p>
                   </div>
