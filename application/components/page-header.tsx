@@ -20,11 +20,7 @@ export function PageHeader({
         <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.025em] text-[var(--cc-accent)]">
           {title}
         </h1>
-        {description && (
-          <p className="mt-3 max-w-3xl text-[15px] leading-6 text-[var(--cc-secondary)]">
-            {description}
-          </p>
-        )}
+        {/* O Guia/Ajuda concentra instruções. Cabeçalhos mantêm apenas contexto essencial. */}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
