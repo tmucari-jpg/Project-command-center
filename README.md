@@ -1,5 +1,6 @@
-# Project-command-center
-Project Command Center
+# Project Command Center
+
+> **Documentação oficial actual:** consulte [docs/00_OFFICIAL_DOCUMENTATION_INDEX.md](docs/00_OFFICIAL_DOCUMENTATION_INDEX.md). Os documentos CURRENT definidos nesse índice prevalecem para operação, segurança, deploy e aceitação.
 
 Centro de Execução de Projetos com IA
 
