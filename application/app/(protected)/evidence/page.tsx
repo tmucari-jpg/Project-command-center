@@ -39,7 +39,6 @@ export default async function EvidencePage({
       <PageHeader
         eyebrow="Comprovação"
         title="Evidências"
-        description="Registe links, documentos, números e outras provas do avanço realizado."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
