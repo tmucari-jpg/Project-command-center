@@ -41,18 +41,23 @@ export default async function BlockersPage({
           <h2 className="text-lg font-semibold text-slate-950">Novo bloqueio</h2>
           <form action={createBlocker} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
-            <Select label="Projecto" name="project_id" defaultValue="">
-              <option value="">Sem projecto</option>
-              {(projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
-            </Select>
-            <Select label="Entregável" name="deliverable_id" defaultValue="">
-              <option value="">Sem entregável</option>
-              {(deliverables ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-            </Select>
             <Select label="Acção" name="action_id" defaultValue="">
               <option value="">Sem acção</option>
               {(actions ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
+            <Select label="Entregável, se não houver acção" name="deliverable_id" defaultValue="">
+              <option value="">Sem entregável</option>
+              {(deliverables ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+            </Select>
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <div className="mt-4">
+                <Select label="Projecto, se não houver acção ou entregável" name="project_id" defaultValue="">
+                  <option value="">Sem projecto</option>
+                  {(projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
+                </Select>
+              </div>
+            </details>
             <TextArea label="Descrição" name="description" />
             <TextArea label="Impacto" name="impact" />
             <Field label="Responsável" name="responsible" />
