@@ -35,6 +35,7 @@ A documentação histórica é mantida para rastreabilidade, mas não deve ser u
 - `34_DOCUMENT_CONTROL_APPROVALS_CURRENT.md` — controlo documental e aprovações.
 - `35_INTEGRATION_REGISTER_CURRENT.md` — registo oficial de integrações.
 - `36_PRODUCTION_ACCEPTANCE_CERTIFICATE_TEMPLATE.md` — certificado formal de aceitação de produção.
+- `37_FINAL_AUDIT_CURRENT.md` — auditoria final técnica e gate do último deploy.
 
 ## 3. Estado actual resumido
 

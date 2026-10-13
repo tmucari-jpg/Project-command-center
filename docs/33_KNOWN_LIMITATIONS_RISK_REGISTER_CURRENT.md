@@ -58,3 +58,12 @@ Depois do próximo deploy:
 - release record.
 
 Só então fechar Production Acceptance da nova versão.
+
+
+## 9. Tooling npm / ESLint
+
+**Runtime de produção:** corrigido. `npm audit --omit=dev` retorna 0 vulnerabilidades após a actualização para Next 16.4.0 e transitivos corrigidos.
+
+**Tooling de desenvolvimento:** o audit completo pode continuar a reportar findings high em dependências transitivas de `eslint-config-next`/globbing. O fix automático disponível implica downgrade incompatível para Next 14.x e não foi aplicado.
+
+**Disposition:** risco aceite apenas para tooling/build, não runtime. O CI passa a bloquear vulnerabilidades high/critical de dependências de produção com `npm audit --omit=dev --audit-level=high`. Rever os findings de desenvolvimento quando existir correcção upstream compatível.
