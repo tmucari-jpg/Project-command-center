@@ -70,7 +70,6 @@ export default async function BriefingMonetizationPage({
       <PageHeader
         eyebrow="E02 · Briefing Diário"
         title="Monetização e subscrições"
-        description="Planos, pagamentos e funil aquisição → pagamento → activação → retenção."
       />
       <FlashMessage
         error={params.error ?? error}
@@ -144,7 +143,7 @@ export default async function BriefingMonetizationPage({
               <Field label="Pagaram" name="paid" type="number" min={0} defaultValue={0} required />
               <Field label="Activados" name="activated" type="number" min={0} defaultValue={0} required />
               <Field label="Retidos" name="retained" type="number" min={0} defaultValue={0} required />
-              <Field label="Churn" name="churned" type="number" min={0} defaultValue={0} required />
+              <Field label="Cancelamentos" name="churned" type="number" min={0} defaultValue={0} required />
             </div>
             <TextArea label="Notas" name="notes" />
             <button className={primaryButtonClass} type="submit">Guardar métricas</button>
