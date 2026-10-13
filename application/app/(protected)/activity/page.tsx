@@ -30,7 +30,6 @@ export default async function ActivityPage() {
       <PageHeader
         eyebrow="Auditoria"
         title="Actividade"
-        description="Histórico de alterações e sessões de execução registadas pelo sistema."
       />
 
       <div className="grid gap-6 xl:grid-cols-2">
