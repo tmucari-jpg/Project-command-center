@@ -42,7 +42,6 @@ export default async function ProjectsPage({
       <PageHeader
         eyebrow="Portfólio"
         title="Projectos"
-        description="Lista completa dos projectos registados no PCC, com estado, progresso, prazo e próximo passo."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
