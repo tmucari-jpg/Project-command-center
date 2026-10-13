@@ -103,9 +103,8 @@ export default async function ProjectHubPage({
       </div>
 
       <PageHeader
-        eyebrow="Project Hub"
+        eyebrow="Projecto"
         title={project.title}
-        description={project.description || "Contexto operacional isolado deste projecto."}
       />
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
@@ -123,7 +122,7 @@ export default async function ProjectHubPage({
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="p-5 xl:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-950">Overview</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Resumo</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Objectivo</dt><dd className="mt-1 text-sm text-slate-800">{objectiveRelation?.title ?? "Sem objectivo associado"}</dd></div>
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prazo</dt><dd className="mt-1 text-sm text-slate-800">{formatDate(project.due_date)}</dd></div>
@@ -231,7 +230,7 @@ export default async function ProjectHubPage({
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card className="p-5">
-          <h2 className="text-lg font-semibold text-slate-950">Project Memory</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Memória do projecto</h2>
           <p className="mt-1 text-sm text-slate-500">Contexto persistente deste projecto. Não substitui os dados operacionais.</p>
           <form action={createProjectMemory} className="mt-5 space-y-4">
             <input type="hidden" name="project_id" value={project.id} />
