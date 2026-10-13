@@ -110,7 +110,17 @@ export async function approveFactoryLibraryItem(formData: FormData) {
 
 export async function createAutomationWorkflow(formData: FormData) {
   const path = "/automation";
-  const parsed = automationWorkflowSchema.safeParse(values(formData));
+  const raw = values(formData);
+  if (!raw.code && raw.name) {
+    raw.code = String(raw.name)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 120);
+  }
+  const parsed = automationWorkflowSchema.safeParse(raw);
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
   const { supabase, user } = await requireUser();
