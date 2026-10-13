@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { automationCodeFromName } from "@/lib/automation";
 import { executionArenaDefaults } from "@/lib/execution-arena";
+import { isConfiguredAdminEmail } from "@/lib/auth";
 import {
   actionSchema,
   blockerSchema,
@@ -147,5 +148,29 @@ describe("executionArenaDefaults", () => {
       agentType: "research",
       strategy: "pesquisar, verificar e comparar",
     });
+  });
+});
+
+
+describe("admin allowlist", () => {
+  it("matches configured admin emails case-insensitively", () => {
+    const previous = process.env.PCC_ADMIN_EMAILS;
+    process.env.PCC_ADMIN_EMAILS = "first@example.com, second@example.com";
+
+    expect(isConfiguredAdminEmail("FIRST@example.com")).toBe(true);
+    expect(isConfiguredAdminEmail(" second@example.com ")).toBe(true);
+    expect(isConfiguredAdminEmail("other@example.com")).toBe(false);
+
+    process.env.PCC_ADMIN_EMAILS = previous;
+  });
+
+  it("fails closed when no admin allowlist is configured", () => {
+    const previous = process.env.PCC_ADMIN_EMAILS;
+    delete process.env.PCC_ADMIN_EMAILS;
+
+    expect(isConfiguredAdminEmail("first@example.com")).toBe(false);
+    expect(isConfiguredAdminEmail(null)).toBe(false);
+
+    process.env.PCC_ADMIN_EMAILS = previous;
   });
 });
