@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { ManualEntry } from "@/components/manual-entry";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
-import { PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
+import { PRIORITIES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 
@@ -40,21 +40,22 @@ export default async function IdeasPage({
           <form action={createIdea} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
             <TextArea label="Descrição" name="description" />
-            <Field label="Origem" name="source" />
-            <TextArea label="Potencial" name="potential" />
             <Select label="Projecto relacionado" name="project_id" defaultValue="">
               <option value="">Sem projecto</option>
               {(projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
             </Select>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Prioridade" name="priority" defaultValue="medium">
-                {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
-              </Select>
-              <Select label="Estado" name="status" defaultValue="captured">
-                {STATUS_OPTIONS.ideas.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
-              </Select>
-            </div>
-            <TextArea label="Próxima decisão" name="next_decision" />
+            <input type="hidden" name="status" value="captured" />
+            <Select label="Prioridade" name="priority" defaultValue="medium">
+              {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
+            </Select>
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <div className="mt-4 space-y-4">
+                <Field label="Origem" name="source" />
+                <TextArea label="Potencial" name="potential" />
+                <TextArea label="Próxima decisão" name="next_decision" />
+              </div>
+            </details>
             <button className={primaryButtonClass} type="submit">Capturar ideia</button>
           </form>
         </ManualEntry>
