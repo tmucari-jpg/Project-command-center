@@ -31,7 +31,6 @@ export default async function AgendaPage() {
       <PageHeader
         eyebrow="Planeamento"
         title="Agenda diária"
-        description="Até 5 acções abertas, ordenadas pelos dados já existentes: próxima acção, prioridade e prazo."
       />
 
       {error ? (
