@@ -35,7 +35,6 @@ export default async function BlockersPage({
       <PageHeader
         eyebrow="Risco"
         title="Bloqueios"
-        description="Registe o que impede o avanço, o impacto, responsável e prazo de resolução."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
