@@ -47,18 +47,23 @@ export default async function ActionsPage({
           <h2 className="text-lg font-semibold text-slate-950">Nova acção</h2>
           <form action={createAction} className="mt-5 space-y-4">
             <Field label="Título" name="title" required placeholder="Ex.: Enviar proposta ao cliente" />
-            <Select label="Projecto" name="project_id" defaultValue={selectedProjectId}>
-              <option value="">Sem projecto</option>
-              {(projects ?? []).map((project) => (
-                <option key={project.id} value={project.id}>{project.title}</option>
-              ))}
-            </Select>
             <Select label="Entregável" name="deliverable_id" defaultValue="">
               <option value="">Sem entregável</option>
               {(deliverables ?? []).map((item) => (
                 <option key={item.id} value={item.id}>{item.title}</option>
               ))}
             </Select>
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <div className="mt-4">
+                <Select label="Projecto, se não houver entregável" name="project_id" defaultValue={selectedProjectId}>
+                  <option value="">Sem projecto</option>
+                  {(projects ?? []).map((project) => (
+                    <option key={project.id} value={project.id}>{project.title}</option>
+                  ))}
+                </Select>
+              </div>
+            </details>
             <TextArea label="Descrição" name="description" />
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="Prioridade" name="priority" defaultValue="medium">
