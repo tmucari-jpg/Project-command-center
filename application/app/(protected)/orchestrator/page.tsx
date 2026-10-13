@@ -3,7 +3,7 @@ import { Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 
 export default async function OrchestratorPage({
   searchParams,
@@ -11,7 +11,7 @@ export default async function OrchestratorPage({
   searchParams: Promise<{ error?: string; created?: string }>;
 }) {
   const params = await searchParams;
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
 
   const [{ data: projects }, { data: factoryCases }, { data: routes, error }] = await Promise.all([
     supabase.from("projects").select("id,title").eq("user_id", user.id).order("title"),
