@@ -29,7 +29,6 @@ export default async function ObjectivesPage({
       <PageHeader
         eyebrow="Resultados"
         title="Objectivos"
-        description="Defina o resultado esperado, prazo, métrica principal e progresso."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
