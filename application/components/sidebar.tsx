@@ -63,7 +63,6 @@ const navigationGroups = [
 
 const supportNavigation = [
   { href: "/help", label: "Ajuda", icon: CircleHelp },
-  { href: "/admin", label: "Administração", icon: Settings },
 ];
 
 const navigation = navigationGroups.flatMap((group) => group.items);
@@ -86,7 +85,7 @@ function NavLink({ pathname, href, label, Icon }: { pathname: string; href: stri
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -119,6 +118,9 @@ export function Sidebar() {
           {supportNavigation.map(({ href, label, icon }) => (
             <NavLink key={href} pathname={pathname} href={href} label={label} Icon={icon} />
           ))}
+          {isAdmin && (
+            <NavLink pathname={pathname} href="/admin" label="Administração" Icon={Settings} />
+          )}
         </nav>
       </div>
     </aside>
