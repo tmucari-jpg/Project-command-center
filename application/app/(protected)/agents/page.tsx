@@ -4,7 +4,7 @@ import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { AGENT_REGISTRY, AGENT_TYPES } from "@/lib/agentic-core";
 import { formatDateTime } from "@/lib/format";
 
@@ -14,7 +14,7 @@ export default async function AgentsPage({
   searchParams: Promise<{ error?: string; created?: string }>;
 }) {
   const params = await searchParams;
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
 
   const [{ data: projects }, { data: runs }, { data: approvals }] = await Promise.all([
     supabase.from("projects").select("id,title").eq("user_id", user.id).order("title"),
