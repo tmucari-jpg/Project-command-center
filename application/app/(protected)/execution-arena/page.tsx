@@ -73,34 +73,19 @@ export default async function ExecutionArenaPage({
             </Select>
 
             <TextArea label="Cenário / tarefa testada" name="scenario" required defaultValue={autoScenario} />
-            <Field label="Nome da alternativa testada" name="candidate_label" required placeholder="Ex.: Abordagem A" />
-            <Field label="Método / recurso utilizado" name="model_label" placeholder="Ex.: local, nuvem, modelo X" />
-            <Select label="Agente" name="agent_type" defaultValue="research">
-              <option value="command">Coordenação</option>
-              <option value="research">Pesquisa</option>
-              <option value="business">Negócio</option>
-              <option value="marketing">Marketing</option>
-              <option value="product">Produto</option>
-              <option value="qa">Qualidade</option>
-              <option value="analytics">Análise</option>
-            </Select>
-            <Field label="Estratégia" name="strategy" required placeholder="Ex.: pesquisar, verificar e comparar" />
-            <Field label="Recurso principal" name="tool_label" placeholder="Ex.: web, n8n, Supabase" />
-
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Qualidade (0–100)" name="quality_score" type="number" min={0} max={100} required />
               <Field label="Exactidão factual (0–100)" name="factuality_score" type="number" min={0} max={100} required />
               <Field label="Sucesso da tarefa (0–100)" name="task_success_score" type="number" min={0} max={100} required />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Tempo (ms)" name="duration_ms" type="number" min={0} />
-              <Field label="Correcção humana (min)" name="human_correction_minutes" type="number" min={0} />
-              <Field label="Custo" name="cost_amount" type="number" min={0} step="0.0001" />
-              <Field label="Moeda" name="cost_currency" placeholder="USD, MZN..." />
-            </div>
-
-            <TextArea label="Notas de revisão" name="review_notes" />
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <div className="mt-4 space-y-4">
+                <Field label="Correcção humana (min)" name="human_correction_minutes" type="number" min={0} />
+                <TextArea label="Notas de revisão" name="review_notes" />
+              </div>
+            </details>
             <button className={primaryButtonClass} type="submit">Registar resultado</button>
           </form>
         </Card>
