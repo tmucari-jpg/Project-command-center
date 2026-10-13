@@ -44,7 +44,6 @@ export default async function WeeklyReviewPage() {
       <PageHeader
         eyebrow="P03"
         title="Revisão semanal"
-        description="Síntese factual do progresso por projecto. O módulo usa apenas dados já registados."
       />
 
       {error ? (
