@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - ".github/workflows/generate-pcc-brand.yml"
+      - "application/scripts/generate-brand-assets.mjs"
 
 permissions:
   contents: write

@@ -18,14 +18,14 @@ await sharp(source).png({ compressionLevel: 9 }).toFile(path.join(publicDir, "br
 
 // The official symbol is the left block of the supplied 550x182 artwork.
 const symbolWidth = Math.round(meta.width * 0.313);
-const symbol = sharp(source).extract({ left: 0, top: 0, width: symbolWidth, height: meta.height }).trim({
-  background: "#ffffff",
-  threshold: 10,
-});
-
 async function makeIcon(size, file, paddingRatio) {
   const inner = Math.round(size * (1 - paddingRatio * 2));
-  const buffer = await symbol.clone().resize(inner, inner, { fit: "contain" }).png().toBuffer();
+  const buffer = await sharp(source)
+    .extract({ left: 0, top: 0, width: symbolWidth, height: meta.height })
+    .trim({ background: "#ffffff", threshold: 10 })
+    .resize(inner, inner, { fit: "contain" })
+    .png()
+    .toBuffer();
   await sharp({
     create: { width: size, height: size, channels: 4, background: "#ffffff" },
   })
