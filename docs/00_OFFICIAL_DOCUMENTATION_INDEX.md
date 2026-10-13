@@ -36,19 +36,23 @@ A documentação histórica é mantida para rastreabilidade, mas não deve ser u
 - `35_INTEGRATION_REGISTER_CURRENT.md` — registo oficial de integrações.
 - `36_PRODUCTION_ACCEPTANCE_CERTIFICATE_TEMPLATE.md` — certificado formal de aceitação de produção.
 - `37_FINAL_AUDIT_CURRENT.md` — auditoria final técnica e gate do último deploy.
+- `38_RELEASE_RECORD_2026-10-13.md` — registo efectivo da release final.
+- `39_PRODUCTION_ACCEPTANCE_CERTIFICATE_2026-10-13.md` — certificado efectivo de aceitação em produção.
 
 ## 3. Estado actual resumido
 
-- CI mais recente validado: GitHub Actions #316 — PASS.
+- CI mais recente validado: GitHub Actions #346 — PASS.
 - Branch operacional: `main`.
 - Ambiente de produção actual: Vercel.
-- Novo deploy consolidado: pendente apenas do reset do limite diário de deployments da Vercel.
+- Deploy final consolidado: READY em produção.
 - Segurança de dados: RLS activo e optimizado; 85 avisos de initplan removidos.
 - Índices: 14 índices de foreign keys adicionados.
 - Administração: protegida por role `owner/admin` e allowlist server-side.
 - Allowlist real de administradores: configurada exclusivamente em variável sensível do Vercel; não documentar emails em ficheiros públicos.
 - Leaked Password Protection: recomendada quando suportada pelo plano/configuração disponível.
 - Funções `SECURITY DEFINER` `set_next_action` e `check_brave_search_rate_limit`: revistas e aceites com ownership por `auth.uid()`.
+
+- Estado do projecto: CLOSED / PRODUCTION ACCEPTED WITH ACCEPTED LIMITATION.
 
 ## 4. Princípio documental
 

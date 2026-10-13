@@ -1,6 +1,6 @@
 # PCC — Auditoria Final Técnica
 
-**Estado:** READY FOR FINAL DEPLOY  
+**Estado:** CLOSED / PRODUCTION ACCEPTED WITH ACCEPTED LIMITATION  
 **Data:** 2026-10-13  
 **Âmbito:** fecho técnico do Project Command Center antes do último deployment consolidado.
 
@@ -170,14 +170,14 @@ Executar nesta ordem:
 19. validar mobile/responsive;
 20. preencher Release Record e Production Acceptance Certificate.
 
-## 11. Gate
+## 11. Gate final
 
-**PRE-DEPLOY: PASS**
+**PRE-DEPLOY: PASS**  
+**DEPLOYMENT: READY**  
+**CI FINAL #346: PASS**  
+**PROJECT STATUS: CLOSED / PRODUCTION ACCEPTED WITH ACCEPTED LIMITATION**
 
-**PROJECT STATUS: READY FOR FINAL DEPLOY**
-
-O estado só muda para:
-
-**CLOSED / PRODUCTION ACCEPTED**
-
-depois do teste pós-deploy acima concluir com evidência real.
+Limitação aceite pela gestão do projecto:
+- a validação operacional completa do modo offline/sincronização será observada no primeiro dia de utilização real;
+- esta validação passa a ser tratada como monitorização pós-go-live e não como blocker de encerramento;
+- qualquer falha observada será tratada como incidente operacional/correctivo, sem reabrir o gate técnico da release salvo se houver impacto crítico.
