@@ -361,11 +361,12 @@ export default async function FactoryCasePage({
         <Card className="mt-6 p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Decisão</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            GO cria o projecto em Planning. MODIFY devolve o caso à Validação. HOLD e KILL preservam todo o histórico sem criar projecto.
+            AVANÇAR cria o projecto em Planeamento. AJUSTAR devolve o caso à Validação. ESPERA e ENCERRAR preservam todo o histórico sem criar projecto.
           </p>
           <form action={finalizeFactoryDecision} className="mt-5 space-y-4">
             <input type="hidden" name="factory_case_id" value={factoryCase.id} />
-            <Select label="Decisão final" name="decision" defaultValue={factoryReport.final_decision ?? "go"}>
+            <Select label="Decisão final · decisão humana obrigatória" name="decision" required defaultValue={factoryReport.final_decision ?? ""}>
+              <option value="" disabled>Seleccione a decisão final</option>
               <option value="go">AVANÇAR</option>
               <option value="modify">AJUSTAR</option>
               <option value="hold">ESPERA</option>
