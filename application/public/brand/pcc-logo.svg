@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 340" role="img" aria-labelledby="title desc">
+  <title id="title">Project Command Center</title>
+  <desc id="desc">PCC official brand mark in deep green and gold with the tagline Da estratégia à execução.</desc>
+  <rect width="1200" height="340" fill="#f8f6f0"/>
+  <g transform="translate(105 55)">
+    <g transform="translate(0 0)">
+      <circle cx="118" cy="92" r="6" fill="#c99439"/>
+      <circle cx="101" cy="122" r="6" fill="#c99439"/>
+      <circle cx="118" cy="152" r="6" fill="#c99439"/>
+      <path d="M34 165V45h80c44 0 75 20 75 58 0 31-19 50-49 56l56 0c-15 44-50 73-99 73C48 232 8 192 8 143c0-23 9-45 26-61v83z" fill="#073f36"/>
+      <path d="M69 74h43c22 0 36 9 36 28 0 18-14 28-36 28H69V74z" fill="#f8f6f0"/>
+      <path d="M200 53h10v145h-10z" fill="#073f36"/>
+      <path d="M227 109l18 17-18 17" fill="none" stroke="#c99439" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M252 109l18 17-18 17" fill="none" stroke="#c99439" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(310 47)" fill="#073f36">
+      <text x="0" y="54" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="800" letter-spacing="7">PROJECT</text>
+      <text x="0" y="113" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="800" letter-spacing="5">COMMAND CENTER</text>
+      <rect x="0" y="137" width="650" height="3" fill="#c99439"/>
+      <text x="0" y="179" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="600" letter-spacing="8">DA ESTRATÉGIA À EXECUÇÃO</text>
+    </g>
+  </g>
+</svg>
