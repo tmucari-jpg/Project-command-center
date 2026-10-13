@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { automationCodeFromName } from "@/lib/automation";
+import { executionArenaDefaults } from "@/lib/execution-arena";
 import {
   actionSchema,
   blockerSchema,
@@ -121,5 +122,30 @@ describe("automationCodeFromName", () => {
 
   it("keeps generated codes within the schema limit", () => {
     expect(automationCodeFromName("A".repeat(200))).toHaveLength(120);
+  });
+});
+
+
+describe("executionArenaDefaults", () => {
+  it("uses safe defaults when no orchestration route exists", () => {
+    expect(executionArenaDefaults()).toEqual({
+      candidateLabel: "Teste principal",
+      agentType: "qa",
+      strategy: "validar e medir",
+    });
+  });
+
+  it("inherits route metadata without asking the user to repeat it", () => {
+    expect(
+      executionArenaDefaults({
+        objective: "Validar procura do piloto",
+        selectedAgent: "research",
+        strategy: "pesquisar, verificar e comparar",
+      }),
+    ).toEqual({
+      candidateLabel: "Validar procura do piloto",
+      agentType: "research",
+      strategy: "pesquisar, verificar e comparar",
+    });
   });
 });
