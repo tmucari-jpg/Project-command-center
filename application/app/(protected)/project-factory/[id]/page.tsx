@@ -70,6 +70,28 @@ export default async function FactoryCasePage({
       "Pré-análise automática: principais barreiras a validar incluem adopção, confiança, diferenciação insuficiente, custo de aquisição, execução operacional, disponibilidade de recursos e dependência de terceiros.",
   };
 
+  const autoValidation = {
+    critical_hypotheses:
+      validation?.critical_hypotheses ??
+      [
+        `O público-alvo (${factoryCase.target_user || "a confirmar"}) reconhece o problema como relevante.`,
+        `A proposta consegue entregar o valor esperado: ${factoryCase.expected_value || "resultado mensurável"}.`,
+        `A diferenciação proposta é suficientemente clara face às alternativas existentes.`,
+        `Os principais riscos e barreiras identificados podem ser reduzidos a um nível aceitável.`,
+      ].join("\n"),
+    validation_plan:
+      validation?.validation_plan ??
+      [
+        "Validar a relevância do problema com utilizadores representativos do público-alvo.",
+        "Testar a proposta de valor e a diferenciação com demonstração, protótipo ou experiência controlada.",
+        "Comparar reacções e objecções com as alternativas actualmente utilizadas.",
+        "Registar evidências, critérios de sucesso e sinais de adopção antes da decisão.",
+      ].join("\n"),
+    result_summary:
+      validation?.result_summary ??
+      `Resultado esperado da validação: confirmar se existe evidência suficiente para avançar com "${factoryCase.title}", se o valor esperado é percebido pelo público-alvo e se os riscos identificados são controláveis.`,
+  };
+
   return (
     <>
       <div className="mb-4">
@@ -188,7 +210,7 @@ export default async function FactoryCasePage({
         <Card className="mt-6 p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Validation</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            Registe as hipóteses críticas, o teste realizado e a evidência observada. A Execution Arena só deve ser usada quando existir dúvida material entre estratégias de execução.
+            O PCC pré-preenche as hipóteses, o plano e o resultado esperado com base no intake e na Competitive Intelligence. Registe manualmente apenas a evidência realmente observada e reveja a recomendação antes de concluir.
           </p>
 
           <form action={saveFactoryValidation} className="mt-5 space-y-4">
@@ -197,25 +219,26 @@ export default async function FactoryCasePage({
               label="Hipóteses críticas"
               name="critical_hypotheses"
               required
-              defaultValue={validation?.critical_hypotheses ?? ""}
+              defaultValue={autoValidation.critical_hypotheses}
             />
             <TextArea
               label="Plano de validação"
               name="validation_plan"
               required
-              defaultValue={validation?.validation_plan ?? ""}
+              defaultValue={autoValidation.validation_plan}
             />
             <TextArea
-              label="Evidência observada"
+              label="Evidência observada · preenchimento manual obrigatório"
               name="evidence"
               required
+              placeholder="Registe apenas evidência real: entrevistas, testes, métricas, feedback, documentos ou observações."
               defaultValue={validation?.evidence ?? ""}
             />
             <TextArea
               label="Resultado da validação"
               name="result_summary"
               required
-              defaultValue={validation?.result_summary ?? ""}
+              defaultValue={autoValidation.result_summary}
             />
             <Select
               label="Recomendação"
