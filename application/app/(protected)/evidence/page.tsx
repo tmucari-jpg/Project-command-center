@@ -53,26 +53,26 @@ export default async function EvidencePage({
             </Select>
             <Field label="Título" name="title" />
             <TextArea label="Descrição" name="description" />
-            <Select label="Projecto" name="project_id" defaultValue="">
-              <option value="">Sem projecto</option>
-              {(projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
-            </Select>
-            <Select label="Entregável" name="deliverable_id" defaultValue="">
-              <option value="">Sem entregável</option>
-              {(deliverables ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-            </Select>
             <Select label="Acção" name="action_id" defaultValue="">
               <option value="">Sem acção</option>
               {(actions ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
-            <Field label="URL" name="url" type="url" placeholder="https://..." />
+            <Select label="Entregável, se não houver acção" name="deliverable_id" defaultValue="">
+              <option value="">Sem entregável</option>
+              {(deliverables ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+            </Select>
             <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
               <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
               <div className="mt-4 space-y-4">
+                <Select label="Projecto, se não houver acção ou entregável" name="project_id" defaultValue="">
+                  <option value="">Sem projecto</option>
+                  {(projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
+                </Select>
                 <Field label="Caminho de armazenamento" name="storage_path" />
                 <Field label="Valor numérico" name="numeric_value" type="number" step="any" />
               </div>
             </details>
+            <Field label="URL" name="url" type="url" placeholder="https://..." />
             <button className={primaryButtonClass} type="submit">Registar evidência</button>
           </form>
         </ManualEntry>
