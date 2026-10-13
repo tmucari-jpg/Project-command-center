@@ -66,8 +66,13 @@ export default async function EvidencePage({
               {(actions ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
             <Field label="URL" name="url" type="url" placeholder="https://..." />
-            <Field label="Caminho de armazenamento" name="storage_path" />
-            <Field label="Valor numérico" name="numeric_value" type="number" step="any" />
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <div className="mt-4 space-y-4">
+                <Field label="Caminho de armazenamento" name="storage_path" />
+                <Field label="Valor numérico" name="numeric_value" type="number" step="any" />
+              </div>
+            </details>
             <button className={primaryButtonClass} type="submit">Registar evidência</button>
           </form>
         </ManualEntry>
