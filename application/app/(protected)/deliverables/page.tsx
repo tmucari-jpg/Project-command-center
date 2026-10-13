@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { ManualEntry } from "@/components/manual-entry";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
-import { PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
+import { PRIORITIES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
@@ -56,11 +56,9 @@ export default async function DeliverablesPage({
               <Select label="Prioridade" name="priority" defaultValue="medium">
                 {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
-              <Select label="Estado" name="status" defaultValue="pending">
-                {STATUS_OPTIONS.deliverables.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
-              </Select>
+              <input type="hidden" name="status" value="pending" />
+              <input type="hidden" name="progress" value="0" />
               <Field label="Prazo" name="due_date" type="date" />
-              <Field label="Progresso (%)" name="progress" type="number" min={0} max={100} step="0.01" defaultValue={0} />
             </div>
             <TextArea label="Critério de conclusão" name="completion_criteria" />
             <button className={primaryButtonClass} type="submit">Criar entregável</button>
