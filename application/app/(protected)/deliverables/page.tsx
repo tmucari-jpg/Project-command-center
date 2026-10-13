@@ -37,7 +37,6 @@ export default async function DeliverablesPage({
       <PageHeader
         eyebrow="Execução"
         title="Entregáveis"
-        description="Defina o que precisa de ser entregue e o critério concreto de conclusão."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
