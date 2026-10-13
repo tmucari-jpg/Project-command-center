@@ -36,15 +36,14 @@ export default async function AgentsPage({
     <>
       <PageHeader
         eyebrow="Fase 3"
-        title="Agentic Core"
-        description="Orquestração controlada: agentes especializados, execução rastreável, QA/PASS e aprovação humana."
+        title="Agentes"
       />
       <FlashMessage error={params.error} created={params.created} />
 
       <div className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
         <Card className="p-5">
           <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
-            <Bot size={19} /> Novo agent run
+            <Bot size={19} /> Nova execução
           </h2>
           <form action={createAgentRun} className="mt-5 space-y-4">
             <Select label="Projecto" name="project_id" defaultValue="">
@@ -58,9 +57,9 @@ export default async function AgentsPage({
                 <option key={type} value={type}>{AGENT_REGISTRY[type].label}</option>
               ))}
             </Select>
-            <Field label="Prompt oficial, se aplicável" name="prompt_code" placeholder="Ex.: P01, T09, E14" />
+            <Field label="Instrução de referência, se aplicável" name="prompt_code" placeholder="Ex.: P01, T09, E14" />
             <TextArea label="Objectivo" name="objective" />
-            <button className={primaryButtonClass} type="submit">Criar run</button>
+            <button className={primaryButtonClass} type="submit">Criar execução</button>
           </form>
         </Card>
 
@@ -76,7 +75,7 @@ export default async function AgentsPage({
                   <p className="font-semibold text-slate-950">{agent.label}</p>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{agent.purpose}</p>
                   <p className="mt-3 text-xs text-slate-500">
-                    Prompts: {agent.defaultPromptCodes.join(", ")}
+                    Referências: {agent.defaultPromptCodes.join(", ")}
                   </p>
                 </div>
               );
@@ -88,10 +87,10 @@ export default async function AgentsPage({
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <Card>
           <div className="border-b border-slate-200 p-5">
-            <h2 className="font-semibold text-slate-950">Runs recentes</h2>
+            <h2 className="font-semibold text-slate-950">Execuções recentes</h2>
           </div>
           <div className="p-5">
-            {!runs?.length ? <EmptyState>Ainda não existem agent runs.</EmptyState> : (
+            {!runs?.length ? <EmptyState>Ainda não existem execuções.</EmptyState> : (
               <div className="space-y-3">
                 {runs.map((run) => {
                   const relation = Array.isArray(run.projects) ? run.projects[0] : run.projects;
