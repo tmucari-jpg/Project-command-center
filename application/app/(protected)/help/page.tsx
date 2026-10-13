@@ -8,7 +8,6 @@ export default function HelpPage() {
       <PageHeader
         eyebrow="Ajuda"
         title="Manual rápido do Project Command Center"
-        description="Use esta página quando tiver dúvidas sobre o que preencher, onde começar ou qual é o próximo passo."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -57,7 +56,7 @@ export default function HelpPage() {
         </Card>
 
         <Card className="p-5 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Assistente IA</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Preenchimento automático</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
             A experiência “Ajuda-me a preencher” será ligada ao provider de IA quando existir um provider operacional e validado. Até lá, o PCC mostra ajuda contextual real e não apresenta sugestões automáticas como se fossem IA activa.
           </p>
