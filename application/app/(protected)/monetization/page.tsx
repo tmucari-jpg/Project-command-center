@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { displayLabel } from "@/lib/display-label";
 import { monetizationReadiness } from "@/lib/monetization";
 
 function projectTitle(relation: { title: string } | { title: string }[] | null) {
@@ -97,7 +98,7 @@ export default async function MonetizationPage({
                   <div>
                     <p className="font-medium text-slate-950">{project.title}</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {profile?.validation_status?.replaceAll("_", " ") ?? "sem perfil comercial"}
+                      {profile?.validation_status ? displayLabel(profile.validation_status) : "Sem perfil comercial"}
                     </p>
                   </div>
                   {profile?.is_priority && (
@@ -113,7 +114,7 @@ export default async function MonetizationPage({
                   </p>
                 )}
                 <Link className="mt-3 inline-flex text-sm font-semibold text-blue-700 hover:underline" href={`/projects/${project.id}`}>
-                  Abrir Project Hub
+                  Abrir projecto
                 </Link>
               </div>
             );
@@ -166,23 +167,20 @@ export default async function MonetizationPage({
             <Field label="Organização" name="organisation" />
             <Field label="Referência de contacto" name="contact_reference" placeholder="Email, telefone ou referência — apenas se conhecido" />
             <Field label="Origem" name="source" />
-            <Select label="Etapa" name="stage" defaultValue="lead">
-              <option value="lead">Lead</option>
-              <option value="contacted">Contactado</option>
-              <option value="qualified">Qualificado</option>
-              <option value="proposal">Proposta</option>
-              <option value="negotiation">Negociação</option>
-              <option value="won">Ganho</option>
-              <option value="lost">Perdido</option>
-            </Select>
+            <input type="hidden" name="stage" value="lead" />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Valor, se conhecido" name="value" type="number" step="any" />
               <Field label="Moeda" name="currency" />
             </div>
             <TextArea label="Próxima acção" name="next_action" />
             <Field label="Data da próxima acção" name="next_action_at" type="datetime-local" />
-            <TextArea label="Risco" name="risk" />
-            <TextArea label="Informação em falta" name="information_missing" />
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <div className="mt-4 space-y-4">
+                <TextArea label="Risco" name="risk" />
+                <TextArea label="Informação em falta" name="information_missing" />
+              </div>
+            </details>
             <button className={primaryButtonClass} type="submit">Registar lead</button>
           </form>
         </Card>
@@ -232,7 +230,7 @@ export default async function MonetizationPage({
                       <div>
                         <p className="text-sm font-medium text-slate-950">{lead.name}</p>
                         <p className="mt-1 text-xs text-slate-500">
-                          {projectTitle(lead.projects) ?? "Sem projecto"} · {lead.stage}
+                          {projectTitle(lead.projects) ?? "Sem projecto"} · {displayLabel(lead.stage)}
                         </p>
                       </div>
                       {lead.value !== null && lead.value !== undefined && (
@@ -262,7 +260,7 @@ export default async function MonetizationPage({
                     <div>
                       <p className="text-sm font-medium text-slate-950">{entry.description}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {projectTitle(entry.projects) ?? "Sem projecto"} · {formatDate(entry.occurred_on)} · {entry.status}
+                        {projectTitle(entry.projects) ?? "Sem projecto"} · {formatDate(entry.occurred_on)} · {displayLabel(entry.status)}
                       </p>
                     </div>
                     <p className="text-sm font-semibold text-slate-800">
