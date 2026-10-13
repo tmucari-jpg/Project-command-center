@@ -52,7 +52,7 @@ export default async function ProjectFactoryPage({
         <Card className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">1. O que quer fazer?</h2>
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo projecto</h2>
             </div>
             
           </div>
@@ -85,7 +85,7 @@ export default async function ProjectFactoryPage({
               </div>
             </ManualEntry>
 
-            <button className={primaryButtonClass} type="submit">Analisar projecto</button>
+            <button className={primaryButtonClass} type="submit">Continuar para análise</button>
           </form>
 
         </Card>
