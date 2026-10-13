@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui";
+import { requireAdmin } from "@/lib/auth";
 
 const tools = [
   { href: "/agents", label: "Agentes", description: "Execuções especializadas e aprovações humanas.", icon: Bot },
@@ -23,7 +24,8 @@ const tools = [
   { href: "/optimization", label: "Optimização", description: "Melhorias técnicas e operacionais.", icon: Repeat2 },
 ];
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  await requireAdmin();
   return (
     <>
       <PageHeader
