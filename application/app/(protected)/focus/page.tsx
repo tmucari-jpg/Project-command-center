@@ -58,7 +58,6 @@ export default async function FocusPage({
       <PageHeader
         eyebrow="Execução"
         title="Modo foco"
-        description="Uma acção, um critério de conclusão e o tempo necessário para avançar."
       />
       <FlashMessage
         error={params.error}
