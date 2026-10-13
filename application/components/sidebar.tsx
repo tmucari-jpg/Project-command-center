@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -91,10 +92,12 @@ export function Sidebar() {
   return (
     <aside className="cc-sidebar relative hidden w-[250px] shrink-0 overflow-hidden border-r border-[var(--cc-border)] lg:block">
       <div className="sticky top-0 h-screen overflow-y-auto px-4 py-5">
-        <Link href="/dashboard" className="relative z-10 block rounded-[18px] px-3 py-3 text-[var(--cc-accent)]">
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--cc-gold)]">PCC</span>
-          <span className="mt-1 block text-lg font-semibold tracking-[-0.025em]">Project Command Center</span>
-          <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] text-[var(--cc-accent)]/55">Da estratégia à execução</span>
+        <Link href="/dashboard" className="relative z-10 flex items-center gap-3 rounded-[18px] px-3 py-3 text-[var(--cc-accent)]">
+          <Image src="/icons/app-icon.svg" alt="PCC" width={40} height={40} className="rounded-[11px]" priority />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold tracking-[-0.02em]">Project Command Center</span>
+            <span className="mt-1 block text-[9px] uppercase tracking-[0.16em] text-[var(--cc-accent)]/55">Da estratégia à execução</span>
+          </span>
         </Link>
 
         <nav className="relative z-10 mt-5 space-y-5" aria-label="Navegação principal">
