@@ -4,6 +4,7 @@ import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
+import { displayLabel } from "@/lib/display-label";
 
 export default async function OrchestratorPage({
   searchParams,
@@ -98,15 +99,15 @@ export default async function OrchestratorPage({
                       <div>
                         <p className="font-semibold text-[var(--cc-foreground)]">{route.objective}</p>
                         <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-                          {route.selected_agent} · {route.strategy} · {route.provider_policy}
+                          {displayLabel(route.selected_agent)} · {route.strategy}
                         </p>
                       </div>
                       <span className="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
-                        {route.status}
+                        {displayLabel(route.status)}
                       </span>
                     </div>
                     <p className="mt-3 text-xs leading-5 text-[var(--cc-secondary)]">
-                      Dots: {(route.selected_dots ?? []).join(", ") || "nenhum"}
+                      Recursos seleccionados: {(route.selected_dots ?? []).join(", ") || "nenhum"}
                     </p>
                     <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">{route.rationale}</p>
                     {route.approval_required && (
