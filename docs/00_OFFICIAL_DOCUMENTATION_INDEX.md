@@ -32,6 +32,9 @@ A documentação histórica é mantida para rastreabilidade, mas não deve ser u
 - `31_ENVIRONMENT_SECRETS_REGISTER_CURRENT.md` — variáveis, segredos e ownership técnico.
 - `32_PRIVACY_DATA_HANDLING_CURRENT.md` — tratamento e minimização de dados.
 - `33_KNOWN_LIMITATIONS_RISK_REGISTER_CURRENT.md` — limitações e riscos aceites.
+- `34_DOCUMENT_CONTROL_APPROVALS_CURRENT.md` — controlo documental e aprovações.
+- `35_INTEGRATION_REGISTER_CURRENT.md` — registo oficial de integrações.
+- `36_PRODUCTION_ACCEPTANCE_CERTIFICATE_TEMPLATE.md` — certificado formal de aceitação de produção.
 
 ## 3. Estado actual resumido
 
