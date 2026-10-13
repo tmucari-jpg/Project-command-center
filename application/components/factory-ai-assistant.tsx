@@ -69,7 +69,6 @@ function deterministicSuggestion(input: string): FactorySuggestion {
 export function FactoryAIAssistant() {
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
-  const [source, setSource] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<FactorySuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [appliedCount, setAppliedCount] = useState(0);
@@ -99,7 +98,6 @@ export function FactoryAIAssistant() {
 
     try {
       let text = "";
-      let provider = "OpenAI";
 
       const cloud = await fetch("/api/ai/assist", {
         method: "POST",
@@ -114,7 +112,6 @@ export function FactoryAIAssistant() {
         const cloudError = await cloud.json().catch(() => ({ error: `HTTP ${cloud.status}` }));
         const cloudMessage = String(cloudError.error ?? `HTTP ${cloud.status}`).slice(0, 320);
         try {
-          provider = "Qwen local";
           text = await callLocal(idea);
         } catch (localError) {
           const localMessage = localError instanceof Error ? localError.message : "Qwen local indisponível";
@@ -126,7 +123,6 @@ export function FactoryAIAssistant() {
           if (isQuotaError) {
             const fallbackSuggestion = deterministicSuggestion(idea);
             setSuggestion(fallbackSuggestion);
-            setSource("PCC gratuito");
             applySuggestion(fallbackSuggestion);
             return;
           }
@@ -138,16 +134,11 @@ export function FactoryAIAssistant() {
       const parsed = parseFactorySuggestion(text);
       if (!parsed) throw new Error("INVALID_AI_JSON");
       setSuggestion(parsed);
-      setSource(provider);
       applySuggestion(parsed);
     } catch (error) {
       const message = error instanceof Error ? error.message : "erro desconhecido";
       console.error("Assistente IA:", message);
-      const safeDiagnostic = message
-        .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]")
-        .replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]")
-        .slice(0, 420);
-      setError(`Não foi possível obter sugestões. Diagnóstico: ${safeDiagnostic}`);
+      setError("Não foi possível preencher automaticamente. Tente novamente ou reveja os campos.");
     } finally {
       setBusy(false);
     }
@@ -160,12 +151,11 @@ export function FactoryAIAssistant() {
 
   return (
     <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
-      <p className="text-sm font-semibold text-[var(--cc-foreground)]">Assistente IA</p>
       <textarea
         value={idea}
         onChange={(event) => setIdea(event.target.value)}
         placeholder="Ex.: Quero lançar um workshop para agentes imobiliários e converter participantes em utilizadores da Easy Property."
-        className="mt-3 min-h-24 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 text-sm text-[var(--cc-foreground)] outline-none"
+        className="min-h-24 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 text-sm text-[var(--cc-foreground)] outline-none"
       />
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" onClick={generate} disabled={busy || idea.trim().length < 3} className={secondaryButtonClass}>
@@ -175,10 +165,9 @@ export function FactoryAIAssistant() {
           <button type="button" onClick={apply} className={secondaryButtonClass}>Actualizar preenchimento</button>
         )}
       </div>
-      {source && <p className="mt-3 text-xs text-[var(--cc-secondary)]">Sugestão gerada por {source}.</p>}
       {appliedCount > 0 && (
         <p className="mt-3 text-xs font-medium text-[var(--cc-foreground)]">
-          {appliedCount} campos preenchidos. Reveja abaixo antes de analisar o projecto.
+          Campos preparados. Reveja apenas se necessário.
         </p>
       )}
       {error && <p className="mt-3 text-xs text-red-700">{error}</p>}
