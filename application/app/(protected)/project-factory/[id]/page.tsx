@@ -49,6 +49,27 @@ export default async function FactoryCasePage({
 
   const isCommercial = factoryCase.project_type === "commercial";
 
+  const autoCompetitive = {
+    market_summary:
+      report?.market_summary ??
+      `Pré-análise automática: oportunidade associada a "${factoryCase.title}". Problema identificado: ${factoryCase.problem}. Público-alvo: ${factoryCase.target_user || "a confirmar"}. Valor esperado: ${factoryCase.expected_value || "a confirmar"}.`,
+    competitors:
+      report?.competitors ??
+      "Pré-análise automática: mapear concorrentes directos que resolvem o mesmo problema, alternativas indirectas e a opção de o cliente não adoptar nenhuma solução. Validar nomes e posicionamento com fontes antes da conclusão.",
+    existing_solutions:
+      report?.existing_solutions ??
+      `Pré-análise automática: considerar soluções actualmente usadas pelo público-alvo para responder ao problema "${factoryCase.problem}", incluindo processos manuais, fornecedores existentes e ferramentas substitutas. Validar com evidência de mercado.`,
+    differentiation:
+      report?.differentiation ??
+      `Pré-análise automática: a diferenciação deve concentrar-se no valor esperado — ${factoryCase.expected_value || "resultado mensurável para o utilizador"} — com experiência simples, demonstração prática e execução mais eficiente do que as alternativas existentes.`,
+    trends:
+      report?.trends ??
+      "Pré-análise automática: validar tendências de digitalização, automação, experiência do utilizador, eficiência operacional e adopção de soluções orientadas por dados relevantes para este mercado.",
+    risks_barriers:
+      report?.risks_barriers ??
+      "Pré-análise automática: principais barreiras a validar incluem adopção, confiança, diferenciação insuficiente, custo de aquisição, execução operacional, disponibilidade de recursos e dependência de terceiros.",
+  };
+
   return (
     <>
       <div className="mb-4">
@@ -118,19 +139,31 @@ export default async function FactoryCasePage({
             <>
               <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Competitive Intelligence</h2>
               <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-                Registe evidência de mercado antes da validação. As fontes devem ser suficientes para permitir revisão posterior.
+                O PCC pré-preenche a análise com base no contexto do projecto. Reveja apenas o que precisar. O preenchimento manual obrigatório fica limitado às fontes/evidências e à confiança da análise.
               </p>
 
               <form action={saveCompetitiveIntelligence} className="mt-5 space-y-4">
                 <input type="hidden" name="factory_case_id" value={factoryCase.id} />
-                <TextArea label="Mercado e oportunidade" name="market_summary" required defaultValue={report?.market_summary ?? ""} />
-                <TextArea label="Concorrentes principais" name="competitors" required defaultValue={report?.competitors ?? ""} />
-                <TextArea label="Soluções existentes" name="existing_solutions" required defaultValue={report?.existing_solutions ?? ""} />
-                <TextArea label="Diferenciação possível" name="differentiation" required defaultValue={report?.differentiation ?? ""} />
-                <TextArea label="Tendências de mercado" name="trends" required defaultValue={report?.trends ?? ""} />
-                <TextArea label="Riscos e barreiras" name="risks_barriers" required defaultValue={report?.risks_barriers ?? ""} />
-                <TextArea label="Fontes / evidências" name="sources" required defaultValue={report?.sources ?? ""} />
-                <Select label="Confiança da análise" name="confidence" defaultValue={report?.confidence ?? "medium"}>
+                <TextArea label="Mercado e oportunidade · automático" name="market_summary" required defaultValue={autoCompetitive.market_summary} />
+                <TextArea label="Concorrentes principais · automático" name="competitors" required defaultValue={autoCompetitive.competitors} />
+                <TextArea label="Soluções existentes · automático" name="existing_solutions" required defaultValue={autoCompetitive.existing_solutions} />
+                <TextArea label="Diferenciação possível · automático" name="differentiation" required defaultValue={autoCompetitive.differentiation} />
+                <TextArea label="Tendências de mercado · automático" name="trends" required defaultValue={autoCompetitive.trends} />
+                <TextArea label="Riscos e barreiras · automático" name="risks_barriers" required defaultValue={autoCompetitive.risks_barriers} />
+                <TextArea
+                  label="Fontes / evidências · preenchimento manual obrigatório"
+                  name="sources"
+                  required
+                  defaultValue={report?.sources ?? ""}
+                  placeholder="Indique links, documentos, entrevistas, dados ou outras evidências usadas para validar a análise."
+                />
+                <Select
+                  label="Confiança da análise · selecção manual obrigatória"
+                  name="confidence"
+                  required
+                  defaultValue={report?.confidence ?? ""}
+                >
+                  <option value="" disabled>Seleccione após rever as evidências</option>
                   <option value="low">Baixa</option>
                   <option value="medium">Média</option>
                   <option value="high">Alta</option>
