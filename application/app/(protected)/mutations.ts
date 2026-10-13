@@ -37,6 +37,7 @@ import { requireUser } from "@/lib/auth";
 import { selectExecutionRoute } from "@/lib/orchestrator";
 import { createN8nCallback, dispatchToN8n } from "@/lib/n8n";
 import { automationCodeFromName } from "@/lib/automation";
+import { executionArenaDefaults } from "@/lib/execution-arena";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
