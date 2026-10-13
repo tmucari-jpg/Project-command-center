@@ -169,10 +169,10 @@ export function FactoryAIAssistant() {
       />
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" onClick={generate} disabled={busy || idea.trim().length < 3} className={secondaryButtonClass}>
-          {busy ? "A preparar..." : "Ajuda-me a preencher"}
+          {busy ? "A preparar..." : "Preencher automaticamente"}
         </button>
         {suggestion && (
-          <button type="button" onClick={apply} className={secondaryButtonClass}>Reaplicar aos campos</button>
+          <button type="button" onClick={apply} className={secondaryButtonClass}>Actualizar preenchimento</button>
         )}
       </div>
       {source && <p className="mt-3 text-xs text-[var(--cc-secondary)]">Sugestão gerada por {source}.</p>}
