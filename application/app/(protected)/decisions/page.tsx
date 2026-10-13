@@ -47,11 +47,16 @@ export default async function DecisionsPage({
                 <option key={project.id} value={project.id}>{project.title}</option>
               ))}
             </Select>
-            <TextArea label="Contexto" name="context" />
-            <TextArea label="Opções consideradas" name="options_considered" />
             <TextArea label="Decisão tomada" name="decision" />
-            <TextArea label="Racional" name="rationale" />
-            <TextArea label="Resultado / aprendizagem" name="outcome" />
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <div className="mt-4 space-y-4">
+                <TextArea label="Contexto" name="context" />
+                <TextArea label="Opções consideradas" name="options_considered" />
+                <TextArea label="Racional" name="rationale" />
+                <TextArea label="Resultado / aprendizagem" name="outcome" />
+              </div>
+            </details>
             <button className={primaryButtonClass} type="submit">Registar decisão</button>
           </form>
         </ManualEntry>
