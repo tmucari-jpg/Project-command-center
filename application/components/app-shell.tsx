@@ -4,11 +4,11 @@ import { logoutAction } from "@/app/auth/actions";
 import { InstallAppButton } from "@/components/install-app-button";
 import { MobileNav, Sidebar } from "@/components/sidebar";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, isAdmin }: { children: React.ReactNode; isAdmin: boolean }) {
   return (
     <div className="min-h-screen bg-[var(--cc-background)]">
       <div className="flex min-h-screen">
-        <Sidebar />
+        <Sidebar isAdmin={isAdmin} />
         <div className="min-w-0 flex-1">
           <header className="cc-safe-top sticky top-0 z-40 border-b border-[var(--cc-border)] bg-white/90 backdrop-blur-xl">
             <div className="flex min-h-16 items-center justify-between gap-4 px-5 sm:px-8">
