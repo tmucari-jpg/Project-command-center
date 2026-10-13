@@ -12,8 +12,8 @@ const STAGE_LABELS: Record<string, string> = {
   viability: "Em análise",
   competitive_intelligence: "Inteligência competitiva",
   validation: "Validação",
-  execution_arena: "Arena de execução",
-  factory_report: "Relatório final",
+  execution_arena: "Teste",
+  factory_report: "Preparação final",
   decision: "Decisão",
   converted_to_project: "Convertido em projecto",
   on_hold: "Em espera",
@@ -65,22 +65,22 @@ export default async function FactoryCasePage({
   const autoCompetitive = {
     market_summary:
       report?.market_summary ??
-      `Pré-análise automática: oportunidade associada a "${factoryCase.title}". Problema identificado: ${factoryCase.problem}. Público-alvo: ${factoryCase.target_user || "a confirmar"}. Valor esperado: ${factoryCase.expected_value || "a confirmar"}.`,
+      `oportunidade associada a "${factoryCase.title}". Problema identificado: ${factoryCase.problem}. Público-alvo: ${factoryCase.target_user || "a confirmar"}. Valor esperado: ${factoryCase.expected_value || "a confirmar"}.`,
     competitors:
       report?.competitors ??
-      "Pré-análise automática: mapear concorrentes directos que resolvem o mesmo problema, alternativas indirectas e a opção de o cliente não adoptar nenhuma solução. Validar nomes e posicionamento com fontes antes da conclusão.",
+      "mapear concorrentes directos que resolvem o mesmo problema, alternativas indirectas e a opção de o cliente não adoptar nenhuma solução. Validar nomes e posicionamento com fontes antes da conclusão.",
     existing_solutions:
       report?.existing_solutions ??
-      `Pré-análise automática: considerar soluções actualmente usadas pelo público-alvo para responder ao problema "${factoryCase.problem}", incluindo processos manuais, fornecedores existentes e ferramentas substitutas. Validar com evidência de mercado.`,
+      `considerar soluções actualmente usadas pelo público-alvo para responder ao problema "${factoryCase.problem}", incluindo processos manuais, fornecedores existentes e ferramentas substitutas. Validar com evidência de mercado.`,
     differentiation:
       report?.differentiation ??
-      `Pré-análise automática: a diferenciação deve concentrar-se no valor esperado — ${factoryCase.expected_value || "resultado mensurável para o utilizador"} — com experiência simples, demonstração prática e execução mais eficiente do que as alternativas existentes.`,
+      `a diferenciação deve concentrar-se no valor esperado — ${factoryCase.expected_value || "resultado mensurável para o utilizador"} — com experiência simples, demonstração prática e execução mais eficiente do que as alternativas existentes.`,
     trends:
       report?.trends ??
-      "Pré-análise automática: validar tendências de digitalização, automação, experiência do utilizador, eficiência operacional e adopção de soluções orientadas por dados relevantes para este mercado.",
+      "validar tendências de digitalização, automação, experiência do utilizador, eficiência operacional e adopção de soluções orientadas por dados relevantes para este mercado.",
     risks_barriers:
       report?.risks_barriers ??
-      "Pré-análise automática: principais barreiras a validar incluem adopção, confiança, diferenciação insuficiente, custo de aquisição, execução operacional, disponibilidade de recursos e dependência de terceiros.",
+      "principais barreiras a validar incluem adopção, confiança, diferenciação insuficiente, custo de aquisição, execução operacional, disponibilidade de recursos e dependência de terceiros.",
   };
 
   const autoValidation = {
@@ -143,7 +143,6 @@ export default async function FactoryCasePage({
       <PageHeader
         eyebrow="Fábrica de Projectos"
         title={factoryCase.title}
-        description={factoryCase.problem}
       />
 
       <FlashMessage
@@ -202,32 +201,28 @@ export default async function FactoryCasePage({
           ) : (
             <>
               <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Inteligência Competitiva</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-                O PCC pré-preenche a análise com base no contexto do projecto. Reveja apenas o que precisar. O preenchimento manual obrigatório fica limitado às fontes/evidências e à confiança da análise.
-              </p>
-
               <form action={saveCompetitiveIntelligence} className="mt-5 space-y-4">
                 <input type="hidden" name="factory_case_id" value={factoryCase.id} />
-                <TextArea label="Mercado e oportunidade · automático" name="market_summary" required defaultValue={autoCompetitive.market_summary} />
+                <TextArea label="Mercado e oportunidade" name="market_summary" required defaultValue={autoCompetitive.market_summary} />
                 <TextArea
-                  label="Concorrência e alternativas existentes · automático"
+                  label="Concorrência e alternativas existentes"
                   name="competitors"
                   required
                   defaultValue={report?.competitors ? [report.competitors, report.existing_solutions].filter(Boolean).join("\n\n") : [autoCompetitive.competitors, autoCompetitive.existing_solutions].join("\n\n")}
                 />
                 <input type="hidden" name="existing_solutions" value={report?.existing_solutions ?? autoCompetitive.existing_solutions} />
-                <TextArea label="Diferenciação possível · automático" name="differentiation" required defaultValue={autoCompetitive.differentiation} />
-                <TextArea label="Tendências relevantes · automático" name="trends" required defaultValue={autoCompetitive.trends} />
-                <TextArea label="Riscos e barreiras · automático" name="risks_barriers" required defaultValue={autoCompetitive.risks_barriers} />
+                <TextArea label="Diferenciação possível" name="differentiation" required defaultValue={autoCompetitive.differentiation} />
+                <TextArea label="Tendências relevantes" name="trends" required defaultValue={autoCompetitive.trends} />
+                <TextArea label="Riscos e barreiras" name="risks_barriers" required defaultValue={autoCompetitive.risks_barriers} />
                 <TextArea
-                  label="Fontes / evidências · preenchimento manual obrigatório"
+                  label="Fontes / evidências"
                   name="sources"
                   required
                   defaultValue={report?.sources ?? ""}
                   placeholder="Indique links, documentos, entrevistas, dados ou outras evidências usadas para validar a análise."
                 />
                 <Select
-                  label="Confiança da análise · selecção manual obrigatória"
+                  label="Confiança da análise"
                   name="confidence"
                   required
                   defaultValue={report?.confidence ?? ""}
@@ -256,10 +251,6 @@ export default async function FactoryCasePage({
       {["validation", "execution_arena", "factory_report", "on_hold"].includes(factoryCase.stage) && (
         <Card className="mt-6 p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Validação</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            O PCC pré-preenche as hipóteses, o plano e a estrutura de resultados com base na entrada inicial e na Inteligência Competitiva. Registe manualmente apenas a evidência realmente observada, complete os números obtidos e reveja a recomendação antes de concluir.
-          </p>
-
           <form action={saveFactoryValidation} className="mt-5 space-y-4">
             <input type="hidden" name="factory_case_id" value={factoryCase.id} />
             <TextArea
@@ -275,23 +266,20 @@ export default async function FactoryCasePage({
               defaultValue={autoValidation.validation_plan}
             />
             <TextArea
-              label="Evidência observada · preenchimento manual obrigatório"
+              label="Evidência observada"
               name="evidence"
               required
               placeholder="Registe apenas evidência real: entrevistas, testes, métricas, feedback, documentos ou observações."
               defaultValue={validation?.evidence ?? ""}
             />
             <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
-              <p className="text-sm font-semibold text-[var(--cc-foreground)]">Resultado da validação · automático</p>
+              <p className="text-sm font-semibold text-[var(--cc-foreground)]">Resultado da validação</p>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-secondary)]">
                 {validation?.result_summary ?? autoValidation.result_summary}
               </p>
-              <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
-                Ao concluir, o PCC transforma a evidência observada e a recomendação numa conclusão concreta com acções seguintes.
-              </p>
             </div>
             <Select
-              label="Recomendação · decisão humana obrigatória"
+              label="Recomendação"
               name="recommendation"
               required
               defaultValue={validation?.recommendation ?? ""}
@@ -307,14 +295,14 @@ export default async function FactoryCasePage({
                 name="arena_required"
                 defaultChecked={validation?.arena_required ?? false}
               />
-              Arena de Execução necessária antes do Relatório Final
+              Teste necessário antes da preparação final
             </label>
             <button className={primaryButtonClass} type="submit">
               Concluir Validação
             </button>
             {factoryCase.stage === "execution_arena" && (
               <Link className={secondaryButtonClass} href={`/execution-arena?factory_case_id=${factoryCase.id}`}>
-                Abrir Arena de Execução
+                Abrir teste
               </Link>
             )}
           </form>
@@ -324,10 +312,6 @@ export default async function FactoryCasePage({
       {["factory_report", "decision", "converted_to_project", "on_hold", "killed"].includes(factoryCase.stage) && (
         <Card className="mt-6 p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Relatório Final</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            A informação já recolhida é consolidada automaticamente. Preencha apenas os elementos que exigem avaliação humana antes da decisão final.
-          </p>
-
           <form action={saveFactoryReport} className="mt-5 space-y-4">
             <input type="hidden" name="factory_case_id" value={factoryCase.id} />
             <input type="hidden" name="problem_identified" value={autoFactoryReport.problem_identified} />
@@ -341,19 +325,19 @@ export default async function FactoryCasePage({
             <input type="hidden" name="tests_required" value={autoFactoryReport.tests_required} />
 
             <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
-              <p className="text-sm font-semibold text-[var(--cc-foreground)]">Consolidado automaticamente</p>
+              <p className="text-sm font-semibold text-[var(--cc-foreground)]">Resumo consolidado</p>
               <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-                Problema, mercado, concorrência, alternativas, diferenciação, tendências, riscos, hipóteses e testes já foram reaproveitados das etapas anteriores. Não precisa de os preencher novamente.
+                Informação das etapas anteriores incluída.
               </p>
             </div>
 
-            <TextArea label="Tecnologia necessária · preencher apenas se aplicável" name="technology_required" defaultValue={factoryReport?.technology_required ?? ""} />
-            <TextArea label="Custo estimado · avaliação humana" name="estimated_cost" defaultValue={factoryReport?.estimated_cost ?? ""} />
-            <TextArea label="Modelo de receita / sustentabilidade · avaliação humana" name="revenue_model" defaultValue={factoryReport?.revenue_model ?? ""} />
-            <TextArea label="Regulamentação / requisitos legais · preencher apenas se aplicável" name="regulation" defaultValue={factoryReport?.regulation ?? ""} />
+            <TextArea label="Tecnologia necessária" name="technology_required" defaultValue={factoryReport?.technology_required ?? ""} />
+            <TextArea label="Custo estimado" name="estimated_cost" defaultValue={factoryReport?.estimated_cost ?? ""} />
+            <TextArea label="Modelo de receita / sustentabilidade" name="revenue_model" defaultValue={factoryReport?.revenue_model ?? ""} />
+            <TextArea label="Regulamentação / requisitos legais" name="regulation" defaultValue={factoryReport?.regulation ?? ""} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Probabilidade de execução (%) · avaliação humana" name="execution_probability" type="number" min={0} max={100} defaultValue={factoryReport?.execution_probability ?? undefined} />
-              <Field label="Probabilidade de adopção (%) · avaliação humana" name="adoption_probability" type="number" min={0} max={100} defaultValue={factoryReport?.adoption_probability ?? undefined} />
+              <Field label="Probabilidade de execução (%)" name="execution_probability" type="number" min={0} max={100} defaultValue={factoryReport?.execution_probability ?? undefined} />
+              <Field label="Probabilidade de adopção (%)" name="adoption_probability" type="number" min={0} max={100} defaultValue={factoryReport?.adoption_probability ?? undefined} />
             </div>
             <button className={primaryButtonClass} type="submit">Consolidar Relatório Final</button>
           </form>
@@ -363,19 +347,16 @@ export default async function FactoryCasePage({
       {["decision", "converted_to_project", "on_hold", "killed"].includes(factoryCase.stage) && factoryReport && (
         <Card className="mt-6 p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Decisão</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            AVANÇAR cria o projecto em Planeamento. AJUSTAR devolve o caso à Validação. ESPERA e ENCERRAR preservam todo o histórico sem criar projecto.
-          </p>
           <form action={finalizeFactoryDecision} className="mt-5 space-y-4">
             <input type="hidden" name="factory_case_id" value={factoryCase.id} />
-            <Select label="Decisão final · decisão humana obrigatória" name="decision" required defaultValue={factoryReport.final_decision ?? ""}>
+            <Select label="Decisão final" name="decision" required defaultValue={factoryReport.final_decision ?? ""}>
               <option value="" disabled>Seleccione a decisão final</option>
               <option value="go">AVANÇAR</option>
               <option value="modify">AJUSTAR</option>
               <option value="hold">ESPERA</option>
               <option value="kill">ENCERRAR</option>
             </Select>
-            <TextArea label="Justificação da decisão · pré-preenchida, rever antes de confirmar" name="decision_rationale" required defaultValue={autoDecisionRationale} />
+            <TextArea label="Justificação da decisão" name="decision_rationale" required defaultValue={autoDecisionRationale} />
             <button className={primaryButtonClass} type="submit">Registar decisão</button>
           </form>
         </Card>
