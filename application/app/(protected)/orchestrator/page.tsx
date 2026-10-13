@@ -27,9 +27,8 @@ export default async function OrchestratorPage({
   return (
     <>
       <PageHeader
-        eyebrow="AI Layer"
-        title="Orchestrator"
-        description="Selecciona agente, Dots, política de provider e estratégia de execução por tarefa. Não usa rankings estáticos de modelos."
+        eyebrow="Execução"
+        title="Orquestração"
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} message="Rota de execução criada." />
 
@@ -43,21 +42,21 @@ export default async function OrchestratorPage({
                 <option key={project.id} value={project.id}>{project.title}</option>
               ))}
             </Select>
-            <Select label="Caso da Project Factory" name="factory_case_id" defaultValue="">
-              <option value="">Sem caso da Factory</option>
+            <Select label="Projecto em preparação" name="factory_case_id" defaultValue="">
+              <option value="">Sem projecto em preparação</option>
               {(factoryCases ?? []).map((item) => (
                 <option key={item.id} value={item.id}>{item.title}</option>
               ))}
             </Select>
             <Select label="Tipo de tarefa" name="task_type" defaultValue="command">
-              <option value="command">Command</option>
-              <option value="research">Research</option>
-              <option value="competitive_intelligence">Competitive Intelligence</option>
-              <option value="business">Business</option>
+              <option value="command">Comando</option>
+              <option value="research">Pesquisa</option>
+              <option value="competitive_intelligence">Inteligência competitiva</option>
+              <option value="business">Negócio</option>
               <option value="marketing">Marketing</option>
-              <option value="product">Product</option>
-              <option value="qa">QA</option>
-              <option value="analytics">Analytics</option>
+              <option value="product">Produto</option>
+              <option value="qa">Qualidade</option>
+              <option value="analytics">Análise</option>
             </Select>
             <TextArea label="Objectivo" name="objective" required />
             <Select label="Risco" name="risk_level" defaultValue="medium">
@@ -67,7 +66,7 @@ export default async function OrchestratorPage({
               <option value="critical">Crítico</option>
             </Select>
             <Select label="Factualidade necessária" name="factuality" defaultValue="standard">
-              <option value="standard">Standard</option>
+              <option value="standard">Normal</option>
               <option value="high">Alta</option>
             </Select>
             <Select label="Sensibilidade a custo" name="cost_sensitivity" defaultValue="medium">
@@ -85,7 +84,7 @@ export default async function OrchestratorPage({
           </div>
           <div className="p-5">
             {!routes?.length ? (
-              <EmptyState>Ainda não existem decisões do Orchestrator.</EmptyState>
+              <EmptyState>Ainda não existem decisões de orquestração.</EmptyState>
             ) : (
               <div className="space-y-4">
                 {routes.map((route) => (
@@ -106,7 +105,7 @@ export default async function OrchestratorPage({
                     </p>
                     <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">{route.rationale}</p>
                     {route.approval_required && (
-                      <p className="mt-3 text-xs font-semibold text-amber-700">Human approval gate obrigatório.</p>
+                      <p className="mt-3 text-xs font-semibold text-amber-700">Aprovação humana obrigatória.</p>
                     )}
                   </article>
                 ))}
