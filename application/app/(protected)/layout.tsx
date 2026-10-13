@@ -1,5 +1,9 @@
 import { AppShell } from "@/components/app-shell";
+import { isAdminUser, requireUser } from "@/lib/auth";
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const { supabase, user } = await requireUser();
+  const isAdmin = await isAdminUser(supabase, user.id);
+
+  return <AppShell isAdmin={isAdmin}>{children}</AppShell>;
 }
