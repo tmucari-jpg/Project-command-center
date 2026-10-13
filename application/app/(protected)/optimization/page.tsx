@@ -1,11 +1,11 @@
 import { Gauge, Repeat2, WalletCards } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { calculateToolGovernanceScore, optimizationStatus } from "@/lib/optimization";
 
 export default async function OptimizationPage() {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
 
   const [
     { data: projects },
