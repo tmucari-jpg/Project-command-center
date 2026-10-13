@@ -29,7 +29,6 @@ export default function AdminPage() {
       <PageHeader
         eyebrow="Administração"
         title="Administração"
-        description="Configuração técnica, segurança e ferramentas internas do PCC."
       />
 
       <Card className="mb-6 p-5">
