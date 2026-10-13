@@ -74,6 +74,23 @@ export function FactoryAIAssistant() {
   const [error, setError] = useState<string | null>(null);
   const [appliedCount, setAppliedCount] = useState(0);
 
+  function applySuggestion(nextSuggestion: FactorySuggestion, scroll = true) {
+    const details = document.querySelector<HTMLDetailsElement>('details[data-manual-entry="true"]');
+    if (details) details.open = true;
+
+    let count = 0;
+    Object.entries(nextSuggestion).forEach(([name, value]) => {
+      if (setField(name, value)) count += 1;
+    });
+
+    setAppliedCount(count);
+
+    if (scroll) {
+      const firstField = document.querySelector<HTMLElement>('[name="title"]');
+      firstField?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
   async function generate() {
     if (idea.trim().length < 3) return;
     setBusy(true);
@@ -107,8 +124,10 @@ export function FactoryAIAssistant() {
             cloud.status === 429;
 
           if (isQuotaError) {
-            setSuggestion(deterministicSuggestion(idea));
+            const fallbackSuggestion = deterministicSuggestion(idea);
+            setSuggestion(fallbackSuggestion);
             setSource("PCC gratuito");
+            applySuggestion(fallbackSuggestion);
             return;
           }
 
@@ -120,6 +139,7 @@ export function FactoryAIAssistant() {
       if (!parsed) throw new Error("INVALID_AI_JSON");
       setSuggestion(parsed);
       setSource(provider);
+      applySuggestion(parsed);
     } catch (error) {
       const message = error instanceof Error ? error.message : "erro desconhecido";
       console.error("Assistente IA:", message);
@@ -135,19 +155,7 @@ export function FactoryAIAssistant() {
 
   function apply() {
     if (!suggestion) return;
-
-    const details = document.querySelector<HTMLDetailsElement>("details");
-    if (details) details.open = true;
-
-    let count = 0;
-    Object.entries(suggestion).forEach(([name, value]) => {
-      if (setField(name, value)) count += 1;
-    });
-
-    setAppliedCount(count);
-
-    const firstField = document.querySelector<HTMLElement>('[name="title"]');
-    firstField?.scrollIntoView({ behavior: "smooth", block: "center" });
+    applySuggestion(suggestion);
   }
 
   return (
@@ -167,7 +175,7 @@ export function FactoryAIAssistant() {
           {busy ? "A preparar..." : "Ajuda-me a preencher"}
         </button>
         {suggestion && (
-          <button type="button" onClick={apply} className={secondaryButtonClass}>Aplicar aos campos</button>
+          <button type="button" onClick={apply} className={secondaryButtonClass}>Reaplicar aos campos</button>
         )}
       </div>
       {source && <p className="mt-3 text-xs text-[var(--cc-secondary)]">Sugestão gerada por {source}.</p>}
