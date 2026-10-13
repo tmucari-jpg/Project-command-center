@@ -1,11 +1,11 @@
 import { HardDrive, RefreshCw, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 
 export default async function AIFornecedoresPage() {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
 
   const [{ data: providers, error: providerError }, { data: queue, error: queueError }] = await Promise.all([
     supabase.from("ai_provider_profiles").select("*").eq("user_id", user.id).order("priority", { ascending: true }),
