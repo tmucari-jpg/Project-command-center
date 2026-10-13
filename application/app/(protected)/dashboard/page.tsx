@@ -98,7 +98,6 @@ export default async function DashboardPage() {
       <PageHeader
         eyebrow="Visão geral"
         title="Resumo"
-        description="Resumo operacional vivo do PCC, baseado exclusivamente nos dados registados no sistema."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
