@@ -7,6 +7,22 @@ import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 
+const CONFIDENCE_LABELS: Record<string, string> = {
+  unverified: "Não verificado",
+  low: "Baixa",
+  medium: "Média",
+  high: "Alta",
+  verified: "Verificada",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  new: "Novo",
+  reviewed: "Revisto",
+  actionable: "Accionável",
+  dismissed: "Descartado",
+  converted: "Convertido",
+};
+
 export default async function IntelligencePage({
   searchParams,
 }: {
@@ -34,8 +50,7 @@ export default async function IntelligencePage({
     <>
       <PageHeader
         eyebrow="Fase 4"
-        title="Intelligence"
-        description="Briefing interno, Opportunity Radar e sinais ligados a evidência e decisões."
+        title="Inteligência"
       />
       <FlashMessage error={params.error} created={params.created} />
 
@@ -65,20 +80,8 @@ export default async function IntelligencePage({
             <Field label="Título" name="title" required />
             <TextArea label="Resumo" name="summary" />
             <Field label="Fonte / referência" name="source_reference" />
-            <Select label="Confiança" name="confidence" defaultValue="unverified">
-              <option value="unverified">Não verificado</option>
-              <option value="low">Baixa</option>
-              <option value="medium">Média</option>
-              <option value="high">Alta</option>
-              <option value="verified">Verificado</option>
-            </Select>
-            <Select label="Estado" name="status" defaultValue="new">
-              <option value="new">Novo</option>
-              <option value="reviewed">Revisto</option>
-              <option value="actionable">Accionável</option>
-              <option value="dismissed">Descartado</option>
-              <option value="converted">Convertido</option>
-            </Select>
+            <input type="hidden" name="confidence" value="unverified" />
+            <input type="hidden" name="status" value="new" />
             <TextArea label="Acção sugerida" name="action_hint" />
             <button className={primaryButtonClass} type="submit">Registar sinal</button>
           </form>
@@ -87,7 +90,7 @@ export default async function IntelligencePage({
         <div className="space-y-6">
           <Card>
             <div className="border-b border-slate-200 p-5">
-              <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><Lightbulb size={18} /> Opportunity Radar</h2>
+              <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><Lightbulb size={18} /> Oportunidades</h2>
             </div>
             <div className="p-5">
               {!opportunities.length ? <EmptyState>Sem oportunidades activas.</EmptyState> : (
@@ -99,9 +102,9 @@ export default async function IntelligencePage({
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="font-medium text-slate-950">{item.title}</p>
-                            <p className="mt-1 text-xs text-slate-500">{relation?.title ?? "Transversal"} · {item.confidence}</p>
+                            <p className="mt-1 text-xs text-slate-500">{relation?.title ?? "Transversal"} · {CONFIDENCE_LABELS[item.confidence] ?? item.confidence}</p>
                           </div>
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{item.status}</span>
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{STATUS_LABELS[item.status] ?? item.status}</span>
                         </div>
                         {item.summary && <p className="mt-3 text-sm leading-6 text-slate-700">{item.summary}</p>}
                         {item.action_hint && <p className="mt-2 text-sm text-blue-700">Próxima acção: {item.action_hint}</p>}
@@ -115,7 +118,7 @@ export default async function IntelligencePage({
 
           <Card>
             <div className="border-b border-slate-200 p-5">
-              <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><ShieldCheck size={18} /> Intelligence Briefing</h2>
+              <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><ShieldCheck size={18} /> Resumo de inteligência</h2>
             </div>
             <div className="p-5">
               {!briefing.length ? <EmptyState>Sem sinais de briefing registados.</EmptyState> : (
@@ -123,7 +126,7 @@ export default async function IntelligencePage({
                   {briefing.slice(0, 12).map((item) => (
                     <article key={item.id} className="rounded-xl border border-slate-200 p-4">
                       <p className="font-medium text-slate-950">{item.title}</p>
-                      <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)} · {item.confidence}</p>
+                      <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)} · {CONFIDENCE_LABELS[item.confidence] ?? item.confidence}</p>
                       {item.summary && <p className="mt-2 text-sm leading-6 text-slate-700">{item.summary}</p>}
                     </article>
                   ))}
@@ -133,12 +136,6 @@ export default async function IntelligencePage({
           </Card>
         </div>
       </div>
-
-      <Card className="mt-6 p-5">
-        <p className="text-sm text-slate-600">
-          Evidence Layer e Decision Engine reutilizam as tabelas canónicas de Evidências e Decisões. O Intelligence não cria fontes paralelas.
-        </p>
-      </Card>
     </>
   );
 }
