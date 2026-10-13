@@ -43,8 +43,7 @@ export default async function ExecutionArenaPage({
     <>
       <PageHeader
         eyebrow="Fábrica de Projectos"
-        title="Arena de Execução"
-        description="Compara execuções reais por qualidade, exactidão, sucesso da tarefa, tempo, custo e correcção humana. Esta etapa só deve ser usada quando existe dúvida material entre formas de execução."
+        title="Teste"
       />
       <FlashMessage
         error={params.error ?? error?.message}
@@ -73,9 +72,9 @@ export default async function ExecutionArenaPage({
               ))}
             </Select>
 
-            <TextArea label="Cenário / tarefa testada · automático quando vem da Fábrica de Projectos" name="scenario" required defaultValue={autoScenario} />
+            <TextArea label="Cenário / tarefa testada" name="scenario" required defaultValue={autoScenario} />
             <Field label="Nome da alternativa testada" name="candidate_label" required placeholder="Ex.: Abordagem A" />
-            <Field label="Modelo / fornecedor utilizado" name="model_label" placeholder="Ex.: local, nuvem, modelo X" />
+            <Field label="Método / recurso utilizado" name="model_label" placeholder="Ex.: local, nuvem, modelo X" />
             <Select label="Agente" name="agent_type" defaultValue="research">
               <option value="command">Coordenação</option>
               <option value="research">Pesquisa</option>
@@ -86,7 +85,7 @@ export default async function ExecutionArenaPage({
               <option value="analytics">Análise</option>
             </Select>
             <Field label="Estratégia" name="strategy" required placeholder="Ex.: pesquisar, verificar e comparar" />
-            <Field label="Ferramenta principal" name="tool_label" placeholder="Ex.: web, n8n, Supabase" />
+            <Field label="Recurso principal" name="tool_label" placeholder="Ex.: web, n8n, Supabase" />
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Qualidade (0–100)" name="quality_score" type="number" min={0} max={100} required />
@@ -112,7 +111,7 @@ export default async function ExecutionArenaPage({
           </div>
           <div className="p-5">
             {!trials?.length ? (
-              <EmptyState>Ainda não existem testes na Arena de Execução.</EmptyState>
+              <EmptyState>Ainda não existem testes registados.</EmptyState>
             ) : (
               <div className="space-y-4">
                 {trials.map((trial) => {
