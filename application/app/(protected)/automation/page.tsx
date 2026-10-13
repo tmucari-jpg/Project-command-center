@@ -33,7 +33,6 @@ export default async function AutomationPage({
       <PageHeader
         eyebrow="Execução automática"
         title="Automações"
-        description="Configure tarefas repetitivas e acompanhe a sua execução sem precisar de lidar com a infraestrutura técnica."
       />
       <FlashMessage
         error={params.error ?? error?.message}
@@ -65,7 +64,7 @@ export default async function AutomationPage({
         <Card className="p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Registar automação</h2>
           <form action={createAutomationWorkflow} className="mt-5 space-y-4">
-            <Field label="Código interno" name="code" required placeholder="Ex.: briefing_daily_publish" />
+            <Field label="Código" name="code" required placeholder="Ex.: briefing_daily_publish" />
             <Field label="Nome" name="name" required placeholder="Ex.: Publicar Briefing Diário" />
             <TextArea label="Descrição" name="description" />
             <Select label="Modo de execução" name="trigger_mode" defaultValue="webhook">
@@ -100,21 +99,21 @@ export default async function AutomationPage({
             <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
               <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Opções avançadas</summary>
               <div className="mt-4 space-y-4">
-                <Select label="Rota interna" name="orchestrator_route_id" defaultValue="">
+                <Select label="Rota de execução" name="orchestrator_route_id" defaultValue="">
                   <option value="">Sem rota associada</option>
                   {(routes ?? []).map((route) => (
                     <option key={route.id} value={route.id}>{route.objective}</option>
                   ))}
                 </Select>
 
-                <Select label="Caso da Factory" name="factory_case_id" defaultValue="">
-                  <option value="">Sem caso associado</option>
+                <Select label="Projecto em preparação" name="factory_case_id" defaultValue="">
+                  <option value="">Sem projecto em preparação</option>
                   {(factoryCases ?? []).map((item) => (
                     <option key={item.id} value={item.id}>{item.title}</option>
                   ))}
                 </Select>
 
-                <TextArea label="Dados avançados (JSON)" name="payload_json" />
+                <TextArea label="Dados adicionais" name="payload_json" />
               </div>
             </details>
 
