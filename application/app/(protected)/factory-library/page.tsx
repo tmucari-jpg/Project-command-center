@@ -3,7 +3,7 @@ import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 
 const TYPE_LABELS: Record<string, string> = {
   component: "Componente",
@@ -20,7 +20,7 @@ export default async function FactoryLibraryPage({
   searchParams: Promise<{ error?: string; created?: string; approved?: string }>;
 }) {
   const params = await searchParams;
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
 
   const { data: items, error } = await supabase
     .from("factory_library_items")
