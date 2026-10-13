@@ -70,7 +70,7 @@ export default async function IntelligencePage({
               {(projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
             </Select>
             <Select label="Tipo" name="signal_type" defaultValue="briefing">
-              <option value="briefing">Briefing</option>
+              <option value="briefing">Resumo</option>
               <option value="opportunity">Oportunidade</option>
               <option value="risk">Risco</option>
               <option value="market">Mercado</option>
