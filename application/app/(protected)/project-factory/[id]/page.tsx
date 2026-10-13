@@ -281,12 +281,15 @@ export default async function FactoryCasePage({
               placeholder="Registe apenas evidência real: entrevistas, testes, métricas, feedback, documentos ou observações."
               defaultValue={validation?.evidence ?? ""}
             />
-            <TextArea
-              label="Resultados mensuráveis e acções seguintes · rever após inserir a evidência"
-              name="result_summary"
-              required
-              defaultValue={autoValidation.result_summary}
-            />
+            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+              <p className="text-sm font-semibold text-[var(--cc-foreground)]">Resultado da validação · automático</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-secondary)]">
+                {validation?.result_summary ?? autoValidation.result_summary}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
+                Ao concluir, o PCC transforma a evidência observada e a recomendação numa conclusão concreta com acções seguintes.
+              </p>
+            </div>
             <Select
               label="Recomendação · decisão humana obrigatória"
               name="recommendation"
