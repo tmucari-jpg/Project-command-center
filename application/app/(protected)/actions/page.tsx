@@ -39,7 +39,6 @@ export default async function ActionsPage({
       <PageHeader
         eyebrow="Execução"
         title="Acções"
-        description="Registe trabalho concreto, com prazo, estimativa e critério de conclusão."
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
