@@ -26,7 +26,8 @@
 
 ## C. Autenticação
 
-- [ ] Login PASS.
+- [ ] Login PASS com o owner global.
+- [ ] Login PASS com o segundo admin global.
 - [ ] Logout PASS.
 - [ ] Recuperação de palavra-passe PASS.
 - [ ] Rotas privadas bloqueadas sem sessão.
@@ -34,7 +35,8 @@
 
 ## D. Administração
 
-- [ ] Admin autorizado vê “Administração”.
+- [ ] Os dois admins globais autorizados vêem “Administração”.
+- [ ] Ambos acedem ao mesmo workspace operacional e aos mesmos projectos autorizados.
 - [ ] Utilizador não-admin não vê “Administração”.
 - [ ] Acesso directo não-admin a rota admin é negado/redireccionado.
 - [ ] Orquestração acessível ao admin.
@@ -71,7 +73,8 @@
 
 - [ ] RLS continua activo.
 - [ ] Teste cross-user PASS.
-- [ ] Nenhum utilizador vê dados de outro.
+- [ ] Utilizadores comuns não vêem dados de outros utilizadores.
+- [ ] A partilha entre admins globais limita-se ao workspace operacional aprovado.
 - [ ] Admin allowlist funciona.
 - [ ] Nenhum secret exposto no browser/repositório.
 - [ ] Security Advisor revisto.
@@ -112,6 +115,13 @@
 - [ ] Vercel healthy.
 - [ ] GitHub CI healthy.
 - [ ] Release Record preenchido.
+
+## K. Dashboard orientado à decisão
+
+- [ ] Totais de Acções abertas correspondem ao total real e não apenas à lista resumida.
+- [ ] Acções em atraso correspondem ao conjunto completo de acções abertas.
+- [ ] Total de Métricas corresponde ao total real e não apenas às últimas métricas mostradas.
+- [ ] Próxima melhor acção mantém contraste e legibilidade.
 
 ## Resultado
 
