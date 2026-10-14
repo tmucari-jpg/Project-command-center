@@ -16,11 +16,10 @@ export default async function DashboardPage() {
     actionsResult,
     actionsSummaryResult,
     blockersResult,
-    ideasResult,
-    deliverablesResult,
     metricsResult,
     metricsCountResult,
     decisionsResult,
+    decisionsCountResult,
     nextActionResult,
   ] = await Promise.all([
     supabase.from("objectives").select("id,status,progress", { count: "exact" }).eq("user_id", user.id),
@@ -41,15 +40,9 @@ export default async function DashboardPage() {
       .neq("status", "cancelled"),
     supabase
       .from("blockers")
-      .select("id,status,impact,title")
+      .select("id,status,impact,title,project_id")
       .eq("user_id", user.id)
       .in("status", ["open", "investigating", "waiting"]),
-    supabase.from("ideas").select("id,status", { count: "exact" }).eq("user_id", user.id),
-    supabase
-      .from("deliverables")
-      .select("id,title,status,progress,due_date,projects(title)")
-      .eq("user_id", user.id)
-      .order("due_date", { ascending: true, nullsFirst: false }),
     supabase
       .from("metrics")
       .select("id,name,current_value,target_value,unit,measurement_date,projects(title),objectives(title)")
@@ -67,6 +60,10 @@ export default async function DashboardPage() {
       .order("decided_at", { ascending: false })
       .limit(5),
     supabase
+      .from("decisions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
       .from("actions")
       .select("id,title,priority,due_at,completion_criteria,projects(title)")
       .eq("user_id", user.id)
@@ -79,8 +76,6 @@ export default async function DashboardPage() {
   const actions = actionsResult.data ?? [];
   const openActions = actionsSummaryResult.data ?? [];
   const blockers = blockersResult.data ?? [];
-  const ideas = ideasResult.data ?? [];
-  const deliverables = deliverablesResult.data ?? [];
   const metrics = metricsResult.data ?? [];
   const decisions = decisionsResult.data ?? [];
 
@@ -91,20 +86,13 @@ export default async function DashboardPage() {
     ["planning", "active", "at_risk", "on_hold"].includes(item.status),
   ).length;
   const atRiskProjects = projects.filter((item) => item.status === "at_risk").length;
-  const pendingIdeas = ideas.filter((item) =>
-    ["captured", "evaluating", "approved"].includes(item.status),
-  ).length;
-  const activeDeliverables = deliverables.filter((item) =>
-    ["pending", "active", "blocked"].includes(item.status),
-  ).length;
-  const blockedDeliverables = deliverables.filter((item) => item.status === "blocked").length;
-  const completedDeliverables = deliverables.filter((item) => item.status === "completed").length;
+  const projectsNeedingAttention = new Set([
+    ...projects.filter((item) => ["at_risk", "on_hold"].includes(item.status)).map((item) => item.id),
+    ...blockers.map((item) => item.project_id).filter(Boolean),
+  ]).size;
 
   const now = new Date();
   const overdueActions = openActions.filter((item) => item.due_at && new Date(item.due_at) < now).length;
-  const overdueDeliverables = deliverables.filter(
-    (item) => item.due_date && item.status !== "completed" && item.status !== "cancelled" && new Date(item.due_date) < now,
-  ).length;
 
   return (
     <>
@@ -145,27 +133,19 @@ export default async function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/ideas" className="group">
+        <Link href="/projects" className="group">
           <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md sm:p-6">
-            <p className="text-sm font-medium text-[var(--cc-secondary)]">Ideias por decidir</p>
-            <p className="mt-2 text-[2rem] font-semibold leading-none tracking-[-0.03em] text-[var(--cc-foreground)]">{pendingIdeas}</p>
-            <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--cc-accent)]">
-              Abrir ideias <ArrowRight size={13} />
+            <p className="text-sm font-medium text-[var(--cc-secondary)]">Projectos a rever</p>
+            <p className="mt-2 text-[2rem] font-semibold leading-none tracking-[-0.03em] text-[var(--cc-foreground)]">{projectsNeedingAttention}</p>
+            <p className="mt-3 text-xs text-[var(--cc-secondary)]">Risco, espera ou bloqueio activo</p>
+            <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--cc-accent)]">
+              Rever projectos <ArrowRight size={13} />
             </p>
           </Card>
         </Link>
       </div>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Link href="/deliverables" className="group">
-          <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-            <p className="text-sm font-medium text-[var(--cc-secondary)]">Entregáveis activos</p>
-            <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{activeDeliverables}</p>
-            <p className="mt-2 text-xs text-[var(--cc-secondary)]">
-              {blockedDeliverables} bloqueados · {completedDeliverables} concluídos
-            </p>
-          </Card>
-        </Link>
         <Link href="/actions" className="group">
           <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <p className="text-sm font-medium text-[var(--cc-secondary)]">Acções abertas</p>
@@ -173,16 +153,22 @@ export default async function DashboardPage() {
             <p className="mt-2 text-xs text-[var(--cc-secondary)]">{overdueActions} em atraso</p>
           </Card>
         </Link>
-        <Link href="/deliverables" className="group">
+        <Link href="/actions" className="group">
           <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-            <p className="text-sm font-medium text-[var(--cc-secondary)]">Entregáveis em atraso</p>
-            <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{overdueDeliverables}</p>
+            <p className="text-sm font-medium text-[var(--cc-secondary)]">Acções em atraso</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{overdueActions}</p>
           </Card>
         </Link>
         <Link href="/metrics" className="group">
           <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <p className="text-sm font-medium text-[var(--cc-secondary)]">Métricas registadas</p>
             <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{metricsCountResult.count ?? 0}</p>
+          </Card>
+        </Link>
+        <Link href="/decisions" className="group">
+          <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+            <p className="text-sm font-medium text-[var(--cc-secondary)]">Decisões registadas</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{decisionsCountResult.count ?? 0}</p>
           </Card>
         </Link>
       </div>
