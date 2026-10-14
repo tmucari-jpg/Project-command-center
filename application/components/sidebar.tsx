@@ -8,19 +8,14 @@ import {
   Blocks,
   CalendarCheck2,
   CheckSquare2,
-  CircleHelp,
   ClipboardList,
   Factory,
   FolderKanban,
   Gauge,
-  Lightbulb,
-  PackageCheck,
   Scale,
   Settings,
-  ShieldCheck,
   Target,
   TimerReset,
-  Workflow,
 } from "lucide-react";
 
 const navigationGroups = [
@@ -28,7 +23,7 @@ const navigationGroups = [
     label: "Começar",
     items: [
       { href: "/dashboard", label: "Resumo", icon: Gauge },
-      { href: "/project-factory", label: "Novo projecto", icon: Factory },
+      { href: "/project-factory", label: "Novos projectos", icon: Factory },
       { href: "/objectives", label: "Objectivos", icon: Target },
       { href: "/projects", label: "Projectos", icon: FolderKanban },
     ],
@@ -36,34 +31,22 @@ const navigationGroups = [
   {
     label: "Executar",
     items: [
-      { href: "/deliverables", label: "Entregáveis", icon: PackageCheck },
       { href: "/actions", label: "Acções", icon: CheckSquare2 },
       { href: "/focus", label: "Foco", icon: TimerReset },
       { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
       { href: "/blockers", label: "Bloqueios", icon: Blocks },
-      { href: "/automation", label: "Automações", icon: Workflow },
+      { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
     ],
   },
   {
     label: "Validar",
     items: [
-      { href: "/evidence", label: "Evidências", icon: ShieldCheck },
       { href: "/metrics", label: "Métricas", icon: BarChart3 },
       { href: "/decisions", label: "Decisões", icon: Scale },
-      { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
-    ],
-  },
-  {
-    label: "Apoio",
-    items: [
-      { href: "/ideas", label: "Ideias", icon: Lightbulb },
     ],
   },
 ];
 
-const supportNavigation = [
-  { href: "/help", label: "Ajuda", icon: CircleHelp },
-];
 
 const navigation = navigationGroups.flatMap((group) => group.items);
 
@@ -114,10 +97,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
           ))}
         </nav>
 
-        <nav className="relative z-10 mt-5 space-y-1 border-t border-[var(--cc-border)] pt-4" aria-label="Ajuda e administração">
-          {supportNavigation.map(({ href, label, icon }) => (
-            <NavLink key={href} pathname={pathname} href={href} label={label} Icon={icon} />
-          ))}
+        <nav className="relative z-10 mt-5 space-y-1 border-t border-[var(--cc-border)] pt-4" aria-label="Administração">
           {isAdmin && (
             <NavLink pathname={pathname} href="/admin" label="Administração" Icon={Settings} />
           )}
@@ -136,7 +116,7 @@ export function MobileNav() {
     { href: "/actions", label: "Acções", icon: CheckSquare2 },
     { href: "/focus", label: "Foco", icon: TimerReset },
     { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-    { href: "/automation", label: "Automação", icon: Workflow },
+    { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
   ];
 
   return (
