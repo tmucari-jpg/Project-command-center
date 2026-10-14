@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { RegisterServiceWorker } from "@/components/register-service-worker";
+import { LanguageProvider } from "@/components/language-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,11 +10,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Project Command Center" },
   icons: {
-    icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }],
+    icon: [{ url: "/brand/pcc-logo.png", type: "image/png" }],
+    apple: [{ url: "/brand/pcc-logo.png", type: "image/png" }],
   },
 };
 
@@ -25,5 +23,14 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-MZ" suppressHydrationWarning><body>{children}<RegisterServiceWorker /></body></html>;
+  return (
+    <html lang="pt-MZ" suppressHydrationWarning>
+      <body>
+        <LanguageProvider>
+          {children}
+          <RegisterServiceWorker />
+        </LanguageProvider>
+      </body>
+    </html>
+  );
 }

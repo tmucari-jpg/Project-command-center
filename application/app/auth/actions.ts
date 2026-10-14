@@ -42,7 +42,13 @@ export async function loginAction(
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
   if (error) {
-    return { error: error.message };
+    const message =
+      error.code === "invalid_credentials"
+        ? "Email ou palavra-passe incorrectos."
+        : error.code === "email_not_confirmed"
+          ? "Confirme o email antes de iniciar sessão."
+          : error.message;
+    return { error: message };
   }
 
   redirect("/dashboard");
@@ -81,7 +87,15 @@ export async function signUpAction(
   });
 
   if (error) {
-    return { error: error.message };
+    const message =
+      error.code === "user_already_exists"
+        ? "Este email já está registado. Use Entrar ou Recuperar acesso."
+        : error.message;
+    return { error: message };
+  }
+
+  if (data.user?.identities && data.user.identities.length === 0) {
+    return { error: "Este email já está registado. Use Entrar ou Recuperar acesso." };
   }
 
   if (data.session) {

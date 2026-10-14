@@ -1,4 +1,4 @@
-const CACHE_NAME = "project-command-center-v3";
+const CACHE_NAME = "project-command-center-v4";
 const STATIC_ASSETS = [
   "/offline.html",
   "/manifest.webmanifest",

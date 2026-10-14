@@ -41,12 +41,23 @@ for (const file of textFiles) {
 
 const requiredChecks = [
   ["app/layout.tsx", 'lang="pt-MZ"'],
+  ["app/layout.tsx", "LanguageProvider"],
   ["app/manifest.ts", 'lang: "pt-MZ"'],
   ["app/page.tsx", 'src="/brand/pcc-logo.png"'],
+  ["app/page.tsx", "LanguageSwitcher"],
   ["components/auth-form.tsx", 'src="/brand/pcc-logo.png"'],
+  ["components/auth-form.tsx", "LanguageSwitcher"],
+  ["components/app-shell.tsx", "LanguageSwitcher"],
+  ["components/language-provider.tsx", 'const STORAGE_KEY = "pcc-language"'],
+  ["components/language-switcher.tsx", "PT"],
+  ["components/language-switcher.tsx", "ENG"],
   ["components/sidebar.tsx", 'src="/icons/icon-192.png"'],
   ["components/app-shell.tsx", 'src="/icons/icon-192.png"'],
   ["public/offline.html", 'src="/brand/pcc-logo.png"'],
+  ["public/offline.html", 'id="langPt"'],
+  ["public/offline.html", 'id="langEn"'],
+  ["app/auth/actions.ts", "data.user?.identities && data.user.identities.length === 0"],
+  ["app/auth/actions.ts", "await supabase.auth.signOut()"],
 ];
 
 for (const [relative, expected] of requiredChecks) {
@@ -61,4 +72,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log("PCC UI standard: OK (marca oficial + pt-MZ).");
+console.log("PCC UI standard: OK (marca oficial + pt-MZ/ENG + autenticação).");

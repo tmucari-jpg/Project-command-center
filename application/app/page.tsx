@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default async function HomePage() {
   let authenticated = false;
@@ -17,6 +18,7 @@ export default async function HomePage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[var(--cc-background)] text-[var(--cc-foreground)]">
+      <div className="absolute right-5 top-5 z-20 sm:right-8 sm:top-8"><LanguageSwitcher /></div>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(7,63,54,0.10),transparent_32rem),radial-gradient(circle_at_82%_16%,rgba(201,148,57,0.14),transparent_25rem)]" />
       <section className="relative mx-auto flex min-h-screen max-w-6xl items-center px-6 py-20">
         <div className="max-w-3xl">

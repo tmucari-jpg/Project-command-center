@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { clearOfflineData } from "@/lib/offline-client";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import {
   forgotPasswordAction,
   loginAction,
@@ -67,8 +68,9 @@ export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; cle
           : "Actualizar palavra-passe";
 
   return (
-    <div className="w-full max-w-md rounded-[28px] border border-[color-mix(in_srgb,var(--cc-border)_82%,white)] bg-white/88 p-7 shadow-[0_24px_70px_rgba(7,63,54,0.10)] backdrop-blur-xl sm:p-9">
-      <div className="mb-8">
+    <div className="relative w-full max-w-md rounded-[28px] border border-[color-mix(in_srgb,var(--cc-border)_82%,white)] bg-white/88 p-7 shadow-[0_24px_70px_rgba(7,63,54,0.10)] backdrop-blur-xl sm:p-9">
+      <div className="absolute right-5 top-5"><LanguageSwitcher compact /></div>
+      <div className="mb-8 pt-8">
         <div className="mb-7 flex justify-center">
           <Image
             src="/brand/pcc-logo.png"
