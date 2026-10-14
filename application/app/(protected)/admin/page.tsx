@@ -5,6 +5,8 @@ import {
   BookOpenCheck,
   FlaskConical,
   HardDrive,
+  CircleHelp,
+  Workflow,
   LockKeyhole,
   Radar,
   Repeat2,
@@ -14,6 +16,8 @@ import { Card } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 
 const tools = [
+  { href: "/automation", label: "Automações", description: "Configuração, aprovação e acompanhamento das execuções automáticas.", icon: Workflow },
+  { href: "/help", label: "Manual", description: "Referência operacional e ajuda do PCC.", icon: CircleHelp },
   { href: "/agents", label: "Agentes", description: "Execuções especializadas e aprovações.", icon: Bot },
   { href: "/orchestrator", label: "Orquestração", description: "Regras de encaminhamento e execução.", icon: BrainCircuit },
   { href: "/execution-arena", label: "Área de testes", description: "Testes controlados antes da decisão final.", icon: FlaskConical },
