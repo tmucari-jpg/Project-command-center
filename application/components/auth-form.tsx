@@ -71,11 +71,11 @@ export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; cle
       <div className="mb-8">
         <div className="mb-7 flex justify-center">
           <Image
-            src="/brand/pcc-logo.svg"
+            src="/brand/pcc-logo.png"
             alt="Project Command Center"
-            width={300}
-            height={85}
-            className="h-auto w-full max-w-[300px]"
+            width={550}
+            height={182}
+            className="h-auto w-full max-w-[320px]"
             priority
           />
         </div>
