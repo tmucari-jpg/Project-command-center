@@ -4,17 +4,34 @@ import { createClient } from "@/lib/supabase/server";
 export async function requireUser() {
   const supabase = await createClient();
   const {
-    data: { user },
+    data: { user: authUser },
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
+  if (error || !authUser) {
     redirect("/auth/login");
   }
 
-  return { supabase, user };
-}
+  let dataUser = authUser;
 
+  if (await isAdminUser(supabase, authUser.id, authUser.email)) {
+    const { data: workspaceOwner } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("scope_type", "global")
+      .eq("role", "owner")
+      .is("project_id", null)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (workspaceOwner?.user_id && workspaceOwner.user_id !== authUser.id) {
+      dataUser = { ...authUser, id: workspaceOwner.user_id };
+    }
+  }
+
+  return { supabase, user: dataUser, authUser };
+}
 
 export function isConfiguredAdminEmail(email?: string | null) {
   if (!email) return false;
@@ -45,11 +62,11 @@ export async function isAdminUser(
 }
 
 export async function requireAdmin() {
-  const { supabase, user } = await requireUser();
+  const { supabase, user, authUser } = await requireUser();
 
-  if (!(await isAdminUser(supabase, user.id, user.email))) {
+  if (!(await isAdminUser(supabase, authUser.id, authUser.email))) {
     redirect("/dashboard");
   }
 
-  return { supabase, user };
+  return { supabase, user, authUser };
 }
