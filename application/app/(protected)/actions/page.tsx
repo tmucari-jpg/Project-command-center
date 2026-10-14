@@ -41,6 +41,29 @@ export default async function ActionsPage({
     ? selectedProjectId
     : "";
 
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setHours(0, 0, 0, 0);
+  startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+  const weeklyActions = (actions ?? []).filter((action) => {
+    if (!action.due_at) return false;
+    const due = new Date(action.due_at);
+    return due >= startOfWeek && due < endOfWeek;
+  });
+  const overdueCount = (actions ?? []).filter(
+    (action) =>
+      action.due_at &&
+      new Date(action.due_at) < now &&
+      !["completed", "cancelled"].includes(action.status),
+  ).length;
+  const weeklyOpen = weeklyActions.filter(
+    (action) => !["completed", "cancelled"].includes(action.status),
+  ).length;
+  const weeklyCompleted = weeklyActions.filter((action) => action.status === "completed").length;
+
   return (
     <>
       <PageHeader
@@ -48,6 +71,20 @@ export default async function ActionsPage({
         title={effectiveProjectId ? `Acções · ${(projects ?? []).find((project) => project.id === effectiveProjectId)?.title ?? "Projecto"}` : "Acções"}
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
+
+      <Card className="mb-6 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-[var(--cc-foreground)]">Resumo da semana</p>
+            <p className="mt-1 text-xs text-[var(--cc-secondary)]">
+              {weeklyOpen} por concluir · {weeklyCompleted} concluídas · {overdueCount} em atraso
+            </p>
+          </div>
+          <p className="text-xs font-medium text-[var(--cc-secondary)]">
+            {effectiveProjectId ? "Projecto actual" : "Todos os projectos"}
+          </p>
+        </div>
+      </Card>
 
       <div className="space-y-6">
         <ManualEntry>
