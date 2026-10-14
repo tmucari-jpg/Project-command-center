@@ -69,7 +69,7 @@ export default async function BriefingMonetizationPage({
       </div>
 
       <PageHeader
-        eyebrow="E02 · Briefing Diário"
+        eyebrow="Briefing Diário"
         title="Monetização e subscrições"
       />
       <FlashMessage
@@ -165,12 +165,6 @@ export default async function BriefingMonetizationPage({
             <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Cancelamentos</p><p className="mt-1 text-xl font-semibold">{pct(rates.churn_rate)}</p></div>
           </div>
         )}
-      </Card>
-
-      <Card className="mt-6 p-5">
-        <p className="text-sm leading-6 text-slate-600">
-          Esta página é específica do produto Briefing Diário e continua ligada à base geral de monetização do PCC. Não cria um segundo funil comercial.
-        </p>
       </Card>
     </>
   );
