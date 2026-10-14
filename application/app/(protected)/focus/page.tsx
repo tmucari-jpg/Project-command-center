@@ -53,13 +53,13 @@ export default async function FocusPage({
 
   const activeAction = openSession?.actions ?? nextAction;
   const priorityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  const referenceTime = new Date().getTime();
   const rankedCandidates = [...(candidates ?? [])]
     .sort((a, b) => {
-      const now = Date.now();
       const aDue = a.due_at ? new Date(a.due_at).getTime() : Number.POSITIVE_INFINITY;
       const bDue = b.due_at ? new Date(b.due_at).getTime() : Number.POSITIVE_INFINITY;
-      const aOverdue = aDue < now ? 0 : 1;
-      const bOverdue = bDue < now ? 0 : 1;
+      const aOverdue = aDue < referenceTime ? 0 : 1;
+      const bOverdue = bDue < referenceTime ? 0 : 1;
       if (aOverdue !== bOverdue) return aOverdue - bOverdue;
       const priorityDiff = (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3);
       if (priorityDiff !== 0) return priorityDiff;
