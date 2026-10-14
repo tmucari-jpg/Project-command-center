@@ -20,12 +20,12 @@ const tools = [
   { href: "/help", label: "Manual", description: "Referência operacional e ajuda do PCC.", icon: CircleHelp },
   { href: "/agents", label: "Agentes", description: "Execuções especializadas e aprovações.", icon: Bot },
   { href: "/orchestrator", label: "Orquestração", description: "Regras de encaminhamento e execução.", icon: BrainCircuit },
-  { href: "/execution-arena", label: "Área de testes", description: "Testes controlados antes da decisão final.", icon: FlaskConical },
+  { href: "/execution-arena", label: "Testes", description: "Testes controlados antes da decisão final.", icon: FlaskConical },
   { href: "/factory-library", label: "Biblioteca", description: "Conhecimento e activos reutilizáveis.", icon: BookOpenCheck },
   { href: "/intelligence", label: "Inteligência", description: "Sinais, oportunidades e informação de apoio.", icon: Radar },
-  { href: "/ai-providers", label: "Configuração de IA", description: "Configuração dos serviços inteligentes do PCC.", icon: HardDrive },
   { href: "/security", label: "Segurança", description: "Acessos, controlos e eventos de segurança.", icon: LockKeyhole },
   { href: "/optimization", label: "Optimização", description: "Saúde operacional e melhoria contínua.", icon: Repeat2 },
+  { href: "/ai-providers", label: "IA", description: "Motor técnico para diagnóstico, melhoria e tratamento assistido de falhas, limitado às capacidades realmente configuradas.", icon: HardDrive },
 ];
 
 export default async function AdminPage() {
