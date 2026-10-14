@@ -19,26 +19,33 @@ export default async function ActionsPage({
   const params = await searchParams;
   const { supabase, user } = await requireUser();
 
+  const selectedProjectId = params.project_id ?? "";
+  let actionsQuery = supabase
+    .from("actions")
+    .select("*, projects(title), deliverables(title)")
+    .eq("user_id", user.id);
+
+  if (selectedProjectId) {
+    actionsQuery = actionsQuery.eq("project_id", selectedProjectId);
+  }
+
   const [{ data: actions, error }, { data: projects }, { data: deliverables }] = await Promise.all([
-    supabase
-      .from("actions")
-      .select("*, projects(title), deliverables(title)")
-      .eq("user_id", user.id)
+    actionsQuery
       .order("is_next_action", { ascending: false })
       .order("due_at", { ascending: true, nullsFirst: false }),
     supabase.from("projects").select("id,title").eq("user_id", user.id).order("title"),
     supabase.from("deliverables").select("id,title,project_id").eq("user_id", user.id).order("title"),
   ]);
 
-  const selectedProjectId = (projects ?? []).some((project) => project.id === params.project_id)
-    ? params.project_id
+  const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
+    ? selectedProjectId
     : "";
 
   return (
     <>
       <PageHeader
         eyebrow="Execução"
-        title="Acções"
+        title={effectiveProjectId ? `Acções · ${(projects ?? []).find((project) => project.id === effectiveProjectId)?.title ?? "Projecto"}` : "Acções"}
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
@@ -56,7 +63,7 @@ export default async function ActionsPage({
             <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
               <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
               <div className="mt-4">
-                <Select label="Projecto, se não houver entregável" name="project_id" defaultValue={selectedProjectId}>
+                <Select label="Projecto, se não houver entregável" name="project_id" defaultValue={effectiveProjectId}>
                   <option value="">Sem projecto</option>
                   {(projects ?? []).map((project) => (
                     <option key={project.id} value={project.id}>{project.title}</option>
