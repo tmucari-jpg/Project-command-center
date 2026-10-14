@@ -73,7 +73,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     const initial: PccLanguage = stored === "en" ? "en" : "pt";
-    setLanguageState(initial);
+    queueMicrotask(() => setLanguageState(initial));
     document.documentElement.lang = initial === "en" ? "en" : "pt-MZ";
     queueMicrotask(() => translateElement(document.body, initial));
   }, []);
