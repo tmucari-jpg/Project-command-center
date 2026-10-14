@@ -1,9 +1,8 @@
-const CACHE_NAME = "project-command-center-v2";
+const CACHE_NAME = "project-command-center-v3";
 const STATIC_ASSETS = [
   "/offline.html",
   "/manifest.webmanifest",
-  "/brand/pcc-logo.svg",
-  "/icons/app-icon.svg",
+  "/brand/pcc-logo.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/icon-maskable-512.png",

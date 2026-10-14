@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { subscriptionFunnelRates } from "@/lib/briefing-monetization";
+import { displayLabel } from "@/lib/display-label";
 
 function pct(value: number | null) {
   return value === null ? "—" : `${value.toFixed(1)}%`;
@@ -119,7 +120,7 @@ export default async function BriefingMonetizationPage({
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-medium text-slate-950">{channel.channel_label}</p>
                       <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-                        {channel.status}
+                        {displayLabel(channel.status)}
                       </span>
                     </div>
                     {channel.notes && <p className="mt-2 text-xs leading-5 text-slate-500">{channel.notes}</p>}
@@ -161,14 +162,14 @@ export default async function BriefingMonetizationPage({
             <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Conversão pagamento</p><p className="mt-1 text-xl font-semibold">{pct(rates.payment_conversion)}</p></div>
             <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Activação</p><p className="mt-1 text-xl font-semibold">{pct(rates.activation_rate)}</p></div>
             <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Retenção</p><p className="mt-1 text-xl font-semibold">{pct(rates.retention_rate)}</p></div>
-            <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Churn</p><p className="mt-1 text-xl font-semibold">{pct(rates.churn_rate)}</p></div>
+            <div className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">Cancelamentos</p><p className="mt-1 text-xl font-semibold">{pct(rates.churn_rate)}</p></div>
           </div>
         )}
       </Card>
 
       <Card className="mt-6 p-5">
         <p className="text-sm leading-6 text-slate-600">
-          Esta página é específica do produto Briefing Diário e continua ligada à base geral de monetização do Command Center. Não cria um segundo pipeline comercial.
+          Esta página é específica do produto Briefing Diário e continua ligada à base geral de monetização do PCC. Não cria um segundo funil comercial.
         </p>
       </Card>
     </>

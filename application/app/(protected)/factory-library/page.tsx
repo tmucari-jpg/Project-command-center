@@ -10,7 +10,7 @@ const TYPE_LABELS: Record<string, string> = {
   component: "Componente",
   workflow: "Fluxo",
   template: "Modelo",
-  prompt: "Prompt",
+  prompt: "Instrução",
   strategy: "Estratégia",
   lesson: "Aprendizagem",
 };
@@ -51,7 +51,7 @@ export default async function FactoryLibraryPage({
               <option value="component">Componente</option>
               <option value="workflow">Fluxo</option>
               <option value="template">Modelo</option>
-              <option value="prompt">Prompt</option>
+              <option value="prompt">Instrução</option>
               <option value="strategy">Estratégia</option>
             </Select>
             <Field label="Título" name="title" required />

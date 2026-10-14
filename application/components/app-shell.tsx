@@ -14,7 +14,7 @@ export function AppShell({ children, isAdmin }: { children: React.ReactNode; isA
           <header className="cc-safe-top sticky top-0 z-40 border-b border-[var(--cc-border)] bg-white/90 backdrop-blur-xl">
             <div className="flex min-h-16 items-center justify-between gap-4 px-5 sm:px-8">
               <div className="flex min-w-0 items-center gap-3">
-                <Image src="/icons/app-icon.svg" alt="PCC" width={36} height={36} className="rounded-[10px]" priority />
+                <Image src="/icons/icon-192.png" alt="PCC" width={36} height={36} className="rounded-[10px]" priority />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold tracking-[-0.01em] text-[var(--cc-foreground)]">Project Command Center</p>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--cc-gold)]">Da estratégia à execução</p>

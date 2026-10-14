@@ -68,7 +68,7 @@ export default async function FocusPage({
       {activeAction ? (
         <Card className="overflow-hidden">
           <div className="border-b border-slate-200 bg-white p-6 sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cc-accent-soft)]">
               {openSession ? "Em execução" : "Próxima acção"}
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
@@ -156,7 +156,7 @@ export default async function FocusPage({
                   </div>
                   <form action={setNextAction}>
                     <input type="hidden" name="id" value={action.id} />
-                    <button className="text-sm font-semibold text-blue-700 hover:underline" type="submit">
+                    <button className="text-sm font-semibold text-[var(--cc-accent)] hover:underline" type="submit">
                       Definir como próxima
                     </button>
                   </form>

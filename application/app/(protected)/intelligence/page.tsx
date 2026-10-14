@@ -107,7 +107,7 @@ export default async function IntelligencePage({
                           <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{STATUS_LABELS[item.status] ?? item.status}</span>
                         </div>
                         {item.summary && <p className="mt-3 text-sm leading-6 text-slate-700">{item.summary}</p>}
-                        {item.action_hint && <p className="mt-2 text-sm text-blue-700">Próxima acção: {item.action_hint}</p>}
+                        {item.action_hint && <p className="mt-2 text-sm text-[var(--cc-accent)]">Próxima acção: {item.action_hint}</p>}
                       </article>
                     );
                   })}

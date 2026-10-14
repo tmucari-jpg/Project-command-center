@@ -55,7 +55,7 @@ export default async function AgendaPage() {
                         {index + 1}
                       </span>
                       {action.is_next_action && (
-                        <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+                        <span className="rounded-full bg-[color-mix(in_srgb,var(--cc-accent)_10%,white)] px-2 py-1 text-xs font-semibold text-[var(--cc-accent)]">
                           próxima acção
                         </span>
                       )}

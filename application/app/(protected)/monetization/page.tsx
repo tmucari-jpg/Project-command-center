@@ -69,7 +69,7 @@ export default async function MonetizationPage({
           params.saved
             ? "Perfil comercial guardado."
             : params.lead
-              ? "Lead registado."
+              ? "Potencial cliente registado."
               : params.entry
                 ? "Movimento financeiro registado."
                 : undefined
@@ -102,7 +102,7 @@ export default async function MonetizationPage({
                     </p>
                   </div>
                   {profile?.is_priority && (
-                    <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+                    <span className="rounded-full bg-[color-mix(in_srgb,var(--cc-accent)_10%,white)] px-2 py-1 text-xs font-semibold text-[var(--cc-accent)]">
                       prioritário
                     </span>
                   )}
@@ -113,7 +113,7 @@ export default async function MonetizationPage({
                     Em falta: {readiness.missing.join(", ")}
                   </p>
                 )}
-                <Link className="mt-3 inline-flex text-sm font-semibold text-blue-700 hover:underline" href={`/projects/${project.id}`}>
+                <Link className="mt-3 inline-flex text-sm font-semibold text-[var(--cc-accent)] hover:underline" href={`/projects/${project.id}`}>
                   Abrir projecto
                 </Link>
               </div>
@@ -219,7 +219,7 @@ export default async function MonetizationPage({
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card>
           <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Pipeline comercial</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Funil comercial comercial</h2>
           </div>
           <div className="p-5">
             {!leads?.length ? <EmptyState>Sem leads registados.</EmptyState> : (

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Centro de execução de projectos com foco em resultados, evidência e próxima acção.",
   applicationName: "Project Command Center",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Command Center" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Project Command Center" },
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -21,7 +21,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f5f5f7",
+  themeColor: "#073f36",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -269,7 +269,7 @@ export default async function FactoryCasePage({
               label="Evidência observada"
               name="evidence"
               required
-              placeholder="Registe apenas evidência real: entrevistas, testes, métricas, feedback, documentos ou observações."
+              placeholder="Registe apenas evidência real: entrevistas, testes, métricas, retorno dos utilizadores, documentos ou observações."
               defaultValue={validation?.evidence ?? ""}
             />
             <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">

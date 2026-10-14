@@ -60,7 +60,7 @@ const LABELS: Record<string, string> = {
   system: "Sistema",
   generated: "Gerado",
 
-  lead: "Lead",
+  lead: "Potencial cliente",
   contacted: "Contactado",
   qualified: "Qualificado",
   proposal: "Proposta",

@@ -97,7 +97,7 @@ export default async function ProjectHubPage({
   return (
     <>
       <div className="mb-4">
-        <Link className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 hover:underline" href="/projects">
+        <Link className="inline-flex items-center gap-2 text-sm font-medium text-[var(--cc-accent)] hover:underline" href="/projects">
           <ArrowLeft size={16} /> Voltar aos projectos
         </Link>
       </div>
@@ -161,7 +161,7 @@ export default async function ProjectHubPage({
                         <p className="text-sm font-medium text-slate-900">{action.title}</p>
                         <p className="mt-1 text-xs text-slate-500">{formatDateTime(action.due_at)} · {action.priority}</p>
                       </div>
-                      {action.is_next_action && <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">próxima</span>}
+                      {action.is_next_action && <span className="rounded-full bg-[color-mix(in_srgb,var(--cc-accent)_10%,white)] px-2 py-1 text-xs font-semibold text-[var(--cc-accent)]">próxima</span>}
                     </div>
                   </div>
                 ))}

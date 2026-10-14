@@ -4,7 +4,7 @@ import { useState } from "react";
 import { secondaryButtonClass } from "@/components/ui";
 import { parseFactorySuggestion, type FactorySuggestion } from "@/lib/factory-ai";
 
-const INSTRUCTIONS = `Actua como assistente do Project Command Center. A partir da ideia do utilizador, devolve APENAS JSON válido com as chaves: title, problem, expected_value, target_user, description, constraints. Escreve em português claro, executivo e conciso. Não uses markdown.`;
+const INSTRUCTIONS = `Actua como assistente do Project Command Center. A partir da ideia do utilizador, devolve APENAS JSON válido com as chaves: title, problem, expected_value, target_user, description, constraints. Escreve em português de Moçambique, claro, executivo e conciso. Não uses markdown.`;
 
 async function callLocal(input: string) {
   const response = await fetch("http://127.0.0.1:8080/v1/chat/completions", {
@@ -53,7 +53,7 @@ function deterministicSuggestion(input: string): FactorySuggestion {
   if (lower.includes("converter") || lower.includes("venda")) {
     expectedValue = "Aumentar conversão e gerar resultados comerciais mensuráveis.";
   } else if (lower.includes("demonstr") || lower.includes("workshop")) {
-    expectedValue = "Demonstrar valor na prática, recolher feedback e aumentar adopção.";
+    expectedValue = "Demonstrar valor na prática, recolher retorno dos utilizadores e aumentar adopção.";
   }
 
   return {
@@ -114,7 +114,7 @@ export function FactoryAIAssistant() {
         try {
           text = await callLocal(idea);
         } catch (localError) {
-          const localMessage = localError instanceof Error ? localError.message : "Qwen local indisponível";
+          const localMessage = localError instanceof Error ? localError.message : "Serviço automático indisponível";
           const isQuotaError =
             cloudMessage.includes("credit_balance_exhausted") ||
             cloudMessage.includes("insufficient_quota") ||
@@ -127,7 +127,7 @@ export function FactoryAIAssistant() {
             return;
           }
 
-          throw new Error(`Cloud: ${cloudMessage} | Local: ${localMessage}`);
+          throw new Error(`AUTO_FILL_UNAVAILABLE: ${cloudMessage}; ${localMessage}`);
         }
       }
 
@@ -154,7 +154,7 @@ export function FactoryAIAssistant() {
       <textarea
         value={idea}
         onChange={(event) => setIdea(event.target.value)}
-        placeholder="Ex.: Quero lançar um workshop para agentes imobiliários e converter participantes em utilizadores da Easy Property."
+        placeholder="Ex.: Quero lançar um workshop para um público específico, demonstrar a solução e converter participantes em utilizadores."
         className="min-h-24 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 text-sm text-[var(--cc-foreground)] outline-none"
       />
       <div className="mt-3 flex flex-wrap gap-2">

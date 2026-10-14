@@ -68,7 +68,7 @@ export default async function AIFornecedoresPage() {
             <p>• Credenciais sensíveis ficam fora da aplicação.</p>
             <p>• Serviços na nuvem recebem apenas contexto necessário.</p>
             <p>• IA local só será marcada como activa após verificação real.</p>
-            <p>• Ações críticas continuam sujeitas a aprovação humana.</p>
+            <p>• Acções críticas continuam sujeitas a aprovação humana.</p>
           </div>
         </Card>
       </div>

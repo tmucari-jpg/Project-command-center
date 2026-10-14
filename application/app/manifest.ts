@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Project Command Center",
-    short_name: "Command Center",
+    short_name: "PCC",
     description: "Centro de execução de projectos, actividades, entregáveis e métricas.",
     start_url: "/dashboard",
     scope: "/",
@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#f8f6f0",
     theme_color: "#073f36",
     orientation: "portrait-primary",
-    lang: "pt",
+    lang: "pt-MZ",
     categories: ["business", "productivity"],
     icons: [
       {

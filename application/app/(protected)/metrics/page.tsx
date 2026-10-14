@@ -78,7 +78,7 @@ export default async function MetricsPage({
                   <article key={metric.id} className="rounded-2xl border border-slate-200 p-4">
                     <div className="flex flex-col justify-between gap-3 sm:flex-row">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
+                        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--cc-accent-soft)]">
                           {displayLabel(metric.metric_type)}
                         </p>
                         <h3 className="mt-1 font-semibold text-slate-950">{metric.name}</h3>

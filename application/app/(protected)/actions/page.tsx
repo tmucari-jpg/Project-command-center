@@ -103,7 +103,7 @@ export default async function ActionsPage({
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-semibold text-slate-950">{action.title}</h3>
                           {action.is_next_action && (
-                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+                            <span className="rounded-full bg-[color-mix(in_srgb,var(--cc-accent)_10%,white)] px-2 py-1 text-xs font-semibold text-[var(--cc-accent)]">
                               próxima acção
                             </span>
                           )}
@@ -124,7 +124,7 @@ export default async function ActionsPage({
                         {!action.is_next_action && !["completed", "cancelled"].includes(action.status) && (
                           <form action={setNextAction}>
                             <input type="hidden" name="id" value={action.id} />
-                            <button className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50" type="submit">
+                            <button className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--cc-accent)] hover:bg-[var(--cc-surface-muted)]" type="submit">
                               Tornar próxima
                             </button>
                           </form>

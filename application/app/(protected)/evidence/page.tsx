@@ -90,14 +90,14 @@ export default async function EvidencePage({
                   <article key={item.id} className="rounded-2xl border border-slate-200 p-4">
                     <div className="flex flex-col justify-between gap-3 md:flex-row">
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-blue-600">
+                        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--cc-accent-soft)]">
                           {displayLabel(item.evidence_type)}
                         </p>
                         <h3 className="mt-1 font-semibold text-slate-950">{item.title || "Evidência"}</h3>
                         <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)}</p>
                         {item.description && <p className="mt-3 text-sm text-slate-700">{item.description}</p>}
                         {item.url && (
-                          <a className="mt-3 block truncate text-sm font-medium text-blue-700 hover:underline" href={item.url} target="_blank" rel="noreferrer">
+                          <a className="mt-3 block truncate text-sm font-medium text-[var(--cc-accent)] hover:underline" href={item.url} target="_blank" rel="noreferrer">
                             {item.url}
                           </a>
                         )}

@@ -18,12 +18,12 @@ export default function ErrorPage({
       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
         {process.env.NODE_ENV === "development"
           ? error.message
-          : "Tente novamente. Se o problema persistir, verifique a ligação ao Supabase e os logs da aplicação."}
+          : "Tente novamente. Se o problema persistir, registe o incidente no PCC para análise."}
       </p>
       <button
         type="button"
         onClick={reset}
-        className="mt-5 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+        className="mt-5 rounded-xl bg-[var(--cc-accent)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--cc-accent-strong)]"
       >
         Tentar novamente
       </button>

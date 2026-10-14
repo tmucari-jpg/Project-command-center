@@ -21,11 +21,11 @@ export default async function HomePage() {
       <section className="relative mx-auto flex min-h-screen max-w-6xl items-center px-6 py-20">
         <div className="max-w-3xl">
           <Image
-            src="/brand/pcc-logo.svg"
+            src="/brand/pcc-logo.png"
             alt="Project Command Center"
-            width={390}
-            height={110}
-            className="h-auto w-full max-w-[390px]"
+            width={550}
+            height={182}
+            className="h-auto w-full max-w-[420px]"
             priority
           />
           <h1 className="mt-10 text-5xl font-semibold tracking-[-0.045em] sm:text-6xl">

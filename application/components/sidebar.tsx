@@ -92,7 +92,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
     <aside className="cc-sidebar relative hidden w-[250px] shrink-0 overflow-hidden border-r border-[var(--cc-border)] lg:block">
       <div className="sticky top-0 h-screen overflow-y-auto px-4 py-5">
         <Link href="/dashboard" className="relative z-10 flex items-center gap-3 rounded-[18px] px-3 py-3 text-[var(--cc-accent)]">
-          <Image src="/icons/app-icon.svg" alt="PCC" width={40} height={40} className="rounded-[11px]" priority />
+          <Image src="/icons/icon-192.png" alt="PCC" width={40} height={40} className="rounded-[11px]" priority />
           <span className="min-w-0">
             <span className="block text-sm font-semibold tracking-[-0.02em]">Project Command Center</span>
             <span className="mt-1 block text-[9px] uppercase tracking-[0.16em] text-[var(--cc-accent)]/55">Da estratégia à execução</span>
