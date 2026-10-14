@@ -4,15 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ logged_out?: string }> }) {
   const query = await searchParams;
-  if (process.env.NODE_ENV === "development") {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (user) {
-      redirect("/dashboard");
-    }
+  if (user && query.logged_out !== "1") {
+    redirect("/dashboard");
   }
 
   return (

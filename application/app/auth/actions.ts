@@ -88,7 +88,7 @@ export async function signUpAction(
 
   return {
     success:
-      "Conta criada. Verifique o seu email para confirmar o registo antes de iniciar sessão.",
+      "Se este for um novo registo, receberá um email de confirmação. Se já existir uma conta com este email, use Entrar ou Recuperar acesso.",
   };
 }
 
