@@ -46,7 +46,7 @@ export async function loginAction(
       error.code === "invalid_credentials"
         ? "Email ou palavra-passe incorrectos."
         : error.code === "email_not_confirmed"
-          ? "Confirme o email antes de iniciar sessão."
+          ? "Confirme o email antes de iniciar sessão. Se não recebeu a mensagem, use Reenviar confirmação."
           : error.message;
     return { error: message };
   }
@@ -105,6 +105,31 @@ export async function signUpAction(
   return {
     success:
       "Se este for um novo registo, receberá um email de confirmação. Se já existir uma conta com este email, use Entrar ou Recuperar acesso.",
+  };
+}
+
+export async function resendConfirmationAction(
+  _previousState: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const parsed = emailSchema.safeParse(formData.get("email"));
+  if (!parsed.success) {
+    return { error: "Introduza um email válido." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: parsed.data,
+    options: { emailRedirectTo: `${getSiteUrl()}/auth/callback` },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {
+    success: "Novo email de confirmação enviado. Verifique também a pasta de spam ou lixo electrónico.",
   };
 }
 

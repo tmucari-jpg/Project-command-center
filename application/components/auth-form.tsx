@@ -9,12 +9,13 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import {
   forgotPasswordAction,
   loginAction,
+  resendConfirmationAction,
   signUpAction,
   updatePasswordAction,
   type AuthState,
 } from "@/app/auth/actions";
 
-type Mode = "login" | "sign-up" | "forgot-password" | "update-password";
+type Mode = "login" | "sign-up" | "forgot-password" | "resend-confirmation" | "update-password";
 
 const initialState: AuthState = {};
 
@@ -45,7 +46,9 @@ export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; cle
         ? signUpAction
         : mode === "forgot-password"
           ? forgotPasswordAction
-          : updatePasswordAction;
+          : mode === "resend-confirmation"
+            ? resendConfirmationAction
+            : updatePasswordAction;
 
   const [state, formAction] = useActionState(action, initialState);
 
@@ -56,7 +59,9 @@ export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; cle
         ? "Criar conta"
         : mode === "forgot-password"
           ? "Recuperar acesso"
-          : "Definir nova palavra-passe";
+          : mode === "resend-confirmation"
+            ? "Reenviar confirmação"
+            : "Definir nova palavra-passe";
 
   const button =
     mode === "login"
@@ -65,7 +70,9 @@ export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; cle
         ? "Criar conta"
         : mode === "forgot-password"
           ? "Enviar instruções"
-          : "Actualizar palavra-passe";
+          : mode === "resend-confirmation"
+            ? "Reenviar confirmação"
+            : "Actualizar palavra-passe";
 
   return (
     <div className="relative w-full max-w-md rounded-[28px] border border-[color-mix(in_srgb,var(--cc-border)_82%,white)] bg-white/88 p-7 shadow-[0_24px_70px_rgba(7,63,54,0.10)] backdrop-blur-xl sm:p-9">
@@ -157,6 +164,14 @@ export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; cle
                 href="/auth/forgot-password"
               >
                 Esqueci a palavra-passe
+              </Link>
+            </p>
+            <p>
+              <Link
+                className="font-medium text-[var(--cc-accent)] hover:underline"
+                href="/auth/resend-confirmation"
+              >
+                Reenviar confirmação
               </Link>
             </p>
           </>
