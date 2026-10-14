@@ -29,10 +29,10 @@ export default async function HomePage() {
             priority
           />
           <h1 className="mt-10 text-5xl font-semibold tracking-[-0.045em] sm:text-6xl">
-            Transforme objectivos em execução mensurável.
+            Da estratégia à execução.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--cc-secondary)]">
-            Um centro de execução para saber o que pretende alcançar, o que deve acontecer agora e que evidência comprova o avanço.
+            Entre no Project Command Center ou crie uma nova conta para começar.
           </p>
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
@@ -41,14 +41,12 @@ export default async function HomePage() {
             >
               {authenticated ? "Abrir PCC" : "Começar"}
             </Link>
-            {!authenticated && (
-              <Link
-                className="rounded-[14px] border border-[var(--cc-border)] bg-white/70 px-5 py-3 font-semibold text-[var(--cc-foreground)] transition hover:bg-white"
-                href="/auth/login"
-              >
-                Entrar
-              </Link>
-            )}
+            <Link
+              className="rounded-[14px] border border-[var(--cc-border)] bg-white/70 px-5 py-3 font-semibold text-[var(--cc-foreground)] transition hover:bg-white"
+              href="/auth/login"
+            >
+              {authenticated ? "Usar outra conta" : "Entrar"}
+            </Link>
           </div>
         </div>
       </section>
