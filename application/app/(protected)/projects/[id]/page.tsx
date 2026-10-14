@@ -149,7 +149,7 @@ export default async function ProjectHubPage({
         <Card>
           <div className="flex items-center justify-between border-b border-slate-200 p-5">
             <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><CheckSquare2 size={18} /> Acções</h2>
-            <Link className={secondaryButtonClass} href="/actions">Gerir</Link>
+            <Link className={secondaryButtonClass} href={`/actions?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!actions?.length ? <EmptyState>Sem acções neste projecto.</EmptyState> : (
