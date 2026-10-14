@@ -95,7 +95,7 @@ export default async function ActionsPage({
                   <article
                     key={action.id}
                     className={`rounded-2xl border p-4 ${
-                      action.is_next_action ? "border-blue-300 bg-blue-50/40" : "border-slate-200"
+                      action.is_next_action ? "border-[color-mix(in_srgb,var(--cc-gold)_55%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_8%,white)]" : "border-slate-200"
                     }`}
                   >
                     <div className="flex flex-col justify-between gap-3 md:flex-row">
