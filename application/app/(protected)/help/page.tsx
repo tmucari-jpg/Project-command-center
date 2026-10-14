@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
+import { requireAdmin } from "@/lib/auth";
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  await requireAdmin();
+
   return (
     <>
       <PageHeader
@@ -29,7 +32,7 @@ export default function HelpPage() {
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Fluxo recomendado</h2>
           <div className="mt-4 space-y-3 text-sm leading-6 text-[var(--cc-foreground)]">
             <p>1. Registe a ideia em <strong>Novo projecto</strong>.</p>
-            <p>2. Reveja a preparação na Factory.</p>
+            <p>2. Reveja a preparação do projecto.</p>
             <p>3. Quando aprovado, acompanhe em <strong>Projectos</strong>.</p>
             <p>4. Execute através de <strong>Acções</strong> e <strong>Entregáveis</strong>.</p>
             <p>5. Registe obstáculos em <strong>Bloqueios</strong>.</p>
