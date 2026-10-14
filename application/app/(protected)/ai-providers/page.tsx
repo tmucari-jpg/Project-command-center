@@ -23,6 +23,16 @@ export default async function AIFornecedoresPage() {
         title="Configuração de IA"
       />
 
+      <Card className="mb-6 p-5">
+        <h2 className="font-semibold text-[var(--cc-foreground)]">Motor de autonomia e melhoria</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          O PCC deve consumir capacidades, não depender de uma ferramenta específica: pesquisa, navegação web, execução de código, diagnóstico, automação e agentes podem ser fornecidos por serviços diferentes ou por runtime local.
+        </p>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          Regra operacional: preferir opções gratuitas ou locais quando forem suficientes; usar serviços adicionais apenas quando estiverem configurados, autorizados e trouxerem benefício real.
+        </p>
+      </Card>
+
       <Card className="mb-6 border-amber-200 bg-amber-50/50 p-5">
         <p className="font-semibold text-amber-900">
           {operationalProviders.length ? "Existe pelo menos um fornecedor disponível." : "Nenhum serviço inteligente está disponível neste ambiente."}
