@@ -136,8 +136,18 @@ export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; cle
         )}
 
         {state.error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {state.error}
+          <div className="space-y-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p>{state.error}</p>
+            {mode === "login" && (
+              <div className="flex flex-wrap gap-3">
+                <Link className="font-semibold text-[var(--cc-accent)] hover:underline" href="/auth/resend-confirmation">
+                  Reenviar confirmação
+                </Link>
+                <Link className="font-semibold text-[var(--cc-accent)] hover:underline" href="/auth/forgot-password">
+                  Recuperar palavra-passe
+                </Link>
+              </div>
+            )}
           </div>
         )}
         {state.success && (
