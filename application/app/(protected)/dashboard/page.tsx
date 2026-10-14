@@ -14,10 +14,12 @@ export default async function DashboardPage() {
     objectivesResult,
     projectsResult,
     actionsResult,
+    actionsSummaryResult,
     blockersResult,
     ideasResult,
     deliverablesResult,
     metricsResult,
+    metricsCountResult,
     decisionsResult,
     nextActionResult,
   ] = await Promise.all([
@@ -31,6 +33,12 @@ export default async function DashboardPage() {
       .neq("status", "cancelled")
       .order("due_at", { ascending: true, nullsFirst: false })
       .limit(6),
+    supabase
+      .from("actions")
+      .select("id,due_at")
+      .eq("user_id", user.id)
+      .neq("status", "completed")
+      .neq("status", "cancelled"),
     supabase
       .from("blockers")
       .select("id,status,impact,title")
@@ -49,6 +57,10 @@ export default async function DashboardPage() {
       .order("measurement_date", { ascending: false, nullsFirst: false })
       .limit(5),
     supabase
+      .from("metrics")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
       .from("decisions")
       .select("id,title,decision,decided_at,projects(title)")
       .eq("user_id", user.id)
@@ -65,6 +77,7 @@ export default async function DashboardPage() {
   const objectives = objectivesResult.data ?? [];
   const projects = projectsResult.data ?? [];
   const actions = actionsResult.data ?? [];
+  const openActions = actionsSummaryResult.data ?? [];
   const blockers = blockersResult.data ?? [];
   const ideas = ideasResult.data ?? [];
   const deliverables = deliverablesResult.data ?? [];
@@ -88,7 +101,7 @@ export default async function DashboardPage() {
   const completedDeliverables = deliverables.filter((item) => item.status === "completed").length;
 
   const now = new Date();
-  const overdueActions = actions.filter((item) => item.due_at && new Date(item.due_at) < now).length;
+  const overdueActions = openActions.filter((item) => item.due_at && new Date(item.due_at) < now).length;
   const overdueDeliverables = deliverables.filter(
     (item) => item.due_date && item.status !== "completed" && item.status !== "cancelled" && new Date(item.due_date) < now,
   ).length;
@@ -156,7 +169,7 @@ export default async function DashboardPage() {
         <Link href="/actions" className="group">
           <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <p className="text-sm font-medium text-[var(--cc-secondary)]">Acções abertas</p>
-            <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{actions.length}</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{openActions.length}</p>
             <p className="mt-2 text-xs text-[var(--cc-secondary)]">{overdueActions} em atraso</p>
           </Card>
         </Link>
@@ -169,7 +182,7 @@ export default async function DashboardPage() {
         <Link href="/metrics" className="group">
           <Card className="h-full p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <p className="text-sm font-medium text-[var(--cc-secondary)]">Métricas registadas</p>
-            <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{metrics.length}</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{metricsCountResult.count ?? 0}</p>
           </Card>
         </Link>
       </div>
@@ -239,12 +252,12 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="mt-3">
-                <p className="text-sm leading-6 text-slate-600">
+                <p className="text-sm leading-6 text-white/75">
                   Ainda não definiu uma próxima acção.
                 </p>
                 <Link
                   href="/actions"
-                  className="mt-4 inline-flex text-sm font-semibold text-[var(--cc-accent)]"
+                  className="mt-4 inline-flex text-sm font-semibold text-[var(--cc-gold-soft)]"
                 >
                   Escolher uma acção
                 </Link>
