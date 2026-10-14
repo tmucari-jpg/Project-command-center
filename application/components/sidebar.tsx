@@ -48,7 +48,6 @@ const navigationGroups = [
 ];
 
 
-const navigation = navigationGroups.flatMap((group) => group.items);
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
