@@ -8,7 +8,6 @@ import {
   Blocks,
   CalendarCheck2,
   CheckSquare2,
-  ClipboardList,
   Factory,
   FolderKanban,
   Gauge,
@@ -22,7 +21,6 @@ const navigationGroups = [
   {
     label: "Começar",
     items: [
-      { href: "/dashboard", label: "Resumo", icon: Gauge },
       { href: "/project-factory", label: "Novos projectos", icon: Factory },
       { href: "/objectives", label: "Objectivos", icon: Target },
       { href: "/projects", label: "Projectos", icon: FolderKanban },
@@ -31,11 +29,10 @@ const navigationGroups = [
   {
     label: "Executar",
     items: [
+      { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
       { href: "/actions", label: "Acções", icon: CheckSquare2 },
       { href: "/focus", label: "Foco", icon: TimerReset },
-      { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
       { href: "/blockers", label: "Bloqueios", icon: Blocks },
-      { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
     ],
   },
   {
@@ -82,6 +79,14 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
         </Link>
 
         <nav className="relative z-10 mt-5 space-y-5" aria-label="Navegação principal">
+          <div>
+            <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">
+              Resumo
+            </p>
+            <div className="space-y-1">
+              <NavLink pathname={pathname} href="/dashboard" label="Dashboard" Icon={Gauge} />
+            </div>
+          </div>
           {navigationGroups.map((group) => (
             <div key={group.label}>
               <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">
@@ -112,10 +117,10 @@ export function MobileNav() {
     { href: "/dashboard", label: "Resumo", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
+    { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
     { href: "/actions", label: "Acções", icon: CheckSquare2 },
     { href: "/focus", label: "Foco", icon: TimerReset },
-    { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-    { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
+    { href: "/blockers", label: "Bloqueios", icon: Blocks },
   ];
 
   return (
