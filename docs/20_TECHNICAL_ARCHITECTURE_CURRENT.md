@@ -9,6 +9,8 @@ O Project Command Center é um sistema de execução orientado por resultados. A
 
 > Sistema produz → utilizador revê → utilizador intervém apenas nas excepções.
 
+Regra de autonomia: sempre que um campo puder ser derivado de informação já existente no PCC — por relação entre Objectivo, Projecto, Acção, etapa, evidência, métricas, decisão ou contexto — o sistema deve preenchê-lo antes de pedir intervenção humana. O utilizador valida ou edita se necessário; informação inferível não deve começar vazia.
+
 ## 2. Stack
 
 ### Aplicação
