@@ -1,7 +1,7 @@
 # PCC — Limitações Conhecidas e Registo de Risco
 
 **Estado:** OFICIAL / CURRENT  
-**Data:** 2026-10-13
+**Data:** 2026-10-14
 
 ## 1. Vercel deployment quota
 
@@ -11,20 +11,20 @@
 
 ## 2. Leaked Password Protection
 
-**Estado:** não activa actualmente.  
-**Risco:** passwords conhecidas como comprometidas podem não ser bloqueadas automaticamente.  
-**Mitigação:** activar quando suportado; manter Auth/RLS/segredos/monitorização.
+**Estado:** resolvido em 2026-10-14.  
+**Tratamento:** opção `Prevent use of leaked passwords` activada no Supabase Auth.  
+**Monitorização:** confirmar persistência da configuração em futuras revisões de Auth/plano.
 
-## 3. SECURITY DEFINER warnings
+## 3. Funções com privilégio elevado
 
-**Estado:** aceite intencionalmente.  
+**Estado:** resolvido em 2026-10-14.  
 **Funções:** `set_next_action`, `check_brave_search_rate_limit`.  
-**Mitigação:** ambas validam `auth.uid()` e ownership. Não alterar sem regressão.
+**Tratamento:** alteradas para `SECURITY INVOKER`; autorização passa por sessão e RLS.
 
-## 4. api_rate_limits sem policies
+## 4. api_rate_limits
 
-**Estado:** intencional.  
-**Mitigação:** acesso exclusivamente por função controlada.
+**Estado:** tratado em 2026-10-14.  
+**Tratamento:** RLS com policies de acesso do próprio utilizador e consolidação do acesso de administradores globais.
 
 ## 5. Modo offline
 
@@ -49,7 +49,7 @@ Não remover sem observação real e análise.
 
 ## 8. Próximo gate
 
-Depois do próximo deploy:
+A release corrente está em revalidação operacional. Depois do deployment corrente:
 - smoke real;
 - admin access;
 - Factory;

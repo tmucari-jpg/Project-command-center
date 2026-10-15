@@ -12,27 +12,45 @@ import { formatDateTime } from "@/lib/format";
 export default async function BlockersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
+  const selectedProjectId = params.project_id ?? "";
+
+  let blockersQuery = supabase
+    .from("blockers")
+    .select("*, projects(title), deliverables(title), actions(title)")
+    .eq("user_id", user.id);
+
+  if (selectedProjectId) {
+    blockersQuery = blockersQuery.eq("project_id", selectedProjectId);
+  }
+
   const [{ data: blockers, error }, { data: projects }, { data: deliverables }, { data: actions }] =
     await Promise.all([
-      supabase
-        .from("blockers")
-        .select("*, projects(title), deliverables(title), actions(title)")
-        .eq("user_id", user.id)
-        .order("identified_at", { ascending: false }),
+      blockersQuery.order("identified_at", { ascending: false }),
       supabase.from("projects").select("id,title").eq("user_id", user.id).order("title"),
-      supabase.from("deliverables").select("id,title").eq("user_id", user.id).order("title"),
-      supabase.from("actions").select("id,title").eq("user_id", user.id).order("title"),
+      supabase.from("deliverables").select("id,title,project_id").eq("user_id", user.id).order("title"),
+      supabase.from("actions").select("id,title,project_id").eq("user_id", user.id).order("title"),
     ]);
+
+  const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
+    ? selectedProjectId
+    : "";
+  const effectiveProjectTitle = (projects ?? []).find((project) => project.id === effectiveProjectId)?.title;
+  const visibleDeliverables = effectiveProjectId
+    ? (deliverables ?? []).filter((item) => item.project_id === effectiveProjectId)
+    : (deliverables ?? []);
+  const visibleActions = effectiveProjectId
+    ? (actions ?? []).filter((item) => item.project_id === effectiveProjectId)
+    : (actions ?? []);
 
   return (
     <>
       <PageHeader
         eyebrow="Risco"
-        title="Bloqueios"
+        title={effectiveProjectId ? `Bloqueios · ${effectiveProjectTitle ?? "Projecto"}` : "Bloqueios"}
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
@@ -43,16 +61,16 @@ export default async function BlockersPage({
             <Field label="Título" name="title" required />
             <Select label="Acção" name="action_id" defaultValue="">
               <option value="">Sem acção</option>
-              {(actions ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+              {visibleActions.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
             <Select label="Entregável, se não houver acção" name="deliverable_id" defaultValue="">
               <option value="">Sem entregável</option>
-              {(deliverables ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+              {visibleDeliverables.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
             <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
               <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
               <div className="mt-4">
-                <Select label="Projecto, se não houver acção ou entregável" name="project_id" defaultValue="">
+                <Select label="Projecto, se não houver acção ou entregável" name="project_id" defaultValue={effectiveProjectId}>
                   <option value="">Sem projecto</option>
                   {(projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
                 </Select>

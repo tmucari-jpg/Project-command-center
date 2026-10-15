@@ -8,27 +8,20 @@ import {
   Blocks,
   CalendarCheck2,
   CheckSquare2,
-  CircleHelp,
-  ClipboardList,
   Factory,
   FolderKanban,
   Gauge,
-  Lightbulb,
-  PackageCheck,
   Scale,
   Settings,
-  ShieldCheck,
   Target,
   TimerReset,
-  Workflow,
 } from "lucide-react";
 
 const navigationGroups = [
   {
     label: "Começar",
     items: [
-      { href: "/dashboard", label: "Resumo", icon: Gauge },
-      { href: "/project-factory", label: "Novo projecto", icon: Factory },
+      { href: "/project-factory", label: "Novos projectos", icon: Factory },
       { href: "/objectives", label: "Objectivos", icon: Target },
       { href: "/projects", label: "Projectos", icon: FolderKanban },
     ],
@@ -36,36 +29,22 @@ const navigationGroups = [
   {
     label: "Executar",
     items: [
-      { href: "/deliverables", label: "Entregáveis", icon: PackageCheck },
+      { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
       { href: "/actions", label: "Acções", icon: CheckSquare2 },
       { href: "/focus", label: "Foco", icon: TimerReset },
-      { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
       { href: "/blockers", label: "Bloqueios", icon: Blocks },
-      { href: "/automation", label: "Automações", icon: Workflow },
     ],
   },
   {
     label: "Validar",
     items: [
-      { href: "/evidence", label: "Evidências", icon: ShieldCheck },
       { href: "/metrics", label: "Métricas", icon: BarChart3 },
       { href: "/decisions", label: "Decisões", icon: Scale },
-      { href: "/weekly-review", label: "Revisão", icon: ClipboardList },
-    ],
-  },
-  {
-    label: "Apoio",
-    items: [
-      { href: "/ideas", label: "Ideias", icon: Lightbulb },
     ],
   },
 ];
 
-const supportNavigation = [
-  { href: "/help", label: "Ajuda", icon: CircleHelp },
-];
 
-const navigation = navigationGroups.flatMap((group) => group.items);
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -100,6 +79,14 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
         </Link>
 
         <nav className="relative z-10 mt-5 space-y-5" aria-label="Navegação principal">
+          <div>
+            <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">
+              Resumo
+            </p>
+            <div className="space-y-1">
+              <NavLink pathname={pathname} href="/dashboard" label="Dashboard" Icon={Gauge} />
+            </div>
+          </div>
           {navigationGroups.map((group) => (
             <div key={group.label}>
               <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">
@@ -114,10 +101,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
           ))}
         </nav>
 
-        <nav className="relative z-10 mt-5 space-y-1 border-t border-[var(--cc-border)] pt-4" aria-label="Ajuda e administração">
-          {supportNavigation.map(({ href, label, icon }) => (
-            <NavLink key={href} pathname={pathname} href={href} label={label} Icon={icon} />
-          ))}
+        <nav className="relative z-10 mt-5 space-y-1 border-t border-[var(--cc-border)] pt-4" aria-label="Administração">
           {isAdmin && (
             <NavLink pathname={pathname} href="/admin" label="Administração" Icon={Settings} />
           )}
@@ -133,10 +117,10 @@ export function MobileNav() {
     { href: "/dashboard", label: "Resumo", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
+    { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
     { href: "/actions", label: "Acções", icon: CheckSquare2 },
     { href: "/focus", label: "Foco", icon: TimerReset },
-    { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-    { href: "/automation", label: "Automação", icon: Workflow },
+    { href: "/blockers", label: "Bloqueios", icon: Blocks },
   ];
 
   return (

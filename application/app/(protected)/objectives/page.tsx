@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { ManualEntry } from "@/components/manual-entry";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
-import { PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
+import { PRIORITIES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
@@ -37,24 +37,29 @@ export default async function ObjectivesPage({
           <h2 className="text-lg font-semibold text-slate-950">Novo objectivo</h2>
           <form action={createObjective} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
-            <TextArea label="Descrição" name="description" />
             <TextArea label="Resultado esperado" name="expected_result" />
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="Prioridade" name="priority" defaultValue="medium">
                 {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
-              <Select label="Estado" name="status" defaultValue="draft">
-                {STATUS_OPTIONS.objectives.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
-              </Select>
-              <Field label="Data inicial" name="start_date" type="date" />
               <Field label="Prazo" name="due_date" type="date" />
-              <Field label="Progresso (%)" name="progress" type="number" min={0} max={100} step="0.01" defaultValue={0} />
-              <Field label="Métrica principal" name="metric_name" />
-              <Field label="Valor inicial" name="baseline_value" type="number" step="any" />
-              <Field label="Valor alvo" name="target_value" type="number" step="any" />
-              <Field label="Valor actual" name="current_value" type="number" step="any" />
             </div>
-            <TextArea label="Observações" name="notes" />
+            <input type="hidden" name="status" value="draft" />
+            <input type="hidden" name="progress" value="0" />
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <div className="mt-4 space-y-4">
+                <TextArea label="Descrição" name="description" />
+                <Field label="Data inicial" name="start_date" type="date" />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Métrica principal" name="metric_name" />
+                  <Field label="Valor inicial" name="baseline_value" type="number" step="any" />
+                  <Field label="Valor alvo" name="target_value" type="number" step="any" />
+                  <Field label="Valor actual" name="current_value" type="number" step="any" />
+                </div>
+                <TextArea label="Observações" name="notes" />
+              </div>
+            </details>
             <button className={primaryButtonClass} type="submit">Criar objectivo</button>
           </form>
         </ManualEntry>

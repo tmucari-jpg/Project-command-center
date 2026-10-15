@@ -3,7 +3,7 @@ import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { n8nConfigured } from "@/lib/n8n";
 import { displayLabel } from "@/lib/display-label";
 
@@ -13,7 +13,7 @@ export default async function AutomationPage({
   searchParams: Promise<{ error?: string; created?: string; workflow?: string; dispatched?: string; approved?: string }>;
 }) {
   const params = await searchParams;
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
 
   const [
     { data: workflows },

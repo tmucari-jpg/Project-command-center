@@ -42,7 +42,7 @@ export default async function WeeklyReviewPage() {
   return (
     <>
       <PageHeader
-        eyebrow="P03"
+        eyebrow="Revisão"
         title="Revisão semanal"
       />
 
@@ -77,12 +77,6 @@ export default async function WeeklyReviewPage() {
           ))}
         </div>
       )}
-
-      <Card className="mt-6 p-5">
-        <p className="text-sm text-slate-600">
-          Integração P03: esta revisão não altera prioridades automaticamente e não substitui decisões humanas.
-        </p>
-      </Card>
     </>
   );
 }

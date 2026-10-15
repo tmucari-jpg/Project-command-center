@@ -48,10 +48,24 @@ export default async function FocusPage({
       .neq("status", "completed")
       .neq("status", "cancelled")
       .order("due_at", { ascending: true, nullsFirst: false })
-      .limit(5),
+      .limit(20),
   ]);
 
   const activeAction = openSession?.actions ?? nextAction;
+  const priorityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  const referenceTime = new Date().getTime();
+  const rankedCandidates = [...(candidates ?? [])]
+    .sort((a, b) => {
+      const aDue = a.due_at ? new Date(a.due_at).getTime() : Number.POSITIVE_INFINITY;
+      const bDue = b.due_at ? new Date(b.due_at).getTime() : Number.POSITIVE_INFINITY;
+      const aOverdue = aDue < referenceTime ? 0 : 1;
+      const bOverdue = bDue < referenceTime ? 0 : 1;
+      if (aOverdue !== bOverdue) return aOverdue - bOverdue;
+      const priorityDiff = (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3);
+      if (priorityDiff !== 0) return priorityDiff;
+      return aDue - bDue;
+    })
+    .slice(0, 5);
 
   return (
     <>
@@ -143,15 +157,15 @@ export default async function FocusPage({
         <Card className="mt-6 p-5">
           <h2 className="font-semibold text-slate-950">Escolher próxima acção</h2>
           <div className="mt-4 space-y-2">
-            {(candidates ?? []).length === 0 ? (
+            {rankedCandidates.length === 0 ? (
               <p className="text-sm text-slate-500">Crie uma acção para começar.</p>
             ) : (
-              (candidates ?? []).map((action) => (
+              rankedCandidates.map((action) => (
                 <div key={action.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center">
                   <div>
                     <p className="text-sm font-medium text-slate-900">{action.title}</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {relatedTitle(action.projects) ?? "Sem projecto"} · {formatDateTime(action.due_at)}
+                      {relatedTitle(action.projects) ?? "Sem projecto"} · prioridade {action.priority} · {formatDateTime(action.due_at)}
                     </p>
                   </div>
                   <form action={setNextAction}>

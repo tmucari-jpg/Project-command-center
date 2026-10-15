@@ -10,6 +10,8 @@ O PCC deve pedir apenas informação que ainda não conhece.
 Fluxo esperado:
 **sistema prepara → utilizador revê → utilizador corrige apenas excepções.**
 
+Quando a informação já existe ou pode ser inferida pelas relações do PCC, o campo deve aparecer previamente preenchido. O utilizador não deve ser obrigado a reconstruir manualmente contexto que o sistema já possui.
+
 ## 2. Começar
 
 Use:

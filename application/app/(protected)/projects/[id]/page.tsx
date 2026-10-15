@@ -149,7 +149,7 @@ export default async function ProjectHubPage({
         <Card>
           <div className="flex items-center justify-between border-b border-slate-200 p-5">
             <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><CheckSquare2 size={18} /> Acções</h2>
-            <Link className={secondaryButtonClass} href="/actions">Gerir</Link>
+            <Link className={secondaryButtonClass} href={`/actions?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!actions?.length ? <EmptyState>Sem acções neste projecto.</EmptyState> : (
@@ -173,7 +173,7 @@ export default async function ProjectHubPage({
         <Card>
           <div className="flex items-center justify-between border-b border-slate-200 p-5">
             <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><PackageCheck size={18} /> Entregáveis</h2>
-            <Link className={secondaryButtonClass} href="/deliverables">Gerir</Link>
+            <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!deliverables?.length ? <EmptyState>Sem entregáveis neste projecto.</EmptyState> : (
@@ -192,7 +192,7 @@ export default async function ProjectHubPage({
         <Card>
           <div className="flex items-center justify-between border-b border-slate-200 p-5">
             <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><TriangleAlert size={18} /> Bloqueios</h2>
-            <Link className={secondaryButtonClass} href="/blockers">Gerir</Link>
+            <Link className={secondaryButtonClass} href={`/blockers?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!openBlockers.length ? <EmptyState>Sem bloqueios activos.</EmptyState> : (
@@ -211,7 +211,7 @@ export default async function ProjectHubPage({
         <Card>
           <div className="flex items-center justify-between border-b border-slate-200 p-5">
             <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><BarChart3 size={18} /> Métricas</h2>
-            <Link className={secondaryButtonClass} href="/metrics">Gerir</Link>
+            <Link className={secondaryButtonClass} href={`/metrics?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!metrics?.length ? <EmptyState>Sem métricas associadas.</EmptyState> : (
@@ -275,7 +275,7 @@ export default async function ProjectHubPage({
       <Card className="mt-6">
         <div className="flex items-center justify-between border-b border-slate-200 p-5">
           <h2 className="font-semibold text-slate-950">Decisões recentes</h2>
-          <Link className={secondaryButtonClass} href="/decisions">Gerir decisões</Link>
+          <Link className={secondaryButtonClass} href={`/decisions?project_id=${project.id}`}>Gerir decisões</Link>
         </div>
         <div className="p-5">
           {!decisions?.length ? <EmptyState>Sem decisões registadas para este projecto.</EmptyState> : (

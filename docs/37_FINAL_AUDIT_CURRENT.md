@@ -1,12 +1,12 @@
 # PCC — Auditoria Final Técnica
 
-**Estado:** CLOSED / PRODUCTION ACCEPTED WITH ACCEPTED LIMITATION  
-**Data:** 2026-10-13  
+**Estado:** REOPENED FOR OPERATIONAL REVALIDATION  
+**Data:** 2026-10-14  
 **Âmbito:** fecho técnico do Project Command Center antes do último deployment consolidado.
 
 ## 1. Resultado executivo
 
-O PCC está tecnicamente preparado para o último deployment.
+A base técnica permanece válida, mas a release corrente foi reaberta para revalidação operacional após alterações de administração partilhada, hardening e observação de erro de runtime num preview anterior.
 
 O fecho definitivo do projecto fica condicionado apenas à evidência pós-deploy de:
 - funcionamento real no domínio de produção;
@@ -101,13 +101,13 @@ PASS:
 - 85 policies optimizadas para `(select auth.uid())`;
 - 14 foreign keys com índices adicionados;
 - ownership relacional validado;
-- funções SECURITY DEFINER revistas;
-- `api_rate_limits` mantida sem acesso directo de cliente;
+- funções `set_next_action` e `check_brave_search_rate_limit` convertidas para `SECURITY INVOKER`;
+- `api_rate_limits` protegido por RLS com policies controladas;
 - migrations documentadas no repositório.
 
 ## 7. Autenticação e administração
 
-PASS:
+PASS no desenho/código; smoke real pendente na release corrente:
 - rotas privadas protegidas;
 - áreas administrativas exigem owner/admin ou allowlist server-side;
 - allowlist real não é exposta no repositório;
@@ -175,9 +175,21 @@ Executar nesta ordem:
 **PRE-DEPLOY: PASS**  
 **DEPLOYMENT: READY**  
 **CI FINAL #346: PASS**  
-**PROJECT STATUS: CLOSED / PRODUCTION ACCEPTED WITH ACCEPTED LIMITATION**
+**PROJECT STATUS: REVALIDATION IN PROGRESS**
 
 Limitação aceite pela gestão do projecto:
 - a validação operacional completa do modo offline/sincronização será observada no primeiro dia de utilização real;
 - esta validação passa a ser tratada como monitorização pós-go-live e não como blocker de encerramento;
 - qualquer falha observada será tratada como incidente operacional/correctivo, sem reabrir o gate técnico da release salvo se houver impacto crítico.
+
+
+## 12. Adenda de auditoria — 2026-10-14
+
+Alterações posteriores ao certificado de 2026-10-13 obrigam nova validação operacional:
+- workspace partilhado entre dois administradores globais aprovados;
+- consolidação de RLS para evitar policies permissivas duplicadas;
+- remoção de `SECURITY DEFINER` desnecessário;
+- Leaked Password Protection activada;
+- correcção dos totais do dashboard para não confundir amostras recentes com totais reais.
+
+Regra de gate: nenhuma destas mudanças altera a identidade do PCC. O foco continua a ser **execução → evidência → resultado**. A release corrente só volta a estado aceite depois de login real com ambos os administradores, acesso ao mesmo workspace, smoke do fluxo principal e ausência de erro crítico de runtime.

@@ -38,20 +38,20 @@ export default async function ProjectFactoryPage({
   return (
     <>
       <PageHeader
-        eyebrow="Novo projecto"
-        title="Diga o que pretende criar"
+        eyebrow="Novos projectos"
+        title="Criar e preparar um projecto"
       />
       <FlashMessage
         error={params.error ?? error?.message}
         created={params.created}
-        message={params.created ? "Ideia recebida. A análise foi iniciada." : undefined}
+        message={params.created ? "Iniciativa recebida. A preparação foi iniciada." : undefined}
       />
 
       <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <Card className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo projecto</h2>
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Nova iniciativa</h2>
             </div>
             
           </div>
@@ -91,11 +91,11 @@ export default async function ProjectFactoryPage({
 
         <Card>
           <div className="border-b border-[var(--cc-border)] p-5">
-            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Ideias em preparação</h2>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Em preparação</h2>
           </div>
           <div className="p-5">
             {!cases?.length ? (
-              <EmptyState>Ainda não existem ideias em preparação.</EmptyState>
+              <EmptyState>Não existem iniciativas em preparação.</EmptyState>
             ) : (
               <div className="space-y-4">
                 {cases.map((item) => (

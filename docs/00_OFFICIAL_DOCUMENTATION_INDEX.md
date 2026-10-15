@@ -2,7 +2,7 @@
 
 **Estado:** OFICIAL / CURRENT  
 **Versão documental:** 2026.10  
-**Última revisão:** 2026-10-13  
+**Última revisão:** 2026-10-14  
 **Âmbito:** aplicação cloud PCC, Supabase, Vercel, GitHub CI, Brevo e operações associadas.
 
 ## 1. Regra de precedência
@@ -44,15 +44,15 @@ A documentação histórica é mantida para rastreabilidade, mas não deve ser u
 - CI mais recente validado: GitHub Actions #346 — PASS.
 - Branch operacional: `main`.
 - Ambiente de produção actual: Vercel.
-- Deploy final consolidado: READY em produção.
+- Deployment de produção actual: READY; validação operacional da release corrente em curso.
 - Segurança de dados: RLS activo e optimizado; 85 avisos de initplan removidos.
 - Índices: 14 índices de foreign keys adicionados.
-- Administração: protegida por role `owner/admin` e allowlist server-side.
+- Administração: protegida por role `owner/admin` e allowlist server-side; owner e admin globais aprovados partilham o workspace operacional canónico.
 - Allowlist real de administradores: configurada exclusivamente em variável sensível do Vercel; não documentar emails em ficheiros públicos.
-- Leaked Password Protection: recomendada quando suportada pelo plano/configuração disponível.
-- Funções `SECURITY DEFINER` `set_next_action` e `check_brave_search_rate_limit`: revistas e aceites com ownership por `auth.uid()`.
+- Leaked Password Protection: activada em 2026-10-14 no Supabase Auth.
+- Funções `set_next_action` e `check_brave_search_rate_limit`: executam como `SECURITY INVOKER`; `api_rate_limits` possui RLS para acesso autenticado controlado.
 
-- Estado do projecto: CLOSED / PRODUCTION ACCEPTED WITH ACCEPTED LIMITATION.
+- Estado operacional actual: REVALIDATION IN PROGRESS após alterações de administração partilhada e hardening; não considerar a release corrente aceite sem smoke autenticado.
 
 ## 4. Princípio documental
 
