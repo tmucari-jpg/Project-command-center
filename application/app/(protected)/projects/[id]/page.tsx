@@ -119,7 +119,7 @@ export default async function ProjectHubPage({
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
           prioridade {displayLabel(project.priority)}
         </span>
-        <Link className={secondaryButtonClass} href="/objectives">
+        <Link className={secondaryButtonClass} href={`/objectives?project_id=${project.id}`}>
           Objectivo
         </Link>
         <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>
