@@ -10,17 +10,23 @@ import { formatDateTime } from "@/lib/format";
 export default async function DecisionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
+  const selectedProjectId = params.project_id ?? "";
+
+  let decisionsQuery = supabase
+    .from("decisions")
+    .select("*, projects(title)")
+    .eq("user_id", user.id);
+
+  if (selectedProjectId) {
+    decisionsQuery = decisionsQuery.eq("project_id", selectedProjectId);
+  }
 
   const [{ data: decisions, error }, { data: projects }] = await Promise.all([
-    supabase
-      .from("decisions")
-      .select("*, projects(title)")
-      .eq("user_id", user.id)
-      .order("decided_at", { ascending: false }),
+    decisionsQuery.order("decided_at", { ascending: false }),
     supabase
       .from("projects")
       .select("id,title")
@@ -28,11 +34,16 @@ export default async function DecisionsPage({
       .order("title"),
   ]);
 
+  const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
+    ? selectedProjectId
+    : "";
+  const effectiveProjectTitle = (projects ?? []).find((project) => project.id === effectiveProjectId)?.title;
+
   return (
     <>
       <PageHeader
         eyebrow="Memória"
-        title="Decisões"
+        title={effectiveProjectId ? `Decisões · ${effectiveProjectTitle ?? "Projecto"}` : "Decisões"}
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
@@ -41,7 +52,7 @@ export default async function DecisionsPage({
           <h2 className="text-lg font-semibold text-slate-950">Nova decisão</h2>
           <form action={createDecision} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
-            <Select label="Projecto" name="project_id" defaultValue="">
+            <Select label="Projecto" name="project_id" defaultValue={effectiveProjectId}>
               <option value="">Sem projecto específico</option>
               {(projects ?? []).map((project) => (
                 <option key={project.id} value={project.id}>{project.title}</option>
