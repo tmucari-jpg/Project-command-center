@@ -1220,3 +1220,27 @@ export async function setNextAction(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/focus");
 }
+
+export async function updateProjectNextAction(formData: FormData) {
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  const nextAction = z.string().trim().max(500).safeParse(formData.get("next_action") ?? "");
+
+  if (!projectId.success) fail("/projects", "Projecto inválido.");
+  const path = `/projects/${projectId.data}`;
+  if (!nextAction.success) fail(path, "Próximo passo inválido.");
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("projects")
+    .update({ next_action: nextAction.data || null })
+    .eq("id", projectId.data)
+    .eq("user_id", user.id);
+
+  if (error) fail(path, error.message);
+
+  revalidatePath(path);
+  revalidatePath("/projects");
+  revalidatePath("/actions");
+  revalidatePath("/dashboard");
+  redirect(`${path}?updated=1`);
+}
