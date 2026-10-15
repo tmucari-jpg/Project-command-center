@@ -107,7 +107,7 @@ export default async function ActionsPage({
       </Card>
 
       <div className="space-y-6">
-        <ManualEntry>
+        <ManualEntry defaultOpen={Boolean(preparedDraft)}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-slate-950">Nova acção</h2>
             {preparedDraft && (
