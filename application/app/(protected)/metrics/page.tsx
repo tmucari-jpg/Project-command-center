@@ -9,6 +9,7 @@ import { METRIC_TYPES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
+import { prepareMetricDraft } from "@/lib/project-autonomy";
 
 export default async function MetricsPage({
   searchParams,
@@ -33,13 +34,19 @@ export default async function MetricsPage({
       .order("measurement_date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false }),
     supabase.from("objectives").select("id,title").eq("user_id", user.id).order("title"),
-    supabase.from("projects").select("id,title").eq("user_id", user.id).order("title"),
+    supabase
+      .from("projects")
+      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes")
+      .eq("user_id", user.id)
+      .order("title"),
   ]);
 
   const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
     ? selectedProjectId
     : "";
-  const effectiveProjectTitle = (projects ?? []).find((project) => project.id === effectiveProjectId)?.title;
+  const effectiveProject = (projects ?? []).find((project) => project.id === effectiveProjectId);
+  const effectiveProjectTitle = effectiveProject?.title;
+  const preparedDraft = prepareMetricDraft(effectiveProject);
 
   return (
     <>
@@ -53,11 +60,16 @@ export default async function MetricsPage({
         <ManualEntry>
           <h2 className="text-lg font-semibold text-slate-950">Nova métrica</h2>
           <form action={createMetric} className="mt-5 space-y-4">
-            <Field label="Nome" name="name" required />
-            <Select label="Tipo" name="metric_type" defaultValue="custom">
+            {preparedDraft && (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                Métrica preparada automaticamente sem inventar valores de negócio. Reveja antes de guardar.
+              </p>
+            )}
+            <Field label="Nome" name="name" required defaultValue={preparedDraft?.name} />
+            <Select label="Tipo" name="metric_type" defaultValue={preparedDraft?.metric_type ?? "custom"}>
               {METRIC_TYPES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
             </Select>
-            <TextArea label="Descrição" name="description" />
+            <TextArea label="Descrição" name="description" defaultValue={preparedDraft?.description} />
             <Select label="Objectivo" name="objective_id" defaultValue="">
               <option value="">Sem objectivo</option>
               {(objectives ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
@@ -67,11 +79,11 @@ export default async function MetricsPage({
               {(projects ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Unidade" name="unit" />
+              <Field label="Unidade" name="unit" defaultValue={preparedDraft?.unit} />
               <Field label="Data de medição" name="measurement_date" type="date" />
-              <Field label="Valor inicial" name="baseline_value" type="number" step="any" />
-              <Field label="Valor alvo" name="target_value" type="number" step="any" />
-              <Field label="Valor actual" name="current_value" type="number" step="any" />
+              <Field label="Valor inicial" name="baseline_value" type="number" step="any" defaultValue={preparedDraft?.baseline_value} />
+              <Field label="Valor alvo" name="target_value" type="number" step="any" defaultValue={preparedDraft?.target_value} />
+              <Field label="Valor actual" name="current_value" type="number" step="any" defaultValue={preparedDraft?.current_value} />
             </div>
             <button className={primaryButtonClass} type="submit">Registar métrica</button>
           </form>
