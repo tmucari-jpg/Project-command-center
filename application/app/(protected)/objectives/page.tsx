@@ -10,19 +10,30 @@ import { PRIORITIES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
+import { prepareObjectiveDraft } from "@/lib/project-autonomy";
 
 export default async function ObjectivesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
-  const { data: objectives, error } = await supabase
-    .from("objectives")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  const selectedProjectId = params.project_id ?? "";
+  const [{ data: objectives, error }, { data: projects }] = await Promise.all([
+    supabase
+      .from("objectives")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("projects")
+      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes")
+      .eq("user_id", user.id)
+      .order("title"),
+  ]);
+  const selectedProject = (projects ?? []).find((project) => project.id === selectedProjectId);
+  const preparedDraft = prepareObjectiveDraft(selectedProject);
 
   return (
     <>
@@ -36,28 +47,33 @@ export default async function ObjectivesPage({
         <ManualEntry>
           <h2 className="text-lg font-semibold text-slate-950">Novo objectivo</h2>
           <form action={createObjective} className="mt-5 space-y-4">
-            <Field label="Título" name="title" required />
-            <TextArea label="Resultado esperado" name="expected_result" />
+            {preparedDraft && (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                Preparado automaticamente a partir do projecto. Reveja antes de guardar.
+              </p>
+            )}
+            <Field label="Título" name="title" required defaultValue={preparedDraft?.title} />
+            <TextArea label="Resultado esperado" name="expected_result" defaultValue={preparedDraft?.expected_result} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Prioridade" name="priority" defaultValue="medium">
+              <Select label="Prioridade" name="priority" defaultValue={preparedDraft?.priority ?? "medium"}>
                 {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
-              <Field label="Prazo" name="due_date" type="date" />
+              <Field label="Prazo" name="due_date" type="date" defaultValue={preparedDraft?.due_date} />
             </div>
             <input type="hidden" name="status" value="draft" />
             <input type="hidden" name="progress" value="0" />
             <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
               <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
               <div className="mt-4 space-y-4">
-                <TextArea label="Descrição" name="description" />
-                <Field label="Data inicial" name="start_date" type="date" />
+                <TextArea label="Descrição" name="description" defaultValue={preparedDraft?.description} />
+                <Field label="Data inicial" name="start_date" type="date" defaultValue={preparedDraft?.start_date} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Métrica principal" name="metric_name" />
                   <Field label="Valor inicial" name="baseline_value" type="number" step="any" />
                   <Field label="Valor alvo" name="target_value" type="number" step="any" />
                   <Field label="Valor actual" name="current_value" type="number" step="any" />
                 </div>
-                <TextArea label="Observações" name="notes" />
+                <TextArea label="Observações" name="notes" defaultValue={preparedDraft?.notes} />
               </div>
             </details>
             <button className={primaryButtonClass} type="submit">Criar objectivo</button>
