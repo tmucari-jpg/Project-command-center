@@ -9,6 +9,7 @@ import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/co
 import { requireUser } from "@/lib/auth";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { projectHealth, progressLabel } from "@/lib/project-metrics";
+import { displayLabel } from "@/lib/display-label";
 
 export default async function ProjectHubPage({
   params,
@@ -110,16 +111,34 @@ export default async function ProjectHubPage({
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <StatusBadge status={health} />
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+          estado {displayLabel(project.status)}
+        </span>
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
           progresso {progressLabel(project.progress)}
         </span>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-          prioridade {project.priority}
+          prioridade {displayLabel(project.priority)}
         </span>
-        <Link className={secondaryButtonClass} href={`/actions?project_id=${project.id}`}>
-          Gerir Acções
+        <Link className={secondaryButtonClass} href="/objectives">
+          Objectivo
         </Link>
-        <Link className={secondaryButtonClass} href="/monetization">
-          Monetização
+        <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>
+          Entregáveis
+        </Link>
+        <Link className={secondaryButtonClass} href={`/actions?project_id=${project.id}`}>
+          Acções
+        </Link>
+        <Link className={secondaryButtonClass} href={`/blockers?project_id=${project.id}`}>
+          Bloqueios
+        </Link>
+        <Link className={secondaryButtonClass} href={`/metrics?project_id=${project.id}`}>
+          Métricas
+        </Link>
+        <Link className={secondaryButtonClass} href={`/decisions?project_id=${project.id}`}>
+          Decisões
+        </Link>
+        <Link className={secondaryButtonClass} href="/evidence">
+          Evidências
         </Link>
       </div>
 
@@ -127,9 +146,15 @@ export default async function ProjectHubPage({
         <Card className="p-5 xl:col-span-2">
           <h2 className="text-lg font-semibold text-slate-950">Resumo</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Objectivo</dt><dd className="mt-1 text-sm text-slate-800">{objectiveRelation?.title ?? "Sem objectivo associado"}</dd></div>
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prazo</dt><dd className="mt-1 text-sm text-slate-800">{formatDate(project.due_date)}</dd></div>
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Resultado esperado</dt><dd className="mt-1 text-sm text-slate-800">{project.expected_result || "DADO EM FALTA"}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Objectivo</dt><dd className="mt-1 text-sm text-slate-800">{objectiveRelation?.title ?? "Ainda não definido"}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</dt><dd className="mt-1 text-sm text-slate-800">{displayLabel(project.status)}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Data inicial</dt><dd className="mt-1 text-sm text-slate-800">{project.start_date ? formatDate(project.start_date) : "Ainda não definida"}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prazo</dt><dd className="mt-1 text-sm text-slate-800">{project.due_date ? formatDate(project.due_date) : "Ainda não definido"}</dd></div>
+            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Descrição</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-800">{project.description || "Ainda não definida"}</dd></div>
+            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Resultado esperado</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-800">{project.expected_result || "Ainda não definido"}</dd></div>
+            {(project.budget != null || project.currency) && (
+              <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Orçamento</dt><dd className="mt-1 text-sm text-slate-800">{project.budget ?? "—"} {project.currency ?? ""}</dd></div>
+            )}
             <div className="sm:col-span-2">
               <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Próximo passo</dt>
               <dd className="mt-2">
@@ -146,6 +171,7 @@ export default async function ProjectHubPage({
                 </form>
               </dd>
             </div>
+            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notas</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-800">{project.notes || "Ainda não definidas"}</dd></div>
           </dl>
         </Card>
 
