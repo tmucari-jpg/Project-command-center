@@ -13,27 +13,39 @@ import { formatDate } from "@/lib/format";
 export default async function MetricsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
+  const selectedProjectId = params.project_id ?? "";
+
+  let metricsQuery = supabase
+    .from("metrics")
+    .select("*, objectives(title), projects(title)")
+    .eq("user_id", user.id);
+
+  if (selectedProjectId) {
+    metricsQuery = metricsQuery.eq("project_id", selectedProjectId);
+  }
 
   const [{ data: metrics, error }, { data: objectives }, { data: projects }] = await Promise.all([
-    supabase
-      .from("metrics")
-      .select("*, objectives(title), projects(title)")
-      .eq("user_id", user.id)
+    metricsQuery
       .order("measurement_date", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false }),
     supabase.from("objectives").select("id,title").eq("user_id", user.id).order("title"),
     supabase.from("projects").select("id,title").eq("user_id", user.id).order("title"),
   ]);
 
+  const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
+    ? selectedProjectId
+    : "";
+  const effectiveProjectTitle = (projects ?? []).find((project) => project.id === effectiveProjectId)?.title;
+
   return (
     <>
       <PageHeader
         eyebrow="Resultados"
-        title="Métricas"
+        title={effectiveProjectId ? `Métricas · ${effectiveProjectTitle ?? "Projecto"}` : "Métricas"}
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
@@ -50,7 +62,7 @@ export default async function MetricsPage({
               <option value="">Sem objectivo</option>
               {(objectives ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
-            <Select label="Projecto" name="project_id" defaultValue="">
+            <Select label="Projecto" name="project_id" defaultValue={effectiveProjectId}>
               <option value="">Sem projecto</option>
               {(projects ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
