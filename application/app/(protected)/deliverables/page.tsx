@@ -14,17 +14,23 @@ import { formatDate } from "@/lib/format";
 export default async function DeliverablesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
 
+  const selectedProjectId = params.project_id ?? "";
+  let deliverablesQuery = supabase
+    .from("deliverables")
+    .select("*, projects(title)")
+    .eq("user_id", user.id);
+
+  if (selectedProjectId) {
+    deliverablesQuery = deliverablesQuery.eq("project_id", selectedProjectId);
+  }
+
   const [{ data: deliverables, error }, { data: projects }] = await Promise.all([
-    supabase
-      .from("deliverables")
-      .select("*, projects(title)")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
+    deliverablesQuery.order("created_at", { ascending: false }),
     supabase
       .from("projects")
       .select("id,title")
@@ -32,11 +38,17 @@ export default async function DeliverablesPage({
       .order("title"),
   ]);
 
+  const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
+    ? selectedProjectId
+    : "";
+
+  const effectiveProjectTitle = (projects ?? []).find((project) => project.id === effectiveProjectId)?.title;
+
   return (
     <>
       <PageHeader
         eyebrow="Execução"
-        title="Entregáveis"
+        title={effectiveProjectId ? `Entregáveis · ${effectiveProjectTitle ?? "Projecto"}` : "Entregáveis"}
       />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
@@ -44,7 +56,7 @@ export default async function DeliverablesPage({
         <ManualEntry>
           <h2 className="text-lg font-semibold text-slate-950">Novo entregável</h2>
           <form action={createDeliverable} className="mt-5 space-y-4">
-            <Select label="Projecto" name="project_id" required defaultValue="">
+            <Select label="Projecto" name="project_id" required defaultValue={effectiveProjectId}>
               <option value="" disabled>Seleccionar projecto</option>
               {(projects ?? []).map((project) => (
                 <option key={project.id} value={project.id}>{project.title}</option>
