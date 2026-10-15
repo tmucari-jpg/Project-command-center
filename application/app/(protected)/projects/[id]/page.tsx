@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, CheckSquare2, PackageCheck, ShieldCheck, TriangleAlert } from "lucide-react";
-import { createProjectMemory, updateProjectNextAction } from "@/app/(protected)/mutations";
+import { createProjectMemory, prepareProjectOperationalStructure, updateProjectNextAction } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -107,6 +107,15 @@ export default async function ProjectHubPage({
         eyebrow="Projecto"
         title={project.title}
       />
+
+      <div className="mb-4">
+        <form action={prepareProjectOperationalStructure}>
+          <input type="hidden" name="project_id" value={project.id} />
+          <button className={primaryButtonClass} type="submit">
+            Preparar estrutura operacional
+          </button>
+        </form>
+      </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <StatusBadge status={health} />
