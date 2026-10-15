@@ -10,6 +10,7 @@ import { PRIORITIES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
+import { prepareActionDraft } from "@/lib/action-autonomy";
 
 export default async function ActionsPage({
   searchParams,
@@ -33,13 +34,32 @@ export default async function ActionsPage({
     actionsQuery
       .order("is_next_action", { ascending: false })
       .order("due_at", { ascending: true, nullsFirst: false }),
-    supabase.from("projects").select("id,title").eq("user_id", user.id).order("title"),
-    supabase.from("deliverables").select("id,title,project_id").eq("user_id", user.id).order("title"),
+    supabase
+      .from("projects")
+      .select("id,title,priority,next_action")
+      .eq("user_id", user.id)
+      .order("title"),
+    supabase
+      .from("deliverables")
+      .select("id,title,project_id,status,priority,due_date,completion_criteria")
+      .eq("user_id", user.id)
+      .order("title"),
   ]);
 
   const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
     ? selectedProjectId
     : "";
+
+  const effectiveProject = (projects ?? []).find((project) => project.id === effectiveProjectId);
+  const visibleDeliverables = effectiveProjectId
+    ? (deliverables ?? []).filter((item) => item.project_id === effectiveProjectId)
+    : (deliverables ?? []);
+
+  const preparedDraft = prepareActionDraft(
+    effectiveProject,
+    visibleDeliverables,
+    (actions ?? []).map((action) => ({ title: action.title, status: action.status })),
+  );
 
   const now = new Date();
   const startOfWeek = new Date(now);
@@ -88,12 +108,25 @@ export default async function ActionsPage({
 
       <div className="space-y-6">
         <ManualEntry>
-          <h2 className="text-lg font-semibold text-slate-950">Nova acção</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-slate-950">Nova acção</h2>
+            {preparedDraft && (
+              <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-accent)]">
+                preparada automaticamente
+              </span>
+            )}
+          </div>
           <form action={createAction} className="mt-5 space-y-4">
-            <Field label="Título" name="title" required placeholder="Ex.: Enviar proposta ao cliente" />
-            <Select label="Entregável" name="deliverable_id" defaultValue="">
+            <Field
+              label="Título"
+              name="title"
+              required
+              placeholder="Ex.: Enviar proposta ao cliente"
+              defaultValue={preparedDraft?.title}
+            />
+            <Select label="Entregável" name="deliverable_id" defaultValue={preparedDraft?.deliverable_id ?? ""}>
               <option value="">Sem entregável</option>
-              {(deliverables ?? []).map((item) => (
+              {visibleDeliverables.map((item) => (
                 <option key={item.id} value={item.id}>{item.title}</option>
               ))}
             </Select>
@@ -110,14 +143,18 @@ export default async function ActionsPage({
             </details>
             <TextArea label="Descrição" name="description" />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Prioridade" name="priority" defaultValue="medium">
+              <Select label="Prioridade" name="priority" defaultValue={preparedDraft?.priority ?? "medium"}>
                 {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <input type="hidden" name="status" value="pending" />
               <Field label="Prazo" name="due_at" type="datetime-local" />
               <Field label="Tempo estimado (min)" name="estimated_minutes" type="number" min={1} max={100000} />
             </div>
-            <TextArea label="Critério de conclusão" name="completion_criteria" />
+            <TextArea
+              label="Critério de conclusão"
+              name="completion_criteria"
+              defaultValue={preparedDraft?.completion_criteria}
+            />
             <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
               <input type="checkbox" name="is_next_action" className="size-4 rounded border-slate-300" />
               Definir como próxima acção
