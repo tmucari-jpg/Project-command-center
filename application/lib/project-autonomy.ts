@@ -46,7 +46,7 @@ export function prepareMetricDraft(project?: ProjectAutonomyContext) {
     project_id: project.id,
     name: `Progresso de ${project.title}`,
     description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
-    metric_type: "progress" as const,
+    metric_type: "custom" as const,
     unit: "%",
     baseline_value: 0,
     target_value: 100,
