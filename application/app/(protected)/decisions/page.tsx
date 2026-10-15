@@ -6,6 +6,7 @@ import { ManualEntry } from "@/components/manual-entry";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
+import { prepareDecisionContext } from "@/lib/project-autonomy";
 
 export default async function DecisionsPage({
   searchParams,
@@ -29,7 +30,7 @@ export default async function DecisionsPage({
     decisionsQuery.order("decided_at", { ascending: false }),
     supabase
       .from("projects")
-      .select("id,title")
+      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes")
       .eq("user_id", user.id)
       .order("title"),
   ]);
@@ -37,7 +38,9 @@ export default async function DecisionsPage({
   const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
     ? selectedProjectId
     : "";
-  const effectiveProjectTitle = (projects ?? []).find((project) => project.id === effectiveProjectId)?.title;
+  const effectiveProject = (projects ?? []).find((project) => project.id === effectiveProjectId);
+  const effectiveProjectTitle = effectiveProject?.title;
+  const preparedDraft = prepareDecisionContext(effectiveProject);
 
   return (
     <>
@@ -51,7 +54,12 @@ export default async function DecisionsPage({
         <ManualEntry>
           <h2 className="text-lg font-semibold text-slate-950">Nova decisão</h2>
           <form action={createDecision} className="mt-5 space-y-4">
-            <Field label="Título" name="title" required />
+            {preparedDraft && (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                Contexto preparado automaticamente. A decisão continua a exigir validação humana.
+              </p>
+            )}
+            <Field label="Título" name="title" required defaultValue={preparedDraft?.title} />
             <Select label="Projecto" name="project_id" defaultValue={effectiveProjectId}>
               <option value="">Sem projecto específico</option>
               {(projects ?? []).map((project) => (
@@ -62,7 +70,7 @@ export default async function DecisionsPage({
             <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
               <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
               <div className="mt-4 space-y-4">
-                <TextArea label="Contexto" name="context" />
+                <TextArea label="Contexto" name="context" defaultValue={preparedDraft?.context} />
                 <TextArea label="Opções consideradas" name="options_considered" />
                 <TextArea label="Racional" name="rationale" />
                 <TextArea label="Resultado / aprendizagem" name="outcome" />
