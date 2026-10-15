@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, CheckSquare2, PackageCheck, ShieldCheck, TriangleAlert } from "lucide-react";
-import { createProjectMemory } from "@/app/(protected)/mutations";
+import { createProjectMemory, updateProjectNextAction } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -115,6 +115,9 @@ export default async function ProjectHubPage({
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
           prioridade {project.priority}
         </span>
+        <Link className={secondaryButtonClass} href={`/actions?project_id=${project.id}`}>
+          Gerir Acções
+        </Link>
         <Link className={secondaryButtonClass} href="/monetization">
           Monetização
         </Link>
@@ -127,7 +130,22 @@ export default async function ProjectHubPage({
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Objectivo</dt><dd className="mt-1 text-sm text-slate-800">{objectiveRelation?.title ?? "Sem objectivo associado"}</dd></div>
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prazo</dt><dd className="mt-1 text-sm text-slate-800">{formatDate(project.due_date)}</dd></div>
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Resultado esperado</dt><dd className="mt-1 text-sm text-slate-800">{project.expected_result || "DADO EM FALTA"}</dd></div>
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Próximo passo</dt><dd className="mt-1 text-sm text-slate-800">{project.next_action || "DADO EM FALTA"}</dd></div>
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Próximo passo</dt>
+              <dd className="mt-2">
+                <form action={updateProjectNextAction} className="flex flex-col gap-2 sm:flex-row">
+                  <input type="hidden" name="project_id" value={project.id} />
+                  <input
+                    className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                    name="next_action"
+                    defaultValue={project.next_action ?? ""}
+                    placeholder="Definir próximo passo"
+                    maxLength={500}
+                  />
+                  <button className={secondaryButtonClass} type="submit">Guardar</button>
+                </form>
+              </dd>
+            </div>
           </dl>
         </Card>
 
