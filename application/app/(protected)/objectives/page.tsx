@@ -44,7 +44,7 @@ export default async function ObjectivesPage({
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
       <div className="space-y-6">
-        <ManualEntry>
+        <ManualEntry defaultOpen={Boolean(preparedDraft)}>
           <h2 className="text-lg font-semibold text-slate-950">Novo objectivo</h2>
           <form action={createObjective} className="mt-5 space-y-4">
             {preparedDraft && (
