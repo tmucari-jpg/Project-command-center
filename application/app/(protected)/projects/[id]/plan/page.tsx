@@ -93,7 +93,7 @@ export default async function ProjectPlanPage({
           <ArrowLeft size={16} /> Voltar
         </Link>
         <Link className={secondaryButtonClass} href="/dashboard">
-          <Home size={16} /> Painel geral
+          <Home size={16} /> Painel
         </Link>
       </div>
 
