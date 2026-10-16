@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import { createBlocker } from "@/app/(protected)/mutations";
 import { DeleteForm } from "@/components/delete-form";
 import { Field, Select, TextArea } from "@/components/form-fields";
@@ -46,6 +47,57 @@ export default async function BlockersPage({
     ? (actions ?? []).filter((item) => item.project_id === effectiveProjectId)
     : (actions ?? []);
 
+  const now = new Date();
+  const blockerGroups = new Map<string, {
+    projectId: string | null;
+    title: string;
+    blockers: NonNullable<typeof blockers>;
+    open: number;
+    overdue: number;
+  }>();
+
+  for (const blocker of blockers ?? []) {
+    const relation = Array.isArray(blocker.projects) ? blocker.projects[0] : blocker.projects;
+    const projectId = blocker.project_id ?? null;
+    const key = projectId ?? "__no_project__";
+    const group = blockerGroups.get(key) ?? {
+      projectId,
+      title: relation?.title ?? "Sem projecto",
+      blockers: [],
+      open: 0,
+      overdue: 0,
+    };
+
+    group.blockers.push(blocker);
+    if (!["resolved", "ignored"].includes(blocker.status)) group.open += 1;
+    if (
+      blocker.resolution_due_at &&
+      new Date(blocker.resolution_due_at) < now &&
+      !["resolved", "ignored"].includes(blocker.status)
+    ) {
+      group.overdue += 1;
+    }
+    blockerGroups.set(key, group);
+  }
+
+  const groupedBlockers = Array.from(blockerGroups.values())
+    .map((group) => ({
+      ...group,
+      blockers: [...group.blockers].sort((a, b) => {
+        const aOverdue = Boolean(a.resolution_due_at && new Date(a.resolution_due_at) < now && !["resolved", "ignored"].includes(a.status));
+        const bOverdue = Boolean(b.resolution_due_at && new Date(b.resolution_due_at) < now && !["resolved", "ignored"].includes(b.status));
+        if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+        const aDue = a.resolution_due_at ? new Date(a.resolution_due_at).getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b.resolution_due_at ? new Date(b.resolution_due_at).getTime() : Number.POSITIVE_INFINITY;
+        return aDue - bDue;
+      }),
+    }))
+    .sort((a, b) => {
+      if (b.overdue !== a.overdue) return b.overdue - a.overdue;
+      if (b.open !== a.open) return b.open - a.open;
+      return a.title.localeCompare(b.title);
+    });
+
   return (
     <>
       <PageHeader
@@ -88,29 +140,73 @@ export default async function BlockersPage({
 
         <Card>
           <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Bloqueios registados</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Bloqueios por projecto</h2>
           </div>
           <div className="p-5">
             {!blockers?.length ? (
               <EmptyState>Não existem bloqueios registados.</EmptyState>
             ) : (
               <div className="space-y-4">
-                {blockers.map((item) => (
-                  <article key={item.id} className="rounded-2xl border border-slate-200 p-4">
-                    <div className="flex flex-col justify-between gap-3 md:flex-row">
-                      <div>
-                        <h3 className="font-semibold text-slate-950">{item.title}</h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {item.projects?.title ?? "Sem projecto"} · {item.actions?.title ?? item.deliverables?.title ?? "Sem relação operacional"} · Resolver até {formatDateTime(item.resolution_due_at)}
-                        </p>
-                        {item.impact && <p className="mt-3 text-sm text-slate-700">{item.impact}</p>}
+                {groupedBlockers.map((group) => (
+                  <details
+                    key={group.projectId ?? "sem-projecto"}
+                    open={Boolean(effectiveProjectId && group.projectId === effectiveProjectId) || group.overdue > 0}
+                    className={`rounded-2xl border ${group.overdue > 0 ? "border-red-200 bg-red-50/40" : "border-slate-200"}`}
+                  >
+                    <summary className="cursor-pointer list-none p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-slate-950">{group.title}</h3>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {group.open} aberto(s) · {group.blockers.length} total
+                          </p>
+                        </div>
+                        {group.overdue > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
+                            <TriangleAlert size={13} /> {group.overdue} resolução(ões) em atraso
+                          </span>
+                        )}
                       </div>
-                      <DeleteForm table="blockers" id={item.id} />
+                    </summary>
+
+                    <div className="space-y-3 border-t border-slate-200 p-4">
+                      {group.blockers.map((item) => {
+                        const overdue = Boolean(
+                          item.resolution_due_at &&
+                          new Date(item.resolution_due_at) < now &&
+                          !["resolved", "ignored"].includes(item.status),
+                        );
+
+                        return (
+                          <article
+                            key={item.id}
+                            className={`rounded-xl border p-4 ${overdue ? "border-red-300 bg-red-50" : "border-slate-200 bg-white"}`}
+                          >
+                            <div className="flex flex-col justify-between gap-3 md:flex-row">
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="font-semibold text-slate-950">{item.title}</h4>
+                                  {overdue && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800">
+                                      <TriangleAlert size={13} /> tratamento necessário
+                                    </span>
+                                  )}
+                                </div>
+                                <p className={`mt-1 text-sm ${overdue ? "font-semibold text-red-700" : "text-slate-500"}`}>
+                                  {item.actions?.title ?? item.deliverables?.title ?? "Sem relação operacional"} · Resolver até {formatDateTime(item.resolution_due_at)}
+                                </p>
+                                {item.impact && <p className="mt-3 text-sm text-slate-700">{item.impact}</p>}
+                              </div>
+                              <DeleteForm table="blockers" id={item.id} />
+                            </div>
+                            <div className="mt-4 border-t border-slate-100 pt-4">
+                              <StatusProgressForm entity="blockers" id={item.id} status={item.status} />
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
-                    <div className="mt-4 border-t border-slate-100 pt-4">
-                      <StatusProgressForm entity="blockers" id={item.id} status={item.status} />
-                    </div>
-                  </article>
+                  </details>
                 ))}
               </div>
             )}
