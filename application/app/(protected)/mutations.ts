@@ -744,13 +744,14 @@ export async function createProject(formData: FormData) {
   const parsed = projectSchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
+  const { supabase, user, authUser } = await requireUser();
   await ensureOwned(supabase, "objectives", parsed.data.objective_id, user.id, path);
 
   const { data: project, error } = await supabase
     .from("projects")
     .insert({
       ...parsed.data,
+      owner_id: authUser.id,
       user_id: user.id,
     })
     .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,next_action,objective_id")
@@ -773,6 +774,185 @@ export async function createProject(formData: FormData) {
   revalidatePath("/metrics");
   revalidatePath("/dashboard");
   redirect(`/projects/${project.id}?created=1`);
+}
+
+export async function updateProjectGovernance(formData: FormData) {
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    owner_id: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().uuid().optional(),
+    ),
+    next_review_date: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    ),
+    decision_gate: z.enum(["validate", "launch", "scale", "hold", "stop"]),
+    gate_status: z.enum(["pending", "ready", "approved", "blocked"]),
+  }).safeParse(values(formData));
+
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  if (parsed.data.owner_id) {
+    const { data: owner, error: ownerError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", parsed.data.owner_id)
+      .maybeSingle();
+    if (ownerError || !owner) fail(path, "Responsável inválido.");
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      owner_id: parsed.data.owner_id ?? null,
+      next_review_date: parsed.data.next_review_date ?? null,
+      decision_gate: parsed.data.decision_gate,
+      gate_status: parsed.data.gate_status,
+    })
+    .eq("id", parsed.data.project_id)
+    .eq("user_id", user.id);
+
+  if (error) fail(path, error.message);
+
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
+  } catch (syncError) {
+    fail(path, syncError instanceof Error ? syncError.message : "Governança guardada, mas o plano não foi actualizado.");
+  }
+
+  revalidatePath(path);
+  revalidatePath(`${path}/plan`);
+  revalidatePath("/dashboard");
+  redirect(`${path}?governance=1`);
+}
+
+export async function createProjectDependency(formData: FormData) {
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    depends_on_project_id: z.string().uuid(),
+    relation_type: z.enum(["depends_on", "blocks", "related"]),
+    notes: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(2000).optional(),
+    ),
+  }).refine((data) => data.project_id !== data.depends_on_project_id, {
+    message: "Um projecto não pode depender de si próprio.",
+  }).safeParse(values(formData));
+
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  await ensureOwned(supabase, "projects", parsed.data.depends_on_project_id, user.id, path);
+
+  const { error } = await supabase.from("project_dependencies").insert({
+    ...parsed.data,
+    status: "active",
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath("/dashboard");
+  redirect(`${path}?dependency=1`);
+}
+
+export async function resolveProjectDependency(formData: FormData) {
+  const dependencyId = z.string().uuid().safeParse(formData.get("dependency_id"));
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  if (!dependencyId.success || !projectId.success) fail("/projects", "Dependência inválida.");
+
+  const path = `/projects/${projectId.data}`;
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("project_dependencies")
+    .update({ status: "resolved", resolved_at: new Date().toISOString() })
+    .eq("id", dependencyId.data)
+    .eq("project_id", projectId.data)
+    .eq("user_id", user.id);
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath("/dashboard");
+  redirect(`${path}?dependency=resolved`);
+}
+
+export async function upsertProjectUnitEconomics(formData: FormData) {
+  const optionalFinite = z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    z.coerce.number().finite().optional(),
+  );
+
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    cac: optionalFinite,
+    conversion_rate_pct: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(0).max(100).optional(),
+    ),
+    arpu: optionalFinite,
+    gross_margin_pct: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(-1000).max(100).optional(),
+    ),
+    payback_months: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(0).optional(),
+    ),
+    currency: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(8).optional(),
+    ),
+    period_start: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    ),
+    period_end: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    ),
+    source_notes: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(4000).optional(),
+    ),
+  }).refine(
+    (data) => !data.period_start || !data.period_end || data.period_end >= data.period_start,
+    { message: "O fim do período não pode ser anterior ao início." },
+  ).safeParse(values(formData));
+
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { error } = await supabase.from("project_unit_economics").upsert(
+    {
+      user_id: user.id,
+      ...parsed.data,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "project_id" },
+  );
+
+  if (error) fail(path, error.message);
+
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
+  } catch (syncError) {
+    fail(path, syncError instanceof Error ? syncError.message : "Unit economics guardados, mas o plano não foi actualizado.");
+  }
+
+  revalidatePath(path);
+  revalidatePath(`${path}/plan`);
+  revalidatePath("/dashboard");
+  redirect(`${path}?economics=1`);
 }
 
 export async function createDeliverable(formData: FormData) {
@@ -951,7 +1131,7 @@ export async function finalizeFactoryDecision(formData: FormData) {
   if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
 
   const path = `/project-factory/${parsed.data.factory_case_id}`;
-  const { supabase, user } = await requireUser();
+  const { supabase, user, authUser } = await requireUser();
 
   const { data: factoryCase, error: caseError } = await supabase
     .from("project_factory_cases")
@@ -990,6 +1170,7 @@ export async function finalizeFactoryDecision(formData: FormData) {
           status: "planning",
           progress: 0,
           notes: `Criado pela Project Factory. Origem: ${factoryCase.source ?? "não indicada"}`,
+          owner_id: authUser.id,
         })
         .select("id")
         .single();
