@@ -7,6 +7,7 @@ import { Card, EmptyState } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 import { displayLabel } from "@/lib/display-label";
+import { resolveAIExecutionState } from "@/lib/ai-provider-adapter";
 
 export default async function AIFornecedoresPage({
   searchParams,
@@ -23,7 +24,8 @@ export default async function AIFornecedoresPage({
 
   const error = providerError?.message ?? queueError?.message;
   const enabledProviders = (providers ?? []).filter((provider) => provider.enabled);
-  const operationalProviders = enabledProviders.filter((provider) => provider.last_health_status !== "offline");
+  const operationalProviders = enabledProviders.filter((provider) => provider.last_health_status === "healthy");
+  const executionState = resolveAIExecutionState(providers ?? []);
   const queuedOperations = (queue ?? []).filter((item) => item.status !== "completed" && item.status !== "cancelled");
   const failedOperations = (queue ?? []).filter((item) => item.status === "failed" || Boolean(item.last_error));
   const capabilities = Array.from(
@@ -81,8 +83,21 @@ export default async function AIFornecedoresPage({
           O PCC deve consumir capacidades, não depender de uma ferramenta específica: pesquisa, navegação web, execução de código, diagnóstico, automação e agentes podem ser fornecidos por serviços diferentes ou por runtime local.
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Regra operacional: preferir opções gratuitas ou locais quando forem suficientes; usar serviços adicionais apenas quando estiverem configurados, autorizados e trouxerem benefício real.
+          Regra operacional: usar IA na nuvem quando estiver saudável; se ficar indisponível, usar IA local apenas quando o endpoint local estiver validado e alcançável a partir do runtime do PCC.
         </p>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          Sem provider saudável, o PCC continua a executar as funções normais baseadas em dados e regras, mas não deve simular capacidades de IA. O modo totalmente offline do browser não está disponível porque os dados operacionais dependem do Supabase.
+        </p>
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white/60 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Modo de IA actual</p>
+          <p className="mt-1 font-semibold text-slate-950">
+            {executionState.mode === "cloud" ? "Nuvem" : executionState.mode === "local" ? "Local" : "IA indisponível"}
+          </p>
+          <p className="mt-1 text-sm text-slate-600">{executionState.reason}</p>
+          {executionState.provider && (
+            <p className="mt-1 text-xs text-slate-500">Provider: {executionState.provider.label}</p>
+          )}
+        </div>
       </Card>
 
       <Card className="mb-6 border-amber-200 bg-amber-50/50 p-5">

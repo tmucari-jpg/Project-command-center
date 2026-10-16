@@ -28,25 +28,47 @@ async function validateOpenAI(profile: AIProviderHealthProfile): Promise<AIProvi
   }
 
   const base = (profile.endpoint_hint?.trim() || "https://api.openai.com/v1").replace(/\/$/, "");
-  const model = profile.model_hint?.trim();
-  const url = model ? `${base}/models/${encodeURIComponent(model)}` : `${base}/models`;
+  const model = process.env.OPENAI_MODEL?.trim() || profile.model_hint?.trim();
 
   try {
-    const { response, latency_ms } = await timedFetch(url, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+    if (!model) {
+      const { response, latency_ms } = await timedFetch(`${base}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+
+      return response.ok
+        ? { status: "healthy", message: "Credencial OpenAI validada; modelo ainda não definido.", latency_ms }
+        : {
+            status: response.status >= 500 || response.status === 429 ? "degraded" : "offline",
+            message: `OpenAI respondeu HTTP ${response.status}.`,
+            latency_ms,
+          };
+    }
+
+    const { response, latency_ms } = await timedFetch(`${base}/responses`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        input: "Responda apenas OK.",
+        max_output_tokens: 8,
+      }),
     });
 
     if (response.ok) {
       return {
         status: "healthy",
-        message: model ? `Provider e modelo ${model} responderam correctamente.` : "Provider respondeu correctamente.",
+        message: `Provider e modelo configurado responderam a uma chamada real.`,
         latency_ms,
       };
     }
 
     return {
-      status: response.status >= 500 ? "degraded" : "offline",
-      message: `OpenAI respondeu HTTP ${response.status}.`,
+      status: response.status >= 500 || response.status === 429 ? "degraded" : "offline",
+      message: `OpenAI respondeu HTTP ${response.status} ao teste real do modelo.`,
       latency_ms,
     };
   } catch (error) {
