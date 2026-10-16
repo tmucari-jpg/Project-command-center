@@ -686,6 +686,7 @@ export async function createBlocker(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   revalidatePath("/dashboard");
+  if (projectId) revalidatePath(`/projects/${projectId}`);
   redirect(`${path}?created=1`);
 }
 
@@ -774,6 +775,25 @@ export async function finalizeFactoryDecision(formData: FormData) {
         fail(path, projectError?.message ?? "Não foi possível criar o projecto.");
       }
       projectId = project.id;
+    }
+
+    const { data: convertedProject, error: convertedProjectError } = await supabase
+      .from("projects")
+      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,next_action,objective_id")
+      .eq("id", projectId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (convertedProjectError || !convertedProject) {
+      fail(path, convertedProjectError?.message ?? "Projecto convertido não encontrado.");
+    }
+
+    if (convertedProject.expected_result?.trim()) {
+      try {
+        await ensureProjectOperationalStructure(supabase, user.id, convertedProject);
+      } catch (structureError) {
+        fail(path, structureError instanceof Error ? structureError.message : "Não foi possível preparar a estrutura operacional.");
+      }
     }
 
     const { error: stageError } = await supabase
@@ -1039,6 +1059,7 @@ export async function createEvidence(formData: FormData) {
 
   if (error) fail(path, error.message);
   revalidatePath(path);
+  if (projectId) revalidatePath(`/projects/${projectId}`);
   redirect(`${path}?created=1`);
 }
 
