@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import { createAction, setNextAction } from "@/app/(protected)/mutations";
 import { DeleteForm } from "@/components/delete-form";
 import { Field, Select, TextArea } from "@/components/form-fields";
@@ -84,6 +85,65 @@ export default async function ActionsPage({
   ).length;
   const weeklyCompleted = weeklyActions.filter((action) => action.status === "completed").length;
 
+  type ActionRow = NonNullable<typeof actions>[number];
+
+  const actionGroups = new Map<string, {
+    projectId: string | null;
+    title: string;
+    actions: ActionRow[];
+    overdue: number;
+    dueThisWeek: number;
+  }>();
+
+  for (const action of actions ?? []) {
+    const relation = Array.isArray(action.projects) ? action.projects[0] : action.projects;
+    const projectId = action.project_id ?? null;
+    const key = projectId ?? "__no_project__";
+    const group = actionGroups.get(key) ?? {
+      projectId,
+      title: relation?.title ?? "Sem projecto",
+      actions: [] as ActionRow[],
+      overdue: 0,
+      dueThisWeek: 0,
+    };
+
+    group.actions.push(action);
+    if (
+      action.due_at &&
+      new Date(action.due_at) < now &&
+      !["completed", "cancelled"].includes(action.status)
+    ) {
+      group.overdue += 1;
+    }
+    if (
+      action.due_at &&
+      new Date(action.due_at) >= startOfWeek &&
+      new Date(action.due_at) < endOfWeek &&
+      !["completed", "cancelled"].includes(action.status)
+    ) {
+      group.dueThisWeek += 1;
+    }
+    actionGroups.set(key, group);
+  }
+
+  const groupedActions = Array.from(actionGroups.values())
+    .map((group) => ({
+      ...group,
+      actions: [...group.actions].sort((a, b) => {
+        const aOverdue = Boolean(a.due_at && new Date(a.due_at) < now && !["completed", "cancelled"].includes(a.status));
+        const bOverdue = Boolean(b.due_at && new Date(b.due_at) < now && !["completed", "cancelled"].includes(b.status));
+        if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+        if (a.is_next_action !== b.is_next_action) return a.is_next_action ? -1 : 1;
+        const aDue = a.due_at ? new Date(a.due_at).getTime() : Number.POSITIVE_INFINITY;
+        const bDue = b.due_at ? new Date(b.due_at).getTime() : Number.POSITIVE_INFINITY;
+        return aDue - bDue;
+      }),
+    }))
+    .sort((a, b) => {
+      if (b.overdue !== a.overdue) return b.overdue - a.overdue;
+      return a.title.localeCompare(b.title);
+    });
+
   return (
     <>
       <PageHeader
@@ -97,7 +157,7 @@ export default async function ActionsPage({
           <div>
             <p className="text-sm font-semibold text-[var(--cc-foreground)]">Resumo da semana</p>
             <p className="mt-1 text-xs text-[var(--cc-secondary)]">
-              {weeklyOpen} por concluir · {weeklyCompleted} concluídas · {overdueCount} em atraso
+              {weeklyOpen} por concluir · {weeklyCompleted} concluídas · {overdueCount} em atraso · organizado por projecto
             </p>
           </div>
           <p className="text-xs font-medium text-[var(--cc-secondary)]">
@@ -165,62 +225,111 @@ export default async function ActionsPage({
 
         <Card>
           <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Acções registadas</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Acções por projecto</h2>
           </div>
           <div className="p-5">
             {!actions?.length ? (
               <EmptyState>Não existem acções registadas.</EmptyState>
             ) : (
               <div className="space-y-4">
-                {actions.map((action) => (
-                  <article
-                    key={action.id}
-                    className={`rounded-2xl border p-4 ${
-                      action.is_next_action ? "border-[color-mix(in_srgb,var(--cc-gold)_55%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_8%,white)]" : "border-slate-200"
-                    }`}
+                {groupedActions.map((group) => (
+                  <details
+                    key={group.projectId ?? "sem-projecto"}
+                    open={Boolean(effectiveProjectId && group.projectId === effectiveProjectId)}
+                    className={`rounded-2xl border ${group.overdue > 0 ? "border-red-200 bg-red-50/40" : "border-slate-200"}`}
                   >
-                    <div className="flex flex-col justify-between gap-3 md:flex-row">
-                      <div className="min-w-0">
+                    <summary className="cursor-pointer list-none p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-slate-950">{group.title}</h3>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {group.actions.length} acção(ões) · {group.dueThisWeek} esta semana
+                          </p>
+                        </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold text-slate-950">{action.title}</h3>
-                          {action.is_next_action && (
-                            <span className="rounded-full bg-[color-mix(in_srgb,var(--cc-accent)_10%,white)] px-2 py-1 text-xs font-semibold text-[var(--cc-accent)]">
-                              próxima acção
+                          {group.overdue > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
+                              <TriangleAlert size={13} /> {group.overdue} em atraso
                             </span>
                           )}
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                            abrir projecto
+                          </span>
                         </div>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {action.projects?.title ?? "Sem projecto"} · Prazo {formatDateTime(action.due_at)}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Estimado {action.estimated_minutes ?? "—"} min · Real {action.actual_minutes ?? 0} min
-                        </p>
-                        {action.completion_criteria && (
-                          <p className="mt-3 text-sm text-slate-700">
-                            <span className="font-medium">Concluído quando:</span> {action.completion_criteria}
-                          </p>
-                        )}
                       </div>
-                      <div className="flex items-start gap-2">
-                        {!action.is_next_action && !["completed", "cancelled"].includes(action.status) && (
-                          <form action={setNextAction}>
-                            <input type="hidden" name="id" value={action.id} />
-                            <button className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--cc-accent)] hover:bg-[var(--cc-surface-muted)]" type="submit">
-                              Tornar próxima
-                            </button>
-                          </form>
-                        )}
-                        <DeleteForm table="actions" id={action.id} />
-                      </div>
+                    </summary>
+
+                    <div className="space-y-3 border-t border-slate-200 p-4">
+                      {group.actions.map((action) => {
+                        const overdue =
+                          Boolean(
+                            action.due_at &&
+                            new Date(action.due_at) < now &&
+                            !["completed", "cancelled"].includes(action.status),
+                          );
+
+                        return (
+                          <article
+                            key={action.id}
+                            className={`rounded-xl border p-4 ${
+                              overdue
+                                ? "border-red-300 bg-red-50"
+                                : action.is_next_action
+                                  ? "border-[color-mix(in_srgb,var(--cc-gold)_55%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_8%,white)]"
+                                  : "border-slate-200 bg-white"
+                            }`}
+                          >
+                            <div className="flex flex-col justify-between gap-3 md:flex-row">
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="font-semibold text-slate-950">{action.title}</h4>
+                                  {overdue && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800">
+                                      <TriangleAlert size={13} /> tratamento necessário
+                                    </span>
+                                  )}
+                                  {action.is_next_action && (
+                                    <span className="rounded-full bg-[color-mix(in_srgb,var(--cc-accent)_10%,white)] px-2 py-1 text-xs font-semibold text-[var(--cc-accent)]">
+                                      próxima acção
+                                    </span>
+                                  )}
+                                </div>
+                                <p className={`mt-1 text-sm ${overdue ? "font-semibold text-red-700" : "text-slate-500"}`}>
+                                  Prazo {formatDateTime(action.due_at)}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Estimado {action.estimated_minutes ?? "—"} min · Real {action.actual_minutes ?? 0} min
+                                </p>
+                                {action.completion_criteria && (
+                                  <p className="mt-3 text-sm text-slate-700">
+                                    <span className="font-medium">Concluído quando:</span> {action.completion_criteria}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-start gap-2">
+                                {!action.is_next_action && !["completed", "cancelled"].includes(action.status) && (
+                                  <form action={setNextAction}>
+                                    <input type="hidden" name="id" value={action.id} />
+                                    <button className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--cc-accent)] hover:bg-[var(--cc-surface-muted)]" type="submit">
+                                      Tornar próxima
+                                    </button>
+                                  </form>
+                                )}
+                                <DeleteForm table="actions" id={action.id} />
+                              </div>
+                            </div>
+                            <div className="mt-4 border-t border-slate-100 pt-4">
+                              <StatusProgressForm
+                                entity="actions"
+                                id={action.id}
+                                status={action.status}
+                              />
+                            </div>
+                          </article>
+                        );
+                      })}
                     </div>
-                    <div className="mt-4 border-t border-slate-100 pt-4">
-                      <StatusProgressForm
-                        entity="actions"
-                        id={action.id}
-                        status={action.status}
-                      />
-                    </div>
-                  </article>
+                  </details>
                 ))}
               </div>
             )}

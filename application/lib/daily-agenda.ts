@@ -55,3 +55,89 @@ export function buildDailyAgenda(actions: AgendaAction[], now = new Date(), limi
     .slice(0, limit)
     .map(({ action }) => action);
 }
+
+
+function startOfDay(value: Date) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+export function isActionOverdue(action: AgendaAction, now = new Date()) {
+  if (!action.due_at || ["completed", "cancelled"].includes(action.status)) return false;
+  const due = new Date(action.due_at);
+  if (Number.isNaN(due.getTime())) return false;
+  return due.getTime() < now.getTime();
+}
+
+export function isActionDueToday(action: AgendaAction, now = new Date()) {
+  if (!action.due_at || ["completed", "cancelled"].includes(action.status)) return false;
+  const due = new Date(action.due_at);
+  if (Number.isNaN(due.getTime())) return false;
+  const today = startOfDay(now);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  return due >= today && due < tomorrow;
+}
+
+export function isActionDueYesterday(action: AgendaAction, now = new Date()) {
+  if (!action.due_at || ["completed", "cancelled"].includes(action.status)) return false;
+  const due = new Date(action.due_at);
+  if (Number.isNaN(due.getTime())) return false;
+  const today = startOfDay(now);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  return due >= yesterday && due < today;
+}
+
+export function buildProjectAgenda(actions: AgendaAction[], now = new Date()) {
+  const openActions = actions
+    .filter((action) => !["completed", "cancelled"].includes(action.status))
+    .sort((a, b) => {
+      const aOverdue = isActionOverdue(a, now);
+      const bOverdue = isActionOverdue(b, now);
+      if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+      if (a.is_next_action !== b.is_next_action) return a.is_next_action ? -1 : 1;
+
+      const aDue = a.due_at ? new Date(a.due_at).getTime() : Number.POSITIVE_INFINITY;
+      const bDue = b.due_at ? new Date(b.due_at).getTime() : Number.POSITIVE_INFINITY;
+      if (aDue !== bDue) return aDue - bDue;
+
+      return a.title.localeCompare(b.title);
+    });
+
+  const groups = new Map<string, {
+    project_id: string | null;
+    title: string;
+    actions: AgendaAction[];
+    today_count: number;
+    yesterday_pending_count: number;
+    overdue_count: number;
+  }>();
+
+  for (const action of openActions) {
+    const relation = Array.isArray(action.projects) ? action.projects[0] : action.projects;
+    const projectId = action.project_id ?? null;
+    const key = projectId ?? "__no_project__";
+    const current = groups.get(key) ?? {
+      project_id: projectId,
+      title: relation?.title ?? "Sem projecto",
+      actions: [],
+      today_count: 0,
+      yesterday_pending_count: 0,
+      overdue_count: 0,
+    };
+
+    current.actions.push(action);
+    if (isActionDueToday(action, now)) current.today_count += 1;
+    if (isActionDueYesterday(action, now)) current.yesterday_pending_count += 1;
+    if (isActionOverdue(action, now)) current.overdue_count += 1;
+    groups.set(key, current);
+  }
+
+  return Array.from(groups.values()).sort((a, b) => {
+    if (b.overdue_count !== a.overdue_count) return b.overdue_count - a.overdue_count;
+    if (b.today_count !== a.today_count) return b.today_count - a.today_count;
+    return a.title.localeCompare(b.title);
+  });
+}
