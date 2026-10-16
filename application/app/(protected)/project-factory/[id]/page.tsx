@@ -145,12 +145,14 @@ export default async function FactoryCasePage({
 
   const autoDecisionRationale =
     factoryReport?.decision_rationale ??
-    [
-      validation?.viability_summary,
-      validation?.conditions_to_proceed ? `Condições para avançar: ${validation.conditions_to_proceed}` : null,
-      validation?.result_summary,
-    ].filter(Boolean).join("\n\n") ||
-    `Decisão baseada na evidência recolhida para "${factoryCase.title}", no valor esperado e nos riscos identificados ao longo da avaliação.`;
+    (
+      [
+        validation?.viability_summary,
+        validation?.conditions_to_proceed ? `Condições para avançar: ${validation.conditions_to_proceed}` : null,
+        validation?.result_summary,
+      ].filter(Boolean).join("\n\n") ||
+      `Decisão baseada na evidência recolhida para "${factoryCase.title}", no valor esperado e nos riscos identificados ao longo da avaliação.`
+    );
 
   return (
     <>
