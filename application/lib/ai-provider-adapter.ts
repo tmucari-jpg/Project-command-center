@@ -74,3 +74,39 @@ export function chooseHybridProvider(
 export function providerNeedsSecret(provider: ProviderProfile) {
   return provider.mode === "cloud";
 }
+
+
+export function resolveAIExecutionState(
+  providers: ProviderProfile[],
+  capability?: string,
+) {
+  const healthy = providers
+    .filter((provider) => provider.enabled && provider.last_health_status === "healthy")
+    .filter((provider) => supportsCapability(provider, capability))
+    .sort((a, b) => a.priority - b.priority);
+
+  const cloud = healthy.find((provider) => provider.mode === "cloud") ?? null;
+  const local = healthy.find((provider) => provider.mode === "local") ?? null;
+
+  if (cloud) {
+    return {
+      mode: "cloud" as const,
+      provider: cloud,
+      reason: "IA na nuvem disponível e validada.",
+    };
+  }
+
+  if (local) {
+    return {
+      mode: "local" as const,
+      provider: local,
+      reason: "IA na nuvem indisponível; fallback local validado e alcançável.",
+    };
+  }
+
+  return {
+    mode: "unavailable" as const,
+    provider: null,
+    reason: "Nenhum provider de IA saudável está disponível; o PCC continua sem capacidades de IA.",
+  };
+}
