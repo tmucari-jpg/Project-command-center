@@ -33,7 +33,7 @@ import {
   zodMessage,
 } from "@/lib/validation";
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin, requireUser } from "@/lib/auth";
 import { selectExecutionRoute } from "@/lib/orchestrator";
 import { createN8nCallback, dispatchToN8n } from "@/lib/n8n";
 import { automationCodeFromName } from "@/lib/automation";
@@ -66,6 +66,47 @@ async function ensureOwned(
   if (error || !data) {
     fail(path, "A relação seleccionada não existe ou não lhe pertence.");
   }
+}
+
+export async function registerAIProviderProfile(formData: FormData) {
+  const path = "/ai-providers";
+  const parsed = z.object({
+    provider: z.enum(["openai", "groq", "huggingchat", "qwen_local", "koboldcpp_local", "other"]),
+    label: z.string().trim().min(2).max(120),
+    mode: z.enum(["cloud", "local"]),
+    priority: z.coerce.number().int().min(1).max(100),
+    cost_class: z.enum(["free", "low", "medium", "high", "unknown"]),
+    endpoint_hint: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(500).optional(),
+    ),
+    model_hint: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(180).optional(),
+    ),
+    capabilities: z.preprocess(
+      (value) => typeof value === "string"
+        ? value.split(",").map((item) => item.trim()).filter(Boolean)
+        : [],
+      z.array(z.string().min(1).max(80)).max(20),
+    ),
+  }).safeParse(values(formData));
+
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireAdmin();
+  const { error } = await supabase.from("ai_provider_profiles").insert({
+    ...parsed.data,
+    endpoint_hint: parsed.data.endpoint_hint ?? null,
+    model_hint: parsed.data.model_hint ?? null,
+    enabled: false,
+    last_health_status: "unknown",
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?provider=registered`);
 }
 
 export async function createFactoryLibraryItem(formData: FormData) {
