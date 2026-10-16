@@ -10,6 +10,10 @@ type ProjectPlanInput = {
     status?: string | null;
     progress?: number | string | null;
     next_action?: string | null;
+    owner_id?: string | null;
+    next_review_date?: string | null;
+    decision_gate?: string | null;
+    gate_status?: string | null;
   };
   factory?: {
     id?: string | null;
@@ -53,6 +57,17 @@ type ProjectPlanInput = {
     leads: number;
     nextSalesAction?: string | null;
   };
+  economics?: {
+    cac?: number | string | null;
+    conversion_rate_pct?: number | string | null;
+    arpu?: number | string | null;
+    gross_margin_pct?: number | string | null;
+    payback_months?: number | string | null;
+    currency?: string | null;
+    period_start?: string | null;
+    period_end?: string | null;
+    source_notes?: string | null;
+  } | null;
   metrics?: Array<{
     name: string;
     unit?: string | null;
@@ -67,7 +82,7 @@ function clean(value: string | null | undefined) {
 }
 
 export function buildStrategyExecutionPlan(input: ProjectPlanInput) {
-  const { project, factory, report, intelligence, commercial, operational, metrics = [] } = input;
+  const { project, factory, report, intelligence, commercial, operational, economics, metrics = [] } = input;
   const target = clean(commercial?.ideal_customer) ?? clean(factory?.target_user);
   const market = clean(intelligence?.market_summary) ?? clean(report?.market);
   const differentiation = clean(intelligence?.differentiation) ?? clean(report?.differentiation);
@@ -100,6 +115,17 @@ export function buildStrategyExecutionPlan(input: ProjectPlanInput) {
     commercial_channel: channel,
     estimated_cost: clean(report?.estimated_cost),
     validation_status: validationStatus,
+    unit_economics: {
+      cac: economics?.cac ?? null,
+      conversion_rate_pct: economics?.conversion_rate_pct ?? null,
+      arpu: economics?.arpu ?? null,
+      gross_margin_pct: economics?.gross_margin_pct ?? null,
+      payback_months: economics?.payback_months ?? null,
+      currency: clean(economics?.currency),
+      period_start: economics?.period_start ?? null,
+      period_end: economics?.period_end ?? null,
+      source_notes: clean(economics?.source_notes),
+    },
     validation_plan:
       "Validar proposta de valor, willingness-to-pay, preço, canal de pagamento, conversão e retenção antes de escalar.",
   };
@@ -127,6 +153,10 @@ export function buildStrategyExecutionPlan(input: ProjectPlanInput) {
 
   const execution: JsonRecord = {
     next_action: clean(project.next_action),
+    owner_id: project.owner_id ?? null,
+    next_review_date: project.next_review_date ?? null,
+    decision_gate: project.decision_gate ?? null,
+    gate_status: project.gate_status ?? null,
     deliverables: operational?.deliverables ?? 0,
     actions: operational?.actions ?? 0,
     open_blockers: operational?.openBlockers ?? 0,
@@ -154,6 +184,8 @@ export function buildStrategyExecutionPlan(input: ProjectPlanInput) {
     commercial?.price == null ? "Preço validado" : null,
     !channel ? "Canal comercial / aquisição prioritário" : null,
     validationStatus !== "validated" ? "Validação comercial" : null,
+    !project.owner_id ? "Responsável do projecto" : null,
+    !project.next_review_date ? "Próxima revisão" : null,
   ].filter((item): item is string => Boolean(item));
 
   return {
