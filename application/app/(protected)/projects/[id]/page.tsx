@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, CheckSquare2, PackageCheck, ShieldCheck, TriangleAlert } from "lucide-react";
+import { ArrowLeft, BarChart3, CheckSquare2, Home, PackageCheck, ShieldCheck, TriangleAlert } from "lucide-react";
 import { createProjectMemory, prepareProjectOperationalStructure, updateProjectNextAction } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
@@ -97,9 +97,12 @@ export default async function ProjectHubPage({
 
   return (
     <>
-      <div className="mb-4">
-        <Link className="inline-flex items-center gap-2 text-sm font-medium text-[var(--cc-accent)] hover:underline" href="/projects">
-          <ArrowLeft size={16} /> Voltar aos projectos
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Link className={secondaryButtonClass} href="/projects">
+          <ArrowLeft size={16} /> Voltar
+        </Link>
+        <Link className={secondaryButtonClass} href="/dashboard">
+          <Home size={16} /> Painel geral
         </Link>
       </div>
 
