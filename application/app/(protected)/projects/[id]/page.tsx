@@ -1,14 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, CheckSquare2, Home, PackageCheck, ShieldCheck, TriangleAlert } from "lucide-react";
-import { createProjectMemory, prepareProjectOperationalStructure, updateProjectNextAction } from "@/app/(protected)/mutations";
+import { ArrowLeft, BarChart3, CalendarCheck2, CheckSquare2, CircleDollarSign, GitBranch, Home, PackageCheck, ShieldCheck, TriangleAlert, UserRoundCheck } from "lucide-react";
+import {
+  createProjectDependency,
+  createProjectMemory,
+  prepareProjectOperationalStructure,
+  resolveProjectDependency,
+  updateProjectGovernance,
+  updateProjectNextAction,
+  upsertProjectUnitEconomics,
+} from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { projectHealth, progressLabel } from "@/lib/project-metrics";
+import { executiveProjectHealth, isProjectPlanStale, progressLabel } from "@/lib/project-metrics";
 import { displayLabel } from "@/lib/display-label";
 
 export default async function ProjectHubPage({
@@ -36,6 +44,10 @@ export default async function ProjectHubPage({
     { data: metrics },
     { data: memory },
     { data: decisions },
+    { data: dependencies },
+    { data: profiles },
+    { data: economics },
+    { data: strategyPlan },
   ] = await Promise.all([
     supabase
       .from("actions")
@@ -84,16 +96,51 @@ export default async function ProjectHubPage({
       .eq("project_id", id)
       .order("decided_at", { ascending: false })
       .limit(6),
+    supabase
+      .from("project_dependencies")
+      .select("id,depends_on_project_id,relation_type,status,notes,created_at,projects!project_dependencies_depends_on_project_id_fkey(title)")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id,full_name")
+      .order("full_name"),
+    supabase
+      .from("project_unit_economics")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .maybeSingle(),
+    supabase
+      .from("project_strategy_execution_plans")
+      .select("updated_at")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .maybeSingle(),
   ]);
 
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
-  const health = projectHealth({
+  const activeDependencies = (dependencies ?? []).filter((item) => item.status === "active");
+  const latestSourceTimestamps = [
+    project.updated_at,
+    evidence?.[0]?.created_at,
+    decisions?.[0]?.decided_at,
+  ];
+  const planStale = isProjectPlanStale(strategyPlan?.updated_at, latestSourceTimestamps);
+  const health = executiveProjectHealth({
     progress: Number(project.progress ?? 0),
     dueDate: project.due_date,
     openBlockers: openBlockers.length,
+    activeDependencies: activeDependencies.length,
+    nextReviewDate: project.next_review_date,
+    planStale,
+    gateStatus: project.gate_status,
+    hasOwner: Boolean(project.owner_id),
   });
 
   const objectiveRelation = Array.isArray(project.objectives) ? project.objectives[0] : project.objectives;
+  const projectOwner = (profiles ?? []).find((profile) => profile.id === project.owner_id);
 
   return (
     <>
@@ -102,7 +149,7 @@ export default async function ProjectHubPage({
           <ArrowLeft size={16} /> Voltar
         </Link>
         <Link className={secondaryButtonClass} href="/dashboard">
-          <Home size={16} /> Painel geral
+          <Home size={16} /> Painel
         </Link>
       </div>
 
@@ -121,7 +168,7 @@ export default async function ProjectHubPage({
       </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <StatusBadge status={health} />
+        <StatusBadge status={health.status} />
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
           estado {displayLabel(project.status)}
         </span>
@@ -131,6 +178,14 @@ export default async function ProjectHubPage({
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
           prioridade {displayLabel(project.priority)}
         </span>
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+          saúde {health.score}%
+        </span>
+        {planStale && (
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+            plano desactualizado
+          </span>
+        )}
         <Link className={primaryButtonClass} href={`/projects/${project.id}/plan`}>
           Plano Estratégia → Execução
         </Link>
@@ -203,6 +258,124 @@ export default async function ProjectHubPage({
           </div>
         </Card>
       </div>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-3">
+        <Card className="p-5">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
+            <UserRoundCheck size={18} /> Responsabilidade e revisão
+          </h2>
+          <form action={updateProjectGovernance} className="mt-5 space-y-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <Select label="Responsável" name="owner_id" defaultValue={project.owner_id ?? ""}>
+              <option value="">Sem responsável definido</option>
+              {(profiles ?? []).map((profile) => (
+                <option key={profile.id} value={profile.id}>{profile.full_name || "Utilizador"}</option>
+              ))}
+            </Select>
+            <Field label="Próxima revisão" name="next_review_date" type="date" defaultValue={project.next_review_date ?? undefined} />
+            <Select label="Etapa de decisão" name="decision_gate" defaultValue={project.decision_gate ?? "validate"}>
+              <option value="validate">Validar</option>
+              <option value="launch">Lançar</option>
+              <option value="scale">Escalar</option>
+              <option value="hold">Esperar</option>
+              <option value="stop">Parar</option>
+            </Select>
+            <Select label="Estado da decisão" name="gate_status" defaultValue={project.gate_status ?? "pending"}>
+              <option value="pending">Pendente</option>
+              <option value="ready">Pronto para decidir</option>
+              <option value="approved">Aprovado</option>
+              <option value="blocked">Bloqueado</option>
+            </Select>
+            <button className={primaryButtonClass} type="submit">Guardar acompanhamento</button>
+          </form>
+          <p className="mt-3 text-xs text-slate-500">
+            Actual: {projectOwner?.full_name || "sem responsável"}.
+          </p>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
+            <GitBranch size={18} /> Dependências
+          </h2>
+          <form action={createProjectDependency} className="mt-5 space-y-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <Select label="Projecto relacionado" name="depends_on_project_id" defaultValue="">
+              <option value="" disabled>Seleccione</option>
+              {(await supabase.from("projects").select("id,title").eq("user_id", user.id).neq("id", project.id).order("title")).data?.map((item) => (
+                <option key={item.id} value={item.id}>{item.title}</option>
+              ))}
+            </Select>
+            <Select label="Relação" name="relation_type" defaultValue="depends_on">
+              <option value="depends_on">Depende de</option>
+              <option value="blocks">Bloqueia</option>
+              <option value="related">Relacionado com</option>
+            </Select>
+            <TextArea label="Notas" name="notes" />
+            <button className={primaryButtonClass} type="submit">Adicionar dependência</button>
+          </form>
+          <div className="mt-5 space-y-3">
+            {!activeDependencies.length ? (
+              <p className="text-sm text-slate-500">Sem dependências activas.</p>
+            ) : activeDependencies.map((item) => {
+              const relation = Array.isArray(item.projects) ? item.projects[0] : item.projects;
+              return (
+                <div key={item.id} className="rounded-xl border border-slate-200 p-3">
+                  <p className="text-sm font-medium text-slate-900">
+                    {displayLabel(item.relation_type)} · {relation?.title ?? "Projecto"}
+                  </p>
+                  {item.notes && <p className="mt-1 text-xs text-slate-500">{item.notes}</p>}
+                  <form action={resolveProjectDependency} className="mt-2">
+                    <input type="hidden" name="dependency_id" value={item.id} />
+                    <input type="hidden" name="project_id" value={project.id} />
+                    <button type="submit" className="text-xs font-semibold text-[var(--cc-accent)] hover:underline">
+                      Marcar como resolvida
+                    </button>
+                  </form>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
+            <CircleDollarSign size={18} /> Indicadores económicos
+          </h2>
+          <form action={upsertProjectUnitEconomics} className="mt-5 space-y-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <Field label="Custo de aquisição de cliente (CAC)" name="cac" type="number" step="any" defaultValue={economics?.cac ?? undefined} />
+            <Field label="Taxa de conversão (%)" name="conversion_rate_pct" type="number" step="any" min={0} max={100} defaultValue={economics?.conversion_rate_pct ?? undefined} />
+            <Field label="Receita média por utilizador" name="arpu" type="number" step="any" defaultValue={economics?.arpu ?? undefined} />
+            <Field label="Margem bruta (%)" name="gross_margin_pct" type="number" step="any" defaultValue={economics?.gross_margin_pct ?? undefined} />
+            <Field label="Prazo de retorno (meses)" name="payback_months" type="number" step="any" min={0} defaultValue={economics?.payback_months ?? undefined} />
+            <Field label="Moeda" name="currency" defaultValue={economics?.currency ?? project.currency ?? "MZN"} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Início do período" name="period_start" type="date" defaultValue={economics?.period_start ?? undefined} />
+              <Field label="Fim do período" name="period_end" type="date" defaultValue={economics?.period_end ?? undefined} />
+            </div>
+            <TextArea label="Fonte / observações" name="source_notes" defaultValue={economics?.source_notes ?? undefined} />
+            <button className={primaryButtonClass} type="submit">Guardar indicadores</button>
+          </form>
+        </Card>
+      </div>
+
+      <Card className="mt-6 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950">
+              <CalendarCheck2 size={18} /> Controlo executivo
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Responsável: {projectOwner?.full_name || "não definido"} · próxima revisão: {project.next_review_date ? formatDate(project.next_review_date) : "não definida"} · etapa: {displayLabel(project.decision_gate ?? "validate")}.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs font-semibold">
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">saúde {health.score}%</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{activeDependencies.length} dependência(s)</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{displayLabel(project.gate_status ?? "pending")}</span>
+          </div>
+        </div>
+      </Card>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card>
