@@ -375,6 +375,147 @@ export async function createObjective(formData: FormData) {
   redirect(`${path}?created=1`);
 }
 
+
+type OperationalProjectContext = {
+  id: string;
+  title: string;
+  description?: string | null;
+  expected_result?: string | null;
+  priority: string;
+  progress?: number | string | null;
+  start_date?: string | null;
+  due_date?: string | null;
+  notes?: string | null;
+  next_action?: string | null;
+  objective_id?: string | null;
+};
+
+async function ensureProjectOperationalStructure(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  project: OperationalProjectContext,
+) {
+  let objectiveId = project.objective_id ?? null;
+
+  if (!objectiveId) {
+    const { data: objective, error } = await supabase
+      .from("objectives")
+      .insert({
+        user_id: userId,
+        title: project.title,
+        description: project.description,
+        expected_result: project.expected_result,
+        priority: project.priority,
+        status: "draft",
+        start_date: project.start_date,
+        due_date: project.due_date,
+        progress: Number(project.progress ?? 0),
+        notes: project.notes,
+      })
+      .select("id")
+      .single();
+
+    if (error || !objective) throw new Error(error?.message ?? "Não foi possível preparar o objectivo.");
+    objectiveId = objective.id;
+
+    const { error: linkError } = await supabase
+      .from("projects")
+      .update({ objective_id: objectiveId })
+      .eq("id", project.id)
+      .eq("user_id", userId);
+
+    if (linkError) throw new Error(linkError.message);
+  }
+
+  const { data: existingDeliverables, error: deliverableReadError } = await supabase
+    .from("deliverables")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("project_id", project.id)
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (deliverableReadError) throw new Error(deliverableReadError.message);
+
+  let deliverableId = existingDeliverables?.[0]?.id ?? null;
+
+  if (!deliverableId && project.expected_result?.trim()) {
+    const { data: deliverable, error } = await supabase
+      .from("deliverables")
+      .insert({
+        user_id: userId,
+        project_id: project.id,
+        title: `Resultado de ${project.title}`,
+        description: project.expected_result.trim(),
+        priority: project.priority,
+        status: "pending",
+        due_date: project.due_date,
+        progress: 0,
+        completion_criteria: project.expected_result.trim(),
+      })
+      .select("id")
+      .single();
+
+    if (error || !deliverable) throw new Error(error?.message ?? "Não foi possível preparar o entregável.");
+    deliverableId = deliverable.id;
+  }
+
+  const { count: actionCount, error: actionCountError } = await supabase
+    .from("actions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("project_id", project.id);
+
+  if (actionCountError) throw new Error(actionCountError.message);
+
+  if ((actionCount ?? 0) === 0) {
+    const actionTitle =
+      project.next_action?.trim() ||
+      (project.expected_result?.trim() ? `Avançar resultado de ${project.title}` : null);
+
+    if (actionTitle) {
+      const { error } = await supabase.from("actions").insert({
+        user_id: userId,
+        project_id: project.id,
+        deliverable_id: deliverableId,
+        title: actionTitle,
+        description: project.description,
+        priority: project.priority,
+        status: "pending",
+        completion_criteria: project.expected_result,
+        is_next_action: false,
+      });
+      if (error) throw new Error(error.message);
+    }
+  }
+
+  const { count: metricCount, error: metricCountError } = await supabase
+    .from("metrics")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("project_id", project.id);
+
+  if (metricCountError) throw new Error(metricCountError.message);
+
+  if ((metricCount ?? 0) === 0 && project.expected_result?.trim()) {
+    const { error } = await supabase.from("metrics").insert({
+      user_id: userId,
+      objective_id: objectiveId,
+      project_id: project.id,
+      name: `Progresso de ${project.title}`,
+      description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
+      metric_type: "custom",
+      unit: "%",
+      baseline_value: 0,
+      target_value: 100,
+      current_value: Number(project.progress ?? 0),
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  return { objectiveId, deliverableId };
+}
+
 export async function createProject(formData: FormData) {
   const path = "/projects";
   const parsed = projectSchema.safeParse(values(formData));
@@ -383,15 +524,32 @@ export async function createProject(formData: FormData) {
   const { supabase, user } = await requireUser();
   await ensureOwned(supabase, "objectives", parsed.data.objective_id, user.id, path);
 
-  const { error } = await supabase.from("projects").insert({
-    ...parsed.data,
-    user_id: user.id,
-  });
+  const { data: project, error } = await supabase
+    .from("projects")
+    .insert({
+      ...parsed.data,
+      user_id: user.id,
+    })
+    .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,next_action,objective_id")
+    .single();
 
-  if (error) fail(path, error.message);
+  if (error || !project) fail(path, error?.message ?? "Não foi possível criar o projecto.");
+
+  if (project.expected_result?.trim()) {
+    try {
+      await ensureProjectOperationalStructure(supabase, user.id, project);
+    } catch (structureError) {
+      fail(`/projects/${project.id}`, structureError instanceof Error ? structureError.message : "Não foi possível preparar a estrutura operacional.");
+    }
+  }
+
   revalidatePath(path);
+  revalidatePath("/objectives");
+  revalidatePath("/deliverables");
+  revalidatePath("/actions");
+  revalidatePath("/metrics");
   revalidatePath("/dashboard");
-  redirect(`${path}?created=1`);
+  redirect(`/projects/${project.id}?created=1`);
 }
 
 export async function createDeliverable(formData: FormData) {
@@ -1237,122 +1395,10 @@ export async function prepareProjectOperationalStructure(formData: FormData) {
 
   if (projectError || !project) fail(path, projectError?.message ?? "Projecto não encontrado.");
 
-  let objectiveId = project.objective_id as string | null;
-
-  if (!objectiveId) {
-    const { data: objective, error } = await supabase
-      .from("objectives")
-      .insert({
-        user_id: user.id,
-        title: project.title,
-        description: project.description,
-        expected_result: project.expected_result,
-        priority: project.priority,
-        status: "draft",
-        start_date: project.start_date,
-        due_date: project.due_date,
-        progress: Number(project.progress ?? 0),
-        notes: project.notes,
-      })
-      .select("id")
-      .single();
-
-    if (error || !objective) fail(path, error?.message ?? "Não foi possível preparar o objectivo.");
-    objectiveId = objective.id;
-
-    const { error: linkError } = await supabase
-      .from("projects")
-      .update({ objective_id: objectiveId })
-      .eq("id", project.id)
-      .eq("user_id", user.id);
-
-    if (linkError) fail(path, linkError.message);
-  }
-
-  const { data: existingDeliverables } = await supabase
-    .from("deliverables")
-    .select("id,title,status,priority,due_date,completion_criteria")
-    .eq("user_id", user.id)
-    .eq("project_id", project.id)
-    .order("created_at", { ascending: true })
-    .limit(1);
-
-  let deliverableId = existingDeliverables?.[0]?.id ?? null;
-
-  if (!deliverableId && project.expected_result?.trim()) {
-    const { data: deliverable, error } = await supabase
-      .from("deliverables")
-      .insert({
-        user_id: user.id,
-        project_id: project.id,
-        title: `Resultado de ${project.title}`,
-        description: project.expected_result.trim(),
-        priority: project.priority,
-        status: "pending",
-        due_date: project.due_date,
-        progress: 0,
-        completion_criteria: project.expected_result.trim(),
-      })
-      .select("id")
-      .single();
-
-    if (error || !deliverable) fail(path, error?.message ?? "Não foi possível preparar o entregável.");
-    deliverableId = deliverable.id;
-  }
-
-  const { count: actionCount, error: actionCountError } = await supabase
-    .from("actions")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("project_id", project.id);
-
-  if (actionCountError) fail(path, actionCountError.message);
-
-  if ((actionCount ?? 0) === 0) {
-    const actionTitle =
-      project.next_action?.trim() ||
-      (project.expected_result?.trim() ? `Avançar resultado de ${project.title}` : null);
-
-    if (actionTitle) {
-      const { error } = await supabase.from("actions").insert({
-        user_id: user.id,
-        project_id: project.id,
-        deliverable_id: deliverableId,
-        title: actionTitle,
-        description: project.description,
-        priority: project.priority,
-        status: "pending",
-        completion_criteria: project.expected_result,
-        is_next_action: false,
-      });
-
-      if (error) fail(path, error.message);
-    }
-  }
-
-  const { count: metricCount, error: metricCountError } = await supabase
-    .from("metrics")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("project_id", project.id);
-
-  if (metricCountError) fail(path, metricCountError.message);
-
-  if ((metricCount ?? 0) === 0 && project.expected_result?.trim()) {
-    const { error } = await supabase.from("metrics").insert({
-      user_id: user.id,
-      objective_id: objectiveId,
-      project_id: project.id,
-      name: `Progresso de ${project.title}`,
-      description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
-      metric_type: "custom",
-      unit: "%",
-      baseline_value: 0,
-      target_value: 100,
-      current_value: Number(project.progress ?? 0),
-    });
-
-    if (error) fail(path, error.message);
+  try {
+    await ensureProjectOperationalStructure(supabase, user.id, project);
+  } catch (structureError) {
+    fail(path, structureError instanceof Error ? structureError.message : "Não foi possível preparar a estrutura operacional.");
   }
 
   revalidatePath(path);
