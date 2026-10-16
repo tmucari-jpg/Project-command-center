@@ -101,7 +101,7 @@ export default async function BlockersPage({
                       <div>
                         <h3 className="font-semibold text-slate-950">{item.title}</h3>
                         <p className="mt-1 text-sm text-slate-500">
-                          {item.projects?.title ?? "Sem projecto"} · Resolver até {formatDateTime(item.resolution_due_at)}
+                          {item.projects?.title ?? "Sem projecto"} · {item.actions?.title ?? item.deliverables?.title ?? "Sem relação operacional"} · Resolver até {formatDateTime(item.resolution_due_at)}
                         </p>
                         {item.impact && <p className="mt-3 text-sm text-slate-700">{item.impact}</p>}
                       </div>

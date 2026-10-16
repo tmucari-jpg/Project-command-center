@@ -33,11 +33,13 @@ import {
   zodMessage,
 } from "@/lib/validation";
 import { ENTITY_PATHS, STATUS_OPTIONS, type MutableEntity } from "@/lib/constants";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin, requireUser } from "@/lib/auth";
 import { selectExecutionRoute } from "@/lib/orchestrator";
 import { createN8nCallback, dispatchToN8n } from "@/lib/n8n";
 import { automationCodeFromName } from "@/lib/automation";
 import { executionArenaDefaults } from "@/lib/execution-arena";
+import { buildStrategyExecutionPlan } from "@/lib/project-plan";
+import { validateAIProviderHealth } from "@/lib/ai-provider-health";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -66,6 +68,79 @@ async function ensureOwned(
   if (error || !data) {
     fail(path, "A relação seleccionada não existe ou não lhe pertence.");
   }
+}
+
+export async function validateAIProviderProfile(formData: FormData) {
+  const path = "/ai-providers";
+  const providerId = z.string().uuid().safeParse(formData.get("provider_id"));
+  if (!providerId.success) fail(path, "Provider inválido.");
+
+  const { supabase, user } = await requireAdmin();
+  const { data: provider, error } = await supabase
+    .from("ai_provider_profiles")
+    .select("id,provider,mode,endpoint_hint,model_hint")
+    .eq("id", providerId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error || !provider) fail(path, error?.message ?? "Provider não encontrado.");
+
+  const result = await validateAIProviderHealth(provider);
+  const { error: updateError } = await supabase
+    .from("ai_provider_profiles")
+    .update({
+      enabled: result.status === "healthy",
+      last_health_status: result.status,
+      last_health_at: new Date().toISOString(),
+    })
+    .eq("id", provider.id)
+    .eq("user_id", user.id);
+
+  if (updateError) fail(path, updateError.message);
+
+  revalidatePath(path);
+  redirect(`${path}?health=${result.status}&health_message=${encodeURIComponent(result.message)}`);
+}
+
+export async function registerAIProviderProfile(formData: FormData) {
+  const path = "/ai-providers";
+  const parsed = z.object({
+    provider: z.enum(["openai", "groq", "huggingchat", "qwen_local", "koboldcpp_local", "other"]),
+    label: z.string().trim().min(2).max(120),
+    mode: z.enum(["cloud", "local"]),
+    priority: z.coerce.number().int().min(1).max(100),
+    cost_class: z.enum(["free", "low", "medium", "high", "unknown"]),
+    endpoint_hint: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(500).optional(),
+    ),
+    model_hint: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(180).optional(),
+    ),
+    capabilities: z.preprocess(
+      (value) => typeof value === "string"
+        ? value.split(",").map((item) => item.trim()).filter(Boolean)
+        : [],
+      z.array(z.string().min(1).max(80)).max(20),
+    ),
+  }).safeParse(values(formData));
+
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user } = await requireAdmin();
+  const { error } = await supabase.from("ai_provider_profiles").insert({
+    ...parsed.data,
+    endpoint_hint: parsed.data.endpoint_hint ?? null,
+    model_hint: parsed.data.model_hint ?? null,
+    enabled: false,
+    last_health_status: "unknown",
+    user_id: user.id,
+  });
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?provider=registered`);
 }
 
 export async function createFactoryLibraryItem(formData: FormData) {
@@ -375,23 +450,518 @@ export async function createObjective(formData: FormData) {
   redirect(`${path}?created=1`);
 }
 
+
+
+async function syncProjectStrategyExecutionPlan(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  projectId: string,
+) {
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,title,description,expected_result,priority,status,progress,next_action,owner_id,next_review_date,decision_gate,gate_status")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (projectError || !project) {
+    throw new Error(projectError?.message ?? "Projecto não encontrado para preparar o plano.");
+  }
+
+  const { data: factory, error: factoryError } = await supabase
+    .from("project_factory_cases")
+    .select("id,problem,target_user,expected_value,constraints")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (factoryError) throw new Error(factoryError.message);
+
+  const [
+    reportResult,
+    intelligenceResult,
+    commercialResult,
+    deliverablesResult,
+    actionsResult,
+    blockersResult,
+    evidenceResult,
+    leadsResult,
+    metricsResult,
+    economicsResult,
+  ] = await Promise.all([
+    factory?.id
+      ? supabase
+          .from("factory_reports")
+          .select("market,competitors,existing_solutions,differentiation,market_trend,revenue_model,estimated_cost,risks")
+          .eq("factory_case_id", factory.id)
+          .eq("user_id", userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    factory?.id
+      ? supabase
+          .from("factory_competitive_intelligence")
+          .select("market_summary,competitors,existing_solutions,differentiation,trends,risks_barriers")
+          .eq("factory_case_id", factory.id)
+          .eq("user_id", userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from("project_commercial_profiles")
+      .select("id,offer,ideal_customer,price,currency,channel,validation_status")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase.from("deliverables").select("id").eq("project_id", projectId).eq("user_id", userId),
+    supabase.from("actions").select("id").eq("project_id", projectId).eq("user_id", userId),
+    supabase.from("blockers").select("id,status").eq("project_id", projectId).eq("user_id", userId),
+    supabase.from("evidence").select("id").eq("project_id", projectId).eq("user_id", userId),
+    supabase
+      .from("commercial_leads")
+      .select("id,next_action,next_action_at,created_at")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .order("next_action_at", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("metrics")
+      .select("name,unit,baseline_value,target_value,current_value")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .order("created_at"),
+    supabase
+      .from("project_unit_economics")
+      .select("cac,conversion_rate_pct,arpu,gross_margin_pct,payback_months,currency,period_start,period_end,source_notes")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+
+  const firstError =
+    reportResult.error ??
+    intelligenceResult.error ??
+    commercialResult.error ??
+    deliverablesResult.error ??
+    actionsResult.error ??
+    blockersResult.error ??
+    evidenceResult.error ??
+    leadsResult.error ??
+    metricsResult.error ??
+    economicsResult.error;
+
+  if (firstError) throw new Error(firstError.message);
+
+  const nextSalesAction =
+    (leadsResult.data ?? []).find((lead) => typeof lead.next_action === "string" && lead.next_action.trim())
+      ?.next_action ?? null;
+
+  const plan = buildStrategyExecutionPlan({
+    project,
+    factory,
+    report: reportResult.data,
+    intelligence: intelligenceResult.data,
+    commercial: commercialResult.data,
+    operational: {
+      deliverables: deliverablesResult.data?.length ?? 0,
+      actions: actionsResult.data?.length ?? 0,
+      openBlockers: (blockersResult.data ?? []).filter(
+        (item) => !["resolved", "ignored"].includes(item.status),
+      ).length,
+      evidence: evidenceResult.data?.length ?? 0,
+      leads: leadsResult.data?.length ?? 0,
+      nextSalesAction,
+    },
+    economics: economicsResult.data,
+    metrics: metricsResult.data ?? [],
+  });
+
+  const { error } = await supabase.from("project_strategy_execution_plans").upsert(
+    {
+      user_id: userId,
+      project_id: projectId,
+      ...plan,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "project_id" },
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+export async function refreshProjectStrategyExecutionPlan(formData: FormData) {
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  if (!projectId.success) fail("/projects", "Projecto inválido.");
+
+  const path = `/projects/${projectId.data}/plan`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", projectId.data, user.id, path);
+
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, projectId.data);
+  } catch (error) {
+    fail(path, error instanceof Error ? error.message : "Não foi possível actualizar o plano.");
+  }
+
+  revalidatePath(path);
+  revalidatePath(`/projects/${projectId.data}`);
+  redirect(`${path}?updated=1`);
+}
+
+type OperationalProjectContext = {
+  id: string;
+  title: string;
+  description?: string | null;
+  expected_result?: string | null;
+  priority: string;
+  progress?: number | string | null;
+  start_date?: string | null;
+  due_date?: string | null;
+  notes?: string | null;
+  next_action?: string | null;
+  objective_id?: string | null;
+};
+
+async function ensureProjectOperationalStructure(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  project: OperationalProjectContext,
+) {
+  let objectiveId = project.objective_id ?? null;
+
+  if (!objectiveId) {
+    const { data: objective, error } = await supabase
+      .from("objectives")
+      .insert({
+        user_id: userId,
+        title: project.title,
+        description: project.description,
+        expected_result: project.expected_result,
+        priority: project.priority,
+        status: "draft",
+        start_date: project.start_date,
+        due_date: project.due_date,
+        progress: Number(project.progress ?? 0),
+        notes: project.notes,
+      })
+      .select("id")
+      .single();
+
+    if (error || !objective) throw new Error(error?.message ?? "Não foi possível preparar o objectivo.");
+    objectiveId = objective.id;
+
+    const { error: linkError } = await supabase
+      .from("projects")
+      .update({ objective_id: objectiveId })
+      .eq("id", project.id)
+      .eq("user_id", userId);
+
+    if (linkError) throw new Error(linkError.message);
+  }
+
+  const { data: existingDeliverables, error: deliverableReadError } = await supabase
+    .from("deliverables")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("project_id", project.id)
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (deliverableReadError) throw new Error(deliverableReadError.message);
+
+  let deliverableId = existingDeliverables?.[0]?.id ?? null;
+
+  if (!deliverableId && project.expected_result?.trim()) {
+    const { data: deliverable, error } = await supabase
+      .from("deliverables")
+      .insert({
+        user_id: userId,
+        project_id: project.id,
+        title: `Resultado de ${project.title}`,
+        description: project.expected_result.trim(),
+        priority: project.priority,
+        status: "pending",
+        due_date: project.due_date,
+        progress: 0,
+        completion_criteria: project.expected_result.trim(),
+      })
+      .select("id")
+      .single();
+
+    if (error || !deliverable) throw new Error(error?.message ?? "Não foi possível preparar o entregável.");
+    deliverableId = deliverable.id;
+  }
+
+  const { count: actionCount, error: actionCountError } = await supabase
+    .from("actions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("project_id", project.id);
+
+  if (actionCountError) throw new Error(actionCountError.message);
+
+  if ((actionCount ?? 0) === 0) {
+    const actionTitle =
+      project.next_action?.trim() ||
+      (project.expected_result?.trim() ? `Avançar resultado de ${project.title}` : null);
+
+    if (actionTitle) {
+      const { error } = await supabase.from("actions").insert({
+        user_id: userId,
+        project_id: project.id,
+        deliverable_id: deliverableId,
+        title: actionTitle,
+        description: project.description,
+        priority: project.priority,
+        status: "pending",
+        completion_criteria: project.expected_result,
+        is_next_action: false,
+      });
+      if (error) throw new Error(error.message);
+    }
+  }
+
+  const { count: metricCount, error: metricCountError } = await supabase
+    .from("metrics")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("project_id", project.id);
+
+  if (metricCountError) throw new Error(metricCountError.message);
+
+  if ((metricCount ?? 0) === 0 && project.expected_result?.trim()) {
+    const { error } = await supabase.from("metrics").insert({
+      user_id: userId,
+      objective_id: objectiveId,
+      project_id: project.id,
+      name: `Progresso de ${project.title}`,
+      description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
+      metric_type: "custom",
+      unit: "%",
+      baseline_value: 0,
+      target_value: 100,
+      current_value: Number(project.progress ?? 0),
+    });
+    if (error) throw new Error(error.message);
+  }
+
+  await syncProjectStrategyExecutionPlan(supabase, userId, project.id);
+  return { objectiveId, deliverableId };
+}
+
 export async function createProject(formData: FormData) {
   const path = "/projects";
   const parsed = projectSchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
+  const { supabase, user, authUser } = await requireUser();
   await ensureOwned(supabase, "objectives", parsed.data.objective_id, user.id, path);
 
-  const { error } = await supabase.from("projects").insert({
+  const { data: project, error } = await supabase
+    .from("projects")
+    .insert({
+      ...parsed.data,
+      owner_id: authUser.id,
+      user_id: user.id,
+    })
+    .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,next_action,objective_id")
+    .single();
+
+  if (error || !project) fail(path, error?.message ?? "Não foi possível criar o projecto.");
+
+  if (project.expected_result?.trim()) {
+    try {
+      await ensureProjectOperationalStructure(supabase, user.id, project);
+    } catch (structureError) {
+      fail(`/projects/${project.id}`, structureError instanceof Error ? structureError.message : "Não foi possível preparar a estrutura operacional.");
+    }
+  }
+
+  revalidatePath(path);
+  revalidatePath("/objectives");
+  revalidatePath("/deliverables");
+  revalidatePath("/actions");
+  revalidatePath("/metrics");
+  revalidatePath("/dashboard");
+  redirect(`/projects/${project.id}?created=1`);
+}
+
+export async function updateProjectGovernance(formData: FormData) {
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    owner_id: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().uuid().optional(),
+    ),
+    next_review_date: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    ),
+    decision_gate: z.enum(["validate", "launch", "scale", "hold", "stop"]),
+    gate_status: z.enum(["pending", "ready", "approved", "blocked"]),
+  }).safeParse(values(formData));
+
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  if (parsed.data.owner_id) {
+    const { data: owner, error: ownerError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", parsed.data.owner_id)
+      .maybeSingle();
+    if (ownerError || !owner) fail(path, "Responsável inválido.");
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({
+      owner_id: parsed.data.owner_id ?? null,
+      next_review_date: parsed.data.next_review_date ?? null,
+      decision_gate: parsed.data.decision_gate,
+      gate_status: parsed.data.gate_status,
+    })
+    .eq("id", parsed.data.project_id)
+    .eq("user_id", user.id);
+
+  if (error) fail(path, error.message);
+
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
+  } catch (syncError) {
+    fail(path, syncError instanceof Error ? syncError.message : "Governança guardada, mas o plano não foi actualizado.");
+  }
+
+  revalidatePath(path);
+  revalidatePath(`${path}/plan`);
+  revalidatePath("/dashboard");
+  redirect(`${path}?governance=1`);
+}
+
+export async function createProjectDependency(formData: FormData) {
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    depends_on_project_id: z.string().uuid(),
+    relation_type: z.enum(["depends_on", "blocks", "related"]),
+    notes: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(2000).optional(),
+    ),
+  }).refine((data) => data.project_id !== data.depends_on_project_id, {
+    message: "Um projecto não pode depender de si próprio.",
+  }).safeParse(values(formData));
+
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  await ensureOwned(supabase, "projects", parsed.data.depends_on_project_id, user.id, path);
+
+  const { error } = await supabase.from("project_dependencies").insert({
     ...parsed.data,
+    status: "active",
     user_id: user.id,
   });
 
   if (error) fail(path, error.message);
   revalidatePath(path);
   revalidatePath("/dashboard");
-  redirect(`${path}?created=1`);
+  redirect(`${path}?dependency=1`);
+}
+
+export async function resolveProjectDependency(formData: FormData) {
+  const dependencyId = z.string().uuid().safeParse(formData.get("dependency_id"));
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  if (!dependencyId.success || !projectId.success) fail("/projects", "Dependência inválida.");
+
+  const path = `/projects/${projectId.data}`;
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("project_dependencies")
+    .update({ status: "resolved", resolved_at: new Date().toISOString() })
+    .eq("id", dependencyId.data)
+    .eq("project_id", projectId.data)
+    .eq("user_id", user.id);
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath("/dashboard");
+  redirect(`${path}?dependency=resolved`);
+}
+
+export async function upsertProjectUnitEconomics(formData: FormData) {
+  const optionalFinite = z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? undefined : value),
+    z.coerce.number().finite().optional(),
+  );
+
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    cac: optionalFinite,
+    conversion_rate_pct: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(0).max(100).optional(),
+    ),
+    arpu: optionalFinite,
+    gross_margin_pct: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(-1000).max(100).optional(),
+    ),
+    payback_months: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().min(0).optional(),
+    ),
+    currency: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(8).optional(),
+    ),
+    period_start: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    ),
+    period_end: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    ),
+    source_notes: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(4000).optional(),
+    ),
+  }).refine(
+    (data) => !data.period_start || !data.period_end || data.period_end >= data.period_start,
+    { message: "O fim do período não pode ser anterior ao início." },
+  ).safeParse(values(formData));
+
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { error } = await supabase.from("project_unit_economics").upsert(
+    {
+      user_id: user.id,
+      ...parsed.data,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "project_id" },
+  );
+
+  if (error) fail(path, error.message);
+
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
+  } catch (syncError) {
+    fail(path, syncError instanceof Error ? syncError.message : "Unit economics guardados, mas o plano não foi actualizado.");
+  }
+
+  revalidatePath(path);
+  revalidatePath(`${path}/plan`);
+  revalidatePath("/dashboard");
+  redirect(`${path}?economics=1`);
 }
 
 export async function createDeliverable(formData: FormData) {
@@ -528,6 +1098,7 @@ export async function createBlocker(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   revalidatePath("/dashboard");
+  if (projectId) revalidatePath(`/projects/${projectId}`);
   redirect(`${path}?created=1`);
 }
 
@@ -569,7 +1140,7 @@ export async function finalizeFactoryDecision(formData: FormData) {
   if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
 
   const path = `/project-factory/${parsed.data.factory_case_id}`;
-  const { supabase, user } = await requireUser();
+  const { supabase, user, authUser } = await requireUser();
 
   const { data: factoryCase, error: caseError } = await supabase
     .from("project_factory_cases")
@@ -608,6 +1179,7 @@ export async function finalizeFactoryDecision(formData: FormData) {
           status: "planning",
           progress: 0,
           notes: `Criado pela Project Factory. Origem: ${factoryCase.source ?? "não indicada"}`,
+          owner_id: authUser.id,
         })
         .select("id")
         .single();
@@ -616,6 +1188,25 @@ export async function finalizeFactoryDecision(formData: FormData) {
         fail(path, projectError?.message ?? "Não foi possível criar o projecto.");
       }
       projectId = project.id;
+    }
+
+    const { data: convertedProject, error: convertedProjectError } = await supabase
+      .from("projects")
+      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,next_action,objective_id")
+      .eq("id", projectId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (convertedProjectError || !convertedProject) {
+      fail(path, convertedProjectError?.message ?? "Projecto convertido não encontrado.");
+    }
+
+    if (convertedProject.expected_result?.trim()) {
+      try {
+        await ensureProjectOperationalStructure(supabase, user.id, convertedProject);
+      } catch (structureError) {
+        fail(path, structureError instanceof Error ? structureError.message : "Não foi possível preparar a estrutura operacional.");
+      }
     }
 
     const { error: stageError } = await supabase
@@ -881,6 +1472,7 @@ export async function createEvidence(formData: FormData) {
 
   if (error) fail(path, error.message);
   revalidatePath(path);
+  if (projectId) revalidatePath(`/projects/${projectId}`);
   redirect(`${path}?created=1`);
 }
 
@@ -958,8 +1550,14 @@ export async function upsertCommercialProfile(formData: FormData) {
     .upsert(payload, { onConflict: "project_id" });
 
   if (error) fail(path, error.message);
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
+  } catch (syncError) {
+    fail(path, syncError instanceof Error ? syncError.message : "Perfil guardado, mas o plano não foi actualizado.");
+  }
   revalidatePath(path);
   revalidatePath(`/projects/${parsed.data.project_id}`);
+  revalidatePath(`/projects/${parsed.data.project_id}/plan`);
   redirect(`${path}?saved=1`);
 }
 
@@ -977,7 +1575,13 @@ export async function createCommercialLead(formData: FormData) {
   });
 
   if (error) fail(path, error.message);
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
+  } catch (syncError) {
+    fail(path, syncError instanceof Error ? syncError.message : "Lead criado, mas o plano não foi actualizado.");
+  }
   revalidatePath(path);
+  revalidatePath(`/projects/${parsed.data.project_id}/plan`);
   redirect(`${path}?lead=created`);
 }
 
@@ -1237,122 +1841,10 @@ export async function prepareProjectOperationalStructure(formData: FormData) {
 
   if (projectError || !project) fail(path, projectError?.message ?? "Projecto não encontrado.");
 
-  let objectiveId = project.objective_id as string | null;
-
-  if (!objectiveId) {
-    const { data: objective, error } = await supabase
-      .from("objectives")
-      .insert({
-        user_id: user.id,
-        title: project.title,
-        description: project.description,
-        expected_result: project.expected_result,
-        priority: project.priority,
-        status: "draft",
-        start_date: project.start_date,
-        due_date: project.due_date,
-        progress: Number(project.progress ?? 0),
-        notes: project.notes,
-      })
-      .select("id")
-      .single();
-
-    if (error || !objective) fail(path, error?.message ?? "Não foi possível preparar o objectivo.");
-    objectiveId = objective.id;
-
-    const { error: linkError } = await supabase
-      .from("projects")
-      .update({ objective_id: objectiveId })
-      .eq("id", project.id)
-      .eq("user_id", user.id);
-
-    if (linkError) fail(path, linkError.message);
-  }
-
-  const { data: existingDeliverables } = await supabase
-    .from("deliverables")
-    .select("id,title,status,priority,due_date,completion_criteria")
-    .eq("user_id", user.id)
-    .eq("project_id", project.id)
-    .order("created_at", { ascending: true })
-    .limit(1);
-
-  let deliverableId = existingDeliverables?.[0]?.id ?? null;
-
-  if (!deliverableId && project.expected_result?.trim()) {
-    const { data: deliverable, error } = await supabase
-      .from("deliverables")
-      .insert({
-        user_id: user.id,
-        project_id: project.id,
-        title: `Resultado de ${project.title}`,
-        description: project.expected_result.trim(),
-        priority: project.priority,
-        status: "pending",
-        due_date: project.due_date,
-        progress: 0,
-        completion_criteria: project.expected_result.trim(),
-      })
-      .select("id")
-      .single();
-
-    if (error || !deliverable) fail(path, error?.message ?? "Não foi possível preparar o entregável.");
-    deliverableId = deliverable.id;
-  }
-
-  const { count: actionCount, error: actionCountError } = await supabase
-    .from("actions")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("project_id", project.id);
-
-  if (actionCountError) fail(path, actionCountError.message);
-
-  if ((actionCount ?? 0) === 0) {
-    const actionTitle =
-      project.next_action?.trim() ||
-      (project.expected_result?.trim() ? `Avançar resultado de ${project.title}` : null);
-
-    if (actionTitle) {
-      const { error } = await supabase.from("actions").insert({
-        user_id: user.id,
-        project_id: project.id,
-        deliverable_id: deliverableId,
-        title: actionTitle,
-        description: project.description,
-        priority: project.priority,
-        status: "pending",
-        completion_criteria: project.expected_result,
-        is_next_action: false,
-      });
-
-      if (error) fail(path, error.message);
-    }
-  }
-
-  const { count: metricCount, error: metricCountError } = await supabase
-    .from("metrics")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("project_id", project.id);
-
-  if (metricCountError) fail(path, metricCountError.message);
-
-  if ((metricCount ?? 0) === 0 && project.expected_result?.trim()) {
-    const { error } = await supabase.from("metrics").insert({
-      user_id: user.id,
-      objective_id: objectiveId,
-      project_id: project.id,
-      name: `Progresso de ${project.title}`,
-      description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
-      metric_type: "custom",
-      unit: "%",
-      baseline_value: 0,
-      target_value: 100,
-      current_value: Number(project.progress ?? 0),
-    });
-
-    if (error) fail(path, error.message);
+  try {
+    await ensureProjectOperationalStructure(supabase, user.id, project);
+  } catch (structureError) {
+    fail(path, structureError instanceof Error ? structureError.message : "Não foi possível preparar a estrutura operacional.");
   }
 
   revalidatePath(path);

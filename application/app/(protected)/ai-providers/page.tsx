@@ -1,11 +1,19 @@
 import { HardDrive, RefreshCw, ShieldCheck } from "lucide-react";
+import { registerAIProviderProfile, validateAIProviderProfile } from "@/app/(protected)/mutations";
+import { Field, Select } from "@/components/form-fields";
+import { primaryButtonClass } from "@/components/ui";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 import { displayLabel } from "@/lib/display-label";
 
-export default async function AIFornecedoresPage() {
+export default async function AIFornecedoresPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ health?: string; health_message?: string }>;
+}) {
+  const params = await searchParams;
   const { supabase, user } = await requireAdmin();
 
   const [{ data: providers, error: providerError }, { data: queue, error: queueError }] = await Promise.all([
@@ -34,6 +42,19 @@ export default async function AIFornecedoresPage() {
         eyebrow="Administração"
         title="Configuração de IA"
       />
+
+      {params.health && (
+        <Card className="mb-6 p-5">
+          <p className="font-semibold text-[var(--cc-foreground)]">
+            Validação IA: {displayLabel(params.health)}
+          </p>
+          {params.health_message && (
+            <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+              {params.health_message}
+            </p>
+          )}
+        </Card>
+      )}
 
       <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="p-4">
@@ -88,6 +109,42 @@ export default async function AIFornecedoresPage() {
 
       {error && <Card className="mb-6 p-5 text-sm text-red-700">{error}</Card>}
 
+      <Card className="mb-6 p-5">
+        <h2 className="font-semibold text-[var(--cc-foreground)]">Registar provider</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          Este registo não activa a IA. O provider permanece desactivado e com health desconhecido até ser validado.
+        </p>
+        <form action={registerAIProviderProfile} className="mt-4 grid gap-4 md:grid-cols-2">
+          <Select label="Provider" name="provider" defaultValue="qwen_local">
+            <option value="qwen_local">Qwen local</option>
+            <option value="koboldcpp_local">KoboldCPP local</option>
+            <option value="openai">OpenAI</option>
+            <option value="groq">Groq</option>
+            <option value="huggingchat">HuggingChat</option>
+            <option value="other">Outro</option>
+          </Select>
+          <Field label="Nome" name="label" required />
+          <Select label="Modo" name="mode" defaultValue="local">
+            <option value="local">Local</option>
+            <option value="cloud">Cloud</option>
+          </Select>
+          <Field label="Prioridade" name="priority" type="number" min={1} max={100} defaultValue={10} />
+          <Select label="Classe de custo" name="cost_class" defaultValue="free">
+            <option value="free">Gratuito</option>
+            <option value="low">Baixo</option>
+            <option value="medium">Médio</option>
+            <option value="high">Alto</option>
+            <option value="unknown">Desconhecido</option>
+          </Select>
+          <Field label="Modelo" name="model_hint" />
+          <Field label="Endpoint" name="endpoint_hint" placeholder="Só configuração; sem credenciais" />
+          <Field label="Capacidades" name="capabilities" placeholder="chat, diagnóstico, código" />
+          <div className="md:col-span-2">
+            <button className={primaryButtonClass} type="submit">Registar sem activar</button>
+          </div>
+        </form>
+      </Card>
+
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="p-5 xl:col-span-2">
           <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
@@ -115,6 +172,9 @@ export default async function AIFornecedoresPage() {
                     Prioridade {provider.priority} · custo {displayLabel(provider.cost_class)}
                     {provider.model_hint ? ` · modelo ${provider.model_hint}` : ""}
                   </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Última validação: {provider.last_health_at ? formatDateTime(provider.last_health_at) : "ainda não realizada"}
+                  </p>
                   {Array.isArray(provider.capabilities) && provider.capabilities.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {provider.capabilities
@@ -126,6 +186,15 @@ export default async function AIFornecedoresPage() {
                         ))}
                     </div>
                   )}
+                  <form action={validateAIProviderProfile} className="mt-4">
+                    <input type="hidden" name="provider_id" value={provider.id} />
+                    <button
+                      type="submit"
+                      className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                    >
+                      Validar agora
+                    </button>
+                  </form>
                 </div>
               ))}
             </div>
