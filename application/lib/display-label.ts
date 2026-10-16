@@ -85,6 +85,23 @@ const LABELS: Record<string, string> = {
   product: "Produto",
   qa: "Qualidade",
   analytics: "Análise",
+
+  depends_on: "Depende de",
+  blocks: "Bloqueia",
+  related: "Relacionado",
+  validate: "Validar",
+  launch: "Lançar",
+  scale: "Escalar",
+  hold: "Esperar",
+  stop: "Parar",
+  ready: "Pronto",
+  cloud: "Nuvem",
+  local: "Local",
+  healthy: "Saudável",
+  degraded: "Degradado",
+  offline: "Indisponível",
+  unknown: "Desconhecido",
+  free: "Gratuito",
 };
 
 export function displayLabel(value?: string | null) {
