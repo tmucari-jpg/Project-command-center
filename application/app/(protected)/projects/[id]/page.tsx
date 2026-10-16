@@ -146,7 +146,7 @@ export default async function ProjectHubPage({
         <Link className={secondaryButtonClass} href={`/decisions?project_id=${project.id}`}>
           Decisões
         </Link>
-        <Link className={secondaryButtonClass} href="/evidence">
+        <Link className={secondaryButtonClass} href={`/evidence?project_id=${project.id}`}>
           Evidências
         </Link>
       </div>
