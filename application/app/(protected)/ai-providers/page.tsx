@@ -1,4 +1,7 @@
 import { HardDrive, RefreshCw, ShieldCheck } from "lucide-react";
+import { registerAIProviderProfile } from "@/app/(protected)/mutations";
+import { Field, Select } from "@/components/form-fields";
+import { primaryButtonClass } from "@/components/ui";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
@@ -87,6 +90,42 @@ export default async function AIFornecedoresPage() {
       </Card>
 
       {error && <Card className="mb-6 p-5 text-sm text-red-700">{error}</Card>}
+
+      <Card className="mb-6 p-5">
+        <h2 className="font-semibold text-[var(--cc-foreground)]">Registar provider</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          Este registo não activa a IA. O provider permanece desactivado e com health desconhecido até ser validado.
+        </p>
+        <form action={registerAIProviderProfile} className="mt-4 grid gap-4 md:grid-cols-2">
+          <Select label="Provider" name="provider" defaultValue="qwen_local">
+            <option value="qwen_local">Qwen local</option>
+            <option value="koboldcpp_local">KoboldCPP local</option>
+            <option value="openai">OpenAI</option>
+            <option value="groq">Groq</option>
+            <option value="huggingchat">HuggingChat</option>
+            <option value="other">Outro</option>
+          </Select>
+          <Field label="Nome" name="label" required />
+          <Select label="Modo" name="mode" defaultValue="local">
+            <option value="local">Local</option>
+            <option value="cloud">Cloud</option>
+          </Select>
+          <Field label="Prioridade" name="priority" type="number" min={1} max={100} defaultValue={10} />
+          <Select label="Classe de custo" name="cost_class" defaultValue="free">
+            <option value="free">Gratuito</option>
+            <option value="low">Baixo</option>
+            <option value="medium">Médio</option>
+            <option value="high">Alto</option>
+            <option value="unknown">Desconhecido</option>
+          </Select>
+          <Field label="Modelo" name="model_hint" />
+          <Field label="Endpoint" name="endpoint_hint" placeholder="Só configuração; sem credenciais" />
+          <Field label="Capacidades" name="capabilities" placeholder="chat, diagnóstico, código" />
+          <div className="md:col-span-2">
+            <button className={primaryButtonClass} type="submit">Registar sem activar</button>
+          </div>
+        </form>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="p-5 xl:col-span-2">
