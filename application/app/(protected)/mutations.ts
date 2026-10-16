@@ -38,6 +38,7 @@ import { selectExecutionRoute } from "@/lib/orchestrator";
 import { createN8nCallback, dispatchToN8n } from "@/lib/n8n";
 import { automationCodeFromName } from "@/lib/automation";
 import { executionArenaDefaults } from "@/lib/execution-arena";
+import { buildStrategyExecutionPlan } from "@/lib/project-plan";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -417,6 +418,153 @@ export async function createObjective(formData: FormData) {
 }
 
 
+
+async function syncProjectStrategyExecutionPlan(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  projectId: string,
+) {
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,title,description,expected_result,priority,status,progress,next_action")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (projectError || !project) {
+    throw new Error(projectError?.message ?? "Projecto não encontrado para preparar o plano.");
+  }
+
+  const { data: factory, error: factoryError } = await supabase
+    .from("project_factory_cases")
+    .select("id,problem,target_user,expected_value,constraints")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (factoryError) throw new Error(factoryError.message);
+
+  const [
+    reportResult,
+    intelligenceResult,
+    commercialResult,
+    deliverablesResult,
+    actionsResult,
+    blockersResult,
+    evidenceResult,
+    leadsResult,
+    metricsResult,
+  ] = await Promise.all([
+    factory?.id
+      ? supabase
+          .from("factory_reports")
+          .select("market,competitors,existing_solutions,differentiation,market_trend,revenue_model,estimated_cost,risks")
+          .eq("factory_case_id", factory.id)
+          .eq("user_id", userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    factory?.id
+      ? supabase
+          .from("factory_competitive_intelligence")
+          .select("market_summary,competitors,existing_solutions,differentiation,trends,risks_barriers")
+          .eq("factory_case_id", factory.id)
+          .eq("user_id", userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    supabase
+      .from("project_commercial_profiles")
+      .select("id,offer,ideal_customer,price,currency,channel,validation_status")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase.from("deliverables").select("id").eq("project_id", projectId).eq("user_id", userId),
+    supabase.from("actions").select("id").eq("project_id", projectId).eq("user_id", userId),
+    supabase.from("blockers").select("id,status").eq("project_id", projectId).eq("user_id", userId),
+    supabase.from("evidence").select("id").eq("project_id", projectId).eq("user_id", userId),
+    supabase
+      .from("commercial_leads")
+      .select("id,next_action,next_action_at,created_at")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .order("next_action_at", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("metrics")
+      .select("name,unit,baseline_value,target_value,current_value")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .order("created_at"),
+  ]);
+
+  const firstError =
+    reportResult.error ??
+    intelligenceResult.error ??
+    commercialResult.error ??
+    deliverablesResult.error ??
+    actionsResult.error ??
+    blockersResult.error ??
+    evidenceResult.error ??
+    leadsResult.error ??
+    metricsResult.error;
+
+  if (firstError) throw new Error(firstError.message);
+
+  const nextSalesAction =
+    (leadsResult.data ?? []).find((lead) => typeof lead.next_action === "string" && lead.next_action.trim())
+      ?.next_action ?? null;
+
+  const plan = buildStrategyExecutionPlan({
+    project,
+    factory,
+    report: reportResult.data,
+    intelligence: intelligenceResult.data,
+    commercial: commercialResult.data,
+    operational: {
+      deliverables: deliverablesResult.data?.length ?? 0,
+      actions: actionsResult.data?.length ?? 0,
+      openBlockers: (blockersResult.data ?? []).filter(
+        (item) => !["resolved", "ignored"].includes(item.status),
+      ).length,
+      evidence: evidenceResult.data?.length ?? 0,
+      leads: leadsResult.data?.length ?? 0,
+      nextSalesAction,
+    },
+    metrics: metricsResult.data ?? [],
+  });
+
+  const { error } = await supabase.from("project_strategy_execution_plans").upsert(
+    {
+      user_id: userId,
+      project_id: projectId,
+      ...plan,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "project_id" },
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+export async function refreshProjectStrategyExecutionPlan(formData: FormData) {
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  if (!projectId.success) fail("/projects", "Projecto inválido.");
+
+  const path = `/projects/${projectId.data}/plan`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", projectId.data, user.id, path);
+
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, projectId.data);
+  } catch (error) {
+    fail(path, error instanceof Error ? error.message : "Não foi possível actualizar o plano.");
+  }
+
+  revalidatePath(path);
+  revalidatePath(`/projects/${projectId.data}`);
+  redirect(`${path}?updated=1`);
+}
+
 type OperationalProjectContext = {
   id: string;
   title: string;
@@ -554,6 +702,7 @@ async function ensureProjectOperationalStructure(
     if (error) throw new Error(error.message);
   }
 
+  await syncProjectStrategyExecutionPlan(supabase, userId, project.id);
   return { objectiveId, deliverableId };
 }
 
@@ -1178,8 +1327,14 @@ export async function upsertCommercialProfile(formData: FormData) {
     .upsert(payload, { onConflict: "project_id" });
 
   if (error) fail(path, error.message);
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
+  } catch (syncError) {
+    fail(path, syncError instanceof Error ? syncError.message : "Perfil guardado, mas o plano não foi actualizado.");
+  }
   revalidatePath(path);
   revalidatePath(`/projects/${parsed.data.project_id}`);
+  revalidatePath(`/projects/${parsed.data.project_id}/plan`);
   redirect(`${path}?saved=1`);
 }
 
@@ -1197,7 +1352,13 @@ export async function createCommercialLead(formData: FormData) {
   });
 
   if (error) fail(path, error.message);
+  try {
+    await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
+  } catch (syncError) {
+    fail(path, syncError instanceof Error ? syncError.message : "Lead criado, mas o plano não foi actualizado.");
+  }
   revalidatePath(path);
+  revalidatePath(`/projects/${parsed.data.project_id}/plan`);
   redirect(`${path}?lead=created`);
 }
 
