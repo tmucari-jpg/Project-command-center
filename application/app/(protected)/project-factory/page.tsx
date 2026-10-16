@@ -39,19 +39,19 @@ export default async function ProjectFactoryPage({
     <>
       <PageHeader
         eyebrow="Novos projectos"
-        title="Criar e preparar um projecto"
+        title="Avaliar um projecto"
       />
       <FlashMessage
         error={params.error ?? error?.message}
         created={params.created}
-        message={params.created ? "Iniciativa recebida. A preparação foi iniciada." : undefined}
+        message={params.created ? "Projecto recebido. A avaliação foi iniciada." : undefined}
       />
 
       <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <Card className="p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Nova iniciativa</h2>
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo projecto para avaliação</h2>
             </div>
             
           </div>
@@ -84,14 +84,14 @@ export default async function ProjectFactoryPage({
               </div>
             </ManualEntry>
 
-            <button className={primaryButtonClass} type="submit">Continuar para análise</button>
+            <button className={primaryButtonClass} type="submit">Iniciar avaliação</button>
           </form>
 
         </Card>
 
         <Card>
           <div className="border-b border-[var(--cc-border)] p-5">
-            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Em preparação</h2>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Projectos em avaliação</h2>
           </div>
           <div className="p-5">
             {!cases?.length ? (
@@ -111,7 +111,7 @@ export default async function ProjectFactoryPage({
                     </div>
                     <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">{item.problem}</p>
                     <div className="mt-4">
-                      <Link className={secondaryButtonClass} href={`/project-factory/${item.id}`}>Rever preparação</Link>
+                      <Link className={secondaryButtonClass} href={`/project-factory/${item.id}`}>Rever avaliação</Link>
                     </div>
                   </article>
                 ))}
