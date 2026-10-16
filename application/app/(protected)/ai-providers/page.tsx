@@ -119,7 +119,7 @@ export default async function AIFornecedoresPage() {
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {provider.capabilities
                         .filter((value: unknown): value is string => typeof value === "string")
-                        .map((capability) => (
+                        .map((capability: string) => (
                           <span key={capability} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
                             {displayLabel(capability)}
                           </span>
