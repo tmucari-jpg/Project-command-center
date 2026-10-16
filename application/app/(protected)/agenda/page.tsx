@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarCheck2, Clock3, FolderKanban, TriangleAlert } from "lucide-react";
+import { CalendarCheck2, Clock3, TriangleAlert } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
