@@ -14,7 +14,19 @@ export default async function AIFornecedoresPage() {
   ]);
 
   const error = providerError?.message ?? queueError?.message;
-  const operationalProviders = (providers ?? []).filter((provider) => provider.enabled && provider.last_health_status !== "offline");
+  const enabledProviders = (providers ?? []).filter((provider) => provider.enabled);
+  const operationalProviders = enabledProviders.filter((provider) => provider.last_health_status !== "offline");
+  const queuedOperations = (queue ?? []).filter((item) => item.status !== "completed" && item.status !== "cancelled");
+  const failedOperations = (queue ?? []).filter((item) => item.status === "failed" || Boolean(item.last_error));
+  const capabilities = Array.from(
+    new Set(
+      operationalProviders.flatMap((provider) =>
+        Array.isArray(provider.capabilities)
+          ? provider.capabilities.filter((value: unknown): value is string => typeof value === "string")
+          : [],
+      ),
+    ),
+  );
 
   return (
     <>
@@ -22,6 +34,25 @@ export default async function AIFornecedoresPage() {
         eyebrow="Administração"
         title="Configuração de IA"
       />
+
+      <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card className="p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Serviços configurados</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-950">{providers?.length ?? 0}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operacionais</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-950">{operationalProviders.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operações pendentes</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-950">{queuedOperations.length}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Falhas recentes</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-950">{failedOperations.length}</p>
+        </Card>
+      </div>
 
       <Card className="mb-6 p-5">
         <h2 className="font-semibold text-[var(--cc-foreground)]">Motor de autonomia e melhoria</h2>
@@ -35,11 +66,24 @@ export default async function AIFornecedoresPage() {
 
       <Card className="mb-6 border-amber-200 bg-amber-50/50 p-5">
         <p className="font-semibold text-amber-900">
-          {operationalProviders.length ? "Existe pelo menos um fornecedor disponível." : "Nenhum serviço inteligente está disponível neste ambiente."}
+          {operationalProviders.length
+            ? `${operationalProviders.length} serviço(s) inteligente(s) operacional(is).`
+            : "IA ainda não validada neste ambiente."}
         </p>
         <p className="mt-2 text-sm leading-6 text-amber-900/80">
-          O PCC apresenta apenas capacidades que estejam efectivamente disponíveis e validadas.
+          {operationalProviders.length
+            ? "O PCC pode usar apenas as capacidades abaixo, respeitando prioridade, custo e estado de saúde."
+            : "Nenhum fornecedor está actualmente registado como operacional. O PCC não deve fingir capacidades de IA enquanto não houver um serviço configurado e verificado."}
         </p>
+        {capabilities.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {capabilities.map((capability: string) => (
+              <span key={capability} className="rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-amber-900">
+                {displayLabel(capability)}
+              </span>
+            ))}
+          </div>
+        )}
       </Card>
 
       {error && <Card className="mb-6 p-5 text-sm text-red-700">{error}</Card>}
@@ -61,11 +105,27 @@ export default async function AIFornecedoresPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium text-slate-950">{provider.label}</p>
-                      <p className="mt-1 text-xs text-slate-500">{provider.label}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {displayLabel(provider.provider)} · {displayLabel(provider.mode)}
+                      </p>
                     </div>
                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{displayLabel(provider.last_health_status)}</span>
                   </div>
-                  <p className="mt-3 text-xs text-slate-500">Prioridade {provider.priority} · custo {displayLabel(provider.cost_class)}</p>
+                  <p className="mt-3 text-xs text-slate-500">
+                    Prioridade {provider.priority} · custo {displayLabel(provider.cost_class)}
+                    {provider.model_hint ? ` · modelo ${provider.model_hint}` : ""}
+                  </p>
+                  {Array.isArray(provider.capabilities) && provider.capabilities.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {provider.capabilities
+                        .filter((value: unknown): value is string => typeof value === "string")
+                        .map((capability: string) => (
+                          <span key={capability} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+                            {displayLabel(capability)}
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

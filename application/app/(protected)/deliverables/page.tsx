@@ -10,6 +10,7 @@ import { PRIORITIES } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
+import { prepareDeliverableDraft } from "@/lib/project-autonomy";
 
 export default async function DeliverablesPage({
   searchParams,
@@ -33,7 +34,7 @@ export default async function DeliverablesPage({
     deliverablesQuery.order("created_at", { ascending: false }),
     supabase
       .from("projects")
-      .select("id,title")
+      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes")
       .eq("user_id", user.id)
       .order("title"),
   ]);
@@ -42,7 +43,9 @@ export default async function DeliverablesPage({
     ? selectedProjectId
     : "";
 
-  const effectiveProjectTitle = (projects ?? []).find((project) => project.id === effectiveProjectId)?.title;
+  const effectiveProject = (projects ?? []).find((project) => project.id === effectiveProjectId);
+  const effectiveProjectTitle = effectiveProject?.title;
+  const preparedDraft = prepareDeliverableDraft(effectiveProject);
 
   return (
     <>
@@ -53,26 +56,31 @@ export default async function DeliverablesPage({
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
       <div className="space-y-6">
-        <ManualEntry>
+        <ManualEntry defaultOpen={Boolean(preparedDraft)}>
           <h2 className="text-lg font-semibold text-slate-950">Novo entregável</h2>
           <form action={createDeliverable} className="mt-5 space-y-4">
+            {preparedDraft && (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                Preparado automaticamente a partir do resultado esperado do projecto. Reveja antes de guardar.
+              </p>
+            )}
             <Select label="Projecto" name="project_id" required defaultValue={effectiveProjectId}>
               <option value="" disabled>Seleccionar projecto</option>
               {(projects ?? []).map((project) => (
                 <option key={project.id} value={project.id}>{project.title}</option>
               ))}
             </Select>
-            <Field label="Título" name="title" required />
-            <TextArea label="Descrição" name="description" />
+            <Field label="Título" name="title" required defaultValue={preparedDraft?.title} />
+            <TextArea label="Descrição" name="description" defaultValue={preparedDraft?.description} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Prioridade" name="priority" defaultValue="medium">
+              <Select label="Prioridade" name="priority" defaultValue={preparedDraft?.priority ?? "medium"}>
                 {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
               <input type="hidden" name="status" value="pending" />
               <input type="hidden" name="progress" value="0" />
-              <Field label="Prazo" name="due_date" type="date" />
+              <Field label="Prazo" name="due_date" type="date" defaultValue={preparedDraft?.due_date} />
             </div>
-            <TextArea label="Critério de conclusão" name="completion_criteria" />
+            <TextArea label="Critério de conclusão" name="completion_criteria" defaultValue={preparedDraft?.completion_criteria} />
             <button className={primaryButtonClass} type="submit">Criar entregável</button>
           </form>
         </ManualEntry>
