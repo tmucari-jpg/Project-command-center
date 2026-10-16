@@ -48,10 +48,12 @@ export default async function BlockersPage({
     : (actions ?? []);
 
   const now = new Date();
+  type BlockerRow = NonNullable<typeof blockers>[number];
+
   const blockerGroups = new Map<string, {
     projectId: string | null;
     title: string;
-    blockers: NonNullable<typeof blockers>;
+    blockers: BlockerRow[];
     open: number;
     overdue: number;
   }>();
@@ -63,7 +65,7 @@ export default async function BlockersPage({
     const group = blockerGroups.get(key) ?? {
       projectId,
       title: relation?.title ?? "Sem projecto",
-      blockers: [],
+      blockers: [] as BlockerRow[],
       open: 0,
       overdue: 0,
     };
