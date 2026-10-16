@@ -9,15 +9,29 @@ import { requireUser } from "@/lib/auth";
 
 const STAGE_LABELS: Record<string, string> = {
   new_idea: "Ideia recebida",
-  viability: "Em análise",
-  competitive_intelligence: "Inteligência competitiva",
-  validation: "Validação",
+  viability: "Em avaliação",
+  competitive_intelligence: "Análise de mercado",
+  validation: "Avaliação de viabilidade",
   execution_arena: "Teste",
-  factory_report: "Preparação final",
+  factory_report: "Síntese para decisão",
   decision: "Decisão",
-  converted_to_project: "Convertido em projecto",
+  converted_to_project: "Aprovado e em execução",
   on_hold: "Em espera",
-  killed: "Encerrado",
+  killed: "Não aprovado",
+};
+
+const VIABILITY_LABELS: Record<string, string> = {
+  viable: "Viável",
+  conditional: "Viável com condições",
+  not_viable: "Não viável",
+  insufficient: "Informação insuficiente",
+};
+
+const VIABILITY_RECOMMENDATIONS: Record<string, string> = {
+  viable: "A avaliação suporta avançar para decisão de investimento.",
+  conditional: "Só deve avançar se as condições críticas forem cumpridas.",
+  not_viable: "A avaliação não recomenda investir recursos neste momento.",
+  insufficient: "É necessário recolher mais informação antes de decidir.",
 };
 
 export default async function FactoryCasePage({
@@ -131,8 +145,14 @@ export default async function FactoryCasePage({
 
   const autoDecisionRationale =
     factoryReport?.decision_rationale ??
-    validation?.result_summary ??
-    `Decisão baseada na evidência recolhida para "${factoryCase.title}", no valor esperado e nos riscos identificados ao longo da validação.`;
+    (
+      [
+        validation?.viability_summary,
+        validation?.conditions_to_proceed ? `Condições para avançar: ${validation.conditions_to_proceed}` : null,
+        validation?.result_summary,
+      ].filter(Boolean).join("\n\n") ||
+      `Decisão baseada na evidência recolhida para "${factoryCase.title}", no valor esperado e nos riscos identificados ao longo da avaliação.`
+    );
 
   return (
     <>
@@ -152,9 +172,9 @@ export default async function FactoryCasePage({
           query.decision
             ? "Decisão final registada."
             : query.report
-              ? "Preparação final consolidada. O caso avançou para Decisão."
+              ? "Síntese consolidada. O caso avançou para Decisão."
               : query.validated
-                ? "Validação concluída e etapa seguinte definida."
+                ? "Avaliação de viabilidade concluída."
                 : query.completed
                   ? "Inteligência Competitiva concluída. O caso avançou para Validação."
                   : "Inteligência Competitiva guardada como rascunho."
@@ -250,9 +270,10 @@ export default async function FactoryCasePage({
 
       {["validation", "execution_arena", "factory_report", "on_hold"].includes(factoryCase.stage) && (
         <Card className="mt-6 p-5">
-          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Validação</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Avaliação de viabilidade</h2>
           <form action={saveFactoryValidation} className="mt-5 space-y-4">
             <input type="hidden" name="factory_case_id" value={factoryCase.id} />
+
             <TextArea
               label="Hipóteses críticas"
               name="critical_hypotheses"
@@ -269,37 +290,56 @@ export default async function FactoryCasePage({
               label="Evidência observada"
               name="evidence"
               required
-              placeholder="Registe apenas evidência real: entrevistas, testes, métricas, retorno dos utilizadores, documentos ou observações."
+              placeholder="Registe evidência real: testes, entrevistas, métricas, documentos ou observações."
               defaultValue={validation?.evidence ?? ""}
             />
-            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
-              <p className="text-sm font-semibold text-[var(--cc-foreground)]">Resultado da validação</p>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-secondary)]">
-                {validation?.result_summary ?? autoValidation.result_summary}
-              </p>
-            </div>
+
             <Select
-              label="Recomendação"
-              name="recommendation"
+              label="Conclusão de viabilidade"
+              name="viability_status"
               required
-              defaultValue={validation?.recommendation ?? ""}
+              defaultValue={validation?.viability_status ?? ""}
             >
               <option value="" disabled>Seleccione após rever a evidência</option>
-              <option value="proceed">Avançar</option>
-              <option value="modify">Ajustar e validar novamente</option>
-              <option value="hold">Colocar em espera</option>
+              <option value="viable">Viável</option>
+              <option value="conditional">Viável com condições</option>
+              <option value="not_viable">Não viável</option>
+              <option value="insufficient">Informação insuficiente</option>
             </Select>
+
+            <TextArea
+              label="Fundamentação da viabilidade"
+              name="viability_summary"
+              defaultValue={validation?.viability_summary ?? ""}
+              placeholder="Se ficar vazio, o PCC prepara uma fundamentação com base na evidência."
+            />
+
+            <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Condições e informação em falta</summary>
+              <div className="mt-4 space-y-4">
+                <TextArea
+                  label="Condições para avançar"
+                  name="conditions_to_proceed"
+                  defaultValue={validation?.conditions_to_proceed ?? ""}
+                />
+                <TextArea
+                  label="Informação ainda necessária"
+                  name="missing_information"
+                  defaultValue={validation?.missing_information ?? ""}
+                />
+              </div>
+            </details>
+
             <label className="flex min-h-12 items-center gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] px-4 text-sm text-[var(--cc-foreground)]">
               <input
                 type="checkbox"
                 name="arena_required"
                 defaultChecked={validation?.arena_required ?? false}
               />
-              Teste necessário antes da preparação final
+              Exige teste adicional antes da decisão
             </label>
-            <button className={primaryButtonClass} type="submit">
-              Concluir Validação
-            </button>
+
+            <button className={primaryButtonClass} type="submit">Concluir avaliação</button>
             {factoryCase.stage === "execution_arena" && (
               <Link className={secondaryButtonClass} href={`/execution-arena?factory_case_id=${factoryCase.id}`}>
                 Abrir teste
@@ -309,9 +349,32 @@ export default async function FactoryCasePage({
         </Card>
       )}
 
+      {validation?.viability_status && (
+        <Card className="mt-6 p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--cc-secondary)]">Conclusão da avaliação</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1.5 text-sm font-semibold text-[var(--cc-foreground)]">
+              {VIABILITY_LABELS[validation.viability_status] ?? validation.viability_status}
+            </span>
+            <p className="text-sm text-[var(--cc-secondary)]">
+              {VIABILITY_RECOMMENDATIONS[validation.viability_status] ?? ""}
+            </p>
+          </div>
+          {validation.viability_summary && (
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{validation.viability_summary}</p>
+          )}
+          {validation.conditions_to_proceed && (
+            <p className="mt-3 text-sm text-[var(--cc-foreground)]"><span className="font-semibold">Condições:</span> {validation.conditions_to_proceed}</p>
+          )}
+          {validation.missing_information && (
+            <p className="mt-3 text-sm text-[var(--cc-foreground)]"><span className="font-semibold">Informação em falta:</span> {validation.missing_information}</p>
+          )}
+        </Card>
+      )}
+
       {["factory_report", "decision", "converted_to_project", "on_hold", "killed"].includes(factoryCase.stage) && (
         <Card className="mt-6 p-5">
-          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Preparação final</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Síntese para decisão</h2>
           <form action={saveFactoryReport} className="mt-5 space-y-4">
             <input type="hidden" name="factory_case_id" value={factoryCase.id} />
             <input type="hidden" name="problem_identified" value={autoFactoryReport.problem_identified} />
@@ -339,7 +402,7 @@ export default async function FactoryCasePage({
               <Field label="Probabilidade de execução (%)" name="execution_probability" type="number" min={0} max={100} defaultValue={factoryReport?.execution_probability ?? undefined} />
               <Field label="Probabilidade de adopção (%)" name="adoption_probability" type="number" min={0} max={100} defaultValue={factoryReport?.adoption_probability ?? undefined} />
             </div>
-            <button className={primaryButtonClass} type="submit">Consolidar preparação final</button>
+            <button className={primaryButtonClass} type="submit">Consolidar avaliação</button>
           </form>
         </Card>
       )}
@@ -349,7 +412,7 @@ export default async function FactoryCasePage({
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Decisão</h2>
           <form action={finalizeFactoryDecision} className="mt-5 space-y-4">
             <input type="hidden" name="factory_case_id" value={factoryCase.id} />
-            <Select label="Decisão final" name="decision" required defaultValue={factoryReport.final_decision ?? ""}>
+            <Select label="Decisão sobre o projecto" name="decision" required defaultValue={factoryReport.final_decision ?? ""}>
               <option value="" disabled>Seleccione a decisão final</option>
               <option value="go">AVANÇAR</option>
               <option value="modify">AJUSTAR</option>

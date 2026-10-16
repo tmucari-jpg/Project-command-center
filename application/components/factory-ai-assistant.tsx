@@ -4,7 +4,7 @@ import { useState } from "react";
 import { secondaryButtonClass } from "@/components/ui";
 import { parseFactorySuggestion, type FactorySuggestion } from "@/lib/factory-ai";
 
-const INSTRUCTIONS = `Actua como assistente do Project Command Center. A partir da ideia do utilizador, devolve APENAS JSON válido com as chaves: title, problem, expected_value, target_user, description, constraints. Escreve em português de Moçambique, claro, executivo e conciso. Não uses markdown.`;
+const INSTRUCTIONS = `Actua como assistente do Project Command Center. A partir da ideia do utilizador, prepara apenas a informação necessária para iniciar uma avaliação de viabilidade. Devolve APENAS JSON válido com as chaves: title, problem, expected_value, target_user. Escreve em português de Moçambique, claro, executivo e conciso. Não inventes dados. Não uses markdown.`;
 
 async function callLocal(input: string) {
   const response = await fetch("http://127.0.0.1:8080/v1/chat/completions", {
@@ -61,8 +61,8 @@ function deterministicSuggestion(input: string): FactorySuggestion {
     problem: `Necessidade de estruturar e executar: ${clean}`,
     expected_value: expectedValue,
     target_user: targetUser,
-    description: clean,
-    constraints: "Validar recursos, prazo, responsáveis, orçamento e critérios de sucesso antes da execução.",
+    description: undefined,
+    constraints: undefined,
   };
 }
 

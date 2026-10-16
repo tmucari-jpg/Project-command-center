@@ -16,6 +16,7 @@ export function Field({
   step,
   placeholder,
   defaultValue,
+  help,
 }: {
   label: string;
   name: string;
@@ -26,10 +27,12 @@ export function Field({
   step?: string | number;
   placeholder?: string;
   defaultValue?: string | number;
+  help?: string;
 }) {
   return (
     <label className={labelClass}>
       {label}
+      {help && <span className="mt-1 block text-xs font-normal leading-5 text-[var(--cc-secondary)]">{help}</span>}
       <input
         className={inputClass}
         name={name}
@@ -51,16 +54,19 @@ export function TextArea({
   placeholder,
   required,
   defaultValue,
+  help,
 }: {
   label: string;
   name: string;
   placeholder?: string;
   required?: boolean;
   defaultValue?: string;
+  help?: string;
 }) {
   return (
     <label className={labelClass}>
       {label}
+      {help && <span className="mt-1 block text-xs font-normal leading-5 text-[var(--cc-secondary)]">{help}</span>}
       <textarea className={textareaClass} name={name} placeholder={placeholder} required={required} defaultValue={defaultValue} />
     </label>
   );
@@ -72,16 +78,19 @@ export function Select({
   required,
   defaultValue,
   children,
+  help,
 }: {
   label: string;
   name: string;
   required?: boolean;
   defaultValue?: string;
   children: React.ReactNode;
+  help?: string;
 }) {
   return (
     <label className={labelClass}>
       {label}
+      {help && <span className="mt-1 block text-xs font-normal leading-5 text-[var(--cc-secondary)]">{help}</span>}
       <select
         className={selectClass}
         name={name}

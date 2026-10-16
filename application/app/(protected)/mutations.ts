@@ -1189,6 +1189,18 @@ export async function saveFactoryReport(formData: FormData) {
   const { supabase, user } = await requireUser();
   await ensureOwned(supabase, "project_factory_cases", parsed.data.factory_case_id, user.id, path);
 
+  const { data: viability, error: viabilityError } = await supabase
+    .from("factory_validations")
+    .select("viability_status")
+    .eq("factory_case_id", parsed.data.factory_case_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (viabilityError) fail(path, viabilityError.message);
+  if (!viability?.viability_status || viability.viability_status === "insufficient") {
+    fail(path, "A avaliação de viabilidade ainda não está concluída.");
+  }
+
   const { error } = await supabase.from("factory_reports").upsert(
     {
       ...parsed.data,
@@ -1228,6 +1240,18 @@ export async function finalizeFactoryDecision(formData: FormData) {
     .maybeSingle();
 
   if (caseError || !factoryCase) fail(path, "Caso da Factory não encontrado.");
+
+  const { data: viability, error: viabilityError } = await supabase
+    .from("factory_validations")
+    .select("viability_status,viability_summary,conditions_to_proceed,missing_information")
+    .eq("factory_case_id", parsed.data.factory_case_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (viabilityError) fail(path, viabilityError.message);
+  if (!viability?.viability_status || viability.viability_status === "insufficient") {
+    fail(path, "Ainda não existe informação suficiente para uma decisão fundamentada.");
+  }
 
   const { error: reportError } = await supabase
     .from("factory_reports")
@@ -1324,32 +1348,54 @@ export async function finalizeFactoryDecision(formData: FormData) {
 export async function saveFactoryValidation(formData: FormData) {
   const raw = values(formData);
   const evidence = String(raw.evidence ?? "").trim();
-  const recommendation = String(raw.recommendation ?? "");
+  const viabilityStatus = String(raw.viability_status ?? "");
+
+  raw.recommendation =
+    viabilityStatus === "viable"
+      ? "proceed"
+      : viabilityStatus === "not_viable"
+        ? "hold"
+        : "modify";
+
+  if (!raw.viability_summary) {
+    const conclusion =
+      viabilityStatus === "viable"
+        ? "A evidência disponível suporta a viabilidade do projecto."
+        : viabilityStatus === "conditional"
+          ? "O projecto apresenta viabilidade, mas o avanço depende do cumprimento de condições críticas."
+          : viabilityStatus === "not_viable"
+            ? "A evidência disponível não suporta o investimento de recursos neste projecto neste momento."
+            : "A informação disponível ainda não permite concluir a viabilidade do projecto.";
+
+    raw.viability_summary = [
+      conclusion,
+      "",
+      "Evidência considerada:",
+      evidence,
+    ].join("\n");
+  }
+
+  if (viabilityStatus === "conditional" && !raw.conditions_to_proceed) {
+    raw.conditions_to_proceed = String(raw.critical_hypotheses ?? "").trim();
+  }
+
+  if (viabilityStatus === "insufficient" && !raw.missing_information) {
+    raw.missing_information = String(raw.validation_plan ?? "").trim();
+  }
 
   if (!raw.result_summary) {
-    const conclusion =
-      recommendation === "proceed"
-        ? "Conclusão: a evidência registada suporta o avanço para a preparação final."
-        : recommendation === "modify"
-          ? "Conclusão: a evidência registada é parcial ou insuficiente e exige ajustes antes de uma nova validação."
-          : recommendation === "hold"
-            ? "Conclusão: a evidência registada não justifica avanço neste momento."
-            : "Conclusão: recomendação final ainda não seleccionada.";
-
     const nextActions =
-      recommendation === "proceed"
-        ? "Acções seguintes: consolidar o relatório final, confirmar custos/recursos quando aplicável e preparar a decisão final."
-        : recommendation === "modify"
-          ? "Acções seguintes: corrigir as hipóteses mais fracas, ajustar a proposta e executar novo teste com critérios mensuráveis."
-          : recommendation === "hold"
-            ? "Acções seguintes: registar as razões da espera, definir o gatilho para reavaliação e preservar toda a evidência."
-            : "Acções seguintes: rever a evidência e seleccionar uma recomendação.";
+      viabilityStatus === "viable"
+        ? "Acção seguinte: consolidar a avaliação e preparar a decisão sobre o investimento de recursos."
+        : viabilityStatus === "conditional"
+          ? "Acção seguinte: confirmar as condições críticas antes da decisão de avançar."
+          : viabilityStatus === "not_viable"
+            ? "Acção seguinte: levar a conclusão para decisão, sem preparar execução."
+            : "Acção seguinte: recolher a informação em falta e voltar a avaliar.";
 
     raw.result_summary = [
-      "Evidência observada:",
-      evidence,
+      String(raw.viability_summary ?? "").trim(),
       "",
-      conclusion,
       nextActions,
     ].join("\n");
   }
@@ -1379,10 +1425,10 @@ export async function saveFactoryValidation(formData: FormData) {
   if (error) fail(path, error.message);
 
   const nextStage =
-    parsed.data.recommendation === "modify"
+    parsed.data.viability_status === "insufficient"
       ? "validation"
-      : parsed.data.recommendation === "hold"
-        ? "on_hold"
+      : parsed.data.viability_status === "not_viable"
+        ? "factory_report"
         : arena_required
           ? "execution_arena"
           : "factory_report";

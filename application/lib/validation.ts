@@ -176,6 +176,10 @@ export const factoryValidationSchema = z.object({
   validation_plan: z.string().trim().min(3).max(8000),
   evidence: z.string().trim().min(3).max(12000),
   result_summary: z.string().trim().min(3).max(8000),
+  viability_status: z.enum(["viable", "conditional", "not_viable", "insufficient"]),
+  viability_summary: z.string().trim().min(3).max(8000),
+  conditions_to_proceed: optionalText(8000),
+  missing_information: optionalText(8000),
   recommendation: z.enum(["proceed", "modify", "hold"]),
   arena_required: z.preprocess((value) => value === "true" || value === "on", z.boolean()),
 });
