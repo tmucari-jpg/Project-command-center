@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft, Home } from "lucide-react";
 import { notFound } from "next/navigation";
 import { refreshProjectStrategyExecutionPlan } from "@/app/(protected)/mutations";
 import { PageHeader } from "@/components/page-header";
@@ -87,9 +88,12 @@ export default async function ProjectPlanPage({
 
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <Link className={secondaryButtonClass} href={`/projects/${project.id}`}>
-          Voltar ao projecto
+          <ArrowLeft size={16} /> Voltar
+        </Link>
+        <Link className={secondaryButtonClass} href="/dashboard">
+          <Home size={16} /> Painel geral
         </Link>
       </div>
 
