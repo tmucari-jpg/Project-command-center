@@ -756,11 +756,15 @@ export async function createProject(formData: FormData) {
   const { supabase, user, authUser } = await requireUser();
   await ensureOwned(supabase, "objectives", parsed.data.objective_id, user.id, path);
 
+  const nextReviewDate = new Date();
+  nextReviewDate.setDate(nextReviewDate.getDate() + 7);
+
   const { data: project, error } = await supabase
     .from("projects")
     .insert({
       ...parsed.data,
       owner_id: authUser.id,
+      next_review_date: nextReviewDate.toISOString().slice(0, 10),
       user_id: user.id,
     })
     .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,next_action,objective_id")
@@ -813,6 +817,80 @@ export async function updateProjectGovernance(formData: FormData) {
       .eq("id", parsed.data.owner_id)
       .maybeSingle();
     if (ownerError || !owner) fail(path, "Responsável inválido.");
+  }
+
+  const requiresDecisionEvidence =
+    ["launch", "scale"].includes(parsed.data.decision_gate) &&
+    ["ready", "approved"].includes(parsed.data.gate_status);
+
+  if (requiresDecisionEvidence) {
+    const [
+      evidenceResult,
+      metricsResult,
+      factoryResult,
+      commercialResult,
+      economicsResult,
+    ] = await Promise.all([
+      supabase
+        .from("evidence")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("project_id", parsed.data.project_id),
+      supabase
+        .from("metrics")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("project_id", parsed.data.project_id),
+      supabase
+        .from("project_factory_cases")
+        .select("project_type")
+        .eq("user_id", user.id)
+        .eq("project_id", parsed.data.project_id)
+        .maybeSingle(),
+      supabase
+        .from("project_commercial_profiles")
+        .select("validation_status")
+        .eq("user_id", user.id)
+        .eq("project_id", parsed.data.project_id)
+        .maybeSingle(),
+      supabase
+        .from("project_unit_economics")
+        .select("cac,conversion_rate_pct,arpu,gross_margin_pct,payback_months")
+        .eq("user_id", user.id)
+        .eq("project_id", parsed.data.project_id)
+        .maybeSingle(),
+    ]);
+
+    if (evidenceResult.error || metricsResult.error || factoryResult.error || commercialResult.error || economicsResult.error) {
+      fail(path, "Não foi possível validar os critérios da etapa de decisão.");
+    }
+
+    if ((evidenceResult.count ?? 0) < 1 || (metricsResult.count ?? 0) < 1) {
+      fail(path, "Para lançar ou escalar, registe pelo menos uma evidência e uma métrica do projecto.");
+    }
+
+    const isCommercial =
+      factoryResult.data?.project_type === "commercial" ||
+      Boolean(commercialResult.data);
+
+    if (parsed.data.decision_gate === "scale" && isCommercial) {
+      if (commercialResult.data?.validation_status !== "validated") {
+        fail(path, "Para escalar um projecto comercial, a validação comercial deve estar concluída.");
+      }
+
+      const economics = economicsResult.data;
+      const economicsComplete =
+        economics &&
+        economics.cac != null &&
+        economics.conversion_rate_pct != null &&
+        economics.arpu != null &&
+        economics.gross_margin_pct != null &&
+        economics.payback_months != null;
+
+      if (!economicsComplete) {
+        fail(path, "Para escalar um projecto comercial, complete os indicadores económicos do projecto.");
+      }
+    }
   }
 
   const { error } = await supabase
@@ -1168,6 +1246,9 @@ export async function finalizeFactoryDecision(formData: FormData) {
     let projectId = factoryCase.project_id as string | null;
 
     if (!projectId) {
+      const nextReviewDate = new Date();
+      nextReviewDate.setDate(nextReviewDate.getDate() + 7);
+
       const { data: project, error: projectError } = await supabase
         .from("projects")
         .insert({
@@ -1180,6 +1261,7 @@ export async function finalizeFactoryDecision(formData: FormData) {
           progress: 0,
           notes: `Criado pela Project Factory. Origem: ${factoryCase.source ?? "não indicada"}`,
           owner_id: authUser.id,
+          next_review_date: nextReviewDate.toISOString().slice(0, 10),
         })
         .select("id")
         .single();
