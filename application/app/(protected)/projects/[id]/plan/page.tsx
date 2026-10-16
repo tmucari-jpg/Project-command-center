@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
 
-function renderValue(value: unknown) {
+function renderValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "Pendente";
   if (typeof value === "boolean") return value ? "Sim" : "Não";
   if (typeof value === "number" || typeof value === "string") return String(value);
