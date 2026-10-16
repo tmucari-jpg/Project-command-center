@@ -85,10 +85,12 @@ export default async function ActionsPage({
   ).length;
   const weeklyCompleted = weeklyActions.filter((action) => action.status === "completed").length;
 
+  type ActionRow = NonNullable<typeof actions>[number];
+
   const actionGroups = new Map<string, {
     projectId: string | null;
     title: string;
-    actions: NonNullable<typeof actions>;
+    actions: ActionRow[];
     overdue: number;
     dueThisWeek: number;
   }>();
@@ -100,7 +102,7 @@ export default async function ActionsPage({
     const group = actionGroups.get(key) ?? {
       projectId,
       title: relation?.title ?? "Sem projecto",
-      actions: [],
+      actions: [] as ActionRow[],
       overdue: 0,
       dueThisWeek: 0,
     };
