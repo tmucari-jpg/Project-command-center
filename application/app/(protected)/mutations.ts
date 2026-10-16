@@ -459,7 +459,7 @@ async function syncProjectStrategyExecutionPlan(
 ) {
   const { data: project, error: projectError } = await supabase
     .from("projects")
-    .select("id,title,description,expected_result,priority,status,progress,next_action")
+    .select("id,title,description,expected_result,priority,status,progress,next_action,owner_id,next_review_date,decision_gate,gate_status")
     .eq("id", projectId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -488,6 +488,7 @@ async function syncProjectStrategyExecutionPlan(
     evidenceResult,
     leadsResult,
     metricsResult,
+    economicsResult,
   ] = await Promise.all([
     factory?.id
       ? supabase
@@ -528,6 +529,12 @@ async function syncProjectStrategyExecutionPlan(
       .eq("project_id", projectId)
       .eq("user_id", userId)
       .order("created_at"),
+    supabase
+      .from("project_unit_economics")
+      .select("cac,conversion_rate_pct,arpu,gross_margin_pct,payback_months,currency,period_start,period_end,source_notes")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .maybeSingle(),
   ]);
 
   const firstError =
@@ -539,7 +546,8 @@ async function syncProjectStrategyExecutionPlan(
     blockersResult.error ??
     evidenceResult.error ??
     leadsResult.error ??
-    metricsResult.error;
+    metricsResult.error ??
+    economicsResult.error;
 
   if (firstError) throw new Error(firstError.message);
 
@@ -563,6 +571,7 @@ async function syncProjectStrategyExecutionPlan(
       leads: leadsResult.data?.length ?? 0,
       nextSalesAction,
     },
+    economics: economicsResult.data,
     metrics: metricsResult.data ?? [],
   });
 
