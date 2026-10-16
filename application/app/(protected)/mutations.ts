@@ -39,6 +39,7 @@ import { createN8nCallback, dispatchToN8n } from "@/lib/n8n";
 import { automationCodeFromName } from "@/lib/automation";
 import { executionArenaDefaults } from "@/lib/execution-arena";
 import { buildStrategyExecutionPlan } from "@/lib/project-plan";
+import { validateAIProviderHealth } from "@/lib/ai-provider-health";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -67,6 +68,38 @@ async function ensureOwned(
   if (error || !data) {
     fail(path, "A relação seleccionada não existe ou não lhe pertence.");
   }
+}
+
+export async function validateAIProviderProfile(formData: FormData) {
+  const path = "/ai-providers";
+  const providerId = z.string().uuid().safeParse(formData.get("provider_id"));
+  if (!providerId.success) fail(path, "Provider inválido.");
+
+  const { supabase, user } = await requireAdmin();
+  const { data: provider, error } = await supabase
+    .from("ai_provider_profiles")
+    .select("id,provider,mode,endpoint_hint,model_hint")
+    .eq("id", providerId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error || !provider) fail(path, error?.message ?? "Provider não encontrado.");
+
+  const result = await validateAIProviderHealth(provider);
+  const { error: updateError } = await supabase
+    .from("ai_provider_profiles")
+    .update({
+      enabled: result.status === "healthy",
+      last_health_status: result.status,
+      last_health_at: new Date().toISOString(),
+    })
+    .eq("id", provider.id)
+    .eq("user_id", user.id);
+
+  if (updateError) fail(path, updateError.message);
+
+  revalidatePath(path);
+  redirect(`${path}?health=${result.status}&health_message=${encodeURIComponent(result.message)}`);
 }
 
 export async function registerAIProviderProfile(formData: FormData) {
