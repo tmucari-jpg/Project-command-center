@@ -77,8 +77,8 @@ export default async function FactoryCasePage({
   if (!factoryCase) notFound();
 
   const isCommercial = factoryCase.project_type === "commercial";
-  const monetizationStatus = validation?.monetization_status ?? defaultMonetizationStatus(factoryCase.project_type);
-  const primaryReturnType = validation?.primary_return_type ?? defaultReturnType();
+  const monetizationStatus = (validation?.monetization_status ?? defaultMonetizationStatus(factoryCase.project_type)) as keyof typeof MONETIZATION_LABELS;
+  const primaryReturnType = (validation?.primary_return_type ?? defaultReturnType()) as keyof typeof RETURN_TYPE_LABELS;
 
   const autoCompetitive = {
     market_summary:
