@@ -1286,6 +1286,8 @@ export async function finalizeFactoryDecision(formData: FormData) {
           notes: `Criado pela Project Factory. Origem: ${factoryCase.source ?? "não indicada"}`,
           owner_id: authUser.id,
           next_review_date: nextReviewDate.toISOString().slice(0, 10),
+          governance_gate: "g3_planning",
+          governance_gate_status: "in_progress",
         })
         .select("id")
         .single();
@@ -1317,7 +1319,13 @@ export async function finalizeFactoryDecision(formData: FormData) {
 
     const { error: stageError } = await supabase
       .from("project_factory_cases")
-      .update({ stage: "converted_to_project", project_id: projectId })
+      .update({
+        stage: "converted_to_project",
+        project_id: projectId,
+        governance_gate: "g2_viability",
+        governance_gate_status: "approved",
+        g2_completed_at: new Date().toISOString(),
+      })
       .eq("id", parsed.data.factory_case_id)
       .eq("user_id", user.id);
 
@@ -1330,9 +1338,21 @@ export async function finalizeFactoryDecision(formData: FormData) {
           ? "on_hold"
           : "killed";
 
+    const governanceStatus =
+      parsed.data.decision === "modify"
+        ? "in_progress"
+        : parsed.data.decision === "hold"
+          ? "blocked"
+          : "completed";
+
     const { error: stageError } = await supabase
       .from("project_factory_cases")
-      .update({ stage: nextStage })
+      .update({
+        stage: nextStage,
+        governance_gate: "g2_viability",
+        governance_gate_status: governanceStatus,
+        g2_completed_at: parsed.data.decision === "kill" ? new Date().toISOString() : null,
+      })
       .eq("id", parsed.data.factory_case_id)
       .eq("user_id", user.id);
 
@@ -1435,7 +1455,11 @@ export async function saveFactoryValidation(formData: FormData) {
 
   const { error: stageError } = await supabase
     .from("project_factory_cases")
-    .update({ stage: nextStage })
+    .update({
+      stage: nextStage,
+      governance_gate: "g2_viability",
+      governance_gate_status: parsed.data.viability_status === "insufficient" ? "blocked" : "ready",
+    })
     .eq("id", parsed.data.factory_case_id)
     .eq("user_id", user.id);
 
@@ -1451,15 +1475,43 @@ export async function createFactoryIntake(formData: FormData) {
   const parsed = factoryIntakeSchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("project_factory_cases").insert({
-    ...parsed.data,
-    user_id: user.id,
-    stage: "viability",
-    competitive_intelligence_required: parsed.data.project_type === "commercial",
-  });
+  const { supabase, user, authUser } = await requireUser();
+  const now = new Date().toISOString();
+  const { data: factoryCase, error } = await supabase
+    .from("project_factory_cases")
+    .insert({
+      ...parsed.data,
+      user_id: user.id,
+      stage: "viability",
+      competitive_intelligence_required: parsed.data.project_type === "commercial",
+      governance_gate: "g2_viability",
+      governance_gate_status: "in_progress",
+      g1_completed_at: now,
+    })
+    .select("id")
+    .single();
 
-  if (error) fail(path, error.message);
+  if (error || !factoryCase) fail(path, error?.message ?? "Não foi possível iniciar a avaliação.");
+
+  const { error: gateEventError } = await supabase.from("project_gate_events").insert([
+    {
+      user_id: user.id,
+      factory_case_id: factoryCase.id,
+      gate: "g1_triage",
+      event_type: "approved",
+      rationale: "Triagem concluída automaticamente a partir das cinco respostas obrigatórias do One-Pager.",
+      created_by: authUser.id,
+    },
+    {
+      user_id: user.id,
+      factory_case_id: factoryCase.id,
+      gate: "g2_viability",
+      event_type: "entered",
+      created_by: authUser.id,
+    },
+  ]);
+
+  if (gateEventError) fail(path, gateEventError.message);
   revalidatePath(path);
   redirect(`${path}?created=1`);
 }
