@@ -6,6 +6,7 @@ import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
+import { GOVERNANCE_GATE_LABELS, GOVERNANCE_GATE_QUESTIONS, GOVERNANCE_STATUS_LABELS } from "@/lib/governance";
 
 const STAGE_LABELS: Record<string, string> = {
   new_idea: "Ideia recebida",
@@ -15,7 +16,7 @@ const STAGE_LABELS: Record<string, string> = {
   execution_arena: "Teste",
   factory_report: "Síntese para decisão",
   decision: "Decisão",
-  converted_to_project: "Aprovado e em execução",
+  converted_to_project: "Aprovado — em planeamento",
   on_hold: "Em espera",
   killed: "Não aprovado",
 };
@@ -192,7 +193,19 @@ export default async function FactoryCasePage({
               </dd>
             </div>
             <div>
-              <dt className="font-semibold text-[var(--cc-secondary)]">Etapa actual</dt>
+              <dt className="font-semibold text-[var(--cc-secondary)]">Gate de governança</dt>
+              <dd className="mt-1 font-semibold text-[var(--cc-foreground)]">
+                {GOVERNANCE_GATE_LABELS[factoryCase.governance_gate] ?? factoryCase.governance_gate}
+              </dd>
+              <dd className="mt-1 text-[var(--cc-secondary)]">
+                {GOVERNANCE_GATE_QUESTIONS[factoryCase.governance_gate] ?? ""}
+              </dd>
+              <dd className="mt-1 text-xs text-[var(--cc-secondary)]">
+                {GOVERNANCE_STATUS_LABELS[factoryCase.governance_gate_status] ?? factoryCase.governance_gate_status}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-[var(--cc-secondary)]">Etapa de trabalho</dt>
               <dd className="mt-1 text-[var(--cc-foreground)]">{STAGE_LABELS[factoryCase.stage] ?? factoryCase.stage.replaceAll("_", " ")}</dd>
             </div>
             {factoryCase.target_user && (
