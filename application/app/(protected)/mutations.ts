@@ -41,6 +41,7 @@ import { executionArenaDefaults } from "@/lib/execution-arena";
 import { buildStrategyExecutionPlan } from "@/lib/project-plan";
 import { validateAIProviderHealth } from "@/lib/ai-provider-health";
 import { hasBlockingGovernanceRisk } from "@/lib/governance-risk";
+import { defaultMonetizationStatus, defaultReturnType } from "@/lib/value-return";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -1447,6 +1448,25 @@ export async function saveFactoryValidation(formData: FormData) {
   const { supabase, user } = await requireUser();
   await ensureOwned(supabase, "project_factory_cases", parsed.data.factory_case_id, user.id, path);
 
+  const [{ data: factoryCase, error: factoryCaseError }, { data: existingAssessment, error: assessmentError }] =
+    await Promise.all([
+      supabase
+        .from("project_factory_cases")
+        .select("project_type")
+        .eq("id", parsed.data.factory_case_id)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("factory_validations")
+        .select("monetization_status,monetization_rationale,primary_return_type,secondary_return_types,return_summary,return_evidence,return_confidence")
+        .eq("factory_case_id", parsed.data.factory_case_id)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+  if (factoryCaseError || !factoryCase) fail(path, factoryCaseError?.message ?? "Caso da Factory não encontrado.");
+  if (assessmentError) fail(path, assessmentError.message);
+
   const { arena_required, ...validation } = parsed.data;
   const { error } = await supabase
     .from("factory_validations")
@@ -1454,6 +1474,14 @@ export async function saveFactoryValidation(formData: FormData) {
       {
         ...validation,
         arena_required,
+        monetization_status:
+          existingAssessment?.monetization_status ?? defaultMonetizationStatus(factoryCase.project_type),
+        monetization_rationale: existingAssessment?.monetization_rationale ?? null,
+        primary_return_type: existingAssessment?.primary_return_type ?? defaultReturnType(),
+        secondary_return_types: existingAssessment?.secondary_return_types ?? [],
+        return_summary: existingAssessment?.return_summary ?? null,
+        return_evidence: existingAssessment?.return_evidence ?? null,
+        return_confidence: existingAssessment?.return_confidence ?? null,
         user_id: user.id,
         status: "complete",
         completed_at: new Date().toISOString(),

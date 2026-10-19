@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { GOVERNANCE_GATE_LABELS, GOVERNANCE_GATE_QUESTIONS, GOVERNANCE_STATUS_LABELS } from "@/lib/governance";
+import { MONETIZATION_LABELS, RETURN_TYPE_LABELS, defaultMonetizationStatus, defaultReturnType } from "@/lib/value-return";
 
 const STAGE_LABELS: Record<string, string> = {
   new_idea: "Ideia recebida",
@@ -76,6 +77,8 @@ export default async function FactoryCasePage({
   if (!factoryCase) notFound();
 
   const isCommercial = factoryCase.project_type === "commercial";
+  const monetizationStatus = (validation?.monetization_status ?? defaultMonetizationStatus(factoryCase.project_type)) as keyof typeof MONETIZATION_LABELS;
+  const primaryReturnType = (validation?.primary_return_type ?? defaultReturnType()) as keyof typeof RETURN_TYPE_LABELS;
 
   const autoCompetitive = {
     market_summary:
@@ -384,6 +387,47 @@ export default async function FactoryCasePage({
           )}
         </Card>
       )}
+
+      <Card className="mt-6 p-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--cc-secondary)]">Valor e retorno do projecto</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold text-[var(--cc-secondary)]">Monetização</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--cc-foreground)]">
+              {MONETIZATION_LABELS[monetizationStatus] ?? monetizationStatus}
+            </p>
+            {validation?.monetization_rationale && (
+              <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">{validation.monetization_rationale}</p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-[var(--cc-secondary)]">Retorno principal</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--cc-foreground)]">
+              {RETURN_TYPE_LABELS[primaryReturnType] ?? primaryReturnType}
+            </p>
+            {validation?.return_summary ? (
+              <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">{validation.return_summary}</p>
+            ) : (
+              <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+                O PCC ainda não tem evidência suficiente para classificar o retorno principal.
+              </p>
+            )}
+          </div>
+        </div>
+        {validation?.secondary_return_types?.length ? (
+          <p className="mt-4 text-sm text-[var(--cc-foreground)]">
+            <span className="font-semibold">Retornos complementares:</span>{" "}
+            {validation.secondary_return_types
+              .map((item: string) => RETURN_TYPE_LABELS[item as keyof typeof RETURN_TYPE_LABELS] ?? item)
+              .join(" · ")}
+          </p>
+        ) : null}
+        {validation?.return_evidence && (
+          <p className="mt-3 text-xs leading-5 text-[var(--cc-secondary)]">
+            Base da avaliação: {validation.return_evidence}
+          </p>
+        )}
+      </Card>
 
       {["factory_report", "decision", "converted_to_project", "on_hold", "killed"].includes(factoryCase.stage) && (
         <Card className="mt-6 p-5">
