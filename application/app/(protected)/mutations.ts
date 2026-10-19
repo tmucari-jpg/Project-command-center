@@ -40,6 +40,7 @@ import { automationCodeFromName } from "@/lib/automation";
 import { executionArenaDefaults } from "@/lib/execution-arena";
 import { buildStrategyExecutionPlan } from "@/lib/project-plan";
 import { validateAIProviderHealth } from "@/lib/ai-provider-health";
+import { hasBlockingGovernanceRisk } from "@/lib/governance-risk";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -1251,6 +1252,24 @@ export async function finalizeFactoryDecision(formData: FormData) {
   if (viabilityError) fail(path, viabilityError.message);
   if (!viability?.viability_status || viability.viability_status === "insufficient") {
     fail(path, "Ainda não existe informação suficiente para uma decisão fundamentada.");
+  }
+
+  if (parsed.data.decision === "go") {
+    const { data: governanceRisks, error: governanceRiskError } = await supabase
+      .from("project_governance_risks")
+      .select("severity,status,blocks_progress")
+      .eq("factory_case_id", parsed.data.factory_case_id)
+      .eq("gate", "g2_viability")
+      .eq("user_id", user.id);
+
+    if (governanceRiskError) fail(path, governanceRiskError.message);
+
+    if (hasBlockingGovernanceRisk(governanceRisks ?? [])) {
+      fail(
+        path,
+        "O projecto tem riscos de governança bloqueantes no G2. Mitigue, aceite formalmente ou resolva os riscos antes de Avançar.",
+      );
+    }
   }
 
   const { error: reportError } = await supabase
