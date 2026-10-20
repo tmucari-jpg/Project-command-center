@@ -1,3 +1,4 @@
+# PCC full smoke - PowerShell only, safe for Windows PowerShell 5+
 param(
   [string]$RepoPath = "D:\03_PROJECTS\Project-Command-Center",
   [int]$Port = 3000,
