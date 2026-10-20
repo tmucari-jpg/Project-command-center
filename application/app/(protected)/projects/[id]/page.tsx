@@ -144,12 +144,10 @@ export default async function ProjectHubPage({
   const activeDependencies = (dependencies ?? []).filter((item) =>
     ["pending", "resolving"].includes(item.status),
   );
-  const latestSourceTimestamps = [
-    project.updated_at,
-    evidence?.[0]?.created_at,
-    decisions?.[0]?.decided_at,
-  ];
-  const planStale = isProjectPlanStale(strategyPlan?.updated_at, latestSourceTimestamps);
+  const planStale = isProjectPlanStale(strategyPlan?.updated_at, {
+    latestEvidenceAt: evidence?.[0]?.created_at,
+    latestDecisionAt: decisions?.[0]?.decided_at,
+  });
   const health = executiveProjectHealth({
     progress: Number(project.progress ?? 0),
     dueDate: project.due_date,
