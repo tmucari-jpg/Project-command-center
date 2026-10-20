@@ -269,6 +269,34 @@ function New-IsolatedValidationWorktree(
   return $appPath
 }
 
+function Stop-ProcessesForPath([string]$Path) {
+  if (-not $Path) { return }
+
+  try {
+    $escapedPath = [regex]::Escape($Path)
+    $matches = @(
+      Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+        Where-Object {
+          $_.ProcessId -ne $PID -and
+          $_.CommandLine -and
+          $_.CommandLine -match $escapedPath
+        }
+    )
+
+    foreach ($proc in $matches) {
+      Write-Warn "Stopping process PID $($proc.ProcessId) using isolated worktree: $($proc.Name)"
+      & taskkill.exe /PID $proc.ProcessId /T /F 2>$null | Out-Null
+    }
+
+    if ($matches.Count -gt 0) {
+      Start-Sleep -Seconds 2
+    }
+  }
+  catch {
+    Write-Warn "Could not enumerate/stop processes using isolated worktree: $($_.Exception.Message)"
+  }
+}
+
 function Remove-IsolatedValidationWorktree(
   [string]$RepoPath,
   [string]$WorktreePath
@@ -876,6 +904,7 @@ finally {
   }
 
   foreach ($worktreePath in @($validationWorktrees | Select-Object -Unique)) {
+    Stop-ProcessesForPath -Path $worktreePath
     Remove-IsolatedValidationWorktree -RepoPath $RepoPath -WorktreePath $worktreePath
   }
 
