@@ -131,9 +131,28 @@ function Convert-SecureToPlain([Security.SecureString]$Secure) {
 }
 
 
+function Invoke-NpmProcess([string[]]$Arguments, [string]$WorkingDirectory) {
+  $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
+  if (-not $npmCmd) {
+    Stop-WithError "npm.cmd was not found in PATH."
+  }
+
+  $startArgs = @{
+    FilePath = $npmCmd.Source
+    ArgumentList = $Arguments
+    WorkingDirectory = $WorkingDirectory
+    NoNewWindow = $true
+    Wait = $true
+    PassThru = $true
+  }
+
+  $process = Start-Process @startArgs
+  return [int]$process.ExitCode
+}
+
 function Invoke-NpmCiWithWindowsRetry([string]$AppPath, [string]$RepoPath) {
-  npm ci
-  if ($LASTEXITCODE -eq 0) {
+  $ciExit = Invoke-NpmProcess -Arguments @("ci") -WorkingDirectory $AppPath
+  if ($ciExit -eq 0) {
     return
   }
 
@@ -168,14 +187,14 @@ function Invoke-NpmCiWithWindowsRetry([string]$AppPath, [string]$RepoPath) {
     Stop-WithError "Could not remove application node_modules after npm ci failure. A Windows process is still holding files open."
   }
 
-  npm cache verify
-  if ($LASTEXITCODE -ne 0) {
-    Write-Warn "npm cache verify returned a non-zero exit code; continuing to one clean npm ci retry."
+  $cacheExit = Invoke-NpmProcess -Arguments @("cache","verify") -WorkingDirectory $AppPath
+  if ($cacheExit -ne 0) {
+    Write-Warn "npm cache verify returned exit code $cacheExit; continuing to one clean npm ci retry."
   }
 
-  npm ci
-  if ($LASTEXITCODE -ne 0) {
-    Stop-WithError "npm ci failed after the Windows cleanup retry."
+  $retryExit = Invoke-NpmProcess -Arguments @("ci") -WorkingDirectory $AppPath
+  if ($retryExit -ne 0) {
+    Stop-WithError "npm ci failed after the Windows cleanup retry with exit code $retryExit."
   }
 
   Write-Pass "npm ci succeeded after Windows cleanup retry"
@@ -315,23 +334,23 @@ try {
 
   Invoke-NpmCiWithWindowsRetry -AppPath $appPath -RepoPath $RepoPath
 
-  npm run ui:standard
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "UI standard validation failed." }
+  $exit = Invoke-NpmProcess -Arguments @("run","ui:standard") -WorkingDirectory $appPath
+  if ($exit -ne 0) { Stop-WithError "UI standard validation failed with exit code $exit." }
 
-  npm run typecheck
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "Typecheck failed." }
+  $exit = Invoke-NpmProcess -Arguments @("run","typecheck") -WorkingDirectory $appPath
+  if ($exit -ne 0) { Stop-WithError "Typecheck failed with exit code $exit." }
 
-  npm test
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "Automated tests failed." }
+  $exit = Invoke-NpmProcess -Arguments @("test") -WorkingDirectory $appPath
+  if ($exit -ne 0) { Stop-WithError "Automated tests failed with exit code $exit." }
 
-  npm run lint
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "Lint failed." }
+  $exit = Invoke-NpmProcess -Arguments @("run","lint") -WorkingDirectory $appPath
+  if ($exit -ne 0) { Stop-WithError "Lint failed with exit code $exit." }
 
-  npm audit --omit=dev --audit-level=high
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "Production dependency audit failed." }
+  $exit = Invoke-NpmProcess -Arguments @("audit","--omit=dev","--audit-level=high") -WorkingDirectory $appPath
+  if ($exit -ne 0) { Stop-WithError "Production dependency audit failed with exit code $exit." }
 
-  npm run build
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "Production build failed." }
+  $exit = Invoke-NpmProcess -Arguments @("run","build") -WorkingDirectory $appPath
+  if ($exit -ne 0) { Stop-WithError "Production build failed with exit code $exit." }
 
   Write-Pass "CI-equivalent validation complete"
 
