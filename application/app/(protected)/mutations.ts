@@ -1301,9 +1301,6 @@ export async function finalizeFactoryDecision(formData: FormData) {
     let projectId = factoryCase.project_id as string | null;
 
     if (!projectId) {
-      const nextReviewDate = new Date();
-      nextReviewDate.setDate(nextReviewDate.getDate() + 7);
-
       const { data: project, error: projectError } = await supabase
         .from("projects")
         .insert({
@@ -1316,7 +1313,8 @@ export async function finalizeFactoryDecision(formData: FormData) {
           progress: 0,
           notes: `Criado pela Project Factory. Origem: ${factoryCase.source ?? "não indicada"}`,
           owner_id: authUser.id,
-          next_review_date: nextReviewDate.toISOString().slice(0, 10),
+          next_review_date: null,
+          review_cadence_days: null,
           governance_gate: "g3_planning",
           governance_gate_status: "in_progress",
         })
