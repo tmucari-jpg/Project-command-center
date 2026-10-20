@@ -121,7 +121,7 @@ jobs:
 
           $forbiddenLegacy = @(
             "Invoke-NpmCiWithWindowsRetry",
-            "Remove-Item $nodeModules"
+            'Remove-Item $nodeModules'
           )
 
           foreach ($token in $forbiddenLegacy) {
