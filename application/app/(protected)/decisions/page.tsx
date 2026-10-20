@@ -52,10 +52,10 @@ export default async function DecisionsPage({
 
       <div className="space-y-6">
         <ManualEntry defaultOpen={Boolean(preparedDraft)}>
-          <h2 className="text-lg font-semibold text-slate-950">Nova decisão</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Nova decisão</h2>
           <form action={createDecision} className="mt-5 space-y-4">
             {preparedDraft && (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+              <p className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-medium text-[var(--cc-secondary)]">
                 Contexto preparado automaticamente. A decisão continua a exigir validação humana.
               </p>
             )}
@@ -81,8 +81,8 @@ export default async function DecisionsPage({
         </ManualEntry>
 
         <Card>
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Histórico de decisões</h2>
+          <div className="border-b border-[var(--cc-border)] p-5">
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Histórico de decisões</h2>
           </div>
           <div className="p-5">
             {!decisions?.length ? (
@@ -92,21 +92,21 @@ export default async function DecisionsPage({
                 {decisions.map((item) => {
                   const relation = Array.isArray(item.projects) ? item.projects[0] : item.projects;
                   return (
-                    <article key={item.id} className="rounded-2xl border border-slate-200 p-4">
-                      <h3 className="font-semibold text-slate-950">{item.title}</h3>
-                      <p className="mt-1 text-xs text-slate-500">
+                    <article key={item.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] p-4">
+                      <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
+                      <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                         {relation?.title ?? "Sem projecto"} · {formatDateTime(item.decided_at)}
                       </p>
-                      <p className="mt-3 text-sm leading-6 text-slate-800">
+                      <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">
                         <span className="font-medium">Decisão:</span> {item.decision}
                       </p>
                       {item.rationale && (
-                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
                           <span className="font-medium">Racional:</span> {item.rationale}
                         </p>
                       )}
                       {item.outcome && (
-                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
                           <span className="font-medium">Resultado:</span> {item.outcome}
                         </p>
                       )}
