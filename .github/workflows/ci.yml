@@ -98,6 +98,39 @@ jobs:
             }
           }
 
+      - name: Validate isolated smoke worktree
+        shell: pwsh
+        run: |
+          $fullSmoke = Get-Content "../scripts/FULL_SMOKE_POWERSHELL.ps1" -Raw
+
+          $requiredIsolation = @(
+            "Invoke-IsolatedNpmCi",
+            "New-IsolatedValidationWorktree",
+            "worktree add --detach",
+            "PCC_SMOKE",
+            "partial worktree will not be repaired or reused",
+            "CI validation isolated from operator working copy"
+          )
+
+          foreach ($token in $requiredIsolation) {
+            if (-not $fullSmoke.Contains($token)) {
+              Write-Error "Missing isolated npm smoke guardrail: $token"
+              exit 1
+            }
+          }
+
+          $forbiddenLegacy = @(
+            "Invoke-NpmCiWithWindowsRetry",
+            'Remove-Item $nodeModules'
+          )
+
+          foreach ($token in $forbiddenLegacy) {
+            if ($fullSmoke.Contains($token)) {
+              Write-Error "Legacy in-place node_modules recovery returned: $token"
+              exit 1
+            }
+          }
+
       - name: Typecheck
         run: npm run typecheck
 

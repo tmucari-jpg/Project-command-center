@@ -238,54 +238,96 @@ function Invoke-NpmProcess(
   return $exitCode
 }
 
-function Invoke-NpmCiWithWindowsRetry([string]$AppPath, [string]$RepoPath) {
-  $ciExit = Invoke-NpmProcess -Label "4.1 npm ci" -Arguments @("ci") -WorkingDirectory $AppPath
-  if ($ciExit -eq 0) {
-    return
+function New-IsolatedValidationWorktree(
+  [string]$RepoPath,
+  [string]$ReleaseCommit,
+  [string]$WorktreePath,
+  [string]$SourceEnvPath
+) {
+  $parent = Split-Path $WorktreePath -Parent
+  New-Item -ItemType Directory -Force -Path $parent | Out-Null
+
+  if (Test-Path $WorktreePath) {
+    Stop-WithError "Isolated validation path already exists: $WorktreePath"
   }
 
-  Write-Warn "npm ci failed on the first attempt. Cleaning only repository-local Node processes and node_modules before one retry."
+  Write-Host "INFO - Creating isolated validation worktree: $WorktreePath" -ForegroundColor Yellow
+  & git -C $RepoPath worktree add --detach $WorktreePath $ReleaseCommit | Out-Host
+  if ($LASTEXITCODE -ne 0) {
+    Stop-WithError "Could not create isolated validation worktree at $WorktreePath."
+  }
 
-  try {
-    $repoNodeProcesses = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
-      Where-Object { $_.CommandLine -and $_.CommandLine -like "*$RepoPath*" }
+  $appPath = Join-Path $WorktreePath "application"
+  if (-not (Test-Path $appPath)) {
+    Stop-WithError "Isolated validation worktree does not contain application/: $WorktreePath"
+  }
 
-    foreach ($proc in $repoNodeProcesses) {
-      Write-Warn "Stopping repository-local node.exe PID $($proc.ProcessId) that may be locking node_modules."
-      Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+  if ($SourceEnvPath -and (Test-Path $SourceEnvPath)) {
+    Copy-Item $SourceEnvPath (Join-Path $appPath ".env.local") -Force
+  }
+
+  return $appPath
+}
+
+function Remove-IsolatedValidationWorktree(
+  [string]$RepoPath,
+  [string]$WorktreePath
+) {
+  if (-not $WorktreePath) { return }
+
+  for ($attempt = 1; $attempt -le 3; $attempt++) {
+    & git -C $RepoPath worktree remove --force $WorktreePath 2>$null
+    if ($LASTEXITCODE -eq 0) {
+      Write-Pass "Removed isolated validation worktree: $WorktreePath"
+      return
     }
-  }
-  catch {
-    Write-Warn "Could not enumerate repository-local node.exe processes: $($_.Exception.Message)"
+    Start-Sleep -Seconds 2
   }
 
-  Start-Sleep -Seconds 2
+  try { & git -C $RepoPath worktree prune | Out-Null } catch {}
+  Write-Warn "Could not fully remove isolated validation worktree after 3 attempts: $WorktreePath"
+}
 
-  $nodeModules = Join-Path $AppPath "node_modules"
-  if (Test-Path $nodeModules) {
-    Write-Warn "Removing existing node_modules before retry."
-    & cmd.exe /d /c "rmdir /s /q ""$nodeModules"""
-    if (Test-Path $nodeModules) {
-      Start-Sleep -Seconds 2
-      Remove-Item $nodeModules -Recurse -Force -ErrorAction SilentlyContinue
-    }
+function Initialize-IsolatedValidationApp(
+  [string]$RepoPath,
+  [string]$ReleaseCommit,
+  [string]$SourceEnvPath,
+  [string]$Label
+) {
+  $tempBase = Join-Path ([System.IO.Path]::GetTempPath()) "PCC_SMOKE"
+  New-Item -ItemType Directory -Force -Path $tempBase | Out-Null
+  $worktreePath = Join-Path $tempBase ("$($script:stamp)-" + $Label)
+
+  $appPath = New-IsolatedValidationWorktree -RepoPath $RepoPath -ReleaseCommit $ReleaseCommit -WorktreePath $worktreePath -SourceEnvPath $SourceEnvPath
+  $script:validationWorktrees += $worktreePath
+
+  return @{ WorktreePath = $worktreePath; AppPath = $appPath }
+}
+
+function Invoke-IsolatedNpmCi(
+  [string]$RepoPath,
+  [string]$ReleaseCommit,
+  [string]$SourceEnvPath
+) {
+  $first = Initialize-IsolatedValidationApp -RepoPath $RepoPath -ReleaseCommit $ReleaseCommit -SourceEnvPath $SourceEnvPath -Label "primary"
+  $firstExit = Invoke-NpmProcess -Label "4.1 npm ci - isolated primary" -Arguments @("ci") -WorkingDirectory $first.AppPath
+
+  if ($firstExit -eq 0) {
+    return $first
   }
 
-  if (Test-Path $nodeModules) {
-    Stop-WithError "Could not remove application node_modules after npm ci failure. A Windows process is still holding files open."
+  Write-Warn "Primary isolated npm ci failed. The partial worktree will not be repaired or reused."
+  Write-Warn "Creating one completely fresh isolated worktree for the single retry."
+
+  $second = Initialize-IsolatedValidationApp -RepoPath $RepoPath -ReleaseCommit $ReleaseCommit -SourceEnvPath $SourceEnvPath -Label "retry"
+  $secondExit = Invoke-NpmProcess -Label "4.1 npm ci - isolated retry" -Arguments @("ci") -WorkingDirectory $second.AppPath
+
+  if ($secondExit -ne 0) {
+    Stop-WithError "npm ci failed in two independent clean worktrees. This is no longer treated as a stale node_modules problem."
   }
 
-  $cacheExit = Invoke-NpmProcess -Label "4.1 npm cache verify" -Arguments @("cache","verify") -WorkingDirectory $AppPath
-  if ($cacheExit -ne 0) {
-    Write-Warn "npm cache verify returned exit code $cacheExit; continuing to one clean npm ci retry."
-  }
-
-  $retryExit = Invoke-NpmProcess -Label "4.1 npm ci retry" -Arguments @("ci") -WorkingDirectory $AppPath
-  if ($retryExit -ne 0) {
-    Stop-WithError "npm ci failed after the Windows cleanup retry with exit code $retryExit."
-  }
-
-  Write-Pass "npm ci succeeded after Windows cleanup retry"
+  Write-Pass "npm ci succeeded in fresh isolated retry worktree"
+  return $second
 }
 
 function Invoke-SupabaseRest(
@@ -342,6 +384,7 @@ $smokeActionId = $null
 $supabaseUrl = $null
 $supabaseKey = $null
 $accessToken = $null
+$validationWorktrees = @()
 
 try {
   Write-Step "1/12 Validate repository state"
@@ -457,8 +500,8 @@ try {
     Stop-WithError "Node $nodeVersion is below the minimum expected version 22."
   }
 
-  $appPath = Join-Path $RepoPath "application"
-  $envPath = Join-Path $appPath ".env.local"
+  $sourceAppPath = Join-Path $RepoPath "application"
+  $envPath = Join-Path $sourceAppPath ".env.local"
 
   if (-not (Test-Path $envPath)) {
     Stop-WithError "application\.env.local is missing."
@@ -482,11 +525,13 @@ try {
     $ProductionUrl = Get-EnvFileValue -Path $envPath -Name "NEXT_PUBLIC_SITE_URL"
   }
 
-  Set-Location $appPath
+  Set-Location $RepoPath
 
-  Write-Step "4/12 Install and run all CI-equivalent checks"
+  Write-Step "4/12 Install and run all CI-equivalent checks in isolated release worktree"
 
-  Invoke-NpmCiWithWindowsRetry -AppPath $appPath -RepoPath $RepoPath
+  $isolated = Invoke-IsolatedNpmCi -RepoPath $RepoPath -ReleaseCommit $releaseCommit -SourceEnvPath $envPath
+  $appPath = [string]$isolated.AppPath
+  Write-Pass "CI validation isolated from operator working copy"
 
   $exit = Invoke-NpmProcess -Label "4.2 UI standard" -Arguments @("run","ui:standard") -WorkingDirectory $appPath
   if ($exit -ne 0) { Stop-WithError "UI standard validation failed with exit code $exit." }
@@ -828,6 +873,10 @@ finally {
 
   if ($runtimeProcess -and -not $runtimeProcess.HasExited) {
     Stop-Process -Id $runtimeProcess.Id -Force
+  }
+
+  foreach ($worktreePath in @($validationWorktrees | Select-Object -Unique)) {
+    Remove-IsolatedValidationWorktree -RepoPath $RepoPath -WorktreePath $worktreePath
   }
 
   try {
