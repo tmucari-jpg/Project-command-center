@@ -1,30 +1,30 @@
 import { displayLabel } from "@/lib/display-label";
 
 const tone: Record<string, string> = {
-  active: "bg-[#E8F3EF] text-[#146453] ring-[#146453]/20",
-  on_track: "bg-[#E8F3EF] text-[#146453] ring-[#146453]/20",
-  completed: "bg-[#E8F3EF] text-[#146453] ring-[#146453]/20",
-  resolved: "bg-[#E8F3EF] text-[#146453] ring-[#146453]/20",
+  active: "bg-[var(--cc-success-soft)] text-[var(--cc-success)] ring-[color-mix(in_srgb,var(--cc-success)_20%,transparent)]",
+  on_track: "bg-[var(--cc-success-soft)] text-[var(--cc-success)] ring-[color-mix(in_srgb,var(--cc-success)_20%,transparent)]",
+  completed: "bg-[var(--cc-success-soft)] text-[var(--cc-success)] ring-[color-mix(in_srgb,var(--cc-success)_20%,transparent)]",
+  resolved: "bg-[var(--cc-success-soft)] text-[var(--cc-success)] ring-[color-mix(in_srgb,var(--cc-success)_20%,transparent)]",
 
-  at_risk: "bg-[#FBF3E4] text-[#8A611C] ring-[#C99439]/28",
-  investigating: "bg-[#FBF3E4] text-[#8A611C] ring-[#C99439]/28",
+  at_risk: "bg-[var(--cc-warning-soft)] text-[#8A611C] ring-[color-mix(in_srgb,var(--cc-warning)_28%,transparent)]",
+  investigating: "bg-[var(--cc-warning-soft)] text-[#8A611C] ring-[color-mix(in_srgb,var(--cc-warning)_28%,transparent)]",
 
-  pending: "bg-[#F3F6F4] text-[#667085] ring-[#E0E8E3]",
-  draft: "bg-[#F3F6F4] text-[#667085] ring-[#E0E8E3]",
-  idea: "bg-[#F3F6F4] text-[#667085] ring-[#E0E8E3]",
-  captured: "bg-[#F3F6F4] text-[#667085] ring-[#E0E8E3]",
-  waiting: "bg-[#F3F6F4] text-[#667085] ring-[#E0E8E3]",
+  pending: "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)] ring-[var(--cc-border)]",
+  draft: "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)] ring-[var(--cc-border)]",
+  idea: "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)] ring-[var(--cc-border)]",
+  captured: "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)] ring-[var(--cc-border)]",
+  waiting: "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)] ring-[var(--cc-border)]",
 
-  delayed: "bg-[#FCECE9] text-[#A33A30] ring-[#C94B3C]/22",
-  blocked: "bg-[#FCECE9] text-[#A33A30] ring-[#C94B3C]/22",
-  open: "bg-[#FCECE9] text-[#A33A30] ring-[#C94B3C]/22",
+  delayed: "bg-[var(--cc-danger-soft)] text-[var(--cc-danger)] ring-[color-mix(in_srgb,var(--cc-danger)_22%,transparent)]",
+  blocked: "bg-[var(--cc-danger-soft)] text-[var(--cc-danger)] ring-[color-mix(in_srgb,var(--cc-danger)_22%,transparent)]",
+  open: "bg-[var(--cc-danger-soft)] text-[var(--cc-danger)] ring-[color-mix(in_srgb,var(--cc-danger)_22%,transparent)]",
 };
 
 export function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
-        tone[status] ?? "bg-[#F3F6F4] text-[#667085] ring-[#E0E8E3]"
+        tone[status] ?? "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)] ring-[var(--cc-border)]"
       }`}
     >
       {displayLabel(status)}
