@@ -60,20 +60,20 @@ export default async function AIFornecedoresPage({
 
       <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Serviços configurados</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">{providers?.length ?? 0}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Serviços configurados</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{providers?.length ?? 0}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operacionais</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">{operationalProviders.length}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Operacionais</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{operationalProviders.length}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Operações pendentes</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">{queuedOperations.length}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Operações pendentes</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{queuedOperations.length}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Falhas recentes</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-950">{failedOperations.length}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Falhas recentes</p>
+          <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{failedOperations.length}</p>
         </Card>
       </div>
 
@@ -88,25 +88,25 @@ export default async function AIFornecedoresPage({
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
           Sem provider saudável, o PCC continua a executar as funções normais baseadas em dados e regras, mas não deve simular capacidades de IA. O modo totalmente offline do browser não está disponível porque os dados operacionais dependem do Supabase.
         </p>
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white/60 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Modo de IA actual</p>
-          <p className="mt-1 font-semibold text-slate-950">
+        <div className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Modo de IA actual</p>
+          <p className="mt-1 font-semibold text-[var(--cc-foreground)]">
             {executionState.mode === "cloud" ? "Nuvem" : executionState.mode === "local" ? "Local" : "IA indisponível"}
           </p>
-          <p className="mt-1 text-sm text-slate-600">{executionState.reason}</p>
+          <p className="mt-1 text-sm text-[var(--cc-secondary)]">{executionState.reason}</p>
           {executionState.provider && (
-            <p className="mt-1 text-xs text-slate-500">Provider: {executionState.provider.label}</p>
+            <p className="mt-1 text-xs text-[var(--cc-secondary)]">Provider: {executionState.provider.label}</p>
           )}
         </div>
       </Card>
 
-      <Card className="mb-6 border-amber-200 bg-amber-50/50 p-5">
-        <p className="font-semibold text-amber-900">
+      <Card className="mb-6 border-[color-mix(in_srgb,var(--cc-warning)_32%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-warning-soft)_72%,transparent)] p-5">
+        <p className="font-semibold text-[#76551d]">
           {operationalProviders.length
             ? `${operationalProviders.length} serviço(s) inteligente(s) operacional(is).`
             : "IA ainda não validada neste ambiente."}
         </p>
-        <p className="mt-2 text-sm leading-6 text-amber-900/80">
+        <p className="mt-2 text-sm leading-6 text-[#76551d]">
           {operationalProviders.length
             ? "O PCC pode usar apenas as capacidades abaixo, respeitando prioridade, custo e estado de saúde."
             : "Nenhum fornecedor está actualmente registado como operacional. O PCC não deve fingir capacidades de IA enquanto não houver um serviço configurado e verificado."}
@@ -114,7 +114,7 @@ export default async function AIFornecedoresPage({
         {capabilities.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
             {capabilities.map((capability: string) => (
-              <span key={capability} className="rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-amber-900">
+              <span key={capability} className="rounded-full bg-[var(--cc-surface)] px-2.5 py-1 text-xs font-semibold text-[#76551d]">
                 {displayLabel(capability)}
               </span>
             ))}
@@ -122,7 +122,7 @@ export default async function AIFornecedoresPage({
         )}
       </Card>
 
-      {error && <Card className="mb-6 p-5 text-sm text-red-700">{error}</Card>}
+      {error && <Card className="mb-6 p-5 text-sm text-[var(--cc-danger)]">{error}</Card>}
 
       <Card className="mb-6 p-5">
         <h2 className="font-semibold text-[var(--cc-foreground)]">Registar provider</h2>
@@ -164,10 +164,10 @@ export default async function AIFornecedoresPage({
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="p-5 xl:col-span-2">
-          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--cc-foreground)]">
             <HardDrive size={19} /> Serviços disponíveis
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
             Credenciais sensíveis permanecem fora desta área. Serviços indisponíveis não são usados pelo PCC.
           </p>
           {!providers?.length ? (
@@ -175,21 +175,21 @@ export default async function AIFornecedoresPage({
           ) : (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {providers.map((provider) => (
-                <div key={provider.id} className="rounded-xl border border-slate-200 p-4">
+                <div key={provider.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-medium text-slate-950">{provider.label}</p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="font-medium text-[var(--cc-foreground)]">{provider.label}</p>
+                      <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                         {displayLabel(provider.provider)} · {displayLabel(provider.mode)}
                       </p>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{displayLabel(provider.last_health_status)}</span>
+                    <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-xs font-semibold text-[var(--cc-foreground)]">{displayLabel(provider.last_health_status)}</span>
                   </div>
-                  <p className="mt-3 text-xs text-slate-500">
+                  <p className="mt-3 text-xs text-[var(--cc-secondary)]">
                     Prioridade {provider.priority} · custo {displayLabel(provider.cost_class)}
                     {provider.model_hint ? ` · modelo ${provider.model_hint}` : ""}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                     Última validação: {provider.last_health_at ? formatDateTime(provider.last_health_at) : "ainda não realizada"}
                   </p>
                   {Array.isArray(provider.capabilities) && provider.capabilities.length > 0 && (
@@ -197,7 +197,7 @@ export default async function AIFornecedoresPage({
                       {provider.capabilities
                         .filter((value: unknown): value is string => typeof value === "string")
                         .map((capability: string) => (
-                          <span key={capability} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700">
+                          <span key={capability} className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-medium text-[var(--cc-foreground)]">
                             {displayLabel(capability)}
                           </span>
                         ))}
@@ -207,7 +207,7 @@ export default async function AIFornecedoresPage({
                     <input type="hidden" name="provider_id" value={provider.id} />
                     <button
                       type="submit"
-                      className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200"
+                      className="rounded-lg bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-semibold text-[var(--cc-foreground)] hover:bg-slate-200"
                     >
                       Validar agora
                     </button>
@@ -219,8 +219,8 @@ export default async function AIFornecedoresPage({
         </Card>
 
         <Card className="p-5">
-          <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><ShieldCheck size={18} /> Segurança</h2>
-          <div className="mt-4 space-y-3 text-sm text-slate-600">
+          <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><ShieldCheck size={18} /> Segurança</h2>
+          <div className="mt-4 space-y-3 text-sm text-[var(--cc-secondary)]">
             <p>• Credenciais sensíveis ficam fora da aplicação.</p>
             <p>• Serviços na nuvem recebem apenas contexto necessário.</p>
             <p>• IA local só será marcada como activa após verificação real.</p>
@@ -230,8 +230,8 @@ export default async function AIFornecedoresPage({
       </div>
 
       <Card className="mt-6">
-        <div className="border-b border-slate-200 p-5">
-          <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><RefreshCw size={18} /> Fila de sincronização</h2>
+        <div className="border-b border-[var(--cc-border)] p-5">
+          <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><RefreshCw size={18} /> Fila de sincronização</h2>
         </div>
         <div className="p-5">
           {!queue?.length ? (
@@ -239,13 +239,13 @@ export default async function AIFornecedoresPage({
           ) : (
             <div className="space-y-3">
               {queue.map((item) => (
-                <div key={item.id} className="rounded-xl border border-slate-200 p-3">
+                <div key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-950">{displayLabel(item.operation)} · {displayLabel(item.entity_type)}</p>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{displayLabel(item.status)}</span>
+                    <p className="text-sm font-medium text-[var(--cc-foreground)]">{displayLabel(item.operation)} · {displayLabel(item.entity_type)}</p>
+                    <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-xs font-semibold">{displayLabel(item.status)}</span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)} · tentativas {item.attempts}</p>
-                  {item.last_error && <p className="mt-2 text-xs text-red-700">{item.last_error}</p>}
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">{formatDateTime(item.created_at)} · tentativas {item.attempts}</p>
+                  {item.last_error && <p className="mt-2 text-xs text-[var(--cc-danger)]">{item.last_error}</p>}
                 </div>
               ))}
             </div>
