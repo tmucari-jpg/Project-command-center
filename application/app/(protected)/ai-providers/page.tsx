@@ -86,7 +86,7 @@ export default async function AIFornecedoresPage({
           Regra operacional: usar IA na nuvem quando estiver saudável; se ficar indisponível, usar IA local apenas quando o endpoint local estiver validado e alcançável a partir do runtime do PCC.
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Sem provider saudável, o PCC continua a executar as funções normais baseadas em dados e regras, mas não deve simular capacidades de IA. O modo totalmente offline do browser não está disponível porque os dados operacionais dependem do Supabase.
+          Sem provider saudável, o PCC continua a executar as funções normais baseadas em dados e regras, mas não deve simular capacidades de IA. O modo offline operacional permanece disponível após a criação do snapshot local; capacidades de IA local dependem de um endpoint local validado e acessível.
         </p>
         <div className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Modo de IA actual</p>
