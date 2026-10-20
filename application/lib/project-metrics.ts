@@ -12,16 +12,19 @@ export function projectHealth({
   progress,
   dueDate,
   openBlockers,
+  overdueActions = 0,
 }: {
   progress: number;
   dueDate?: string | null;
   openBlockers: number;
+  overdueActions?: number;
 }) {
-  if (openBlockers > 0) return "at_risk";
-  if (dueDate && new Date(`${dueDate}T23:59:59`).getTime() < Date.now() && progress < 100) {
+  if (progress >= 100) return "completed";
+  if (dueDate && new Date(`${dueDate}T23:59:59`).getTime() < Date.now()) {
     return "delayed";
   }
-  return progress >= 100 ? "completed" : "on_track";
+  if (openBlockers > 0 || overdueActions > 0) return "at_risk";
+  return "on_track";
 }
 
 
@@ -52,6 +55,7 @@ export function executiveProjectHealth({
   progress,
   dueDate,
   openBlockers,
+  overdueActions = 0,
   activeDependencies,
   nextReviewDate,
   planStale,
@@ -61,6 +65,7 @@ export function executiveProjectHealth({
   progress: number;
   dueDate?: string | null;
   openBlockers: number;
+  overdueActions?: number;
   activeDependencies: number;
   nextReviewDate?: string | null;
   planStale: boolean;
@@ -82,6 +87,7 @@ export function executiveProjectHealth({
   let score = 100;
   if (delayed) score -= 30;
   if (openBlockers > 0) score -= 25;
+  if (overdueActions > 0) score -= 20;
   if (activeDependencies > 0) score -= 15;
   if (reviewOverdue) score -= 15;
   if (planStale) score -= 10;
