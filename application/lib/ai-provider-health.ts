@@ -79,6 +79,92 @@ async function validateOpenAI(profile: AIProviderHealthProfile): Promise<AIProvi
   }
 }
 
+async function validateOpenAICompatibleCloud(
+  profile: AIProviderHealthProfile,
+): Promise<AIProviderHealthResult> {
+  const config =
+    profile.provider === "moonshot"
+      ? {
+          apiKey: process.env.MOONSHOT_API_KEY,
+          base: profile.endpoint_hint?.trim() || "https://api.moonshot.ai/v1",
+          model: process.env.MOONSHOT_MODEL?.trim() || profile.model_hint?.trim(),
+          label: "Kimi / Moonshot",
+        }
+      : profile.provider === "qwen_cloud"
+        ? {
+            apiKey: process.env.QWEN_API_KEY,
+            base:
+              profile.endpoint_hint?.trim() ||
+              "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+            model: process.env.QWEN_MODEL?.trim() || profile.model_hint?.trim(),
+            label: "Qwen cloud",
+          }
+        : null;
+
+  if (!config) {
+    return { status: "unknown", message: "Provider cloud sem adaptador dedicado." };
+  }
+
+  if (!config.apiKey) {
+    return {
+      status: "offline",
+      message: `${profile.provider === "moonshot" ? "MOONSHOT_API_KEY" : "QWEN_API_KEY"} não está configurada neste runtime.`,
+    };
+  }
+
+  const base = config.base.replace(/\/$/, "");
+
+  try {
+    if (!config.model) {
+      const { response, latency_ms } = await timedFetch(`${base}/models`, {
+        headers: { Authorization: `Bearer ${config.apiKey}` },
+      });
+
+      return response.ok
+        ? {
+            status: "healthy",
+            message: `${config.label} validado; modelo ainda não definido.`,
+            latency_ms,
+          }
+        : {
+            status: response.status >= 500 || response.status === 429 ? "degraded" : "offline",
+            message: `${config.label} respondeu HTTP ${response.status}.`,
+            latency_ms,
+          };
+    }
+
+    const { response, latency_ms } = await timedFetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: config.model,
+        messages: [{ role: "user", content: "Responda apenas OK." }],
+        max_tokens: 8,
+      }),
+    });
+
+    return response.ok
+      ? {
+          status: "healthy",
+          message: `${config.label} e modelo configurado responderam a uma chamada real.`,
+          latency_ms,
+        }
+      : {
+          status: response.status >= 500 || response.status === 429 ? "degraded" : "offline",
+          message: `${config.label} respondeu HTTP ${response.status} ao teste real do modelo.`,
+          latency_ms,
+        };
+  } catch (error) {
+    return {
+      status: "offline",
+      message: error instanceof Error ? error.message : "Falha de ligação ao provider.",
+    };
+  }
+}
+
 async function validateOpenAICompatibleLocal(profile: AIProviderHealthProfile): Promise<AIProviderHealthResult> {
   const endpoint = profile.endpoint_hint?.trim();
   if (!endpoint) {
@@ -140,6 +226,10 @@ export async function validateAIProviderHealth(
   profile: AIProviderHealthProfile,
 ): Promise<AIProviderHealthResult> {
   if (profile.provider === "openai") return validateOpenAI(profile);
+
+  if (profile.provider === "moonshot" || profile.provider === "qwen_cloud") {
+    return validateOpenAICompatibleCloud(profile);
+  }
 
   if (profile.provider === "qwen_local" || profile.provider === "koboldcpp_local") {
     return validateOpenAICompatibleLocal(profile);

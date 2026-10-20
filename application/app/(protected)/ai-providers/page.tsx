@@ -132,6 +132,8 @@ export default async function AIFornecedoresPage({
         <form action={registerAIProviderProfile} className="mt-4 grid gap-4 md:grid-cols-2">
           <Select label="Provider" name="provider" defaultValue="qwen_local">
             <option value="qwen_local">Qwen local</option>
+            <option value="qwen_cloud">Qwen cloud</option>
+            <option value="moonshot">Kimi / Moonshot</option>
             <option value="koboldcpp_local">KoboldCPP local</option>
             <option value="openai">OpenAI</option>
             <option value="groq">Groq</option>
@@ -141,7 +143,7 @@ export default async function AIFornecedoresPage({
           <Field label="Nome" name="label" required />
           <Select label="Modo" name="mode" defaultValue="local">
             <option value="local">Local</option>
-            <option value="cloud">Cloud</option>
+            <option value="cloud">Nuvem</option>
           </Select>
           <Field label="Prioridade" name="priority" type="number" min={1} max={100} defaultValue={10} />
           <Select label="Classe de custo" name="cost_class" defaultValue="free">
