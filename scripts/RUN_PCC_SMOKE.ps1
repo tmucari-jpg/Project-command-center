@@ -38,21 +38,26 @@ function Stop-RepoLocalNodeProcesses([string]$RepoPath) {
   try {
     $processes = @(
       Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -and $_.CommandLine -like "*$RepoPath*" }
+        Where-Object {
+          $_.CommandLine -and (
+            $_.CommandLine -like "*$RepoPath*" -or
+            $_.CommandLine -like "*PCC_SMOKE*"
+          )
+        }
     )
 
     if ($processes.Count -eq 0) {
-      Pass "No repository-local Node processes running"
+      Pass "No PCC repository/temp Node processes running"
       return
     }
 
     foreach ($proc in $processes) {
-      Write-Host "INFO - Stopping stale/concurrent PCC node.exe PID $($proc.ProcessId)" -ForegroundColor Yellow
+      Write-Host "INFO - Stopping stale/concurrent PCC node.exe PID $($proc.ProcessId): $($proc.CommandLine)" -ForegroundColor Yellow
       Stop-Process -Id $proc.ProcessId -Force -ErrorAction Stop
     }
 
     Start-Sleep -Seconds 1
-    Pass "Repository-local Node processes cleared"
+    Pass "PCC repository/temp Node processes cleared"
   }
   catch {
     Fail "Could not clear repository-local Node processes: $($_.Exception.Message)"
