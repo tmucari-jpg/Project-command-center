@@ -18,7 +18,7 @@ export default async function ProjectsPage({
   const params = await searchParams;
   const { supabase, user } = await requireUser();
 
-  const [{ data: projects, error }, { data: blockers }] = await Promise.all([
+  const [{ data: projects, error }, { data: blockers }, { data: actions }] = await Promise.all([
     supabase
       .from("projects")
       .select("*, objectives(title)")
@@ -29,12 +29,28 @@ export default async function ProjectsPage({
       .select("project_id,status")
       .eq("user_id", user.id)
       .in("status", ["open", "investigating", "waiting"]),
+    supabase
+      .from("actions")
+      .select("project_id,status,due_at")
+      .eq("user_id", user.id)
+      .neq("status", "completed")
+      .neq("status", "cancelled"),
   ]);
 
   const blockerCounts = new Map<string, number>();
   (blockers ?? []).forEach((blocker) => {
     if (!blocker.project_id) return;
     blockerCounts.set(blocker.project_id, (blockerCounts.get(blocker.project_id) ?? 0) + 1);
+  });
+
+  const overdueActionCounts = new Map<string, number>();
+  const now = new Date();
+  (actions ?? []).forEach((action) => {
+    if (!action.project_id || !action.due_at || new Date(action.due_at) >= now) return;
+    overdueActionCounts.set(
+      action.project_id,
+      (overdueActionCounts.get(action.project_id) ?? 0) + 1,
+    );
   });
 
   return (
@@ -61,6 +77,7 @@ export default async function ProjectsPage({
                   progress: Number(project.progress ?? 0),
                   dueDate: project.due_date,
                   openBlockers: blockerCounts.get(project.id) ?? 0,
+                  overdueActions: overdueActionCounts.get(project.id) ?? 0,
                 });
 
                 return (
