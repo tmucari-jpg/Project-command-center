@@ -22,7 +22,7 @@ Para smoke final e futuras regressões em Windows/PowerShell, usar apenas:
 
 ```powershell
 cd D:\03_PROJECTS\Project-Command-Center
-powershell -ExecutionPolicy Bypass -File .\scripts\RUN_PCC_SMOKE.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\RUN_PCC_SMOKE.ps1
 ```
 
 O operador não deve executar `FULL_SMOKE_POWERSHELL.ps1` directamente em condições normais.
@@ -132,3 +132,23 @@ Uma ocorrência pode ser marcada como aprendida quando:
 Nenhum sistema elimina 100% dos erros futuros.
 
 O objectivo deste protocolo é eliminar **erros repetidos da mesma classe** e reduzir o custo de diagnóstico dos novos erros.
+
+
+### 6. Mistura de PowerShell 7 e Windows PowerShell 5.1
+
+Problema observado:
+- o operador iniciava o processo em PowerShell 7;
+- o launcher abria internamente `powershell.exe` (Windows PowerShell 5.1);
+- no passo npm, o pipeline do processo antigo podia ser terminado sem um erro npm útil, produzindo apenas `The pipeline has been stopped`.
+
+Prevenção:
+- o launcher e o FULL_SMOKE exigem PowerShell 7+;
+- relaunches usam o próprio `pwsh.exe` de `$PSHOME`;
+- referências a `powershell.exe` nos scripts de smoke são bloqueadas pelo CI;
+- cada comando npm tem agora uma sub-etapa identificada (4.1 a 4.7);
+- cada comando npm grava stdout/stderr em logs próprios e apresenta heartbeat enquanto está em execução;
+- em falha, o smoke mostra o ExitCode e o fim dos logs relevantes.
+
+Resultado:
+- eliminamos a camada Windows PowerShell 5.1 do smoke;
+- deixa de existir o estado ambíguo "parou no 4/12" sem saber qual comando estava activo.
