@@ -144,6 +144,13 @@ export default async function ProjectHubPage({
   const activeDependencies = (dependencies ?? []).filter((item) =>
     ["pending", "resolving"].includes(item.status),
   );
+  const now = new Date();
+  const overdueActions = (actions ?? []).filter(
+    (item) =>
+      item.due_at &&
+      new Date(item.due_at) < now &&
+      !["completed", "cancelled"].includes(item.status),
+  );
   const planStale = isProjectPlanStale(strategyPlan?.updated_at, {
     latestEvidenceAt: evidence?.[0]?.created_at,
     latestDecisionAt: decisions?.[0]?.decided_at,
@@ -152,6 +159,7 @@ export default async function ProjectHubPage({
     progress: Number(project.progress ?? 0),
     dueDate: project.due_date,
     openBlockers: openBlockers.length,
+    overdueActions: overdueActions.length,
     activeDependencies: activeDependencies.length,
     nextReviewDate: project.next_review_date,
     planStale,
@@ -284,6 +292,7 @@ export default async function ProjectHubPage({
             <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Acções</span><strong>{actions?.length ?? 0}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Entregáveis</span><strong>{deliverables?.length ?? 0}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Bloqueios abertos</span><strong>{openBlockers.length}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Acções em atraso</span><strong>{overdueActions.length}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Evidências</span><strong>{evidence?.length ?? 0}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Métricas</span><strong>{metrics?.length ?? 0}</strong></p>
             <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Memórias</span><strong>{memory?.length ?? 0}</strong></p>
