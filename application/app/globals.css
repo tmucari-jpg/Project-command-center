@@ -17,8 +17,11 @@
   --cc-gold-soft: #e6c681;
 
   --cc-danger: #c94b3c;
+  --cc-danger-soft: #fcece9;
   --cc-success: #2e7d5b;
+  --cc-success-soft: #e8f3ef;
   --cc-warning: #c99439;
+  --cc-warning-soft: #fbf3e4;
 
   --cc-radius-sm: 10px;
   --cc-radius-md: 14px;
