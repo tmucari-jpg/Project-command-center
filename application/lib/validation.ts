@@ -97,6 +97,7 @@ export const projectSchema = z
 
 export const deliverableSchema = z.object({
   project_id: z.string().uuid(),
+  owner_id: optionalUuid,
   title: z.string().trim().min(2).max(180),
   description: optionalText(),
   priority: z.enum(PRIORITIES),
