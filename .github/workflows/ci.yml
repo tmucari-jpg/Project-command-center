@@ -134,11 +134,11 @@ jobs:
       - name: Validate API auth and worktree cleanup guards
         shell: pwsh
         run: |
-          $proxy = Get-Content "../application/lib/supabase/proxy.ts" -Raw
+          $rootProxy = Get-Content "../application/proxy.ts" -Raw
           $smoke = Get-Content "../scripts/FULL_SMOKE_POWERSHELL.ps1" -Raw
 
-          if (-not $proxy.Contains('pathname.startsWith("/api/")')) {
-            Write-Error "Missing generic anonymous API 401 guard."
+          if (-not $rootProxy.Contains("((?!api|_next/static")) {
+            Write-Error "API routes must be excluded from Next proxy so route handlers own API authentication."
             exit 1
           }
 
