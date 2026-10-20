@@ -84,7 +84,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
               Resumo
             </p>
             <div className="space-y-1">
-              <NavLink pathname={pathname} href="/dashboard" label="Dashboard" Icon={Gauge} />
+              <NavLink pathname={pathname} href="/dashboard" label="Painel" Icon={Gauge} />
             </div>
           </div>
           {navigationGroups.map((group) => (
@@ -114,7 +114,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
 export function MobileNav() {
   const pathname = usePathname();
   const mobileItems = [
-    { href: "/dashboard", label: "Resumo", icon: Gauge },
+    { href: "/dashboard", label: "Painel", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
     { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
