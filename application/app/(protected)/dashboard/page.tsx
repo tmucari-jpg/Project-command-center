@@ -140,11 +140,10 @@ export default async function DashboardPage() {
       const projectBlockers = blockers.filter((item) => item.project_id === project.id).length;
       const projectDependencies = dependencies.filter((item) => item.project_id === project.id).length;
       const plan = planByProject.get(project.id);
-      const planStale = isProjectPlanStale(plan?.updated_at, [
-        project.updated_at,
-        latestEvidenceByProject.get(project.id),
-        latestDecisionByProject.get(project.id),
-      ]);
+      const planStale = isProjectPlanStale(plan?.updated_at, {
+        latestEvidenceAt: latestEvidenceByProject.get(project.id),
+        latestDecisionAt: latestDecisionByProject.get(project.id),
+      });
       const health = executiveProjectHealth({
         progress: Number(project.progress ?? 0),
         dueDate: project.due_date,
