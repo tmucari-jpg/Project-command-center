@@ -61,7 +61,7 @@ export default async function EvidencePage({
 
       <div className="space-y-6">
         <ManualEntry>
-          <h2 className="text-lg font-semibold text-slate-950">Nova evidência</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Nova evidência</h2>
           <form action={createEvidence} className="mt-5 space-y-4">
             <Select label="Tipo" name="evidence_type" defaultValue="comment">
               {EVIDENCE_TYPES.map((value) => (
@@ -95,8 +95,8 @@ export default async function EvidencePage({
         </ManualEntry>
 
         <Card>
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Evidências registadas</h2>
+          <div className="border-b border-[var(--cc-border)] p-5">
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Evidências registadas</h2>
           </div>
           <div className="p-5">
             {!evidence?.length ? (
@@ -104,17 +104,17 @@ export default async function EvidencePage({
             ) : (
               <div className="space-y-4">
                 {evidence.map((item) => (
-                  <article key={item.id} className="rounded-2xl border border-slate-200 p-4">
+                  <article key={item.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] p-4">
                     <div className="flex flex-col justify-between gap-3 md:flex-row">
                       <div className="min-w-0">
                         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--cc-accent-soft)]">
                           {displayLabel(item.evidence_type)}
                         </p>
-                        <h3 className="mt-1 font-semibold text-slate-950">{item.title || "Evidência"}</h3>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <h3 className="mt-1 font-semibold text-[var(--cc-foreground)]">{item.title || "Evidência"}</h3>
+                        <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                           {formatDateTime(item.created_at)} · {item.actions?.title ?? item.deliverables?.title ?? item.projects?.title ?? "Sem relação"}
                         </p>
-                        {item.description && <p className="mt-3 text-sm text-slate-700">{item.description}</p>}
+                        {item.description && <p className="mt-3 text-sm text-[var(--cc-foreground)]">{item.description}</p>}
                         {item.url && (
                           <a className="mt-3 block truncate text-sm font-medium text-[var(--cc-accent)] hover:underline" href={item.url} target="_blank" rel="noreferrer">
                             {item.url}
