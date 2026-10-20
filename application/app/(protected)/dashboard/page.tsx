@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { executiveProjectHealth, isProjectPlanStale } from "@/lib/project-metrics";
+import { GOVERNANCE_GATE_LABELS, GOVERNANCE_STATUS_LABELS } from "@/lib/governance";
 
 export default async function DashboardPage() {
   const { supabase, user } = await requireUser();
@@ -30,7 +31,7 @@ export default async function DashboardPage() {
     decisionFreshnessResult,
   ] = await Promise.all([
     supabase.from("objectives").select("id,status,progress", { count: "exact" }).eq("user_id", user.id),
-    supabase.from("projects").select("id,title,status,progress,due_date,updated_at,owner_id,next_review_date,decision_gate,gate_status", { count: "exact" }).eq("user_id", user.id),
+    supabase.from("projects").select("id,title,status,progress,due_date,updated_at,owner_id,next_review_date,review_cadence_days,governance_gate,governance_gate_status", { count: "exact" }).eq("user_id", user.id),
     supabase
       .from("actions")
       .select("id,title,status,due_at,priority,actual_minutes,projects(title)")
@@ -77,10 +78,10 @@ export default async function DashboardPage() {
       .eq("is_next_action", true)
       .maybeSingle(),
     supabase
-      .from("project_dependencies")
-      .select("id,project_id,status")
+      .from("project_governance_dependencies")
+      .select("id,project_id,status,owner_role,kind,blocks_progress")
       .eq("user_id", user.id)
-      .eq("status", "active"),
+      .in("status", ["pending", "resolving"]),
     supabase
       .from("project_strategy_execution_plans")
       .select("project_id,updated_at,missing_items,status")
@@ -120,7 +121,6 @@ export default async function DashboardPage() {
 
   const ownerById = new Map(profiles.map((profile) => [profile.id, profile.full_name || "Utilizador"]));
   const planByProject = new Map(plans.map((plan) => [plan.project_id, plan]));
-  const economicsByProject = new Map(economics.map((item) => [item.project_id, item]));
   const latestEvidenceByProject = new Map<string, string>();
   const latestDecisionByProject = new Map<string, string>();
 
@@ -152,27 +152,16 @@ export default async function DashboardPage() {
         activeDependencies: projectDependencies,
         nextReviewDate: project.next_review_date,
         planStale,
-        gateStatus: project.gate_status,
+        gateStatus: project.governance_gate_status,
         hasOwner: Boolean(project.owner_id),
       });
-      const economic = economicsByProject.get(project.id);
-      const economicsIncomplete =
-        project.decision_gate === "scale" &&
-        (!economic ||
-          economic.cac == null ||
-          economic.conversion_rate_pct == null ||
-          economic.arpu == null ||
-          economic.gross_margin_pct == null ||
-          economic.payback_months == null);
-
       const attention: string[] = [];
       if (!project.owner_id) attention.push("sem responsável");
       if (health.reviewOverdue) attention.push("revisão vencida");
       if (projectBlockers > 0) attention.push(`${projectBlockers} bloqueio(s)`);
       if (projectDependencies > 0) attention.push(`${projectDependencies} dependência(s)`);
       if (planStale) attention.push("plano desactualizado");
-      if (project.gate_status === "blocked") attention.push("decisão bloqueada");
-      if (economicsIncomplete) attention.push("indicadores económicos incompletos");
+      if (project.governance_gate_status === "blocked") attention.push("Gate bloqueado");
 
       const attentionScore =
         (health.status === "delayed" ? 40 : health.status === "at_risk" ? 25 : 0) +
@@ -180,8 +169,7 @@ export default async function DashboardPage() {
         projectBlockers * 8 +
         projectDependencies * 4 +
         (planStale ? 6 : 0) +
-        (project.gate_status === "blocked" ? 15 : 0) +
-        (economicsIncomplete ? 10 : 0) +
+        (project.governance_gate_status === "blocked" ? 15 : 0) +
         (!project.owner_id ? 6 : 0);
 
       return {
@@ -191,7 +179,6 @@ export default async function DashboardPage() {
         health,
         attention,
         attentionScore,
-        economicsIncomplete,
       };
     })
     .sort((a, b) => b.attentionScore - a.attentionScore || a.title.localeCompare(b.title));
@@ -211,8 +198,8 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Visão geral"
-        title="Resumo"
+        eyebrow="Visão executiva"
+        title="Painel"
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -324,6 +311,9 @@ export default async function DashboardPage() {
                   <p className="mt-2 text-xs text-[var(--cc-secondary)]">
                     {project.attention.length ? project.attention.join(" · ") : "Sem intervenção imediata"}
                   </p>
+                  <p className="mt-1 text-xs text-[var(--cc-tertiary)]">
+                    {GOVERNANCE_GATE_LABELS[project.governance_gate] ?? project.governance_gate} · {GOVERNANCE_STATUS_LABELS[project.governance_gate_status] ?? project.governance_gate_status}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-tertiary)]">Responsável</p>
@@ -340,7 +330,7 @@ export default async function DashboardPage() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-tertiary)]">Etapa de decisão</p>
                   <p className="mt-1 text-sm text-[var(--cc-foreground)]">
-                    {displayLabel(project.decision_gate ?? "validate")} · {displayLabel(project.gate_status ?? "pending")}
+                    {displayLabel(project.governance_gate ?? "validate")} · {displayLabel(project.governance_gate_status ?? "pending")}
                   </p>
                   <p className="mt-1 text-xs text-[var(--cc-secondary)]">Saúde {project.health.score}%</p>
                 </div>
