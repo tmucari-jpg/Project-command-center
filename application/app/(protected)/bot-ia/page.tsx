@@ -59,8 +59,8 @@ export default async function BotIAPage() {
               <Bot size={19} /> IA operacional dentro do PCC
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-              O BotIA serve para melhorar projectos e tratar bloqueios reais sem sair do Project Command Center.
-              Lê apenas o contexto necessário, prepara alterações permitidas e mantém registo de cada execução.
+              O BotIA permite escrever comandos e fazer perguntas sem sair do Project Command Center.
+              Responde com base no contexto real do projecto e, quando necessário, prepara alterações operacionais para confirmação.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -107,6 +107,8 @@ export default async function BotIAPage() {
                     ? run.input_context as Record<string, unknown>
                     : {};
                 const summary = typeof context.summary === "string" ? context.summary : null;
+                const response = typeof context.response === "string" ? context.response : null;
+                const intent = typeof context.intent === "string" ? context.intent : null;
 
                 return (
                   <article
@@ -125,10 +127,13 @@ export default async function BotIAPage() {
                       </span>
                     </div>
                     {summary && (
-                      <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">{summary}</p>
+                      <p className="mt-3 text-sm font-medium text-[var(--cc-foreground)]">{summary}</p>
+                    )}
+                    {response && (
+                      <p className="mt-2 line-clamp-3 text-sm leading-6 text-[var(--cc-secondary)]">{response}</p>
                     )}
                     <p className="mt-2 text-xs text-[var(--cc-secondary)]">
-                      {formatDateTime(run.created_at)} · QA {displayLabel(run.qa_status)}
+                      {intent ? `${displayLabel(intent)} · ` : ""}{formatDateTime(run.created_at)} · QA {displayLabel(run.qa_status)}
                     </p>
                   </article>
                 );
