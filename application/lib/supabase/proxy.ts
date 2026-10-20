@@ -52,8 +52,8 @@ export async function updateSession(request: NextRequest) {
   const isAuthenticated = Boolean(claims?.sub);
   const pathname = request.nextUrl.pathname;
 
-  if (!isAuthenticated && pathname.startsWith("/api/offline/")) {
-    return NextResponse.json({ error: "Sessão necessária." }, { status: 401 });
+  if (!isAuthenticated && pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   if (!isAuthenticated && !isPublicPath(pathname)) {
