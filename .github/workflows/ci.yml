@@ -131,6 +131,22 @@ jobs:
             }
           }
 
+      - name: Validate API auth and worktree cleanup guards
+        shell: pwsh
+        run: |
+          $proxy = Get-Content "../application/lib/supabase/proxy.ts" -Raw
+          $smoke = Get-Content "../scripts/FULL_SMOKE_POWERSHELL.ps1" -Raw
+
+          if (-not $proxy.Contains('pathname.startsWith("/api/")')) {
+            Write-Error "Missing generic anonymous API 401 guard."
+            exit 1
+          }
+
+          if (-not $smoke.Contains("Stop-ProcessesForPath")) {
+            Write-Error "Missing isolated worktree process-tree cleanup."
+            exit 1
+          }
+
       - name: Typecheck
         run: npm run typecheck
 
