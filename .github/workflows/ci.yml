@@ -49,6 +49,19 @@ jobs:
             }
           }
 
+      - name: Enforce pwsh-only smoke runtime
+        shell: pwsh
+        run: |
+          $scripts = @(
+            "../scripts/RUN_PCC_SMOKE.ps1",
+            "../scripts/FULL_SMOKE_POWERSHELL.ps1"
+          )
+          $legacyRefs = Select-String -Path $scripts -Pattern "powershell\.exe" -SimpleMatch:$false
+          if ($legacyRefs) {
+            $legacyRefs | ForEach-Object { Write-Error "Legacy Windows PowerShell reference found: $($_.Path):$($_.LineNumber) $($_.Line)" }
+            exit 1
+          }
+
       - name: Typecheck
         run: npm run typecheck
 
