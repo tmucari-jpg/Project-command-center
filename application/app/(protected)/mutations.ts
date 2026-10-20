@@ -107,7 +107,7 @@ export async function validateAIProviderProfile(formData: FormData) {
 export async function registerAIProviderProfile(formData: FormData) {
   const path = "/ai-providers";
   const parsed = z.object({
-    provider: z.enum(["openai", "groq", "huggingchat", "qwen_local", "koboldcpp_local", "other"]),
+    provider: z.enum(["openai", "moonshot", "qwen_cloud", "groq", "huggingchat", "qwen_local", "koboldcpp_local", "other"]),
     label: z.string().trim().min(2).max(120),
     mode: z.enum(["cloud", "local"]),
     priority: z.coerce.number().int().min(1).max(100),
