@@ -1061,10 +1061,28 @@ export async function createDeliverable(formData: FormData) {
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
   const { supabase, user } = await requireUser();
-  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,owner_id")
+    .eq("id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+
+  const ownerId = parsed.data.owner_id ?? project.owner_id ?? null;
+  if (ownerId) {
+    const { data: owner, error: ownerError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", ownerId)
+      .maybeSingle();
+    if (ownerError || !owner) fail(path, "Responsável do entregável inválido.");
+  }
 
   const { error } = await supabase.from("deliverables").insert({
     ...parsed.data,
+    owner_id: ownerId,
     user_id: user.id,
   });
 
