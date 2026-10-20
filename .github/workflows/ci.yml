@@ -32,6 +32,17 @@ jobs:
       - name: Validate UI standard
         run: npm run ui:standard
 
+      - name: Validate PowerShell smoke syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("../scripts/FULL_SMOKE_POWERSHELL.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
+
       - name: Typecheck
         run: npm run typecheck
 
