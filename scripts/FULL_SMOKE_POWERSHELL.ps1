@@ -1,4 +1,4 @@
-# PCC full smoke - PowerShell only, safe for Windows PowerShell 5+
+# PCC full smoke - PowerShell 7+ only
 param(
   [string]$RepoPath = "D:\03_PROJECTS\Project-Command-Center",
   [int]$Port = 3000,
@@ -9,6 +9,19 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($PSVersionTable.PSEdition -ne "Core" -or $PSVersionTable.PSVersion.Major -lt 7) {
+  Write-Host ""
+  Write-Host "FAIL - PCC smoke requires PowerShell 7+ (pwsh), not Windows PowerShell 5.1." -ForegroundColor Red
+  exit 1
+}
+
+$pwshExe = Join-Path $PSHOME "pwsh.exe"
+if (-not (Test-Path $pwshExe)) {
+  Write-Host ""
+  Write-Host "FAIL - Could not resolve pwsh.exe from PSHOME: $PSHOME" -ForegroundColor Red
+  exit 1
+}
 
 function Write-Step([string]$Message) {
   Write-Host ""
@@ -132,27 +145,78 @@ function Convert-SecureToPlain([Security.SecureString]$Secure) {
 }
 
 
-function Invoke-NpmProcess([string[]]$Arguments, [string]$WorkingDirectory) {
+function Invoke-NpmProcess(
+  [string]$Label,
+  [string[]]$Arguments,
+  [string]$WorkingDirectory
+) {
   $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
   if (-not $npmCmd) {
     Stop-WithError "npm.cmd was not found in PATH."
   }
 
+  $safeLabel = ($Label -replace '[^A-Za-z0-9._-]', '-').Trim('-')
+  $stdoutPath = Join-Path $script:backupRoot "npm-$($script:stamp)-$safeLabel.out.log"
+  $stderrPath = Join-Path $script:backupRoot "npm-$($script:stamp)-$safeLabel.err.log"
+
+  Write-Host "RUN  - $Label" -ForegroundColor Cyan
+
   $startArgs = @{
     FilePath = $npmCmd.Source
     ArgumentList = $Arguments
     WorkingDirectory = $WorkingDirectory
-    NoNewWindow = $true
-    Wait = $true
+    RedirectStandardOutput = $stdoutPath
+    RedirectStandardError = $stderrPath
     PassThru = $true
+    WindowStyle = "Hidden"
   }
 
   $process = Start-Process @startArgs
-  return [int]$process.ExitCode
+  $started = Get-Date
+  $lastHeartbeat = -10
+
+  while (-not $process.HasExited) {
+    Start-Sleep -Seconds 2
+    $process.Refresh()
+    $elapsed = [int]((Get-Date) - $started).TotalSeconds
+    if (($elapsed - $lastHeartbeat) -ge 10) {
+      Write-Host "      $Label still running... ${elapsed}s" -ForegroundColor DarkGray
+      $lastHeartbeat = $elapsed
+    }
+  }
+
+  $exitCode = [int]$process.ExitCode
+
+  if ($exitCode -eq 0) {
+    Write-Pass "$Label"
+    $tail = @(Get-Content $stdoutPath -Tail 8 -ErrorAction SilentlyContinue)
+    if ($tail.Count -gt 0) {
+      $tail | ForEach-Object { Write-Host "      $_" -ForegroundColor DarkGray }
+    }
+  }
+  else {
+    Write-Host "FAIL - $Label exited with code $exitCode" -ForegroundColor Red
+    Write-Host "      stdout: $stdoutPath" -ForegroundColor Yellow
+    Write-Host "      stderr: $stderrPath" -ForegroundColor Yellow
+
+    $outTail = @(Get-Content $stdoutPath -Tail 60 -ErrorAction SilentlyContinue)
+    $errTail = @(Get-Content $stderrPath -Tail 60 -ErrorAction SilentlyContinue)
+
+    if ($outTail.Count -gt 0) {
+      Write-Host "---- npm stdout tail ----" -ForegroundColor Yellow
+      $outTail | ForEach-Object { Write-Host $_ }
+    }
+    if ($errTail.Count -gt 0) {
+      Write-Host "---- npm stderr tail ----" -ForegroundColor Yellow
+      $errTail | ForEach-Object { Write-Host $_ }
+    }
+  }
+
+  return $exitCode
 }
 
 function Invoke-NpmCiWithWindowsRetry([string]$AppPath, [string]$RepoPath) {
-  $ciExit = Invoke-NpmProcess -Arguments @("ci") -WorkingDirectory $AppPath
+  $ciExit = Invoke-NpmProcess -Label "4.1 npm ci" -Arguments @("ci") -WorkingDirectory $AppPath
   if ($ciExit -eq 0) {
     return
   }
@@ -188,12 +252,12 @@ function Invoke-NpmCiWithWindowsRetry([string]$AppPath, [string]$RepoPath) {
     Stop-WithError "Could not remove application node_modules after npm ci failure. A Windows process is still holding files open."
   }
 
-  $cacheExit = Invoke-NpmProcess -Arguments @("cache","verify") -WorkingDirectory $AppPath
+  $cacheExit = Invoke-NpmProcess -Label "4.1 npm cache verify" -Arguments @("cache","verify") -WorkingDirectory $AppPath
   if ($cacheExit -ne 0) {
     Write-Warn "npm cache verify returned exit code $cacheExit; continuing to one clean npm ci retry."
   }
 
-  $retryExit = Invoke-NpmProcess -Arguments @("ci") -WorkingDirectory $AppPath
+  $retryExit = Invoke-NpmProcess -Label "4.1 npm ci retry" -Arguments @("ci") -WorkingDirectory $AppPath
   if ($retryExit -ne 0) {
     Stop-WithError "npm ci failed after the Windows cleanup retry with exit code $retryExit."
   }
@@ -316,7 +380,7 @@ try {
     if ($SkipAuthenticatedDataSmoke) { $relaunchArgs += "-SkipAuthenticatedDataSmoke" }
     if ($SkipProductionProbe) { $relaunchArgs += "-SkipProductionProbe" }
 
-    & powershell.exe @relaunchArgs
+    & $pwshExe @relaunchArgs
     exit $LASTEXITCODE
   }
 
@@ -370,22 +434,22 @@ try {
 
   Invoke-NpmCiWithWindowsRetry -AppPath $appPath -RepoPath $RepoPath
 
-  $exit = Invoke-NpmProcess -Arguments @("run","ui:standard") -WorkingDirectory $appPath
+  $exit = Invoke-NpmProcess -Label "4.2 UI standard" -Arguments @("run","ui:standard") -WorkingDirectory $appPath
   if ($exit -ne 0) { Stop-WithError "UI standard validation failed with exit code $exit." }
 
-  $exit = Invoke-NpmProcess -Arguments @("run","typecheck") -WorkingDirectory $appPath
+  $exit = Invoke-NpmProcess -Label "4.3 typecheck" -Arguments @("run","typecheck") -WorkingDirectory $appPath
   if ($exit -ne 0) { Stop-WithError "Typecheck failed with exit code $exit." }
 
-  $exit = Invoke-NpmProcess -Arguments @("test") -WorkingDirectory $appPath
+  $exit = Invoke-NpmProcess -Label "4.4 tests" -Arguments @("test") -WorkingDirectory $appPath
   if ($exit -ne 0) { Stop-WithError "Automated tests failed with exit code $exit." }
 
-  $exit = Invoke-NpmProcess -Arguments @("run","lint") -WorkingDirectory $appPath
+  $exit = Invoke-NpmProcess -Label "4.5 lint" -Arguments @("run","lint") -WorkingDirectory $appPath
   if ($exit -ne 0) { Stop-WithError "Lint failed with exit code $exit." }
 
-  $exit = Invoke-NpmProcess -Arguments @("audit","--omit=dev","--audit-level=high") -WorkingDirectory $appPath
+  $exit = Invoke-NpmProcess -Label "4.6 production dependency audit" -Arguments @("audit","--omit=dev","--audit-level=high") -WorkingDirectory $appPath
   if ($exit -ne 0) { Stop-WithError "Production dependency audit failed with exit code $exit." }
 
-  $exit = Invoke-NpmProcess -Arguments @("run","build") -WorkingDirectory $appPath
+  $exit = Invoke-NpmProcess -Label "4.7 build" -Arguments @("run","build") -WorkingDirectory $appPath
   if ($exit -ne 0) { Stop-WithError "Production build failed with exit code $exit." }
 
   Write-Pass "CI-equivalent validation complete"

@@ -10,6 +10,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+if ($PSVersionTable.PSEdition -ne "Core" -or $PSVersionTable.PSVersion.Major -lt 7) {
+  Write-Host ""
+  Write-Host "FAIL - PCC smoke requires PowerShell 7+ (pwsh), not Windows PowerShell 5.1." -ForegroundColor Red
+  Write-Host "Run: pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\RUN_PCC_SMOKE.ps1" -ForegroundColor Yellow
+  exit 1
+}
+
+$pwshExe = Join-Path $PSHOME "pwsh.exe"
+if (-not (Test-Path $pwshExe)) {
+  Write-Host ""
+  Write-Host "FAIL - Could not resolve pwsh.exe from PSHOME: $PSHOME" -ForegroundColor Red
+  exit 1
+}
+
 function Fail([string]$Message) {
   Write-Host ""
   Write-Host "FAIL - $Message" -ForegroundColor Red
@@ -132,7 +146,7 @@ try {
   if ($SkipAuthenticatedDataSmoke) { $args += "-SkipAuthenticatedDataSmoke" }
   if ($SkipProductionProbe) { $args += "-SkipProductionProbe" }
 
-  & powershell.exe @args
+  & $pwshExe @args
   $smokeExit = $LASTEXITCODE
 
   if ($smokeExit -ne 0) {
