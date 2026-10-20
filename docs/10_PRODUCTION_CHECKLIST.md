@@ -828,3 +828,22 @@ Current remaining Production Acceptance blocker:
 
 **BACKUP GATE: PASS**
 **PRODUCTION ACCEPTANCE: APPROVED**
+
+
+---
+
+## 46. PROTOCOLO ZERO RETRABALHO
+
+Para smoke final em Windows/PowerShell:
+
+- [ ] usar apenas `scripts/RUN_PCC_SMOKE.ps1` como ponto de entrada;
+- [ ] validar o SHA remoto autoritativo antes de executar o smoke;
+- [ ] garantir que o script executado é lido depois da sincronização;
+- [ ] auto-stash permitido apenas para `.gitignore` quando for a única alteração local;
+- [ ] alterações locais adicionais devem bloquear o smoke;
+- [ ] npm deve ser executado via `npm.cmd` com ExitCode explícito;
+- [ ] ENOTEMPTY/locks de `node_modules` devem activar limpeza controlada e apenas uma repetição;
+- [ ] qualquer nova classe de erro deve gerar prevenção/detecção permanente;
+- [ ] actualizar `docs/20_ZERO_REWORK_PROTOCOL.md` quando surgir uma nova lição operacional.
+
+Um problema não é considerado completamente resolvido se a solução depender de o operador memorizar uma sequência manual especial.

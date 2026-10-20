@@ -4,7 +4,8 @@ param(
   [int]$Port = 3000,
   [string]$ProductionUrl = "",
   [switch]$SkipAuthenticatedDataSmoke,
-  [switch]$SkipProductionProbe
+  [switch]$SkipProductionProbe,
+  [switch]$AfterSyncRelaunch
 )
 
 $ErrorActionPreference = "Stop"
@@ -270,19 +271,54 @@ try {
 
   Write-Step "2/12 Sync main safely"
 
-  git fetch origin
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "git fetch failed." }
+  $remoteLine = git ls-remote origin refs/heads/main
+  if ($LASTEXITCODE -ne 0 -or -not $remoteLine) {
+    Stop-WithError "Could not read the authoritative origin/main SHA."
+  }
+  $remoteMain = ($remoteLine -split "\s+")[0].Trim()
+
+  git fetch --prune origin "+refs/heads/main:refs/remotes/origin/main"
+  if ($LASTEXITCODE -ne 0) { Stop-WithError "git fetch of authoritative main failed." }
+
+  $trackingMain = (git rev-parse origin/main).Trim()
+  if ($trackingMain -ne $remoteMain) {
+    Stop-WithError "origin/main is stale after fetch. Remote=$remoteMain tracking=$trackingMain"
+  }
 
   git checkout main
   if ($LASTEXITCODE -ne 0) { Stop-WithError "Could not checkout main." }
 
-  git pull --ff-only origin main
+  git merge --ff-only origin/main
   if ($LASTEXITCODE -ne 0) {
-    Stop-WithError "git pull --ff-only failed. No reset or force operation was used."
+    Stop-WithError "Fast-forward to authoritative origin/main failed. No reset or force operation was used."
   }
 
   $releaseCommit = (git rev-parse HEAD).Trim()
-  Write-Pass "main synchronized at $releaseCommit"
+  if ($releaseCommit -ne $remoteMain) {
+    Stop-WithError "Local main is not the authoritative remote main. Local=$releaseCommit remote=$remoteMain"
+  }
+
+  Write-Pass "main synchronized and verified at $releaseCommit"
+
+  if ($releaseCommit -ne $beforeCommit -and -not $AfterSyncRelaunch) {
+    Write-Warn "The repository changed during this run. Relaunching the UPDATED smoke script from disk so an old in-memory script cannot continue."
+    try { Stop-Transcript | Out-Null } catch {}
+
+    $relaunchArgs = @(
+      "-NoProfile",
+      "-ExecutionPolicy", "Bypass",
+      "-File", $PSCommandPath,
+      "-RepoPath", $RepoPath,
+      "-Port", [string]$Port,
+      "-AfterSyncRelaunch"
+    )
+    if ($ProductionUrl) { $relaunchArgs += @("-ProductionUrl", $ProductionUrl) }
+    if ($SkipAuthenticatedDataSmoke) { $relaunchArgs += "-SkipAuthenticatedDataSmoke" }
+    if ($SkipProductionProbe) { $relaunchArgs += "-SkipProductionProbe" }
+
+    & powershell.exe @relaunchArgs
+    exit $LASTEXITCODE
+  }
 
   Write-Step "3/12 Validate runtime and environment"
 
