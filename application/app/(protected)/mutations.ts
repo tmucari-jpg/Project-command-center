@@ -41,6 +41,7 @@ import { executionArenaDefaults } from "@/lib/execution-arena";
 import { buildStrategyExecutionPlan } from "@/lib/project-plan";
 import { validateAIProviderHealth } from "@/lib/ai-provider-health";
 import { hasBlockingGovernanceRisk } from "@/lib/governance-risk";
+import { resolveNextReviewDate } from "@/lib/review-cadence";
 import { defaultMonetizationStatus, defaultReturnType } from "@/lib/value-return";
 
 function values(formData: FormData) {
@@ -758,15 +759,13 @@ export async function createProject(formData: FormData) {
   const { supabase, user, authUser } = await requireUser();
   await ensureOwned(supabase, "objectives", parsed.data.objective_id, user.id, path);
 
-  const nextReviewDate = new Date();
-  nextReviewDate.setDate(nextReviewDate.getDate() + 7);
-
   const { data: project, error } = await supabase
     .from("projects")
     .insert({
       ...parsed.data,
       owner_id: authUser.id,
-      next_review_date: nextReviewDate.toISOString().slice(0, 10),
+      next_review_date: null,
+      review_cadence_days: null,
       user_id: user.id,
     })
     .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,next_action,objective_id")
@@ -798,19 +797,25 @@ export async function updateProjectGovernance(formData: FormData) {
       (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
       z.string().uuid().optional(),
     ),
-    next_review_date: z.preprocess(
-      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
-      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    review_cadence_days: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().int().min(1).max(365).optional(),
     ),
-    decision_gate: z.enum(["validate", "launch", "scale", "hold", "stop"]),
-    gate_status: z.enum(["pending", "ready", "approved", "blocked"]),
   }).safeParse(values(formData));
 
   if (!parsed.success) fail("/projects", zodMessage(parsed.error));
 
   const path = `/projects/${parsed.data.project_id}`;
   const { supabase, user } = await requireUser();
-  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+
+  const { data: currentProject, error: currentError } = await supabase
+    .from("projects")
+    .select("id,next_review_date,review_cadence_days")
+    .eq("id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (currentError || !currentProject) fail(path, currentError?.message ?? "Projecto não encontrado.");
 
   if (parsed.data.owner_id) {
     const { data: owner, error: ownerError } = await supabase
@@ -821,103 +826,109 @@ export async function updateProjectGovernance(formData: FormData) {
     if (ownerError || !owner) fail(path, "Responsável inválido.");
   }
 
-  const requiresDecisionEvidence =
-    ["launch", "scale"].includes(parsed.data.decision_gate) &&
-    ["ready", "approved"].includes(parsed.data.gate_status);
-
-  if (requiresDecisionEvidence) {
-    const [
-      evidenceResult,
-      metricsResult,
-      factoryResult,
-      commercialResult,
-      economicsResult,
-    ] = await Promise.all([
-      supabase
-        .from("evidence")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("project_id", parsed.data.project_id),
-      supabase
-        .from("metrics")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("project_id", parsed.data.project_id),
-      supabase
-        .from("project_factory_cases")
-        .select("project_type")
-        .eq("user_id", user.id)
-        .eq("project_id", parsed.data.project_id)
-        .maybeSingle(),
-      supabase
-        .from("project_commercial_profiles")
-        .select("validation_status")
-        .eq("user_id", user.id)
-        .eq("project_id", parsed.data.project_id)
-        .maybeSingle(),
-      supabase
-        .from("project_unit_economics")
-        .select("cac,conversion_rate_pct,arpu,gross_margin_pct,payback_months")
-        .eq("user_id", user.id)
-        .eq("project_id", parsed.data.project_id)
-        .maybeSingle(),
-    ]);
-
-    if (evidenceResult.error || metricsResult.error || factoryResult.error || commercialResult.error || economicsResult.error) {
-      fail(path, "Não foi possível validar os critérios da etapa de decisão.");
-    }
-
-    if ((evidenceResult.count ?? 0) < 1 || (metricsResult.count ?? 0) < 1) {
-      fail(path, "Para lançar ou escalar, registe pelo menos uma evidência e uma métrica do projecto.");
-    }
-
-    const isCommercial =
-      factoryResult.data?.project_type === "commercial" ||
-      Boolean(commercialResult.data);
-
-    if (parsed.data.decision_gate === "scale" && isCommercial) {
-      if (commercialResult.data?.validation_status !== "validated") {
-        fail(path, "Para escalar um projecto comercial, a validação comercial deve estar concluída.");
-      }
-
-      const economics = economicsResult.data;
-      const economicsComplete =
-        economics &&
-        economics.cac != null &&
-        economics.conversion_rate_pct != null &&
-        economics.arpu != null &&
-        economics.gross_margin_pct != null &&
-        economics.payback_months != null;
-
-      if (!economicsComplete) {
-        fail(path, "Para escalar um projecto comercial, complete os indicadores económicos do projecto.");
-      }
-    }
-  }
+  const cadence = parsed.data.review_cadence_days ?? currentProject.review_cadence_days ?? null;
+  const nextReview = resolveNextReviewDate({
+    existingDate: currentProject.next_review_date,
+    cadenceDays: cadence,
+  });
 
   const { error } = await supabase
     .from("projects")
     .update({
       owner_id: parsed.data.owner_id ?? null,
-      next_review_date: parsed.data.next_review_date ?? null,
-      decision_gate: parsed.data.decision_gate,
-      gate_status: parsed.data.gate_status,
+      review_cadence_days: cadence,
+      next_review_date: nextReview.date,
     })
     .eq("id", parsed.data.project_id)
     .eq("user_id", user.id);
 
   if (error) fail(path, error.message);
 
+  if (parsed.data.owner_id) {
+    await supabase
+      .from("project_governance_dependencies")
+      .update({ status: "resolved", resolved_at: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .eq("project_id", parsed.data.project_id)
+      .eq("missing_key", "owner_id")
+      .in("status", ["pending", "resolving"]);
+  }
+
+  if (cadence) {
+    await supabase
+      .from("project_governance_dependencies")
+      .update({ status: "resolved", resolved_at: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .eq("project_id", parsed.data.project_id)
+      .eq("missing_key", "review_cadence_days")
+      .in("status", ["pending", "resolving"]);
+  }
+
   try {
     await syncProjectStrategyExecutionPlan(supabase, user.id, parsed.data.project_id);
   } catch (syncError) {
-    fail(path, syncError instanceof Error ? syncError.message : "Governança guardada, mas o plano não foi actualizado.");
+    fail(path, syncError instanceof Error ? syncError.message : "Acompanhamento guardado, mas o plano não foi actualizado.");
   }
 
   revalidatePath(path);
   revalidatePath(`${path}/plan`);
   revalidatePath("/dashboard");
   redirect(`${path}?governance=1`);
+}
+
+export async function completeProjectReview(formData: FormData) {
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  if (!projectId.success) fail("/projects", "Projecto inválido.");
+
+  const path = `/projects/${projectId.data}`;
+  const { supabase, user } = await requireUser();
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("review_cadence_days")
+    .eq("id", projectId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (projectError || !project) fail(path, projectError?.message ?? "Projecto não encontrado.");
+  if (!project.review_cadence_days) {
+    fail(path, "Defina primeiro a cadência de revisão. O PCC não cria uma frequência arbitrária.");
+  }
+
+  const nextReview = resolveNextReviewDate({
+    cadenceDays: project.review_cadence_days,
+    from: new Date(),
+  });
+
+  const { error } = await supabase
+    .from("projects")
+    .update({ next_review_date: nextReview.date })
+    .eq("id", projectId.data)
+    .eq("user_id", user.id);
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath("/dashboard");
+  redirect(`${path}?review=completed`);
+}
+
+export async function resolveGovernanceDependency(formData: FormData) {
+  const dependencyId = z.string().uuid().safeParse(formData.get("dependency_id"));
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  if (!dependencyId.success || !projectId.success) fail("/projects", "Dependência inválida.");
+
+  const path = `/projects/${projectId.data}`;
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("project_governance_dependencies")
+    .update({ status: "resolved", resolved_at: new Date().toISOString() })
+    .eq("id", dependencyId.data)
+    .eq("project_id", projectId.data)
+    .eq("user_id", user.id);
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath("/dashboard");
+  redirect(`${path}?governance_dependency=resolved`);
 }
 
 export async function createProjectDependency(formData: FormData) {
