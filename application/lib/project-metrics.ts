@@ -27,10 +27,20 @@ export function projectHealth({
 
 export function isProjectPlanStale(
   planUpdatedAt: string | null | undefined,
-  sourceTimestamps: Array<string | null | undefined>,
+  sources: {
+    latestEvidenceAt?: string | null;
+    latestDecisionAt?: string | null;
+    materialProjectUpdatedAt?: string | null;
+  },
 ) {
   if (!planUpdatedAt) return true;
   const planTime = new Date(planUpdatedAt).getTime();
+  const sourceTimestamps = [
+    sources.latestEvidenceAt,
+    sources.latestDecisionAt,
+    sources.materialProjectUpdatedAt,
+  ];
+
   return sourceTimestamps.some((value) => {
     if (!value) return false;
     const sourceTime = new Date(value).getTime();
