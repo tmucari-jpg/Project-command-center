@@ -81,29 +81,29 @@ export default async function FocusPage({
 
       {activeAction ? (
         <Card className="overflow-hidden">
-          <div className="border-b border-slate-200 bg-white p-6 sm:p-8">
+          <div className="border-b border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-6 sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--cc-accent-soft)]">
               {openSession ? "Em execução" : "Próxima acção"}
             </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--cc-foreground)]">
               {activeAction.title}
             </h2>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-[var(--cc-secondary)]">
               {activeAction.projects?.title ?? "Sem projecto"} · Prazo {formatDateTime(activeAction.due_at)}
             </p>
           </div>
 
           <div className="grid gap-0 md:grid-cols-2">
-            <div className="border-b border-slate-200 p-6 sm:p-8 md:border-b-0 md:border-r">
-              <p className="text-sm font-medium text-slate-500">Cronómetro</p>
+            <div className="border-b border-[var(--cc-border)] p-6 sm:p-8 md:border-b-0 md:border-r">
+              <p className="text-sm font-medium text-[var(--cc-secondary)]">Cronómetro</p>
               <div className="mt-3">
                 {openSession ? (
                   <LiveTimer startedAt={openSession.started_at} />
                 ) : (
-                  <div className="font-mono text-4xl font-semibold tracking-tight text-slate-300">00:00:00</div>
+                  <div className="font-mono text-4xl font-semibold tracking-tight text-[var(--cc-tertiary)]">00:00:00</div>
                 )}
               </div>
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-3 text-sm text-[var(--cc-secondary)]">
                 Estimado: {activeAction.estimated_minutes ?? "—"} min · Real acumulado: {activeAction.actual_minutes ?? 0} min
               </p>
 
@@ -129,8 +129,8 @@ export default async function FocusPage({
             </div>
 
             <div className="p-6 sm:p-8">
-              <p className="text-sm font-medium text-slate-500">Critério de conclusão</p>
-              <p className="mt-2 text-base leading-7 text-slate-800">
+              <p className="text-sm font-medium text-[var(--cc-secondary)]">Critério de conclusão</p>
+              <p className="mt-2 text-base leading-7 text-[var(--cc-foreground)]">
                 {activeAction.completion_criteria || "Ainda não foi definido um critério de conclusão."}
               </p>
 
@@ -155,16 +155,16 @@ export default async function FocusPage({
 
       {!openSession && (
         <Card className="mt-6 p-5">
-          <h2 className="font-semibold text-slate-950">Escolher próxima acção</h2>
+          <h2 className="font-semibold text-[var(--cc-foreground)]">Escolher próxima acção</h2>
           <div className="mt-4 space-y-2">
             {rankedCandidates.length === 0 ? (
-              <p className="text-sm text-slate-500">Crie uma acção para começar.</p>
+              <p className="text-sm text-[var(--cc-secondary)]">Crie uma acção para começar.</p>
             ) : (
               rankedCandidates.map((action) => (
-                <div key={action.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center">
+                <div key={action.id} className="flex flex-col justify-between gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3 sm:flex-row sm:items-center">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{action.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="text-sm font-medium text-[var(--cc-foreground)]">{action.title}</p>
+                    <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                       {relatedTitle(action.projects) ?? "Sem projecto"} · prioridade {action.priority} · {formatDateTime(action.due_at)}
                     </p>
                   </div>
