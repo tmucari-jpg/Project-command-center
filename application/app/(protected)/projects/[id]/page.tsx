@@ -204,16 +204,16 @@ export default async function ProjectHubPage({
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
         <StatusBadge status={health.status} />
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
           estado {displayLabel(project.status)}
         </span>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
           progresso {progressLabel(project.progress)}
         </span>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
           prioridade {displayLabel(project.priority)}
         </span>
-        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
           saúde {health.score}%
         </span>
         {planStale && (
@@ -249,24 +249,24 @@ export default async function ProjectHubPage({
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="p-5 xl:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-950">Resumo</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Resumo</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Objectivo</dt><dd className="mt-1 text-sm text-slate-800">{objectiveRelation?.title ?? "Ainda não definido"}</dd></div>
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</dt><dd className="mt-1 text-sm text-slate-800">{displayLabel(project.status)}</dd></div>
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Data inicial</dt><dd className="mt-1 text-sm text-slate-800">{project.start_date ? formatDate(project.start_date) : "Ainda não definida"}</dd></div>
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Prazo</dt><dd className="mt-1 text-sm text-slate-800">{project.due_date ? formatDate(project.due_date) : "Ainda não definido"}</dd></div>
-            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Descrição</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-800">{project.description || "Ainda não definida"}</dd></div>
-            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Resultado esperado</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-800">{project.expected_result || "Ainda não definido"}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Objectivo</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{objectiveRelation?.title ?? "Ainda não definido"}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Estado</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{displayLabel(project.status)}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Data inicial</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{project.start_date ? formatDate(project.start_date) : "Ainda não definida"}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Prazo</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{project.due_date ? formatDate(project.due_date) : "Ainda não definido"}</dd></div>
+            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Descrição</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{project.description || "Ainda não definida"}</dd></div>
+            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Resultado esperado</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{project.expected_result || "Ainda não definido"}</dd></div>
             {(project.budget != null || project.currency) && (
-              <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Orçamento</dt><dd className="mt-1 text-sm text-slate-800">{project.budget ?? "—"} {project.currency ?? ""}</dd></div>
+              <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Orçamento</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{project.budget ?? "—"} {project.currency ?? ""}</dd></div>
             )}
             <div className="sm:col-span-2">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Próximo passo</dt>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Próximo passo</dt>
               <dd className="mt-2">
                 <form action={updateProjectNextAction} className="flex flex-col gap-2 sm:flex-row">
                   <input type="hidden" name="project_id" value={project.id} />
                   <input
-                    className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800"
+                    className="min-w-0 flex-1 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] px-3 py-2 text-sm text-[var(--cc-foreground)]"
                     name="next_action"
                     defaultValue={project.next_action ?? ""}
                     placeholder="Definir próximo passo"
@@ -276,27 +276,27 @@ export default async function ProjectHubPage({
                 </form>
               </dd>
             </div>
-            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notas</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-800">{project.notes || "Ainda não definidas"}</dd></div>
+            <div className="sm:col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Notas</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{project.notes || "Ainda não definidas"}</dd></div>
           </dl>
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-lg font-semibold text-slate-950">Estado operacional</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Estado operacional</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <p className="flex justify-between gap-4"><span className="text-slate-500">Acções</span><strong>{actions?.length ?? 0}</strong></p>
-            <p className="flex justify-between gap-4"><span className="text-slate-500">Entregáveis</span><strong>{deliverables?.length ?? 0}</strong></p>
-            <p className="flex justify-between gap-4"><span className="text-slate-500">Bloqueios abertos</span><strong>{openBlockers.length}</strong></p>
-            <p className="flex justify-between gap-4"><span className="text-slate-500">Evidências</span><strong>{evidence?.length ?? 0}</strong></p>
-            <p className="flex justify-between gap-4"><span className="text-slate-500">Métricas</span><strong>{metrics?.length ?? 0}</strong></p>
-            <p className="flex justify-between gap-4"><span className="text-slate-500">Memórias</span><strong>{memory?.length ?? 0}</strong></p>
-            <p className="flex justify-between gap-4"><span className="text-slate-500">Decisões</span><strong>{decisions?.length ?? 0}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Acções</span><strong>{actions?.length ?? 0}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Entregáveis</span><strong>{deliverables?.length ?? 0}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Bloqueios abertos</span><strong>{openBlockers.length}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Evidências</span><strong>{evidence?.length ?? 0}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Métricas</span><strong>{metrics?.length ?? 0}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Memórias</span><strong>{memory?.length ?? 0}</strong></p>
+            <p className="flex justify-between gap-4"><span className="text-[var(--cc-secondary)]">Decisões</span><strong>{decisions?.length ?? 0}</strong></p>
           </div>
         </Card>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-3">
         <Card className="p-5">
-          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--cc-foreground)]">
             <UserRoundCheck size={18} /> Responsabilidade e revisão
           </h2>
           <form action={updateProjectGovernance} className="mt-5 space-y-4">
@@ -316,7 +316,7 @@ export default async function ProjectHubPage({
               defaultValue={project.review_cadence_days ?? undefined}
               placeholder="Definir apenas quando existir uma regra"
             />
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-3 text-sm text-[var(--cc-foreground)]">
               <p><span className="font-semibold">Próxima revisão:</span> {project.next_review_date ? formatDate(project.next_review_date) : "por definir"}</p>
               <p className="mt-1"><span className="font-semibold">Gate:</span> {GOVERNANCE_GATE_LABELS[project.governance_gate] ?? project.governance_gate}</p>
               <p className="mt-1"><span className="font-semibold">Estado do Gate:</span> {GOVERNANCE_STATUS_LABELS[project.governance_gate_status] ?? project.governance_gate_status}</p>
@@ -329,34 +329,34 @@ export default async function ProjectHubPage({
               <button className={secondaryButtonClass} type="submit">Concluir revisão e agendar próxima</button>
             </form>
           )}
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-[var(--cc-secondary)]">
             Responsável actual: {projectOwner?.full_name || "não definido"}. O PCC não cria datas de revisão sem uma cadência explícita.
           </p>
         </Card>
 
         <Card className="p-5">
-          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--cc-foreground)]">
             <GitBranch size={18} /> Dependências de governança
           </h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-[var(--cc-secondary)]">
             O PCC resolve primeiro o que conseguir automaticamente. Só transfere para o Dono do Projecto informação, confirmação ou decisão que exija intervenção humana.
           </p>
           <div className="mt-5 space-y-3">
             {!activeDependencies.length ? (
-              <p className="text-sm text-slate-500">Sem dependências de governança pendentes.</p>
+              <p className="text-sm text-[var(--cc-secondary)]">Sem dependências de governança pendentes.</p>
             ) : activeDependencies.map((item) => (
-              <div key={item.id} className="rounded-xl border border-slate-200 p-3">
+              <div key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-900">{item.required_item}</p>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                  <p className="text-sm font-semibold text-[var(--cc-foreground)]">{item.required_item}</p>
+                  <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-foreground)]">
                     {item.owner_role === "pcc" ? "PCC" : "Dono do Projecto"}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                   {displayLabel(item.kind)} · {GOVERNANCE_GATE_LABELS[item.gate] ?? item.gate}
                   {item.blocks_progress ? " · bloqueia avanço" : ""}
                 </p>
-                {item.description && <p className="mt-2 text-sm text-slate-600">{item.description}</p>}
+                {item.description && <p className="mt-2 text-sm text-[var(--cc-secondary)]">{item.description}</p>}
                 {item.owner_role === "project_owner" && (
                   <form action={resolveGovernanceDependency} className="mt-3">
                     <input type="hidden" name="dependency_id" value={item.id} />
@@ -372,100 +372,100 @@ export default async function ProjectHubPage({
         </Card>
 
         <Card className="p-5">
-          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--cc-foreground)]">
             <CircleDollarSign size={18} /> Indicadores económicos
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
             Calculados apenas quando existem dados reais suficientes. Em projectos cujo retorno principal não é financeiro, a ausência destes indicadores não é tratada como falha.
           </p>
           <div className="mt-5 space-y-3">
-              <div className="rounded-xl border border-slate-200 p-3">
+              <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-900">Custo de aquisição de cliente (CAC)</p>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                  <p className="text-sm font-medium text-[var(--cc-foreground)]">Custo de aquisição de cliente (CAC)</p>
+                  <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-foreground)]">
                     {autofillStateLabel[economicsSnapshot.cac.state] ?? economicsSnapshot.cac.state}
                   </span>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
+                <p className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">
                   {economicsSnapshot.cac.value == null ? "—" : `${Number(economicsSnapshot.cac.value).toFixed(2)}`}
                 </p>
                 {economicsSnapshot.cac.value == null && economicsSnapshot.cac.missing.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Em falta: {economicsSnapshot.cac.missing.join(", ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Em falta: {economicsSnapshot.cac.missing.join(", ")}</p>
                 )}
                 {economicsSnapshot.cac.source.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Fonte: {economicsSnapshot.cac.source.join(" + ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Fonte: {economicsSnapshot.cac.source.join(" + ")}</p>
                 )}
               </div>
-              <div className="rounded-xl border border-slate-200 p-3">
+              <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-900">Taxa de conversão</p>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                  <p className="text-sm font-medium text-[var(--cc-foreground)]">Taxa de conversão</p>
+                  <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-foreground)]">
                     {autofillStateLabel[economicsSnapshot.conversionRate.state] ?? economicsSnapshot.conversionRate.state}
                   </span>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
+                <p className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">
                   {economicsSnapshot.conversionRate.value == null ? "—" : `${Number(economicsSnapshot.conversionRate.value).toFixed(2)}%`}
                 </p>
                 {economicsSnapshot.conversionRate.value == null && economicsSnapshot.conversionRate.missing.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Em falta: {economicsSnapshot.conversionRate.missing.join(", ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Em falta: {economicsSnapshot.conversionRate.missing.join(", ")}</p>
                 )}
                 {economicsSnapshot.conversionRate.source.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Fonte: {economicsSnapshot.conversionRate.source.join(" + ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Fonte: {economicsSnapshot.conversionRate.source.join(" + ")}</p>
                 )}
               </div>
-              <div className="rounded-xl border border-slate-200 p-3">
+              <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-900">Receita média por utilizador</p>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                  <p className="text-sm font-medium text-[var(--cc-foreground)]">Receita média por utilizador</p>
+                  <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-foreground)]">
                     {autofillStateLabel[economicsSnapshot.arpu.state] ?? economicsSnapshot.arpu.state}
                   </span>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
+                <p className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">
                   {economicsSnapshot.arpu.value == null ? "—" : `${Number(economicsSnapshot.arpu.value).toFixed(2)}`}
                 </p>
                 {economicsSnapshot.arpu.value == null && economicsSnapshot.arpu.missing.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Em falta: {economicsSnapshot.arpu.missing.join(", ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Em falta: {economicsSnapshot.arpu.missing.join(", ")}</p>
                 )}
                 {economicsSnapshot.arpu.source.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Fonte: {economicsSnapshot.arpu.source.join(" + ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Fonte: {economicsSnapshot.arpu.source.join(" + ")}</p>
                 )}
               </div>
-              <div className="rounded-xl border border-slate-200 p-3">
+              <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-900">Margem bruta</p>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                  <p className="text-sm font-medium text-[var(--cc-foreground)]">Margem bruta</p>
+                  <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-foreground)]">
                     {autofillStateLabel[economicsSnapshot.grossMargin.state] ?? economicsSnapshot.grossMargin.state}
                   </span>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
+                <p className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">
                   {economicsSnapshot.grossMargin.value == null ? "—" : `${Number(economicsSnapshot.grossMargin.value).toFixed(2)}%`}
                 </p>
                 {economicsSnapshot.grossMargin.value == null && economicsSnapshot.grossMargin.missing.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Em falta: {economicsSnapshot.grossMargin.missing.join(", ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Em falta: {economicsSnapshot.grossMargin.missing.join(", ")}</p>
                 )}
                 {economicsSnapshot.grossMargin.source.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Fonte: {economicsSnapshot.grossMargin.source.join(" + ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Fonte: {economicsSnapshot.grossMargin.source.join(" + ")}</p>
                 )}
               </div>
-              <div className="rounded-xl border border-slate-200 p-3">
+              <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-900">Prazo de retorno (meses)</p>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                  <p className="text-sm font-medium text-[var(--cc-foreground)]">Prazo de retorno (meses)</p>
+                  <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-foreground)]">
                     {autofillStateLabel[economicsSnapshot.paybackMonths.state] ?? economicsSnapshot.paybackMonths.state}
                   </span>
                 </div>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
+                <p className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">
                   {economicsSnapshot.paybackMonths.value == null ? "—" : `${Number(economicsSnapshot.paybackMonths.value).toFixed(2)}`}
                 </p>
                 {economicsSnapshot.paybackMonths.value == null && economicsSnapshot.paybackMonths.missing.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Em falta: {economicsSnapshot.paybackMonths.missing.join(", ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Em falta: {economicsSnapshot.paybackMonths.missing.join(", ")}</p>
                 )}
                 {economicsSnapshot.paybackMonths.source.length > 0 && (
-                  <p className="mt-1 text-xs text-slate-500">Fonte: {economicsSnapshot.paybackMonths.source.join(" + ")}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Fonte: {economicsSnapshot.paybackMonths.source.join(" + ")}</p>
                 )}
               </div>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-[var(--cc-secondary)]">
             Moeda: {economicsSnapshot.currency.value ?? "Em falta"} · sem preenchimento financeiro artificial.
           </p>
         </Card>
@@ -474,36 +474,36 @@ export default async function ProjectHubPage({
       <Card className="mt-6 p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]">
               <CalendarCheck2 size={18} /> Controlo executivo
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-[var(--cc-secondary)]">
               Responsável: {projectOwner?.full_name || "não definido"} · próxima revisão: {project.next_review_date ? formatDate(project.next_review_date) : "não definida"} · Gate: {GOVERNANCE_GATE_LABELS[project.governance_gate] ?? project.governance_gate}.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">saúde {health.score}%</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{activeDependencies.length} dependência(s)</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{GOVERNANCE_STATUS_LABELS[project.governance_gate_status] ?? project.governance_gate_status}</span>
+            <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-[var(--cc-foreground)]">saúde {health.score}%</span>
+            <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-[var(--cc-foreground)]">{activeDependencies.length} dependência(s)</span>
+            <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-[var(--cc-foreground)]">{GOVERNANCE_STATUS_LABELS[project.governance_gate_status] ?? project.governance_gate_status}</span>
           </div>
         </div>
       </Card>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card>
-          <div className="flex items-center justify-between border-b border-slate-200 p-5">
-            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><CheckSquare2 size={18} /> Acções</h2>
+          <div className="flex items-center justify-between border-b border-[var(--cc-border)] p-5">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><CheckSquare2 size={18} /> Acções</h2>
             <Link className={secondaryButtonClass} href={`/actions?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!actions?.length ? <EmptyState>Sem acções neste projecto.</EmptyState> : (
               <div className="space-y-3">
                 {actions.slice(0, 8).map((action) => (
-                  <div key={action.id} className="rounded-xl border border-slate-200 p-3">
+                  <div key={action.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-medium text-slate-900">{action.title}</p>
-                        <p className="mt-1 text-xs text-slate-500">{formatDateTime(action.due_at)} · {action.priority}</p>
+                        <p className="text-sm font-medium text-[var(--cc-foreground)]">{action.title}</p>
+                        <p className="mt-1 text-xs text-[var(--cc-secondary)]">{formatDateTime(action.due_at)} · {action.priority}</p>
                       </div>
                       {action.is_next_action && <span className="rounded-full bg-[color-mix(in_srgb,var(--cc-accent)_10%,white)] px-2 py-1 text-xs font-semibold text-[var(--cc-accent)]">próxima</span>}
                     </div>
@@ -515,17 +515,17 @@ export default async function ProjectHubPage({
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between border-b border-slate-200 p-5">
-            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><PackageCheck size={18} /> Entregáveis</h2>
+          <div className="flex items-center justify-between border-b border-[var(--cc-border)] p-5">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><PackageCheck size={18} /> Entregáveis</h2>
             <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!deliverables?.length ? <EmptyState>Sem entregáveis neste projecto.</EmptyState> : (
               <div className="space-y-3">
                 {deliverables.slice(0, 8).map((item) => (
-                  <div key={item.id} className="rounded-xl border border-slate-200 p-3">
-                    <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{formatDate(item.due_date)} · {progressLabel(item.progress)}</p>
+                  <div key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+                    <p className="text-sm font-medium text-[var(--cc-foreground)]">{item.title}</p>
+                    <p className="mt-1 text-xs text-[var(--cc-secondary)]">{formatDate(item.due_date)} · {progressLabel(item.progress)}</p>
                   </div>
                 ))}
               </div>
@@ -534,17 +534,17 @@ export default async function ProjectHubPage({
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between border-b border-slate-200 p-5">
-            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><TriangleAlert size={18} /> Bloqueios</h2>
+          <div className="flex items-center justify-between border-b border-[var(--cc-border)] p-5">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><TriangleAlert size={18} /> Bloqueios</h2>
             <Link className={secondaryButtonClass} href={`/blockers?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!openBlockers.length ? <EmptyState>Sem bloqueios activos.</EmptyState> : (
               <div className="space-y-3">
                 {openBlockers.slice(0, 8).map((item) => (
-                  <div key={item.id} className="rounded-xl border border-amber-200 bg-amber-50/40 p-3">
-                    <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-600">{item.responsible || "Responsável não definido"} · {formatDateTime(item.resolution_due_at)}</p>
+                  <div key={item.id} className="rounded-[var(--cc-radius-md)] border border-[color-mix(in_srgb,var(--cc-warning)_32%,var(--cc-border))] bg-[var(--cc-warning-soft)]/40 p-3">
+                    <p className="text-sm font-medium text-[var(--cc-foreground)]">{item.title}</p>
+                    <p className="mt-1 text-xs text-[var(--cc-secondary)]">{item.responsible || "Responsável não definido"} · {formatDateTime(item.resolution_due_at)}</p>
                   </div>
                 ))}
               </div>
@@ -553,17 +553,17 @@ export default async function ProjectHubPage({
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between border-b border-slate-200 p-5">
-            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><BarChart3 size={18} /> Métricas</h2>
+          <div className="flex items-center justify-between border-b border-[var(--cc-border)] p-5">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><BarChart3 size={18} /> Métricas</h2>
             <Link className={secondaryButtonClass} href={`/metrics?project_id=${project.id}`}>Gerir</Link>
           </div>
           <div className="p-5">
             {!metrics?.length ? <EmptyState>Sem métricas associadas.</EmptyState> : (
               <div className="space-y-3">
                 {metrics.slice(0, 8).map((metric) => (
-                  <div key={metric.id} className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-3">
-                    <p className="text-sm font-medium text-slate-900">{metric.name}</p>
-                    <p className="text-sm text-slate-600">{metric.current_value ?? "—"}{metric.unit ? ` ${metric.unit}` : ""} / {metric.target_value ?? "—"}</p>
+                  <div key={metric.id} className="flex items-center justify-between gap-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+                    <p className="text-sm font-medium text-[var(--cc-foreground)]">{metric.name}</p>
+                    <p className="text-sm text-[var(--cc-secondary)]">{metric.current_value ?? "—"}{metric.unit ? ` ${metric.unit}` : ""} / {metric.target_value ?? "—"}</p>
                   </div>
                 ))}
               </div>
@@ -574,8 +574,8 @@ export default async function ProjectHubPage({
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card className="p-5">
-          <h2 className="text-lg font-semibold text-slate-950">Memória do projecto</h2>
-          <p className="mt-1 text-sm text-slate-500">Contexto persistente deste projecto. Não substitui os dados operacionais.</p>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Memória do projecto</h2>
+          <p className="mt-1 text-sm text-[var(--cc-secondary)]">Contexto persistente deste projecto. Não substitui os dados operacionais.</p>
           <form action={createProjectMemory} className="mt-5 space-y-4">
             <input type="hidden" name="project_id" value={project.id} />
             <Select label="Tipo" name="memory_type" defaultValue="context">
@@ -594,20 +594,20 @@ export default async function ProjectHubPage({
         </Card>
 
         <Card>
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Memória actual</h2>
+          <div className="border-b border-[var(--cc-border)] p-5">
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Memória actual</h2>
           </div>
           <div className="p-5">
             {!memory?.length ? <EmptyState>Sem memória persistente neste projecto.</EmptyState> : (
               <div className="space-y-3">
                 {memory.map((item) => (
-                  <article key={item.id} className="rounded-xl border border-slate-200 p-3">
+                  <article key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">{item.memory_type.replaceAll("_", " ")}</span>
+                      <p className="text-sm font-medium text-[var(--cc-foreground)]">{item.title}</p>
+                      <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-secondary)]">{item.memory_type.replaceAll("_", " ")}</span>
                     </div>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{item.content}</p>
-                    {item.source && <p className="mt-2 text-xs text-slate-500">Fonte: {item.source}</p>}
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{item.content}</p>
+                    {item.source && <p className="mt-2 text-xs text-[var(--cc-secondary)]">Fonte: {item.source}</p>}
                   </article>
                 ))}
               </div>
@@ -617,18 +617,18 @@ export default async function ProjectHubPage({
       </div>
 
       <Card className="mt-6">
-        <div className="flex items-center justify-between border-b border-slate-200 p-5">
-          <h2 className="font-semibold text-slate-950">Decisões recentes</h2>
+        <div className="flex items-center justify-between border-b border-[var(--cc-border)] p-5">
+          <h2 className="font-semibold text-[var(--cc-foreground)]">Decisões recentes</h2>
           <Link className={secondaryButtonClass} href={`/decisions?project_id=${project.id}`}>Gerir decisões</Link>
         </div>
         <div className="p-5">
           {!decisions?.length ? <EmptyState>Sem decisões registadas para este projecto.</EmptyState> : (
             <div className="space-y-3">
               {decisions.map((item) => (
-                <article key={item.id} className="rounded-xl border border-slate-200 p-3">
-                  <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.decided_at)}</p>
-                  <p className="mt-2 text-sm text-slate-700">{item.decision}</p>
+                <article key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+                  <p className="text-sm font-medium text-[var(--cc-foreground)]">{item.title}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">{formatDateTime(item.decided_at)}</p>
+                  <p className="mt-2 text-sm text-[var(--cc-foreground)]">{item.decision}</p>
                 </article>
               ))}
             </div>
@@ -637,18 +637,18 @@ export default async function ProjectHubPage({
       </Card>
 
       <Card className="mt-6">
-        <div className="flex items-center justify-between border-b border-slate-200 p-5">
-          <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><ShieldCheck size={18} /> Evidência recente</h2>
+        <div className="flex items-center justify-between border-b border-[var(--cc-border)] p-5">
+          <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><ShieldCheck size={18} /> Evidência recente</h2>
           <Link className={secondaryButtonClass} href="/evidence">Gerir</Link>
         </div>
         <div className="p-5">
           {!evidence?.length ? <EmptyState>Sem evidência registada.</EmptyState> : (
             <div className="grid gap-3 md:grid-cols-2">
               {evidence.map((item) => (
-                <div key={item.id} className="rounded-xl border border-slate-200 p-3">
-                  <p className="text-sm font-medium text-slate-900">{item.title || item.evidence_type}</p>
-                  <p className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)}</p>
-                  {item.description && <p className="mt-2 text-sm text-slate-700">{item.description}</p>}
+                <div key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+                  <p className="text-sm font-medium text-[var(--cc-foreground)]">{item.title || item.evidence_type}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">{formatDateTime(item.created_at)}</p>
+                  {item.description && <p className="mt-2 text-sm text-[var(--cc-foreground)]">{item.description}</p>}
                 </div>
               ))}
             </div>
