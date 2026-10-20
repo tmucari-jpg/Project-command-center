@@ -30,13 +30,17 @@ export default async function DeliverablesPage({
     deliverablesQuery = deliverablesQuery.eq("project_id", selectedProjectId);
   }
 
-  const [{ data: deliverables, error }, { data: projects }] = await Promise.all([
+  const [{ data: deliverables, error }, { data: projects }, { data: profiles }] = await Promise.all([
     deliverablesQuery.order("created_at", { ascending: false }),
     supabase
       .from("projects")
-      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes")
+      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,owner_id")
       .eq("user_id", user.id)
       .order("title"),
+    supabase
+      .from("profiles")
+      .select("id,full_name")
+      .order("full_name"),
   ]);
 
   const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
@@ -46,6 +50,7 @@ export default async function DeliverablesPage({
   const effectiveProject = (projects ?? []).find((project) => project.id === effectiveProjectId);
   const effectiveProjectTitle = effectiveProject?.title;
   const preparedDraft = prepareDeliverableDraft(effectiveProject);
+  const ownerById = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name || "Utilizador"]));
 
   return (
     <>
@@ -101,6 +106,9 @@ export default async function DeliverablesPage({
                         <h3 className="font-semibold text-slate-950">{item.title}</h3>
                         <p className="mt-1 text-sm text-slate-500">
                           {item.projects?.title ?? "Projecto"} · Prazo {formatDate(item.due_date)}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Responsável: {item.owner_id ? ownerById.get(item.owner_id) ?? "Definido" : "Por definir"}
                         </p>
                         {item.completion_criteria && (
                           <p className="mt-3 text-sm text-slate-700">
