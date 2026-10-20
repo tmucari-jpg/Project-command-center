@@ -8,6 +8,8 @@ import {
 describe("BotIA safe project operations", () => {
   it("parses a valid operational plan", () => {
     const plan = parseBotIAPlan(JSON.stringify({
+      intent: "command",
+      response: "Vou preparar uma acção para validar a solução do bloqueio.",
       summary: "Preparar a resolução do bloqueio.",
       diagnosis: "Existe contexto suficiente para criar uma acção e actualizar o tratamento.",
       operations: [
@@ -35,6 +37,8 @@ describe("BotIA safe project operations", () => {
     const fenced = [
       "~~~json",
       "{",
+      '  "intent": "question",',
+      '  "response": "Ainda não existe evidência factual suficiente.",',
       '  "summary": "Sem alteração automática.",',
       '  "diagnosis": "Falta evidência factual.",',
       '  "operations": []',
@@ -46,8 +50,24 @@ describe("BotIA safe project operations", () => {
     expect(plan?.operations).toEqual([]);
   });
 
+  it("supports question-only responses without project changes", () => {
+    const plan = parseBotIAPlan(JSON.stringify({
+      intent: "question",
+      response: "O projecto está em G3 e não tem bloqueios activos.",
+      summary: "Estado actual do projecto.",
+      diagnosis: "A resposta usa apenas o contexto factual fornecido.",
+      operations: [],
+    }));
+
+    expect(plan?.intent).toBe("question");
+    expect(plan?.response).toContain("G3");
+    expect(plan?.operations).toEqual([]);
+  });
+
   it("rejects unsupported operation kinds", () => {
     const plan = parseBotIAPlan(JSON.stringify({
+      intent: "command",
+      response: "A operação solicitada não é permitida.",
       summary: "Tentativa inválida.",
       diagnosis: "Não permitida.",
       operations: [
