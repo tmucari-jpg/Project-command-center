@@ -184,6 +184,8 @@ function Invoke-NpmProcess(
 
   Write-Host "RUN  - $Label" -ForegroundColor Cyan
 
+  Clear-SmokePort -Port $Port -RepoPath $RepoPath
+
   $startArgs = @{
     FilePath = $npmCmd.Source
     ArgumentList = $Arguments
@@ -356,6 +358,42 @@ function Invoke-IsolatedNpmCi(
 
   Write-Pass "npm ci succeeded in fresh isolated retry worktree"
   return $second
+}
+
+function Clear-SmokePort([int]$Port, [string]$RepoPath) {
+  try {
+    $listeners = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+  }
+  catch {
+    $listeners = @()
+  }
+
+  if ($listeners.Count -eq 0) {
+    Write-Pass "Port $Port is free before runtime start"
+    return
+  }
+
+  foreach ($listener in $listeners) {
+    $ownerPid = [int]$listener.OwningProcess
+    $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$ownerPid" -ErrorAction SilentlyContinue
+    $commandLine = if ($proc) { [string]$proc.CommandLine } else { "" }
+
+    if ($commandLine -like "*PCC_SMOKE*" -or $commandLine -like "*$RepoPath*") {
+      Write-Warn "Port $Port is held by stale PCC runtime PID $ownerPid. Terminating its process tree."
+      & taskkill.exe /PID $ownerPid /T /F 2>$null | Out-Null
+      Start-Sleep -Seconds 2
+    }
+    else {
+      Stop-WithError "Port $Port is already in use by unrelated PID $ownerPid. CommandLine=$commandLine"
+    }
+  }
+
+  $remaining = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+  if ($remaining.Count -gt 0) {
+    Stop-WithError "Port $Port is still occupied after PCC stale-runtime cleanup."
+  }
+
+  Write-Pass "Port $Port cleared for current smoke runtime"
 }
 
 function Invoke-SupabaseRest(
@@ -611,6 +649,10 @@ try {
 
   for ($i = 0; $i -lt 45; $i++) {
     Start-Sleep -Seconds 1
+    $runtimeProcess.Refresh()
+    if ($runtimeProcess.HasExited) {
+      Stop-WithError "Current runtime process exited before readiness (exit code $($runtimeProcess.ExitCode)). See $stderr"
+    }
     try {
       $probe = Invoke-Status -Uri "$baseLocal/auth/login"
       if ($probe.Status -eq 200) {
