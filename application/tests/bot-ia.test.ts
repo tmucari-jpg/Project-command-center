@@ -32,14 +32,17 @@ describe("BotIA safe project operations", () => {
   });
 
   it("accepts fenced JSON returned by a provider", () => {
-    const plan = parseBotIAPlan(```\`\`\`json
-{
-  "summary": "Sem alteração automática.",
-  "diagnosis": "Falta evidência factual.",
-  "operations": []
-}
-\`\`\```);
+    const fenced = [
+      "~~~json",
+      "{",
+      '  "summary": "Sem alteração automática.",',
+      '  "diagnosis": "Falta evidência factual.",',
+      '  "operations": []',
+      "}",
+      "~~~",
+    ].join("\n").replaceAll("~~~", String.fromCharCode(96, 96, 96));
 
+    const plan = parseBotIAPlan(fenced);
     expect(plan?.operations).toEqual([]);
   });
 
