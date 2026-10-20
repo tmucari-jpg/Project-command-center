@@ -130,6 +130,57 @@ function Convert-SecureToPlain([Security.SecureString]$Secure) {
   }
 }
 
+
+function Invoke-NpmCiWithWindowsRetry([string]$AppPath, [string]$RepoPath) {
+  npm ci
+  if ($LASTEXITCODE -eq 0) {
+    return
+  }
+
+  Write-Warn "npm ci failed on the first attempt. Cleaning only repository-local Node processes and node_modules before one retry."
+
+  try {
+    $repoNodeProcesses = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+      Where-Object { $_.CommandLine -and $_.CommandLine -like "*$RepoPath*" }
+
+    foreach ($proc in $repoNodeProcesses) {
+      Write-Warn "Stopping repository-local node.exe PID $($proc.ProcessId) that may be locking node_modules."
+      Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+  }
+  catch {
+    Write-Warn "Could not enumerate repository-local node.exe processes: $($_.Exception.Message)"
+  }
+
+  Start-Sleep -Seconds 2
+
+  $nodeModules = Join-Path $AppPath "node_modules"
+  if (Test-Path $nodeModules) {
+    Write-Warn "Removing existing node_modules before retry."
+    & cmd.exe /d /c "rmdir /s /q ""$nodeModules"""
+    if (Test-Path $nodeModules) {
+      Start-Sleep -Seconds 2
+      Remove-Item $nodeModules -Recurse -Force -ErrorAction SilentlyContinue
+    }
+  }
+
+  if (Test-Path $nodeModules) {
+    Stop-WithError "Could not remove application node_modules after npm ci failure. A Windows process is still holding files open."
+  }
+
+  npm cache verify
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warn "npm cache verify returned a non-zero exit code; continuing to one clean npm ci retry."
+  }
+
+  npm ci
+  if ($LASTEXITCODE -ne 0) {
+    Stop-WithError "npm ci failed after the Windows cleanup retry."
+  }
+
+  Write-Pass "npm ci succeeded after Windows cleanup retry"
+}
+
 function Invoke-SupabaseRest(
   [string]$BaseUrl,
   [string]$ApiKey,
@@ -262,8 +313,7 @@ try {
 
   Write-Step "4/12 Install and run all CI-equivalent checks"
 
-  npm ci
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "npm ci failed." }
+  Invoke-NpmCiWithWindowsRetry -AppPath $appPath -RepoPath $RepoPath
 
   npm run ui:standard
   if ($LASTEXITCODE -ne 0) { Stop-WithError "UI standard validation failed." }
