@@ -147,6 +147,26 @@ jobs:
             exit 1
           }
 
+      - name: Validate stale runtime and port ownership guards
+        shell: pwsh
+        run: |
+          $launcher = Get-Content "../scripts/RUN_PCC_SMOKE.ps1" -Raw
+          $smoke = Get-Content "../scripts/FULL_SMOKE_POWERSHELL.ps1" -Raw
+
+          foreach ($token in @("PCC_SMOKE", "PCC repository/temp Node processes cleared")) {
+            if (-not $launcher.Contains($token)) {
+              Write-Error "Missing stale temp runtime launcher guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("Clear-SmokePort", "Get-NetTCPConnection", "Current runtime process exited before readiness")) {
+            if (-not $smoke.Contains($token)) {
+              Write-Error "Missing runtime ownership smoke guard: $token"
+              exit 1
+            }
+          }
+
       - name: Typecheck
         run: npm run typecheck
 
