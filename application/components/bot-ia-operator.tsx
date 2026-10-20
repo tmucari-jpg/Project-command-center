@@ -22,6 +22,8 @@ type BlockerOption = {
 type PreparedRun = {
   runId: string;
   provider: string;
+  intent: "question" | "command" | "mixed";
+  response: string;
   summary: string;
   diagnosis: string;
   operations: BotIAOperation[];
@@ -77,6 +79,8 @@ export function BotIAOperator({
       setPrepared({
         runId: result.runId,
         provider: result.provider,
+        intent: result.intent,
+        response: result.response,
         summary: result.summary,
         diagnosis: result.diagnosis,
         operations: result.operations,
@@ -118,9 +122,9 @@ export function BotIAOperator({
             <Bot size={20} />
           </div>
           <div>
-            <h2 className="font-semibold text-[var(--cc-foreground)]">Operador interno do projecto</h2>
+            <h2 className="font-semibold text-[var(--cc-foreground)]">Assistente e operador interno do projecto</h2>
             <p className="mt-1 text-sm leading-6 text-[var(--cc-secondary)]">
-              O BotIA trabalha sobre os dados reais do PCC. Prepara alterações operacionais e só as grava depois da sua confirmação.
+              Escreva perguntas ou comandos em linguagem natural. O BotIA responde com base nos dados reais do PCC e, quando houver alterações, prepara-as para confirmação antes de gravar.
             </p>
           </div>
         </div>
@@ -160,11 +164,11 @@ export function BotIAOperator({
         </div>
 
         <label className="mt-4 block space-y-2 text-sm font-medium text-[var(--cc-foreground)]">
-          <span>O que deve ser melhorado ou resolvido?</span>
+          <span>Escreva um comando ou faça uma pergunta</span>
           <textarea
             value={objective}
             onChange={(event) => setObjective(event.target.value)}
-            placeholder="Ex.: analisar o bloqueio actual, definir a solução possível e criar as acções necessárias para o fechar."
+            placeholder="Ex.: Qual é o principal bloqueio deste projecto? · Cria uma acção para validar a solução. · O que devo fazer a seguir?"
             className="min-h-28 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 text-sm leading-6 text-[var(--cc-foreground)] outline-none"
           />
         </label>
@@ -177,9 +181,9 @@ export function BotIAOperator({
             className={primaryButtonClass}
           >
             {busy ? (
-              <span className="inline-flex items-center gap-2"><LoaderCircle className="animate-spin" size={16} /> A analisar...</span>
+              <span className="inline-flex items-center gap-2"><LoaderCircle className="animate-spin" size={16} /> A responder...</span>
             ) : (
-              "Analisar e preparar alterações"
+              "Enviar ao BotIA"
             )}
           </button>
 
@@ -193,7 +197,7 @@ export function BotIAOperator({
               }}
               className={secondaryButtonClass}
             >
-              Nova análise
+              Nova mensagem
             </button>
           )}
         </div>
@@ -210,16 +214,26 @@ export function BotIAOperator({
           <div className="border-b border-[var(--cc-border)] p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Diagnóstico BotIA</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">
+                  {prepared.intent === "question" ? "Resposta BotIA" : prepared.intent === "command" ? "Comando BotIA" : "Resposta + comando BotIA"}
+                </p>
                 <h3 className="mt-1 font-semibold text-[var(--cc-foreground)]">{prepared.summary}</h3>
               </div>
               <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
                 {prepared.provider}
               </span>
             </div>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-secondary)]">
-              {prepared.diagnosis}
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">
+              {prepared.response}
             </p>
+            <details className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-3">
+              <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">
+                Ver diagnóstico
+              </summary>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-secondary)]">
+                {prepared.diagnosis}
+              </p>
+            </details>
           </div>
 
           <div className="p-5">
@@ -228,10 +242,12 @@ export function BotIAOperator({
             {!prepared.operations.length ? (
               <div className="mt-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
                 <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--cc-foreground)]">
-                  <TriangleAlert size={16} /> Nenhuma alteração segura foi preparada.
+                  <TriangleAlert size={16} /> Sem alterações a aplicar.
                 </p>
                 <p className="mt-2 text-sm text-[var(--cc-secondary)]">
-                  O diagnóstico fica registado, mas o PCC não altera dados sem base factual suficiente.
+                  {prepared.intent === "question"
+                    ? "A mensagem foi respondida sem alterar dados do projecto."
+                    : "O BotIA não encontrou base factual suficiente para preparar uma alteração segura."}
                 </p>
               </div>
             ) : (
