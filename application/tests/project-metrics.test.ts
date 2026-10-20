@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isProjectPlanStale, projectHealth, timeEfficiency } from "@/lib/project-metrics";
+import { executiveProjectHealth, isProjectPlanStale, projectHealth, timeEfficiency } from "@/lib/project-metrics";
 
 describe("timeEfficiency", () => {
   it("returns estimated/actual x 100", () => {
@@ -21,6 +21,11 @@ describe("projectHealth", () => {
   it("marks completed work", () => {
     expect(projectHealth({ progress: 100, openBlockers: 0 })).toBe("completed");
   });
+
+  it("flags overdue actions even without a project due date", () => {
+    expect(projectHealth({ progress: 20, openBlockers: 0, overdueActions: 1 })).toBe("at_risk");
+  });
+
 });
 
 
@@ -43,5 +48,21 @@ describe("isProjectPlanStale", () => {
         materialProjectUpdatedAt: "2026-10-17T12:00:00Z",
       }),
     ).toBe(true);
+  });
+});
+
+describe("executiveProjectHealth overdue execution", () => {
+  it("reduces executive health when operational actions are overdue", () => {
+    const health = executiveProjectHealth({
+      progress: 0,
+      openBlockers: 0,
+      overdueActions: 3,
+      activeDependencies: 1,
+      planStale: false,
+      gateStatus: "in_progress",
+      hasOwner: true,
+    });
+    expect(health.status).toBe("at_risk");
+    expect(health.score).toBe(65);
   });
 });

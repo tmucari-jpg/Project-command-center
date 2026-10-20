@@ -42,7 +42,7 @@ export default async function DashboardPage() {
       .limit(6),
     supabase
       .from("actions")
-      .select("id,due_at")
+      .select("id,due_at,project_id")
       .eq("user_id", user.id)
       .neq("status", "completed")
       .neq("status", "cancelled"),
@@ -121,6 +121,15 @@ export default async function DashboardPage() {
 
   const ownerById = new Map(profiles.map((profile) => [profile.id, profile.full_name || "Utilizador"]));
   const planByProject = new Map(plans.map((plan) => [plan.project_id, plan]));
+  const now = new Date();
+  const overdueActionsByProject = new Map<string, number>();
+  for (const item of openActions) {
+    if (!item.project_id || !item.due_at || new Date(item.due_at) >= now) continue;
+    overdueActionsByProject.set(
+      item.project_id,
+      (overdueActionsByProject.get(item.project_id) ?? 0) + 1,
+    );
+  }
   const latestEvidenceByProject = new Map<string, string>();
   const latestDecisionByProject = new Map<string, string>();
 
@@ -139,6 +148,7 @@ export default async function DashboardPage() {
     .map((project) => {
       const projectBlockers = blockers.filter((item) => item.project_id === project.id).length;
       const projectDependencies = dependencies.filter((item) => item.project_id === project.id).length;
+      const projectOverdueActions = overdueActionsByProject.get(project.id) ?? 0;
       const plan = planByProject.get(project.id);
       const planStale = isProjectPlanStale(plan?.updated_at, {
         latestEvidenceAt: latestEvidenceByProject.get(project.id),
@@ -148,6 +158,7 @@ export default async function DashboardPage() {
         progress: Number(project.progress ?? 0),
         dueDate: project.due_date,
         openBlockers: projectBlockers,
+        overdueActions: projectOverdueActions,
         activeDependencies: projectDependencies,
         nextReviewDate: project.next_review_date,
         planStale,
@@ -158,6 +169,7 @@ export default async function DashboardPage() {
       if (!project.owner_id) attention.push("sem responsável");
       if (health.reviewOverdue) attention.push("revisão vencida");
       if (projectBlockers > 0) attention.push(`${projectBlockers} bloqueio(s)`);
+      if (projectOverdueActions > 0) attention.push(`${projectOverdueActions} acção(ões) em atraso`);
       if (projectDependencies > 0) attention.push(`${projectDependencies} dependência(s)`);
       if (planStale) attention.push("plano desactualizado");
       if (project.governance_gate_status === "blocked") attention.push("Gate bloqueado");
@@ -166,6 +178,7 @@ export default async function DashboardPage() {
         (health.status === "delayed" ? 40 : health.status === "at_risk" ? 25 : 0) +
         (health.reviewOverdue ? 20 : 0) +
         projectBlockers * 8 +
+        Math.min(projectOverdueActions * 6, 18) +
         projectDependencies * 4 +
         (planStale ? 6 : 0) +
         (project.governance_gate_status === "blocked" ? 15 : 0) +
@@ -191,7 +204,6 @@ export default async function DashboardPage() {
   const atRiskProjects = projects.filter((item) => item.status === "at_risk").length;
   const projectsNeedingAttention = executiveProjects.filter((item) => item.attention.length > 0).length;
 
-  const now = new Date();
   const overdueActions = openActions.filter((item) => item.due_at && new Date(item.due_at) < now).length;
 
   return (
