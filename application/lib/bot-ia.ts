@@ -40,6 +40,8 @@ export const botIAOperationSchema = z.object({
 });
 
 export const botIAPlanSchema = z.object({
+  intent: z.enum(["question", "command", "mixed"]),
+  response: z.string().trim().min(1).max(8000),
   summary: z.string().trim().min(2).max(4000),
   diagnosis: z.string().trim().min(2).max(6000),
   operations: z.array(botIAOperationSchema).max(12),
