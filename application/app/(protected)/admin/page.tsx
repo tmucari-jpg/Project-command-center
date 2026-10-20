@@ -18,7 +18,8 @@ import { requireAdmin } from "@/lib/auth";
 const tools = [
   { href: "/automation", label: "Automações", description: "Configuração, aprovação e acompanhamento das execuções automáticas.", icon: Workflow },
   { href: "/help", label: "Manual", description: "Referência operacional e ajuda do PCC.", icon: CircleHelp },
-  { href: "/agents", label: "Agentes", description: "Execuções especializadas e aprovações.", icon: Bot },
+  { href: "/bot-ia", label: "BotIA", description: "Melhorias operacionais e tratamento de bloqueios reais dentro dos projectos.", icon: Bot },
+  { href: "/agents", label: "Agentes", description: "Execuções especializadas e controlos avançados.", icon: BrainCircuit },
   { href: "/orchestrator", label: "Orquestração", description: "Regras de encaminhamento e execução.", icon: BrainCircuit },
   { href: "/execution-arena", label: "Testes", description: "Testes controlados antes da decisão final.", icon: FlaskConical },
   { href: "/factory-library", label: "Biblioteca", description: "Conhecimento e activos reutilizáveis.", icon: BookOpenCheck },
@@ -40,7 +41,7 @@ export default async function AdminPage() {
       <Card className="mb-6 p-5">
         <p className="font-semibold text-[var(--cc-foreground)]">Configuração do sistema</p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Área reservada à configuração, segurança e manutenção do PCC.
+          Área reservada à configuração, segurança, manutenção e execução assistida do PCC.
         </p>
       </Card>
 
