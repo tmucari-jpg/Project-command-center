@@ -45,10 +45,10 @@ export default async function ObjectivesPage({
 
       <div className="space-y-6">
         <ManualEntry defaultOpen={Boolean(preparedDraft)}>
-          <h2 className="text-lg font-semibold text-slate-950">Novo objectivo</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo objectivo</h2>
           <form action={createObjective} className="mt-5 space-y-4">
             {preparedDraft && (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+              <p className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-medium text-[var(--cc-secondary)]">
                 Preparado automaticamente a partir do projecto. Reveja antes de guardar.
               </p>
             )}
@@ -81,8 +81,8 @@ export default async function ObjectivesPage({
         </ManualEntry>
 
         <Card>
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Objectivos registados</h2>
+          <div className="border-b border-[var(--cc-border)] p-5">
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Objectivos registados</h2>
           </div>
           <div className="p-5">
             {!objectives?.length ? (
@@ -90,20 +90,20 @@ export default async function ObjectivesPage({
             ) : (
               <div className="space-y-4">
                 {objectives.map((objective) => (
-                  <article key={objective.id} className="rounded-2xl border border-slate-200 p-4">
+                  <article key={objective.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] p-4">
                     <div className="flex flex-col justify-between gap-3 md:flex-row">
                       <div>
-                        <h3 className="font-semibold text-slate-950">{objective.title}</h3>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <h3 className="font-semibold text-[var(--cc-foreground)]">{objective.title}</h3>
+                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">
                           Prazo {formatDate(objective.due_date)} · Prioridade {displayLabel(objective.priority)}
                         </p>
                         {objective.expected_result && (
-                          <p className="mt-3 text-sm leading-6 text-slate-700">{objective.expected_result}</p>
+                          <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">{objective.expected_result}</p>
                         )}
                       </div>
                       <DeleteForm table="objectives" id={objective.id} />
                     </div>
-                    <div className="mt-4 border-t border-slate-100 pt-4">
+                    <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
                       <StatusProgressForm
                         entity="objectives"
                         id={objective.id}

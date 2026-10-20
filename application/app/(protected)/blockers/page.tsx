@@ -110,7 +110,7 @@ export default async function BlockersPage({
 
       <div className="space-y-6">
         <ManualEntry>
-          <h2 className="text-lg font-semibold text-slate-950">Novo bloqueio</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo bloqueio</h2>
           <form action={createBlocker} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
             <Select label="Acção" name="action_id" defaultValue="">
@@ -141,8 +141,8 @@ export default async function BlockersPage({
         </ManualEntry>
 
         <Card>
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Bloqueios por projecto</h2>
+          <div className="border-b border-[var(--cc-border)] p-5">
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Bloqueios por projecto</h2>
           </div>
           <div className="p-5">
             {!blockers?.length ? (
@@ -153,25 +153,25 @@ export default async function BlockersPage({
                   <details
                     key={group.projectId ?? "sem-projecto"}
                     open={Boolean(effectiveProjectId && group.projectId === effectiveProjectId) || group.overdue > 0}
-                    className={`rounded-2xl border ${group.overdue > 0 ? "border-red-200 bg-red-50/40" : "border-slate-200"}`}
+                    className={`rounded-[var(--cc-radius-lg)] border ${group.overdue > 0 ? "border-[color-mix(in_srgb,var(--cc-danger)_28%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-danger-soft)_60%,transparent)]" : "border-[var(--cc-border)]"}`}
                   >
                     <summary className="cursor-pointer list-none p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <h3 className="font-semibold text-slate-950">{group.title}</h3>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <h3 className="font-semibold text-[var(--cc-foreground)]">{group.title}</h3>
+                          <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                             {group.open} aberto(s) · {group.blockers.length} total
                           </p>
                         </div>
                         {group.overdue > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--cc-danger-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-danger)]">
                             <TriangleAlert size={13} /> {group.overdue} resolução(ões) em atraso
                           </span>
                         )}
                       </div>
                     </summary>
 
-                    <div className="space-y-3 border-t border-slate-200 p-4">
+                    <div className="space-y-3 border-t border-[var(--cc-border)] p-4">
                       {group.blockers.map((item) => {
                         const overdue = Boolean(
                           item.resolution_due_at &&
@@ -182,26 +182,26 @@ export default async function BlockersPage({
                         return (
                           <article
                             key={item.id}
-                            className={`rounded-xl border p-4 ${overdue ? "border-red-300 bg-red-50" : "border-slate-200 bg-white"}`}
+                            className={`rounded-[var(--cc-radius-md)] border p-4 ${overdue ? "border-[color-mix(in_srgb,var(--cc-danger)_38%,var(--cc-border))] bg-[var(--cc-danger-soft)]" : "border-[var(--cc-border)] bg-[var(--cc-surface-strong)]"}`}
                           >
                             <div className="flex flex-col justify-between gap-3 md:flex-row">
                               <div>
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <h4 className="font-semibold text-slate-950">{item.title}</h4>
+                                  <h4 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h4>
                                   {overdue && (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--cc-danger-soft)] px-2 py-1 text-xs font-semibold text-[var(--cc-danger)]">
                                       <TriangleAlert size={13} /> tratamento necessário
                                     </span>
                                   )}
                                 </div>
-                                <p className={`mt-1 text-sm ${overdue ? "font-semibold text-red-700" : "text-slate-500"}`}>
+                                <p className={`mt-1 text-sm ${overdue ? "font-semibold text-[var(--cc-danger)]" : "text-[var(--cc-secondary)]"}`}>
                                   {item.actions?.title ?? item.deliverables?.title ?? "Sem relação operacional"} · Resolver até {formatDateTime(item.resolution_due_at)}
                                 </p>
-                                {item.impact && <p className="mt-3 text-sm text-slate-700">{item.impact}</p>}
+                                {item.impact && <p className="mt-3 text-sm text-[var(--cc-foreground)]">{item.impact}</p>}
                               </div>
                               <DeleteForm table="blockers" id={item.id} />
                             </div>
-                            <div className="mt-4 border-t border-slate-100 pt-4">
+                            <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
                               <StatusProgressForm entity="blockers" id={item.id} status={item.status} />
                             </div>
                           </article>

@@ -58,10 +58,10 @@ export default async function MetricsPage({
 
       <div className="space-y-6">
         <ManualEntry defaultOpen={Boolean(preparedDraft)}>
-          <h2 className="text-lg font-semibold text-slate-950">Nova métrica</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Nova métrica</h2>
           <form action={createMetric} className="mt-5 space-y-4">
             {preparedDraft && (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+              <p className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-medium text-[var(--cc-secondary)]">
                 Métrica preparada automaticamente sem inventar valores de negócio. Reveja antes de guardar.
               </p>
             )}
@@ -90,8 +90,8 @@ export default async function MetricsPage({
         </ManualEntry>
 
         <Card>
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Métricas registadas</h2>
+          <div className="border-b border-[var(--cc-border)] p-5">
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Métricas registadas</h2>
           </div>
           <div className="p-5">
             {!metrics?.length ? (
@@ -99,17 +99,17 @@ export default async function MetricsPage({
             ) : (
               <div className="space-y-4">
                 {metrics.map((metric) => (
-                  <article key={metric.id} className="rounded-2xl border border-slate-200 p-4">
+                  <article key={metric.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] p-4">
                     <div className="flex flex-col justify-between gap-3 sm:flex-row">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--cc-accent-soft)]">
                           {displayLabel(metric.metric_type)}
                         </p>
-                        <h3 className="mt-1 font-semibold text-slate-950">{metric.name}</h3>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <h3 className="mt-1 font-semibold text-[var(--cc-foreground)]">{metric.name}</h3>
+                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">
                           {formatDate(metric.measurement_date)} · {metric.projects?.title ?? metric.objectives?.title ?? "Geral"}
                         </p>
-                        <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-700">
+                        <div className="mt-3 flex flex-wrap gap-4 text-sm text-[var(--cc-foreground)]">
                           <span>Inicial: {metric.baseline_value ?? "—"}</span>
                           <span>Alvo: {metric.target_value ?? "—"}</span>
                           <span className="font-semibold">Actual: {metric.current_value ?? "—"} {metric.unit ?? ""}</span>
@@ -120,7 +120,7 @@ export default async function MetricsPage({
                           </summary>
                           <form action={updateMetricCurrentValue} className="mt-3 flex flex-wrap items-end gap-2">
                             <input type="hidden" name="id" value={metric.id} />
-                            <label className="text-xs font-medium text-slate-600">
+                            <label className="text-xs font-medium text-[var(--cc-secondary)]">
                               Novo valor actual
                               <input
                                 name="current_value"
@@ -128,12 +128,12 @@ export default async function MetricsPage({
                                 step="any"
                                 required
                                 defaultValue={metric.current_value ?? ""}
-                                className="mt-1 block w-32 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm"
+                                className="mt-1 block w-32 rounded-lg border border-[var(--cc-border)] px-2.5 py-1.5 text-sm"
                               />
                             </label>
                             <button
                               type="submit"
-                              className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-200"
+                              className="rounded-lg bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-medium text-[var(--cc-foreground)] hover:bg-slate-200"
                             >
                               Guardar
                             </button>

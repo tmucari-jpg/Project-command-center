@@ -64,7 +64,7 @@ export default async function ProjectsPage({
                 });
 
                 return (
-                  <article key={project.id} className="rounded-2xl border border-[var(--cc-border)] p-4">
+                  <article key={project.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] p-4">
                     <div className="flex flex-col justify-between gap-3 md:flex-row">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">

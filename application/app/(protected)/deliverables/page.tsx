@@ -62,10 +62,10 @@ export default async function DeliverablesPage({
 
       <div className="space-y-6">
         <ManualEntry defaultOpen={Boolean(preparedDraft)}>
-          <h2 className="text-lg font-semibold text-slate-950">Novo entregável</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo entregável</h2>
           <form action={createDeliverable} className="mt-5 space-y-4">
             {preparedDraft && (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+              <p className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-medium text-[var(--cc-secondary)]">
                 Preparado automaticamente a partir do resultado esperado do projecto. Reveja antes de guardar.
               </p>
             )}
@@ -91,8 +91,8 @@ export default async function DeliverablesPage({
         </ManualEntry>
 
         <Card>
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Entregáveis registados</h2>
+          <div className="border-b border-[var(--cc-border)] p-5">
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Entregáveis registados</h2>
           </div>
           <div className="p-5">
             {!deliverables?.length ? (
@@ -100,25 +100,25 @@ export default async function DeliverablesPage({
             ) : (
               <div className="space-y-4">
                 {deliverables.map((item) => (
-                  <article key={item.id} className="rounded-2xl border border-slate-200 p-4">
+                  <article key={item.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] p-4">
                     <div className="flex flex-col justify-between gap-3 md:flex-row">
                       <div>
-                        <h3 className="font-semibold text-slate-950">{item.title}</h3>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
+                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">
                           {item.projects?.title ?? "Projecto"} · Prazo {formatDate(item.due_date)}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                           Responsável: {item.owner_id ? ownerById.get(item.owner_id) ?? "Definido" : "Por definir"}
                         </p>
                         {item.completion_criteria && (
-                          <p className="mt-3 text-sm text-slate-700">
+                          <p className="mt-3 text-sm text-[var(--cc-foreground)]">
                             <span className="font-medium">Concluído quando:</span> {item.completion_criteria}
                           </p>
                         )}
                       </div>
                       <DeleteForm table="deliverables" id={item.id} />
                     </div>
-                    <div className="mt-4 border-t border-slate-100 pt-4">
+                    <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
                       <StatusProgressForm
                         entity="deliverables"
                         id={item.id}

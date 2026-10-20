@@ -169,7 +169,7 @@ export default async function ActionsPage({
       <div className="space-y-6">
         <ManualEntry defaultOpen={Boolean(preparedDraft)}>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-slate-950">Nova acção</h2>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Nova acção</h2>
             {preparedDraft && (
               <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-accent)]">
                 preparada automaticamente
@@ -215,7 +215,7 @@ export default async function ActionsPage({
               name="completion_criteria"
               defaultValue={preparedDraft?.completion_criteria}
             />
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <label className="flex items-center gap-2 text-sm font-medium text-[var(--cc-foreground)]">
               <input type="checkbox" name="is_next_action" className="size-4 rounded border-slate-300" />
               Definir como próxima acção
             </label>
@@ -224,8 +224,8 @@ export default async function ActionsPage({
         </ManualEntry>
 
         <Card>
-          <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Acções por projecto</h2>
+          <div className="border-b border-[var(--cc-border)] p-5">
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Acções por projecto</h2>
           </div>
           <div className="p-5">
             {!actions?.length ? (
@@ -236,30 +236,30 @@ export default async function ActionsPage({
                   <details
                     key={group.projectId ?? "sem-projecto"}
                     open={Boolean(effectiveProjectId && group.projectId === effectiveProjectId)}
-                    className={`rounded-2xl border ${group.overdue > 0 ? "border-red-200 bg-red-50/40" : "border-slate-200"}`}
+                    className={`rounded-[var(--cc-radius-lg)] border ${group.overdue > 0 ? "border-[color-mix(in_srgb,var(--cc-danger)_28%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-danger-soft)_60%,transparent)]" : "border-[var(--cc-border)]"}`}
                   >
                     <summary className="cursor-pointer list-none p-4">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <h3 className="font-semibold text-slate-950">{group.title}</h3>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <h3 className="font-semibold text-[var(--cc-foreground)]">{group.title}</h3>
+                          <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                             {group.actions.length} acção(ões) · {group.dueThisWeek} esta semana
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           {group.overdue > 0 && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--cc-danger-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-danger)]">
                               <TriangleAlert size={13} /> {group.overdue} em atraso
                             </span>
                           )}
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                          <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
                             abrir projecto
                           </span>
                         </div>
                       </div>
                     </summary>
 
-                    <div className="space-y-3 border-t border-slate-200 p-4">
+                    <div className="space-y-3 border-t border-[var(--cc-border)] p-4">
                       {group.actions.map((action) => {
                         const overdue =
                           Boolean(
@@ -271,20 +271,20 @@ export default async function ActionsPage({
                         return (
                           <article
                             key={action.id}
-                            className={`rounded-xl border p-4 ${
+                            className={`rounded-[var(--cc-radius-md)] border p-4 ${
                               overdue
-                                ? "border-red-300 bg-red-50"
+                                ? "border-[color-mix(in_srgb,var(--cc-danger)_38%,var(--cc-border))] bg-[var(--cc-danger-soft)]"
                                 : action.is_next_action
                                   ? "border-[color-mix(in_srgb,var(--cc-gold)_55%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_8%,white)]"
-                                  : "border-slate-200 bg-white"
+                                  : "border-[var(--cc-border)] bg-[var(--cc-surface-strong)]"
                             }`}
                           >
                             <div className="flex flex-col justify-between gap-3 md:flex-row">
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <h4 className="font-semibold text-slate-950">{action.title}</h4>
+                                  <h4 className="font-semibold text-[var(--cc-foreground)]">{action.title}</h4>
                                   {overdue && (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-[var(--cc-danger-soft)] px-2 py-1 text-xs font-semibold text-[var(--cc-danger)]">
                                       <TriangleAlert size={13} /> tratamento necessário
                                     </span>
                                   )}
@@ -294,14 +294,14 @@ export default async function ActionsPage({
                                     </span>
                                   )}
                                 </div>
-                                <p className={`mt-1 text-sm ${overdue ? "font-semibold text-red-700" : "text-slate-500"}`}>
+                                <p className={`mt-1 text-sm ${overdue ? "font-semibold text-[var(--cc-danger)]" : "text-[var(--cc-secondary)]"}`}>
                                   Prazo {formatDateTime(action.due_at)}
                                 </p>
-                                <p className="mt-1 text-xs text-slate-500">
+                                <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                                   Estimado {action.estimated_minutes ?? "—"} min · Real {action.actual_minutes ?? 0} min
                                 </p>
                                 {action.completion_criteria && (
-                                  <p className="mt-3 text-sm text-slate-700">
+                                  <p className="mt-3 text-sm text-[var(--cc-foreground)]">
                                     <span className="font-medium">Concluído quando:</span> {action.completion_criteria}
                                   </p>
                                 )}
@@ -318,7 +318,7 @@ export default async function ActionsPage({
                                 <DeleteForm table="actions" id={action.id} />
                               </div>
                             </div>
-                            <div className="mt-4 border-t border-slate-100 pt-4">
+                            <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
                               <StatusProgressForm
                                 entity="actions"
                                 id={action.id}
