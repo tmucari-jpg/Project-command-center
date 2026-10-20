@@ -5,7 +5,8 @@ param(
   [string]$ProductionUrl = "",
   [switch]$SkipAuthenticatedDataSmoke,
   [switch]$SkipProductionProbe,
-  [switch]$AfterSyncRelaunch
+  [switch]$AfterSyncRelaunch,
+  [string]$ExpectedReleaseCommit = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -41,6 +42,28 @@ function Stop-WithError([string]$Message) {
   Write-Host "FAIL - $Message" -ForegroundColor Red
   exit 1
 }
+
+function Assert-ReleaseUnchanged([string]$ExpectedCommit, [string]$Checkpoint) {
+  if (-not $ExpectedCommit) { return }
+
+  $localCommit = (git rev-parse HEAD).Trim()
+  if ($LASTEXITCODE -ne 0 -or $localCommit -ne $ExpectedCommit) {
+    Stop-WithError "Release changed locally during validation at $Checkpoint. Expected=$ExpectedCommit Local=$localCommit"
+  }
+
+  $remoteLine = git ls-remote origin refs/heads/main
+  if ($LASTEXITCODE -ne 0 -or -not $remoteLine) {
+    Stop-WithError "Could not verify authoritative origin/main at checkpoint $Checkpoint."
+  }
+  $remoteCommit = ($remoteLine -split "\s+")[0].Trim()
+
+  if ($remoteCommit -ne $ExpectedCommit) {
+    Stop-WithError "Release changed during validation at $Checkpoint. Expected=$ExpectedCommit Remote=$remoteCommit. Restart smoke on the new verified commit."
+  }
+
+  Write-Pass "Release lock intact at $Checkpoint -> $ExpectedCommit"
+}
+
 
 function Get-EnvFileValue([string]$Path, [string]$Name) {
   if (-not (Test-Path $Path)) { return $null }
@@ -333,56 +356,87 @@ try {
   $beforeCommit = (git rev-parse HEAD).Trim()
   Write-Host "Current commit: $beforeCommit"
 
-  Write-Step "2/12 Sync main safely"
+  Write-Step "2/12 Verify locked release"
 
-  $remoteLine = git ls-remote origin refs/heads/main
-  if ($LASTEXITCODE -ne 0 -or -not $remoteLine) {
-    Stop-WithError "Could not read the authoritative origin/main SHA."
+  if ($ExpectedReleaseCommit) {
+    $branchName = (git rev-parse --abbrev-ref HEAD).Trim()
+    if ($branchName -ne "main") {
+      Stop-WithError "Locked smoke must run on main. Current branch: $branchName"
+    }
+
+    $localCommit = (git rev-parse HEAD).Trim()
+    if ($localCommit -ne $ExpectedReleaseCommit) {
+      Stop-WithError "Local release differs from launcher lock. Expected=$ExpectedReleaseCommit Local=$localCommit"
+    }
+
+    $remoteLine = git ls-remote origin refs/heads/main
+    if ($LASTEXITCODE -ne 0 -or -not $remoteLine) {
+      Stop-WithError "Could not read authoritative origin/main SHA."
+    }
+    $remoteMain = ($remoteLine -split "\s+")[0].Trim()
+
+    if ($remoteMain -ne $ExpectedReleaseCommit) {
+      Stop-WithError "Release changed before validation started. Expected=$ExpectedReleaseCommit Remote=$remoteMain. Restart via RUN_PCC_SMOKE.ps1."
+    }
+
+    $releaseCommit = $ExpectedReleaseCommit
+    Write-Pass "Release locked at $releaseCommit"
   }
-  $remoteMain = ($remoteLine -split "\s+")[0].Trim()
+  else {
+    Write-Warn "No launcher release lock supplied. Running compatibility synchronization for direct invocation."
 
-  git fetch --prune origin "+refs/heads/main:refs/remotes/origin/main"
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "git fetch of authoritative main failed." }
+    $remoteLine = git ls-remote origin refs/heads/main
+    if ($LASTEXITCODE -ne 0 -or -not $remoteLine) {
+      Stop-WithError "Could not read the authoritative origin/main SHA."
+    }
+    $remoteMain = ($remoteLine -split "\s+")[0].Trim()
 
-  $trackingMain = (git rev-parse origin/main).Trim()
-  if ($trackingMain -ne $remoteMain) {
-    Stop-WithError "origin/main is stale after fetch. Remote=$remoteMain tracking=$trackingMain"
+    git fetch --prune origin "+refs/heads/main:refs/remotes/origin/main"
+    if ($LASTEXITCODE -ne 0) { Stop-WithError "git fetch of authoritative main failed." }
+
+    $trackingMain = (git rev-parse origin/main).Trim()
+    if ($trackingMain -ne $remoteMain) {
+      Stop-WithError "origin/main is stale after fetch. Remote=$remoteMain tracking=$trackingMain"
+    }
+
+    git checkout main
+    if ($LASTEXITCODE -ne 0) { Stop-WithError "Could not checkout main." }
+
+    git merge --ff-only origin/main
+    if ($LASTEXITCODE -ne 0) {
+      Stop-WithError "Fast-forward to authoritative origin/main failed. No reset or force operation was used."
+    }
+
+    $releaseCommit = (git rev-parse HEAD).Trim()
+    if ($releaseCommit -ne $remoteMain) {
+      Stop-WithError "Local main is not the authoritative remote main. Local=$releaseCommit remote=$remoteMain"
+    }
+
+    Write-Pass "main synchronized and verified at $releaseCommit"
+
+    if ($releaseCommit -ne $beforeCommit -and -not $AfterSyncRelaunch) {
+      Write-Warn "The repository changed during this run. Relaunching the UPDATED smoke script from disk so an old in-memory script cannot continue."
+      try { Stop-Transcript | Out-Null } catch {}
+
+      $relaunchArgs = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $PSCommandPath,
+        "-RepoPath", $RepoPath,
+        "-Port", [string]$Port,
+        "-AfterSyncRelaunch",
+        "-ExpectedReleaseCommit", $releaseCommit
+      )
+      if ($ProductionUrl) { $relaunchArgs += @("-ProductionUrl", $ProductionUrl) }
+      if ($SkipAuthenticatedDataSmoke) { $relaunchArgs += "-SkipAuthenticatedDataSmoke" }
+      if ($SkipProductionProbe) { $relaunchArgs += "-SkipProductionProbe" }
+
+      & $pwshExe @relaunchArgs
+      exit $LASTEXITCODE
+    }
   }
 
-  git checkout main
-  if ($LASTEXITCODE -ne 0) { Stop-WithError "Could not checkout main." }
-
-  git merge --ff-only origin/main
-  if ($LASTEXITCODE -ne 0) {
-    Stop-WithError "Fast-forward to authoritative origin/main failed. No reset or force operation was used."
-  }
-
-  $releaseCommit = (git rev-parse HEAD).Trim()
-  if ($releaseCommit -ne $remoteMain) {
-    Stop-WithError "Local main is not the authoritative remote main. Local=$releaseCommit remote=$remoteMain"
-  }
-
-  Write-Pass "main synchronized and verified at $releaseCommit"
-
-  if ($releaseCommit -ne $beforeCommit -and -not $AfterSyncRelaunch) {
-    Write-Warn "The repository changed during this run. Relaunching the UPDATED smoke script from disk so an old in-memory script cannot continue."
-    try { Stop-Transcript | Out-Null } catch {}
-
-    $relaunchArgs = @(
-      "-NoProfile",
-      "-ExecutionPolicy", "Bypass",
-      "-File", $PSCommandPath,
-      "-RepoPath", $RepoPath,
-      "-Port", [string]$Port,
-      "-AfterSyncRelaunch"
-    )
-    if ($ProductionUrl) { $relaunchArgs += @("-ProductionUrl", $ProductionUrl) }
-    if ($SkipAuthenticatedDataSmoke) { $relaunchArgs += "-SkipAuthenticatedDataSmoke" }
-    if ($SkipProductionProbe) { $relaunchArgs += "-SkipProductionProbe" }
-
-    & $pwshExe @relaunchArgs
-    exit $LASTEXITCODE
-  }
+  Assert-ReleaseUnchanged -ExpectedCommit $releaseCommit -Checkpoint "pre-runtime"
 
   Write-Step "3/12 Validate runtime and environment"
 
@@ -453,6 +507,7 @@ try {
   if ($exit -ne 0) { Stop-WithError "Production build failed with exit code $exit." }
 
   Write-Pass "CI-equivalent validation complete"
+  Assert-ReleaseUnchanged -ExpectedCommit $releaseCommit -Checkpoint "post-CI"
 
   Write-Step "5/12 Start production-mode local runtime"
 
@@ -559,6 +614,8 @@ try {
     Assert-ProtectedRedirect -BaseUrl $prod -Path "/bot-ia"
     Write-Pass "Production public/protection probe complete"
   }
+
+  Assert-ReleaseUnchanged -ExpectedCommit $releaseCommit -Checkpoint "pre-authenticated-data"
 
   Write-Step "10/12 Authenticated Supabase and RLS smoke using real PCC data"
 
@@ -699,6 +756,8 @@ try {
     Write-Pass "Authenticated DELETE and cleanup through RLS"
   }
 
+  Assert-ReleaseUnchanged -ExpectedCommit $releaseCommit -Checkpoint "post-authenticated-data"
+
   Write-Step "11/12 AI runtime configuration probe"
 
   $openAIKey = Get-EnvFileValue -Path $envPath -Name "OPENAI_API_KEY"
@@ -728,6 +787,8 @@ try {
   else {
     Write-Warn "OPENAI_API_KEY not found in .env.local; real AI runtime probe skipped."
   }
+
+  Assert-ReleaseUnchanged -ExpectedCommit $releaseCommit -Checkpoint "final"
 
   Write-Step "12/12 Final result"
 

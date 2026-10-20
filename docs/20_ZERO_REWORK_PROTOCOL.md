@@ -152,3 +152,31 @@ Prevenção:
 Resultado:
 - eliminamos a camada Windows PowerShell 5.1 do smoke;
 - deixa de existir o estado ambíguo "parou no 4/12" sem saber qual comando estava activo.
+
+
+### 7. Concorrência e alterações em paralelo durante o smoke
+
+Problema observado:
+- executar correcções, merges, deploys ou múltiplos smokes em paralelo pode fazer o teste começar numa versão e terminar noutra;
+- processos Node antigos ligados ao PCC podem manter ficheiros bloqueados ou portas ocupadas;
+- um PASS obtido sobre uma release que mudou durante o teste não é evidência válida.
+
+Prevenção:
+- o launcher usa um mutex Windows local para permitir apenas um smoke PCC por máquina;
+- um lock de diagnóstico é escrito em `D:\07_BACKUPS\PROJECT_COMMAND_CENTER_RUNTIME\pcc-smoke.lock.json`;
+- antes do smoke, processos `node.exe` cujo CommandLine pertence ao repositório PCC são encerrados;
+- o launcher fixa o SHA exacto da release e passa-o ao FULL_SMOKE;
+- o FULL_SMOKE valida que `HEAD` e o `origin/main` autoritativo continuam iguais ao SHA bloqueado;
+- a verificação é repetida antes/depois dos blocos críticos, incluindo pós-CI, antes dos dados autenticados e antes do PASS final;
+- se o remoto mudar durante a validação, o smoke termina e exige nova execução sobre a nova release;
+- o CI verifica que os guardrails de single-flight e release lock continuam presentes.
+
+Disciplina operacional durante o fecho:
+- não fazer merge para `main` enquanto um smoke final estiver em execução;
+- não iniciar outro smoke em paralelo;
+- se surgir uma falha: parar → corrigir em branch → CI → merge → iniciar novo smoke completo;
+- qualquer trabalho paralelo que não altere o PCC pode continuar, mas não pode modificar o release em validação.
+
+Resultado:
+- cada smoke passa a validar uma única versão imutável;
+- eliminamos resultados híbridos e bloqueios provocados por processos concorrentes.

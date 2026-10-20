@@ -34,6 +34,32 @@ function Pass([string]$Message) {
   Write-Host "PASS - $Message" -ForegroundColor Green
 }
 
+function Stop-RepoLocalNodeProcesses([string]$RepoPath) {
+  try {
+    $processes = @(
+      Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -and $_.CommandLine -like "*$RepoPath*" }
+    )
+
+    if ($processes.Count -eq 0) {
+      Pass "No repository-local Node processes running"
+      return
+    }
+
+    foreach ($proc in $processes) {
+      Write-Host "INFO - Stopping stale/concurrent PCC node.exe PID $($proc.ProcessId)" -ForegroundColor Yellow
+      Stop-Process -Id $proc.ProcessId -Force -ErrorAction Stop
+    }
+
+    Start-Sleep -Seconds 1
+    Pass "Repository-local Node processes cleared"
+  }
+  catch {
+    Fail "Could not clear repository-local Node processes: $($_.Exception.Message)"
+  }
+}
+
+
 if (-not (Test-Path $RepoPath)) {
   Fail "Repository not found: $RepoPath"
 }
@@ -46,7 +72,42 @@ if (-not (Test-Path ".git")) {
 $autoStashedGitignore = $false
 $stashMessage = "PCC-auto-pre-smoke-gitignore-" + (Get-Date -Format "yyyyMMdd-HHmmss")
 
+$backupRoot = "D:\07_BACKUPS\PROJECT_COMMAND_CENTER_RUNTIME"
+New-Item -ItemType Directory -Force -Path $backupRoot | Out-Null
+$lockPath = Join-Path $backupRoot "pcc-smoke.lock.json"
+$mutexName = "Local\PCC_Project_Command_Center_Smoke"
+$smokeMutex = [System.Threading.Mutex]::new($false, $mutexName)
+$mutexHeld = $false
+
 try {
+  try {
+    $mutexHeld = $smokeMutex.WaitOne(0, $false)
+  }
+  catch [System.Threading.AbandonedMutexException] {
+    $mutexHeld = $true
+    Write-Host "WARN - Recovered an abandoned PCC smoke mutex from a previous interrupted run." -ForegroundColor Yellow
+  }
+
+  if (-not $mutexHeld) {
+    $lockInfo = ""
+    if (Test-Path $lockPath) {
+      try { $lockInfo = Get-Content $lockPath -Raw } catch {}
+    }
+    Fail "Another PCC smoke is already running. Parallel smoke execution is blocked. $lockInfo"
+  }
+
+  @{
+    pid = $PID
+    started_at = (Get-Date).ToString("o")
+    repo = $RepoPath
+    shell = $PSVersionTable.PSVersion.ToString()
+  } | ConvertTo-Json | Set-Content -Path $lockPath -Encoding UTF8
+
+  Write-Host ""
+  Write-Host "==> PCC single-flight lock acquired" -ForegroundColor Cyan
+  Pass "Only one PCC smoke can run on this machine"
+
+
   Write-Host ""
   Write-Host "==> PCC canonical smoke preflight" -ForegroundColor Cyan
 
@@ -87,6 +148,8 @@ try {
   else {
     Pass "Working tree clean"
   }
+
+  Stop-RepoLocalNodeProcesses -RepoPath $RepoPath
 
   $remoteLine = git ls-remote origin refs/heads/main
   if ($LASTEXITCODE -ne 0 -or -not $remoteLine) {
@@ -140,7 +203,8 @@ try {
     "-File", $smokePath,
     "-RepoPath", $RepoPath,
     "-Port", [string]$Port,
-    "-AfterSyncRelaunch"
+    "-AfterSyncRelaunch",
+    "-ExpectedReleaseCommit", $localMain
   )
   if ($ProductionUrl) { $args += @("-ProductionUrl", $ProductionUrl) }
   if ($SkipAuthenticatedDataSmoke) { $args += "-SkipAuthenticatedDataSmoke" }
@@ -172,5 +236,16 @@ finally {
         Pass ".gitignore restored"
       }
     }
+  }
+
+  if (Test-Path $lockPath) {
+    Remove-Item $lockPath -Force -ErrorAction SilentlyContinue
+  }
+
+  if ($mutexHeld) {
+    try { $smokeMutex.ReleaseMutex() } catch {}
+  }
+  if ($smokeMutex) {
+    $smokeMutex.Dispose()
   }
 }
