@@ -205,3 +205,23 @@ Resultado:
 - o repositório de trabalho do operador deixa de ser modificado pelo `npm ci`;
 - locks antigos de `node_modules` deixam de contaminar a validação seguinte;
 - cada validação de dependências começa numa árvore fisicamente nova e ligada ao mesmo SHA da release.
+
+
+### 9. Runtime antigo na porta do smoke
+
+Problema observado:
+- um servidor Next iniciado por uma worktree temporária anterior podia continuar vivo na porta 3000;
+- o runtime da execução nova podia falhar ao arrancar por porta ocupada;
+- o smoke verificava apenas se `/auth/login` respondia e podia aceitar a resposta do servidor antigo;
+- isto produzia resultados impossíveis de reconciliar com o código da release actual, como o mesmo HTTP 307 após sucessivas correcções.
+
+Prevenção:
+- o launcher termina processos Node ligados tanto ao repositório como a caminhos `PCC_SMOKE`;
+- antes do Step 5, o smoke verifica explicitamente a porta configurada;
+- se a porta pertencer a um runtime PCC antigo, termina a árvore desse processo;
+- se pertencer a processo não relacionado, o smoke pára sem matar esse processo;
+- depois de iniciar o runtime actual, o smoke verifica em cada ciclo de readiness que o processo recém-lançado continua vivo;
+- um servidor antigo já não pode satisfazer silenciosamente a readiness probe de uma release nova.
+
+Resultado:
+- cada smoke HTTP passa a testar o runtime da própria release congelada, não apenas qualquer servidor que esteja a responder na mesma porta.
