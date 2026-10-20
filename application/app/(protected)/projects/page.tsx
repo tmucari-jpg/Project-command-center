@@ -10,6 +10,17 @@ import { formatDate } from "@/lib/format";
 import { projectHealth } from "@/lib/project-metrics";
 import { StatusBadge } from "@/components/status-badge";
 
+const FACTORY_STAGE_LABELS: Record<string, string> = {
+  new_idea: "Ideia recebida",
+  viability: "Em análise",
+  competitive_intelligence: "Análise de mercado",
+  validation: "Validação",
+  execution_arena: "Teste",
+  factory_report: "Preparação final",
+  decision: "Decisão",
+  on_hold: "Em espera",
+};
+
 export default async function ProjectsPage({
   searchParams,
 }: {
@@ -18,7 +29,12 @@ export default async function ProjectsPage({
   const params = await searchParams;
   const { supabase, user } = await requireUser();
 
-  const [{ data: projects, error }, { data: blockers }, { data: actions }] = await Promise.all([
+  const [
+    { data: projects, error },
+    { data: blockers },
+    { data: actions },
+    { data: factoryCases, error: factoryError },
+  ] = await Promise.all([
     supabase
       .from("projects")
       .select("*, objectives(title)")
@@ -35,6 +51,11 @@ export default async function ProjectsPage({
       .eq("user_id", user.id)
       .neq("status", "completed")
       .neq("status", "cancelled"),
+    supabase
+      .from("project_factory_cases")
+      .select("id,title,problem,stage,project_type,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const blockerCounts = new Map<string, number>();
@@ -59,7 +80,59 @@ export default async function ProjectsPage({
         eyebrow="Portfólio"
         title="Projectos"
       />
-      <FlashMessage error={params.error ?? error?.message} created={params.created} />
+      <FlashMessage error={params.error ?? error?.message ?? factoryError?.message} created={params.created} />
+
+      <Card className="mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--cc-border)] p-5">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Projectos em avaliação</h2>
+            <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+              Novos projectos que ainda estão a passar pela Factory antes de entrarem na execução.
+            </p>
+          </div>
+          <Link className={secondaryButtonClass} href="/project-factory">
+            Novo projecto
+          </Link>
+        </div>
+        <div className="p-5">
+          {!(factoryCases ?? []).filter((item) => !["converted_to_project", "killed"].includes(item.stage)).length ? (
+            <EmptyState>
+              Não existem projectos em avaliação.
+            </EmptyState>
+          ) : (
+            <div className="space-y-4">
+              {(factoryCases ?? [])
+                .filter((item) => !["converted_to_project", "killed"].includes(item.stage))
+                .map((item) => (
+                  <article
+                    key={item.id}
+                    className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-4"
+                  >
+                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
+                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+                          {FACTORY_STAGE_LABELS[item.stage] ?? item.stage}
+                        </p>
+                        {item.problem && (
+                          <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">{item.problem}</p>
+                        )}
+                      </div>
+                      <span className="w-fit rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
+                        {item.project_type === "commercial" ? "Comercial" : "Interno"}
+                      </span>
+                    </div>
+                    <div className="mt-4">
+                      <Link className={secondaryButtonClass} href={`/project-factory/${item.id}`}>
+                        Continuar avaliação
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+            </div>
+          )}
+        </div>
+      </Card>
 
       <Card>
         <div className="border-b border-[var(--cc-border)] p-5">
