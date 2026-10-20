@@ -75,7 +75,7 @@ $stashMessage = "PCC-auto-pre-smoke-gitignore-" + (Get-Date -Format "yyyyMMdd-HH
 $backupRoot = "D:\07_BACKUPS\PROJECT_COMMAND_CENTER_RUNTIME"
 New-Item -ItemType Directory -Force -Path $backupRoot | Out-Null
 $lockPath = Join-Path $backupRoot "pcc-smoke.lock.json"
-$mutexName = "Global\PCC_Project_Command_Center_Smoke"
+$mutexName = "Local\PCC_Project_Command_Center_Smoke"
 $smokeMutex = [System.Threading.Mutex]::new($false, $mutexName)
 $mutexHeld = $false
 
