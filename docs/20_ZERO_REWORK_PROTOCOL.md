@@ -180,3 +180,28 @@ Disciplina operacional durante o fecho:
 Resultado:
 - cada smoke passa a validar uma única versão imutável;
 - eliminamos resultados híbridos e bloqueios provocados por processos concorrentes.
+
+
+### 8. node_modules descartável por release
+
+Problema observado:
+- mesmo sem processos Node concorrentes, o Windows podia devolver `The directory is not empty` e `TAR_ENTRY_ERROR ENOENT` durante `npm ci`;
+- tentar apagar e reconstruir o mesmo `node_modules` mantinha o smoke dependente de uma árvore parcialmente alterada e de locks do sistema de ficheiros;
+- isso criava retrabalho e podia produzir sintomas diferentes a cada repetição.
+
+Prevenção:
+- o Step 4 deixa de instalar dependências dentro de `D:\03_PROJECTS\Project-Command-Center\application`;
+- o smoke cria um `git worktree --detach` temporário da release SHA congelada;
+- copia apenas o `.env.local` necessário para a execução;
+- executa `npm ci`, UI standard, typecheck, testes, lint, audit e build nessa área isolada;
+- o runtime local do Step 5 utiliza o mesmo build que passou no Step 4;
+- se o primeiro `npm ci` falhar, essa árvore parcial nunca é reparada nem reutilizada;
+- é criada uma segunda worktree totalmente limpa para uma única nova tentativa;
+- se duas worktrees independentes falharem, o problema deixa de ser classificado como stale `node_modules` e o smoke termina para diagnóstico da máquina/npm;
+- worktrees temporárias são removidas no `finally`;
+- CI bloqueia o retorno ao antigo mecanismo de apagar `node_modules` dentro da working copy.
+
+Resultado:
+- o repositório de trabalho do operador deixa de ser modificado pelo `npm ci`;
+- locks antigos de `node_modules` deixam de contaminar a validação seguinte;
+- cada validação de dependências começa numa árvore fisicamente nova e ligada ao mesmo SHA da release.
