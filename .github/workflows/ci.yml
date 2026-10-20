@@ -62,6 +62,42 @@ jobs:
             exit 1
           }
 
+      - name: Validate smoke single-flight and release lock
+        shell: pwsh
+        run: |
+          $launcher = Get-Content "../scripts/RUN_PCC_SMOKE.ps1" -Raw
+          $fullSmoke = Get-Content "../scripts/FULL_SMOKE_POWERSHELL.ps1" -Raw
+
+          $requiredLauncher = @(
+            "PCC_Project_Command_Center_Smoke",
+            "WaitOne(0",
+            "ExpectedReleaseCommit",
+            "Stop-RepoLocalNodeProcesses"
+          )
+
+          foreach ($token in $requiredLauncher) {
+            if (-not $launcher.Contains($token)) {
+              Write-Error "Missing smoke launcher concurrency guardrail: $token"
+              exit 1
+            }
+          }
+
+          $requiredFullSmoke = @(
+            "ExpectedReleaseCommit",
+            "Assert-ReleaseUnchanged",
+            "Release changed during validation",
+            "post-CI",
+            "pre-authenticated-data",
+            "final"
+          )
+
+          foreach ($token in $requiredFullSmoke) {
+            if (-not $fullSmoke.Contains($token)) {
+              Write-Error "Missing immutable-release smoke guardrail: $token"
+              exit 1
+            }
+          }
+
       - name: Typecheck
         run: npm run typecheck
 
