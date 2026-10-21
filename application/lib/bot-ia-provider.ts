@@ -89,10 +89,12 @@ function runtimeForProvider(profile: BotIAProviderProfile): ProviderRuntime {
   if (profile.provider === "qwen_cloud") {
     const apiKey = process.env.QWEN_API_KEY;
     if (!apiKey) throw new Error("QWEN_API_KEY_NOT_CONFIGURED");
+
+    const endpoint = profile.endpoint_hint?.trim();
+    if (!endpoint) throw new Error("QWEN_WORKSPACE_ENDPOINT_NOT_CONFIGURED");
+
     return {
-      baseUrl:
-        profile.endpoint_hint?.trim() ||
-        "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+      baseUrl: endpoint,
       apiKey,
       model: process.env.QWEN_MODEL?.trim() || profile.model_hint?.trim() || "",
     };
@@ -174,4 +176,59 @@ export async function generateBotIAPlan(
   }
 
   throw new Error(`BOTIA_PROVIDER_ERROR_${lastStatus}: ${lastText.slice(0, 300)}`);
+}
+
+
+
+export type BotIAProviderAttempt = {
+  provider: string;
+  label: string;
+  status: "passed" | "failed";
+  error?: string;
+};
+
+function providerAttemptError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.slice(0, 300);
+}
+
+export async function generateBotIAPlanWithFallback<T extends BotIAProviderProfile>(
+  profiles: T[],
+  context: Record<string, unknown>,
+  onProviderFailure?: (profile: T, error: unknown) => Promise<void> | void,
+): Promise<{ plan: BotIAPlan; provider: T; attempts: BotIAProviderAttempt[] }> {
+  if (!profiles.length) {
+    throw new Error("BOTIA_NO_HEALTHY_PROVIDER");
+  }
+
+  const attempts: BotIAProviderAttempt[] = [];
+
+  for (const profile of profiles) {
+    try {
+      const plan = await generateBotIAPlan(profile, context);
+      attempts.push({
+        provider: profile.provider,
+        label: profile.label,
+        status: "passed",
+      });
+      return { plan, provider: profile, attempts };
+    } catch (error) {
+      attempts.push({
+        provider: profile.provider,
+        label: profile.label,
+        status: "failed",
+        error: providerAttemptError(error),
+      });
+
+      if (onProviderFailure) {
+        await onProviderFailure(profile, error);
+      }
+    }
+  }
+
+  const summary = attempts
+    .map((attempt) => `${attempt.label}: ${attempt.error ?? "falhou"}`)
+    .join(" | ");
+
+  throw new Error(`BOTIA_ALL_PROVIDERS_FAILED: ${summary}`);
 }
