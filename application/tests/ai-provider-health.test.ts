@@ -50,11 +50,24 @@ describe("AI provider health guards", () => {
     const result = await validateAIProviderHealth({
       provider: "qwen_cloud",
       mode: "cloud",
+      endpoint_hint: "https://workspace.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
       model_hint: "test-model",
     });
 
     expect(result.status).toBe("offline");
     expect(result.message).toContain("QWEN_API_KEY");
+  });
+
+  it("requires a Qwen Workspace endpoint before activation", async () => {
+    process.env.QWEN_API_KEY = "test-qwen";
+    const result = await validateAIProviderHealth({
+      provider: "qwen_cloud",
+      mode: "cloud",
+      model_hint: "qwen-plus",
+    });
+
+    expect(result.status).toBe("unknown");
+    expect(result.message).toContain("Workspace/Região");
   });
 
   it("keeps local AI unknown until an endpoint is configured", async () => {
