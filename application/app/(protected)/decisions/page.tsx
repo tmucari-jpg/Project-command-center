@@ -206,7 +206,7 @@ export default async function DecisionsPage({
                               <div className="grid gap-2 md:grid-cols-[1.3fr_0.8fr_0.8fr_auto] md:items-center">
                                 <div>
                                   <h4 className="font-semibold">{deliverable.title}</h4>
-                                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">{stage}{locked ? " · arquivo canónico bloqueado" : ""}</p>
+                                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">{stage}{locked ? " · ficheiro canónico bloqueado" : ""}</p>
                                 </div>
                                 <p className="text-sm text-[var(--cc-secondary)]">{deliverable.due_date ? `Prazo ${formatDate(deliverable.due_date)}` : "Sem prazo"}</p>
                                 <p className="text-sm text-[var(--cc-secondary)]">{itemEvidence.length} evidência(s)</p>
@@ -232,7 +232,7 @@ export default async function DecisionsPage({
                                         </a>
                                       )}
                                       {proof.storage_path && (
-                                        <p className="mt-2 text-xs font-medium text-[var(--cc-secondary)]">Arquivo interno protegido no PCC.</p>
+                                        <p className="mt-2 text-xs font-medium text-[var(--cc-secondary)]">Ficheiro interno protegido no PCC.</p>
                                       )}
                                     </div>
                                   ))}
