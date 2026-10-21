@@ -1835,12 +1835,15 @@ export async function createEvidence(formData: FormData) {
   if (deliverableId) {
     const { data: deliverable, error: deliverableError } = await supabase
       .from("deliverables")
-      .select("project_id")
+      .select("project_id,status")
       .eq("id", deliverableId)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (deliverableError || !deliverable) fail(path, "Entregável inválido.");
+    if (deliverable.status === "completed") {
+      fail(path, "Este entregável já foi entregue e o seu arquivo canónico está bloqueado.");
+    }
     if (projectId && deliverable.project_id && projectId !== deliverable.project_id) {
       fail(path, "O entregável seleccionado não pertence ao projecto seleccionado.");
     }
@@ -1920,6 +1923,113 @@ export async function createProjectMemory(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   redirect(`${path}?memory=created`);
+}
+
+export async function recordProjectClosureDecision(formData: FormData) {
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    decision: z.enum(["continue", "close"]),
+    rationale: z.string().trim().min(3).max(6000),
+  }).safeParse(values(formData));
+
+  if (!parsed.success) fail("/decisions", "Decisão de fecho inválida.");
+
+  const path = `/decisions?project_id=${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,title,status,objective_id")
+    .eq("id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (projectError || !project) fail(path, projectError?.message ?? "Projecto não encontrado.");
+
+  const [
+    { data: deliverables, error: deliverablesError },
+    { data: evidence, error: evidenceError },
+    { data: blockers, error: blockersError },
+  ] = await Promise.all([
+    supabase
+      .from("deliverables")
+      .select("id,title,status")
+      .eq("project_id", project.id)
+      .eq("user_id", user.id)
+      .neq("status", "cancelled"),
+    supabase
+      .from("evidence")
+      .select("id,deliverable_id")
+      .eq("project_id", project.id)
+      .eq("user_id", user.id),
+    supabase
+      .from("blockers")
+      .select("id")
+      .eq("project_id", project.id)
+      .eq("user_id", user.id)
+      .in("status", ["open", "investigating", "waiting"]),
+  ]);
+
+  if (deliverablesError) fail(path, deliverablesError.message);
+  if (evidenceError) fail(path, evidenceError.message);
+  if (blockersError) fail(path, blockersError.message);
+
+  const evidenceCount = new Map<string, number>();
+  for (const item of evidence ?? []) {
+    if (!item.deliverable_id) continue;
+    evidenceCount.set(item.deliverable_id, (evidenceCount.get(item.deliverable_id) ?? 0) + 1);
+  }
+
+  const requiredDeliverables = deliverables ?? [];
+  const pending = requiredDeliverables.filter((item) => item.status !== "completed");
+  const missingEvidence = requiredDeliverables.filter((item) => !(evidenceCount.get(item.id) ?? 0));
+
+  if (parsed.data.decision === "close") {
+    if (!project.objective_id) fail(path, "O projecto não pode fechar sem Objectivo Central.");
+    if (!requiredDeliverables.length) fail(path, "Defina e entregue pelo menos um entregável real antes do fecho.");
+    if (pending.length) fail(path, `Existem ${pending.length} entregável(eis) ainda não entregues.`);
+    if (missingEvidence.length) fail(path, `Existem ${missingEvidence.length} entregável(eis) sem evidência de entrega.`);
+    if ((blockers ?? []).length) fail(path, `Existem ${blockers?.length ?? 0} bloqueio(s) activo(s) de fecho.`);
+  }
+
+  const decisionLabel = parsed.data.decision === "close" ? "Encerrar projecto" : "Continuar projecto";
+  const { error: decisionError } = await supabase.from("decisions").insert({
+    user_id: user.id,
+    project_id: project.id,
+    title: `Decisão final · ${project.title}`,
+    context: "Decisão tomada na fase de Entregáveis & Fecho.",
+    decision: decisionLabel,
+    rationale: parsed.data.rationale,
+    outcome: parsed.data.decision === "close"
+      ? `${requiredDeliverables.length} entregável(eis) entregues com evidência e sem bloqueios activos.`
+      : "O projecto mantém-se em acompanhamento e execução.",
+  });
+
+  if (decisionError) fail(path, decisionError.message);
+
+  if (parsed.data.decision === "close") {
+    const { error: closeError } = await supabase
+      .from("projects")
+      .update({
+        status: "completed",
+        progress: 100,
+        governance_gate: "g5_closure",
+        governance_gate_status: "completed",
+        decision_gate: "stop",
+        gate_status: "approved",
+        next_action: null,
+      })
+      .eq("id", project.id)
+      .eq("user_id", user.id);
+
+    if (closeError) fail(path, closeError.message);
+  }
+
+  revalidatePath("/decisions");
+  revalidatePath("/projects");
+  revalidatePath("/dashboard");
+  revalidatePath(`/projects/${project.id}`);
+  redirect(`${path}&decision=${parsed.data.decision}`);
 }
 
 export async function createDecision(formData: FormData) {
@@ -2109,6 +2219,19 @@ export async function updateStatusProgress(formData: FormData) {
 
   const { supabase, user } = await requireUser();
 
+  if (entity === "projects") {
+    const { data: currentProject, error: currentProjectError } = await supabase
+      .from("projects")
+      .select("status")
+      .eq("id", idResult.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (currentProjectError || !currentProject) fail(path, currentProjectError?.message ?? "Projecto não encontrado.");
+    if (currentProject.status === "completed") {
+      fail(path, "O projecto está fechado e preservado no histórico. Uma reabertura deve ser feita através de um novo ciclo controlado no PCC.");
+    }
+  }
+
   if (entity === "deliverables") {
     const { data: deliverable, error: deliverableError } = await supabase
       .from("deliverables")
@@ -2204,6 +2327,18 @@ export async function deleteRecord(formData: FormData) {
   if (!id.success) fail(path, "Identificador inválido.");
 
   const { supabase, user } = await requireUser();
+
+  if (table === "projects") {
+    const { data: project } = await supabase
+      .from("projects")
+      .select("status")
+      .eq("id", id.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (project?.status === "completed") {
+      fail(path, "Projectos fechados permanecem no histórico e não podem ser eliminados.");
+    }
+  }
 
   if (table === "deliverables") {
     const { data: deliverable } = await supabase
