@@ -29,9 +29,8 @@ export default async function ProjectFactoryPage({
       <div className="max-w-4xl">
         <Card className="p-5">
           <div>
-            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo projecto</h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-              Registe a ideia ou iniciativa. O PCC inicia a avaliação e o acompanhamento passa a ficar disponível na área de Projectos.
+            <p className="text-sm leading-6 text-[var(--cc-secondary)]">
+              Descreva a ideia. O PCC inicia a avaliação antes de qualquer planeamento ou execução.
             </p>
           </div>
 
@@ -43,29 +42,26 @@ export default async function ProjectFactoryPage({
                 label="1. Qual é o projecto ou ideia que quer avaliar?"
                 name="title"
                 required
-                help="Use um nome simples e directo. Ex.: Briefing Diário, Nova loja online, Sistema de controlo de frota."
+                placeholder="Ex.: Criar um novo serviço para melhorar o atendimento ao cliente."
               />
 
               <TextArea
                 label="2. Que problema ou oportunidade justifica este projecto?"
                 name="problem"
                 required
-                help="Explique o problema real que pretende resolver ou a oportunidade que quer aproveitar. Foque no motivo para investir recursos."
-                placeholder="Ex.: os clientes demoram demasiado a receber propostas e estamos a perder vendas."
+                placeholder="Ex.: O processo actual é lento e provoca atrasos no atendimento."
               />
 
               <TextArea
                 label="3. Que resultado espera obter se o projecto funcionar?"
                 name="expected_value"
-                help="Indique o resultado concreto esperado: receita, redução de custo, ganho de tempo, melhoria de serviço, crescimento ou outro valor mensurável."
-                placeholder="Ex.: reduzir o tempo de resposta e aumentar a taxa de conversão."
+                placeholder="Ex.: Reduzir o tempo de resposta e melhorar a satisfação dos clientes."
               />
 
               <TextArea
                 label="4. Quem será afectado ou beneficiado pelo projecto?"
                 name="target_user"
-                help="Identifique o cliente, utilizador, equipa ou grupo que terá o problema resolvido ou receberá o valor do projecto."
-                placeholder="Ex.: clientes empresariais que pedem propostas comerciais."
+                placeholder="Ex.: Clientes ou equipas directamente afectados pelo problema."
               />
 
               <Select
@@ -83,7 +79,7 @@ export default async function ProjectFactoryPage({
               <input type="hidden" name="source" value="" />
             </div>
 
-            <button className={primaryButtonClass} type="submit">Adicionar novo projecto</button>
+            <button className={primaryButtonClass} type="submit">Iniciar avaliação</button>
           </form>
         </Card>
       </div>
