@@ -118,7 +118,7 @@ export default async function DeliverablesPage({
                       </div>
                       {item.status === "completed" ? (
                         <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
-                          Arquivo canónico bloqueado
+                          Ficheiro canónico bloqueado
                         </span>
                       ) : (
                         <DeleteForm table="deliverables" id={item.id} />
