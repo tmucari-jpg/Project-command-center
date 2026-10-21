@@ -43,6 +43,7 @@ import { validateAIProviderHealth } from "@/lib/ai-provider-health";
 import { hasBlockingGovernanceRisk } from "@/lib/governance-risk";
 import { resolveNextReviewDate } from "@/lib/review-cadence";
 import { defaultMonetizationStatus, defaultReturnType } from "@/lib/value-return";
+import { prepareDeliverableDraft, prepareMetricDraft, prepareObjectiveDraft, type ProjectAutonomyContext } from "@/lib/project-autonomy";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -645,7 +646,7 @@ type OperationalProjectContext = {
   title: string;
   description?: string | null;
   expected_result?: string | null;
-  priority: string;
+  priority: ProjectAutonomyContext["priority"];
   progress?: number | string | null;
   start_date?: string | null;
   due_date?: string | null;
@@ -660,27 +661,34 @@ async function ensureProjectOperationalStructure(
   project: OperationalProjectContext,
 ) {
   let objectiveId = project.objective_id ?? null;
+  let objectiveContext: {
+    id: string;
+    title: string | null;
+    expected_result: string | null;
+    metric_name: string | null;
+    baseline_value: number | null;
+    target_value: number | null;
+    current_value: number | null;
+  } | null = null;
 
   if (!objectiveId) {
+    const objectiveDraft = prepareObjectiveDraft(project);
+    if (!objectiveDraft) throw new Error("Não foi possível preparar o Objectivo Central.");
+
     const { data: objective, error } = await supabase
       .from("objectives")
       .insert({
         user_id: userId,
-        title: project.title,
-        description: project.description,
-        expected_result: project.expected_result,
-        priority: project.priority,
-        status: "draft",
-        start_date: project.start_date,
-        due_date: project.due_date,
-        progress: Number(project.progress ?? 0),
-        notes: project.notes,
+        ...objectiveDraft,
+        status: "active",
+        progress: 0,
       })
-      .select("id")
+      .select("id,title,expected_result,metric_name,baseline_value,target_value,current_value")
       .single();
 
-    if (error || !objective) throw new Error(error?.message ?? "Não foi possível preparar o objectivo.");
+    if (error || !objective) throw new Error(error?.message ?? "Não foi possível preparar o Objectivo Central.");
     objectiveId = objective.id;
+    objectiveContext = objective;
 
     const { error: linkError } = await supabase
       .from("projects")
@@ -689,6 +697,16 @@ async function ensureProjectOperationalStructure(
       .eq("user_id", userId);
 
     if (linkError) throw new Error(linkError.message);
+  } else {
+    const { data: objective, error: objectiveError } = await supabase
+      .from("objectives")
+      .select("id,title,expected_result,metric_name,baseline_value,target_value,current_value")
+      .eq("id", objectiveId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (objectiveError) throw new Error(objectiveError.message);
+    objectiveContext = objective;
   }
 
   const { data: existingDeliverables, error: deliverableReadError } = await supabase
@@ -703,25 +721,23 @@ async function ensureProjectOperationalStructure(
 
   let deliverableId = existingDeliverables?.[0]?.id ?? null;
 
-  if (!deliverableId && project.expected_result?.trim()) {
-    const { data: deliverable, error } = await supabase
-      .from("deliverables")
-      .insert({
-        user_id: userId,
-        project_id: project.id,
-        title: `Resultado de ${project.title}`,
-        description: project.expected_result.trim(),
-        priority: project.priority,
-        status: "pending",
-        due_date: project.due_date,
-        progress: 0,
-        completion_criteria: project.expected_result.trim(),
-      })
-      .select("id")
-      .single();
+  if (!deliverableId) {
+    const deliverableDraft = prepareDeliverableDraft(project);
+    if (deliverableDraft) {
+      const { data: deliverable, error } = await supabase
+        .from("deliverables")
+        .insert({
+          user_id: userId,
+          ...deliverableDraft,
+          status: "pending",
+          progress: 0,
+        })
+        .select("id")
+        .single();
 
-    if (error || !deliverable) throw new Error(error?.message ?? "Não foi possível preparar o entregável.");
-    deliverableId = deliverable.id;
+      if (error || !deliverable) throw new Error(error?.message ?? "Não foi possível preparar o entregável.");
+      deliverableId = deliverable.id;
+    }
   }
 
   const { count: actionCount, error: actionCountError } = await supabase
@@ -732,25 +748,20 @@ async function ensureProjectOperationalStructure(
 
   if (actionCountError) throw new Error(actionCountError.message);
 
-  if ((actionCount ?? 0) === 0) {
-    const actionTitle =
-      project.next_action?.trim() ||
-      (project.expected_result?.trim() ? `Avançar resultado de ${project.title}` : null);
-
-    if (actionTitle) {
-      const { error } = await supabase.from("actions").insert({
-        user_id: userId,
-        project_id: project.id,
-        deliverable_id: deliverableId,
-        title: actionTitle,
-        description: project.description,
-        priority: project.priority,
-        status: "pending",
-        completion_criteria: project.expected_result,
-        is_next_action: false,
-      });
-      if (error) throw new Error(error.message);
-    }
+  if ((actionCount ?? 0) === 0 && project.next_action?.trim()) {
+    const { error } = await supabase.from("actions").insert({
+      user_id: userId,
+      project_id: project.id,
+      deliverable_id: deliverableId,
+      title: project.next_action.trim(),
+      description: project.description,
+      priority: project.priority,
+      status: "pending",
+      due_at: project.due_date ? `${project.due_date}T17:00:00` : null,
+      completion_criteria: project.expected_result,
+      is_next_action: true,
+    });
+    if (error) throw new Error(error.message);
   }
 
   const { count: metricCount, error: metricCountError } = await supabase
@@ -761,20 +772,16 @@ async function ensureProjectOperationalStructure(
 
   if (metricCountError) throw new Error(metricCountError.message);
 
-  if ((metricCount ?? 0) === 0 && project.expected_result?.trim()) {
-    const { error } = await supabase.from("metrics").insert({
-      user_id: userId,
-      objective_id: objectiveId,
-      project_id: project.id,
-      name: `Progresso de ${project.title}`,
-      description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
-      metric_type: "custom",
-      unit: "%",
-      baseline_value: 0,
-      target_value: 100,
-      current_value: Number(project.progress ?? 0),
-    });
-    if (error) throw new Error(error.message);
+  if ((metricCount ?? 0) === 0 && objectiveContext?.metric_name?.trim()) {
+    const metricDraft = prepareMetricDraft(project, objectiveContext);
+    if (metricDraft) {
+      const { error } = await supabase.from("metrics").insert({
+        user_id: userId,
+        ...metricDraft,
+        objective_id: objectiveId,
+      });
+      if (error) throw new Error(error.message);
+    }
   }
 
   await syncProjectStrategyExecutionPlan(supabase, userId, project.id);
@@ -1843,7 +1850,7 @@ export async function createEvidence(formData: FormData) {
 
     if (deliverableError || !deliverable) fail(path, "Entregável inválido.");
     if (deliverable.status === "completed") {
-      fail(path, "Este entregável já foi entregue e o seu arquivo canónico está bloqueado.");
+      fail(path, "Este entregável já foi entregue e o seu ficheiro canónico está bloqueado.");
     }
     if (projectId && deliverable.project_id && projectId !== deliverable.project_id) {
       fail(path, "O entregável seleccionado não pertence ao projecto seleccionado.");
@@ -2349,7 +2356,7 @@ export async function deleteRecord(formData: FormData) {
       .eq("user_id", user.id)
       .maybeSingle();
     if (deliverable?.status === "completed") {
-      fail(path, "Entregáveis entregues são arquivos canónicos e não podem ser eliminados.");
+      fail(path, "Entregáveis entregues são ficheiros canónicos e não podem ser eliminados.");
     }
   }
 
