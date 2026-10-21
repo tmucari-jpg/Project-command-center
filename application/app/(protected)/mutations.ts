@@ -2133,7 +2133,7 @@ export async function updateStatusProgress(formData: FormData) {
     if (deliverableError || !deliverable) fail(path, deliverableError?.message ?? "Entregável não encontrado.");
 
     if (deliverable.status === "completed" && status !== "completed") {
-      fail(path, "Entregável entregue está bloqueado. Registe uma nova versão no PCC em vez de alterar o arquivo final.");
+      fail(path, "Entregável entregue está bloqueado. Registe uma nova versão no PCC em vez de alterar o registo final.");
     }
 
     if (status === "completed") {
