@@ -46,6 +46,11 @@ create index if not exists deliverables_locked_at_idx
   on public.deliverables (locked_at)
   where locked_at is not null;
 
+update public.deliverables
+set locked_at = coalesce(updated_at, created_at, now())
+where status = 'completed'
+  and locked_at is null;
+
 create or replace function private.protect_final_deliverable_archive()
 returns trigger
 language plpgsql
