@@ -28,7 +28,7 @@ function deliverableState(status: string, progress: number | string | null) {
 export default async function DeliverablesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string; project_id?: string; closed?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string; closed?: string; supersedes?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
