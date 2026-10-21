@@ -30,7 +30,7 @@ export default async function ProjectHubPage({
 
   const { data: project } = await supabase
     .from("projects")
-    .select("*, objectives(title)")
+    .select("*, objectives(title,expected_result)")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -199,65 +199,72 @@ export default async function ProjectHubPage({
         title={project.title}
       />
 
-      <div className="mb-4">
-        <form action={prepareProjectOperationalStructure}>
-          <input type="hidden" name="project_id" value={project.id} />
-          <button className={primaryButtonClass} type="submit">
-            Preparar estrutura operacional
-          </button>
-        </form>
-      </div>
+      <Card className="mb-6 p-5">
+        <div className="grid gap-5 xl:grid-cols-[1.4fr_0.8fr] xl:items-start">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--cc-secondary)]">Objectivo Central</p>
+            <p className="mt-2 text-lg font-semibold leading-7 text-[var(--cc-foreground)]">
+              {objectiveRelation?.title ?? "Ainda não definido"}
+            </p>
+            {objectiveRelation?.expected_result && (
+              <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">{objectiveRelation.expected_result}</p>
+            )}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-3">
+              <p className="text-xs text-[var(--cc-secondary)]">Estado</p>
+              <div className="mt-1 flex items-center gap-2">
+                <StatusBadge status={health.status} />
+                <span className="text-sm font-semibold">{displayLabel(project.status)}</span>
+              </div>
+            </div>
+            <div className="rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-3">
+              <p className="text-xs text-[var(--cc-secondary)]">Progresso</p>
+              <p className="mt-1 text-sm font-semibold">{progressLabel(project.progress)}</p>
+            </div>
+            <div className="rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-3">
+              <p className="text-xs text-[var(--cc-secondary)]">Acções em atraso</p>
+              <p className="mt-1 text-sm font-semibold">{overdueActions.length}</p>
+            </div>
+            <div className="rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-3">
+              <p className="text-xs text-[var(--cc-secondary)]">Bloqueios</p>
+              <p className="mt-1 text-sm font-semibold">{openBlockers.length}</p>
+            </div>
+          </div>
+        </div>
 
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <StatusBadge status={health.status} />
-        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-          estado {displayLabel(project.status)}
-        </span>
-        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-          progresso {progressLabel(project.progress)}
-        </span>
-        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-          prioridade {displayLabel(project.priority)}
-        </span>
-        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-          saúde {health.score}%
-        </span>
-        {planStale && (
-          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-            plano desactualizado
-          </span>
-        )}
-        <Link className={primaryButtonClass} href={`/projects/${project.id}/plan`}>
-          Plano Estratégia → Execução
-        </Link>
-        <Link className={secondaryButtonClass} href={`/objectives?project_id=${project.id}`}>
-          Objectivo
-        </Link>
-        <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>
-          Entregáveis
-        </Link>
-        <Link className={secondaryButtonClass} href={`/actions?project_id=${project.id}`}>
-          Acções
-        </Link>
-        <Link className={secondaryButtonClass} href={`/blockers?project_id=${project.id}`}>
-          Bloqueios
-        </Link>
-        <Link className={secondaryButtonClass} href={`/metrics?project_id=${project.id}`}>
-          Métricas
-        </Link>
-        <Link className={secondaryButtonClass} href={`/decisions?project_id=${project.id}`}>
-          Decisões
-        </Link>
-        <Link className={secondaryButtonClass} href={`/evidence?project_id=${project.id}`}>
-          Evidências
-        </Link>
-      </div>
+        <div className="mt-5 border-t border-[var(--cc-border)] pt-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Próxima acção</p>
+          <p className="mt-1 text-sm font-medium text-[var(--cc-foreground)]">
+            {(actions ?? []).find((item) => item.is_next_action && !["completed", "cancelled"].includes(item.status))?.title ?? project.next_action ?? "Por definir"}
+          </p>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link className={primaryButtonClass} href={`/actions?project_id=${project.id}`}>Executar</Link>
+          <Link className={secondaryButtonClass} href={`/metrics?project_id=${project.id}`}>Métricas</Link>
+          <Link className={secondaryButtonClass} href={`/decisions?project_id=${project.id}`}>Entregáveis & Fecho</Link>
+          {!objectiveRelation && (
+            <Link className={secondaryButtonClass} href={`/objectives?project_id=${project.id}`}>Definir Objectivo Central</Link>
+          )}
+          <details>
+            <summary className={secondaryButtonClass}>Mais</summary>
+            <div className="mt-2 flex flex-wrap gap-2 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-white p-3">
+              <Link className={secondaryButtonClass} href={`/projects/${project.id}/plan`}>Plano Estratégia → Execução</Link>
+              <form action={prepareProjectOperationalStructure}>
+                <input type="hidden" name="project_id" value={project.id} />
+                <button className={secondaryButtonClass} type="submit">Revalidar estrutura operacional</button>
+              </form>
+            </div>
+          </details>
+        </div>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="p-5 xl:col-span-2">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Resumo</h2>
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Objectivo</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{objectiveRelation?.title ?? "Ainda não definido"}</dd></div>
+            <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Objectivo Central</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{objectiveRelation?.title ?? "Ainda não definido"}</dd></div>
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Estado</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{displayLabel(project.status)}</dd></div>
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Data inicial</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{project.start_date ? formatDate(project.start_date) : "Ainda não definida"}</dd></div>
             <div><dt className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Prazo</dt><dd className="mt-1 text-sm text-[var(--cc-foreground)]">{project.due_date ? formatDate(project.due_date) : "Ainda não definido"}</dd></div>
