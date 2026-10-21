@@ -1185,12 +1185,13 @@ export async function createDeliverable(formData: FormData) {
   const { supabase, user } = await requireUser();
   const { data: project, error: projectError } = await supabase
     .from("projects")
-    .select("id,owner_id")
+    .select("id,owner_id,status")
     .eq("id", parsed.data.project_id)
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+  if (project.status === "completed") fail(path, "O projecto está fechado. Crie um novo ciclo no PCC antes de adicionar entregáveis.");
 
   const ownerId = parsed.data.owner_id ?? project.owner_id ?? null;
   if (ownerId) {
