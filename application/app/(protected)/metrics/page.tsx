@@ -18,6 +18,12 @@ function achievement(metric: {
   target_value?: number | null;
   current_value?: number | null;
 }) {
+  if (
+    metric.baseline_value == null ||
+    metric.target_value == null ||
+    metric.current_value == null
+  ) return null;
+
   const baseline = Number(metric.baseline_value);
   const target = Number(metric.target_value);
   const current = Number(metric.current_value);
