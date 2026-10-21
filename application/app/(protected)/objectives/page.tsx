@@ -1,9 +1,8 @@
 import { createObjective } from "@/app/(protected)/mutations";
-import { DeleteForm } from "@/components/delete-form";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
-import { PageHeader } from "@/components/page-header";
 import { ManualEntry } from "@/components/manual-entry";
+import { PageHeader } from "@/components/page-header";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass } from "@/components/ui";
 import { PRIORITIES } from "@/lib/constants";
@@ -20,99 +19,115 @@ export default async function ObjectivesPage({
   const params = await searchParams;
   const { supabase, user } = await requireUser();
   const selectedProjectId = params.project_id ?? "";
+
   const [{ data: objectives, error }, { data: projects }] = await Promise.all([
-    supabase
-      .from("objectives")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
+    supabase.from("objectives").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabase
       .from("projects")
-      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes")
+      .select("id,title,objective_id,description,expected_result,priority,progress,start_date,due_date,notes,status")
       .eq("user_id", user.id)
+      .not("status", "in", '("completed","cancelled")')
       .order("title"),
   ]);
+
   const selectedProject = (projects ?? []).find((project) => project.id === selectedProjectId);
   const preparedDraft = prepareObjectiveDraft(selectedProject);
+  const projectByObjective = new Map(
+    (projects ?? []).filter((project) => project.objective_id).map((project) => [project.objective_id, project]),
+  );
 
   return (
     <>
-      <PageHeader
-        eyebrow="Resultados"
-        title="Objectivos"
-      />
+      <PageHeader eyebrow="Direcção" title="Objectivos" />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
+
+      <Card className="mb-6 p-5">
+        <h2 className="font-semibold text-[var(--cc-foreground)]">Objectivo Central do Projecto</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          Cada projecto aprovado deve ter um objectivo central claro. Prazos, métricas, acções, bloqueios e entregáveis são avaliados em função desse objectivo.
+        </p>
+      </Card>
 
       <div className="space-y-6">
         <ManualEntry defaultOpen={Boolean(preparedDraft)}>
-          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Novo objectivo</h2>
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Definir Objectivo Central</h2>
           <form action={createObjective} className="mt-5 space-y-4">
             {preparedDraft && (
               <p className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-medium text-[var(--cc-secondary)]">
-                Preparado automaticamente a partir do projecto. Reveja antes de guardar.
+                Proposta preparada a partir do resultado esperado do projecto. Reveja antes de validar.
               </p>
             )}
-            <Field label="Título" name="title" required defaultValue={preparedDraft?.title} />
-            <TextArea label="Resultado esperado" name="expected_result" defaultValue={preparedDraft?.expected_result} />
+            <Select label="Projecto" name="project_id" defaultValue={selectedProjectId} required>
+              <option value="" disabled>Seleccionar projecto</option>
+              {(projects ?? []).map((project) => <option key={project.id} value={project.id}>{project.title}</option>)}
+            </Select>
+            <Field
+              label="Objectivo Central"
+              name="title"
+              required
+              defaultValue={preparedDraft?.title}
+              placeholder="Ex.: Reduzir o tempo médio de resposta ao cliente."
+            />
+            <TextArea
+              label="Resultado que comprova o objectivo"
+              name="expected_result"
+              defaultValue={preparedDraft?.expected_result}
+              placeholder="Ex.: Passar de 24 horas para menos de 8 horas."
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="Prioridade" name="priority" defaultValue={preparedDraft?.priority ?? "medium"}>
                 {PRIORITIES.map((value) => <option key={value} value={value}>{displayLabel(value)}</option>)}
               </Select>
-              <Field label="Prazo" name="due_date" type="date" defaultValue={preparedDraft?.due_date} />
+              <Field label="Prazo, se aplicável" name="due_date" type="date" defaultValue={preparedDraft?.due_date} />
             </div>
-            <input type="hidden" name="status" value="draft" />
+            <input type="hidden" name="status" value="active" />
             <input type="hidden" name="progress" value="0" />
             <details className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
-              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Mais detalhes</summary>
+              <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-foreground)]">Detalhes adicionais</summary>
               <div className="mt-4 space-y-4">
                 <TextArea label="Descrição" name="description" defaultValue={preparedDraft?.description} />
                 <Field label="Data inicial" name="start_date" type="date" defaultValue={preparedDraft?.start_date} />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Métrica principal" name="metric_name" />
-                  <Field label="Valor inicial" name="baseline_value" type="number" step="any" />
-                  <Field label="Valor alvo" name="target_value" type="number" step="any" />
-                  <Field label="Valor actual" name="current_value" type="number" step="any" />
-                </div>
                 <TextArea label="Observações" name="notes" defaultValue={preparedDraft?.notes} />
               </div>
             </details>
-            <button className={primaryButtonClass} type="submit">Criar objectivo</button>
+            <button className={primaryButtonClass} type="submit">Validar Objectivo Central</button>
           </form>
         </ManualEntry>
 
         <Card>
           <div className="border-b border-[var(--cc-border)] p-5">
-            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Objectivos registados</h2>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Objectivos Centrais</h2>
           </div>
           <div className="p-5">
             {!objectives?.length ? (
-              <EmptyState>Crie o primeiro objectivo para iniciar a cadeia de execução.</EmptyState>
+              <EmptyState>Defina o Objectivo Central do primeiro projecto aprovado.</EmptyState>
             ) : (
-              <div className="space-y-4">
-                {objectives.map((objective) => (
-                  <article key={objective.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] p-4">
-                    <div className="flex flex-col justify-between gap-3 md:flex-row">
-                      <div>
-                        <h3 className="font-semibold text-[var(--cc-foreground)]">{objective.title}</h3>
-                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-                          Prazo {formatDate(objective.due_date)} · Prioridade {displayLabel(objective.priority)}
-                        </p>
-                        {objective.expected_result && (
-                          <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">{objective.expected_result}</p>
-                        )}
+              <div className="space-y-3">
+                {objectives.map((objective) => {
+                  const project = projectByObjective.get(objective.id);
+                  return (
+                    <details key={objective.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)]">
+                      <summary className="cursor-pointer list-none p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold text-[var(--cc-foreground)]">{objective.title}</h3>
+                            <p className="mt-1 text-xs text-[var(--cc-secondary)]">
+                              {project?.title ?? "Ainda não associado a um projecto"}
+                              {objective.due_date ? ` · prazo ${formatDate(objective.due_date)}` : ""}
+                            </p>
+                          </div>
+                          <span className="text-xs font-semibold text-[var(--cc-accent)]">Ver detalhes</span>
+                        </div>
+                      </summary>
+                      <div className="border-t border-[var(--cc-border)] p-4">
+                        {objective.expected_result && <p className="text-sm leading-6 text-[var(--cc-foreground)]">{objective.expected_result}</p>}
+                        <div className="mt-4">
+                          <StatusProgressForm entity="objectives" id={objective.id} status={objective.status} progress={objective.progress} />
+                        </div>
                       </div>
-                      <DeleteForm table="objectives" id={objective.id} />
-                    </div>
-                    <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
-                      <StatusProgressForm
-                        entity="objectives"
-                        id={objective.id}
-                        status={objective.status}
-                        progress={objective.progress}
-                      />
-                    </div>
-                  </article>
-                ))}
+                    </details>
+                  );
+                })}
               </div>
             )}
           </div>
