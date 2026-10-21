@@ -215,7 +215,7 @@ export default async function DeliverablesPage({
             />
             <p className="text-xs leading-5 text-[var(--cc-secondary)]">
               Para websites, aplicações, dashboards e APIs, o URL publicado e uma referência imutável da versão são obrigatórios antes da entrega final.
-              O arquivo oficial do PCC não é sobrescrito: qualquer alteração posterior cria uma nova versão.
+              O registo oficial do PCC não é sobrescrito: qualquer alteração posterior cria uma nova versão.
             </p>
             <button className={primaryButtonClass} type="submit">{previousVersion ? "Criar nova versão" : "Guardar entregável"}</button>
           </form>
@@ -277,7 +277,7 @@ export default async function DeliverablesPage({
                               </div>
                               {locked && (
                                 <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-                                  Arquivo oficial imutável
+                                  Registo oficial imutável
                                 </span>
                               )}
                             </div>
@@ -342,7 +342,7 @@ export default async function DeliverablesPage({
                             ) : (
                               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--cc-border)] pt-4">
                                 <p className="text-xs text-[var(--cc-secondary)]">
-                                  Arquivo oficial bloqueado. Cópias descarregadas podem ser editadas externamente, mas nunca alteram esta versão oficial.
+                                  Registo oficial bloqueado. Cópias descarregadas podem ser editadas externamente, mas nunca alteram esta versão oficial.
                                 </p>
                                 <Link
                                   className={secondaryButtonClass}
