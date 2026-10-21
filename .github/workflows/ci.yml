@@ -209,7 +209,7 @@ jobs:
             "resolveBotIAProviders",
             "generateBotIAPlanWithFallback",
             "provider_attempts",
-            "last_health_status: \"degraded\""
+            'last_health_status: "degraded"'
           )) {
             if (-not $actions.Contains($token) -and -not $provider.Contains($token)) {
               Write-Error "Missing BotIA failover guard: $token"
