@@ -36,13 +36,39 @@ export function prepareObjectiveDraft(project?: ProjectAutonomyContext) {
 
 export function prepareDeliverableDraft(project?: ProjectAutonomyContext) {
   if (!project || !project.expected_result?.trim()) return null;
+
+  const expected = project.expected_result.trim();
+  const normalized = expected.toLocaleLowerCase();
+  let title = expected.length <= 180 ? expected : `${expected.slice(0, 177).trimEnd()}...`;
+  let completionCriteria = expected;
+
+  if (/website|site|portal|página web/.test(normalized)) {
+    title = "Website funcional e publicado";
+    completionCriteria = "Website construído segundo as premissas aprovadas, publicado, com URL acessível registada no PCC e evidência de funcionamento/entrega.";
+  } else if (/dashboard|painel/.test(normalized)) {
+    title = "Dashboard funcional";
+    completionCriteria = "Dashboard operacional com os dados e indicadores definidos, acesso funcional e evidência de validação.";
+  } else if (/api|endpoint/.test(normalized)) {
+    title = "API funcional";
+    completionCriteria = "Endpoint funcional, testado, com documentação mínima de utilização e evidência de resposta válida.";
+  } else if (/apresenta|pitch|powerpoint|ppt/.test(normalized)) {
+    title = "Apresentação final pronta para utilização";
+    completionCriteria = "Apresentação completa, coerente com o projecto, pronta para reunião, pitch ou candidatura e validada no PCC.";
+  } else if (/excel|modelo financeiro|orçamento|orcamento|matriz|cronograma/.test(normalized)) {
+    title = "Modelo operacional em Excel";
+    completionCriteria = "Ficheiro XLSX funcional com dados, fórmulas/estrutura necessária, outputs verificáveis e validação no PCC.";
+  } else if (/relatório|relatorio|plano|proposta|procedimento|manual/.test(normalized)) {
+    title = "Documento final utilizável";
+    completionCriteria = "Documento completo e específico ao projecto, pronto para uso/partilha, com conteúdo real e critérios de aceitação cumpridos.";
+  }
+
   return {
     project_id: project.id,
-    title: `Resultado de ${project.title}`,
-    description: project.expected_result.trim(),
+    title,
+    description: expected,
     priority: project.priority,
     due_date: project.due_date || undefined,
-    completion_criteria: project.expected_result.trim(),
+    completion_criteria: completionCriteria,
   };
 }
 
