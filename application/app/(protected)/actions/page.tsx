@@ -120,16 +120,17 @@ export default async function ActionsPage({
   const blockedTotal = (blockers ?? []).length;
 
   type ActionRow = NonNullable<typeof allActions>[number];
+  type BlockerRow = NonNullable<typeof blockers>[number];
   const groups = new Map<string, {
     projectId: string | null;
     title: string;
     actions: ActionRow[];
-    blockers: NonNullable<typeof blockers>;
+    blockers: BlockerRow[];
   }>();
 
   for (const project of projects ?? []) {
     if (effectiveProjectId && project.id !== effectiveProjectId) continue;
-    groups.set(project.id, { projectId: project.id, title: project.title, actions: [], blockers: [] });
+    groups.set(project.id, { projectId: project.id, title: project.title, actions: [] as ActionRow[], blockers: [] as BlockerRow[] });
   }
 
   for (const action of actions) {
@@ -138,8 +139,8 @@ export default async function ActionsPage({
     const group = groups.get(key) ?? {
       projectId: action.project_id ?? null,
       title: relation?.title ?? "Sem projecto",
-      actions: [],
-      blockers: [],
+      actions: [] as ActionRow[],
+      blockers: [] as BlockerRow[],
     };
     group.actions.push(action);
     groups.set(key, group);
