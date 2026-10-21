@@ -1587,7 +1587,8 @@ export async function createFactoryIntake(formData: FormData) {
 
   if (gateEventError) fail(path, gateEventError.message);
   revalidatePath(path);
-  redirect(`${path}?created=1`);
+  revalidatePath("/projects");
+  redirect(`/project-factory/${factoryCase.id}?created=1`);
 }
 
 export async function saveCompetitiveIntelligence(formData: FormData) {
