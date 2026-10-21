@@ -253,6 +253,37 @@ jobs:
             }
           }
 
+      - name: Validate immutable deliverable archives
+        shell: pwsh
+        run: |
+          $migration = Get-Content "../supabase/migrations/20261021114500_immutable_deliverable_archives.sql" -Raw
+          $deliverables = Get-Content "../application/app/(protected)/deliverables/page.tsx" -Raw
+          $mutations = Get-Content "../application/app/(protected)/mutations.ts" -Raw
+
+          foreach ($token in @(
+            "protect_final_deliverable_archive",
+            "protect_locked_deliverable_evidence",
+            "supersedes_deliverable_id",
+            "artifact_reference",
+            "locked_at"
+          )) {
+            if (-not $migration.Contains($token)) {
+              Write-Error "Missing immutable archive database guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Registo oficial imutável",
+            "Criar nova versão",
+            "referência imutável"
+          )) {
+            if (-not $deliverables.Contains($token) -and -not $mutations.Contains($token)) {
+              Write-Error "Missing immutable archive application guard: $token"
+              exit 1
+            }
+          }
+
       - name: Typecheck
         run: npm run typecheck
 

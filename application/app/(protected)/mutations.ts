@@ -1114,9 +1114,26 @@ export async function createDeliverable(formData: FormData) {
     if (ownerError || !owner) fail(path, "Responsável do entregável inválido.");
   }
 
+  let artifactVersion = 1;
+  if (parsed.data.supersedes_deliverable_id) {
+    const { data: previous, error: previousError } = await supabase
+      .from("deliverables")
+      .select("id,project_id,status,artifact_version")
+      .eq("id", parsed.data.supersedes_deliverable_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (previousError || !previous) fail(path, previousError?.message ?? "Versão anterior inválida.");
+    if (previous.project_id !== parsed.data.project_id) fail(path, "A versão anterior não pertence ao mesmo projecto.");
+    if (previous.status !== "completed") fail(path, "Só é possível criar uma nova versão a partir de um entregável final já bloqueado.");
+
+    artifactVersion = Number(previous.artifact_version ?? 1) + 1;
+  }
+
   const { error } = await supabase.from("deliverables").insert({
     ...parsed.data,
     owner_id: ownerId,
+    artifact_version: artifactVersion,
     user_id: user.id,
   });
 
@@ -1852,7 +1869,7 @@ export async function finalizeProjectClosure(formData: FormData) {
     ] = await Promise.all([
       supabase
         .from("deliverables")
-        .select("id,status,completion_criteria")
+        .select("id,status,completion_criteria,locked_at")
         .eq("project_id", project.id)
         .eq("user_id", user.id),
       supabase
@@ -1879,6 +1896,11 @@ export async function finalizeProjectClosure(formData: FormData) {
     const incomplete = (deliverables ?? []).filter((item) => item.status !== "completed");
     if (incomplete.length) {
       fail(path, "Existem entregáveis ainda não entregues/validados.");
+    }
+
+    const unlocked = (deliverables ?? []).filter((item) => !item.locked_at);
+    if (unlocked.length) {
+      fail(path, "Existem entregáveis finais que ainda não foram arquivados de forma imutável.");
     }
 
     const evidenceIds = new Set((evidence ?? []).map((item) => item.deliverable_id).filter(Boolean));
@@ -2103,7 +2125,7 @@ export async function updateStatusProgress(formData: FormData) {
   if (entity === "deliverables") {
     const { data: deliverable, error: deliverableError } = await supabase
       .from("deliverables")
-      .select("id,status,completion_criteria")
+      .select("id,status,completion_criteria,artifact_type,artifact_url,artifact_reference")
       .eq("id", idResult.data)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -2111,7 +2133,7 @@ export async function updateStatusProgress(formData: FormData) {
     if (deliverableError || !deliverable) fail(path, deliverableError?.message ?? "Entregável não encontrado.");
 
     if (deliverable.status === "completed" && status !== "completed") {
-      fail(path, "Entregável entregue está bloqueado. Registe uma nova versão no PCC em vez de alterar o arquivo final.");
+      fail(path, "Entregável entregue está bloqueado. Registe uma nova versão no PCC em vez de alterar o registo final.");
     }
 
     if (status === "completed") {
@@ -2120,6 +2142,15 @@ export async function updateStatusProgress(formData: FormData) {
       }
       if (!deliverable.completion_criteria?.trim()) {
         fail(path, "Defina critérios de aceitação antes de concluir o entregável.");
+      }
+
+      if (["website", "application", "dashboard", "api"].includes(deliverable.artifact_type)) {
+        if (!deliverable.artifact_url?.trim()) {
+          fail(path, "Registe o URL oficial do resultado digital antes de concluir o entregável.");
+        }
+        if (!deliverable.artifact_reference?.trim()) {
+          fail(path, "Registe uma referência imutável da versão oficial (deploy, commit ou release) antes de concluir o entregável.");
+        }
       }
 
       const { count, error: evidenceError } = await supabase
