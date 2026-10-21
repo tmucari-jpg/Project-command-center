@@ -1870,15 +1870,36 @@ export async function createMetric(formData: FormData) {
   await ensureOwned(supabase, "objectives", parsed.data.objective_id, user.id, path);
   await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
 
+  let objectiveId = parsed.data.objective_id;
+  if (parsed.data.project_id) {
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .select("objective_id")
+      .eq("id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+    if (!project.objective_id) {
+      fail(path, "Defina primeiro o Objectivo Central do projecto antes de criar métricas.");
+    }
+    if (objectiveId && objectiveId !== project.objective_id) {
+      fail(path, "A métrica deve estar ligada ao Objectivo Central deste projecto.");
+    }
+    objectiveId = project.objective_id;
+  }
+
   const { error } = await supabase.from("metrics").insert({
     ...parsed.data,
+    objective_id: objectiveId ?? null,
     user_id: user.id,
   });
 
   if (error) fail(path, error.message);
   revalidatePath(path);
   revalidatePath("/dashboard");
-  redirect(`${path}?created=1`);
+  if (parsed.data.project_id) revalidatePath(`/projects/${parsed.data.project_id}`);
+  redirect(`${path}?created=1${parsed.data.project_id ? `&project_id=${parsed.data.project_id}` : ""}`);
 }
 
 
