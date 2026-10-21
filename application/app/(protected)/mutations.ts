@@ -441,16 +441,46 @@ export async function createObjective(formData: FormData) {
   const parsed = objectiveSchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("objectives").insert({
-    ...parsed.data,
-    user_id: user.id,
-  });
+  const projectId = z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().uuid().optional(),
+  ).safeParse(formData.get("project_id"));
 
-  if (error) fail(path, error.message);
+  if (!projectId.success) fail(path, "Projecto inválido.");
+
+  const { supabase, user } = await requireUser();
+  if (projectId.data) {
+    await ensureOwned(supabase, "projects", projectId.data, user.id, path);
+  }
+
+  const { data: objective, error } = await supabase
+    .from("objectives")
+    .insert({
+      ...parsed.data,
+      status: projectId.data ? "active" : parsed.data.status,
+      user_id: user.id,
+    })
+    .select("id")
+    .single();
+
+  if (error || !objective) fail(path, error?.message ?? "Não foi possível criar o Objectivo Central.");
+
+  if (projectId.data) {
+    const { error: projectError } = await supabase
+      .from("projects")
+      .update({ objective_id: objective.id })
+      .eq("id", projectId.data)
+      .eq("user_id", user.id);
+
+    if (projectError) fail(path, projectError.message);
+    revalidatePath(`/projects/${projectId.data}`);
+  }
+
   revalidatePath(path);
+  revalidatePath("/projects");
+  revalidatePath("/metrics");
   revalidatePath("/dashboard");
-  redirect(`${path}?created=1`);
+  redirect(`${path}?created=1${projectId.data ? `&project_id=${projectId.data}` : ""}`);
 }
 
 
