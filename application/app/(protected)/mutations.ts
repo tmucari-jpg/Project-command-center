@@ -1055,6 +1055,98 @@ export async function upsertProjectUnitEconomics(formData: FormData) {
   redirect(`${path}?economics=1`);
 }
 
+async function runProjectExecutionValidation(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  projectId: string,
+) {
+  const [
+    { data: project, error: projectError },
+    { data: actions, error: actionsError },
+    { data: blockers, error: blockersError },
+  ] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("id,title,objective_id,next_action")
+      .eq("id", projectId)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("actions")
+      .select("id,title,status,due_at,is_next_action")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .neq("status", "completed")
+      .neq("status", "cancelled"),
+    supabase
+      .from("blockers")
+      .select("id,title,status")
+      .eq("project_id", projectId)
+      .eq("user_id", userId)
+      .in("status", ["open", "investigating", "waiting"]),
+  ]);
+
+  if (projectError || !project) throw new Error(projectError?.message ?? "Projecto não encontrado para validação.");
+  if (actionsError) throw new Error(actionsError.message);
+  if (blockersError) throw new Error(blockersError.message);
+
+  const issues: string[] = [];
+  if (!project.objective_id) issues.push("Objectivo Central por definir");
+
+  const openActions = actions ?? [];
+  const withoutDeadline = openActions.filter((action) => !action.due_at);
+  if (withoutDeadline.length) issues.push(`${withoutDeadline.length} acção(ões) sem prazo`);
+
+  const normalized = new Map<string, number>();
+  for (const action of openActions) {
+    const key = action.title.trim().toLocaleLowerCase();
+    normalized.set(key, (normalized.get(key) ?? 0) + 1);
+  }
+  const duplicates = Array.from(normalized.values()).filter((count) => count > 1).length;
+  if (duplicates) issues.push(`${duplicates} possível(eis) duplicação(ões)`);
+
+  if (openActions.length && !openActions.some((action) => action.is_next_action)) {
+    issues.push("Próxima acção por definir");
+  }
+
+  if ((blockers ?? []).length) issues.push(`${blockers?.length ?? 0} bloqueio(s) activo(s)`);
+
+  const status = issues.length ? "Atenção" : "Validado";
+  const description = issues.length
+    ? `${status}: ${issues.join(" · ")}.`
+    : "Validado: execução coerente com os controlos actualmente disponíveis no PCC.";
+
+  const { error: evidenceError } = await supabase.from("evidence").insert({
+    user_id: userId,
+    project_id: projectId,
+    evidence_type: "comment",
+    title: "Validação operacional",
+    description,
+  });
+  if (evidenceError) throw new Error(evidenceError.message);
+
+  return { status, description };
+}
+
+export async function validateProjectExecution(formData: FormData) {
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  if (!projectId.success) fail("/actions", "Projecto inválido.");
+
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", projectId.data, user.id, "/actions");
+
+  let result: Awaited<ReturnType<typeof runProjectExecutionValidation>>;
+  try {
+    result = await runProjectExecutionValidation(supabase, user.id, projectId.data);
+  } catch (error) {
+    fail("/actions", error instanceof Error ? error.message : "Falha na validação operacional.");
+  }
+
+  revalidatePath("/actions");
+  revalidatePath(`/projects/${projectId.data}`);
+  redirect(`/actions?project_id=${projectId.data}&validation=${encodeURIComponent(result.description)}`);
+}
+
 export async function createDeliverable(formData: FormData) {
   const path = "/deliverables";
   const parsed = deliverableSchema.safeParse(values(formData));
@@ -1141,9 +1233,17 @@ export async function createAction(formData: FormData) {
     if (nextError) fail(path, nextError.message);
   }
 
+  if (projectId) {
+    try {
+      await runProjectExecutionValidation(supabase, user.id, projectId);
+    } catch {
+      // A acção foi criada; a validação pode ser repetida manualmente na área Executar.
+    }
+  }
+
   revalidatePath(path);
   revalidatePath("/dashboard");
-  revalidatePath("/focus");
+  if (projectId) revalidatePath(`/projects/${projectId}`);
   redirect(`${path}?created=1`);
 }
 
@@ -1956,6 +2056,37 @@ export async function updateStatusProgress(formData: FormData) {
     fail(path, "Actualização inválida.");
   }
 
+  const { supabase, user } = await requireUser();
+
+  if (entity === "deliverables") {
+    const { data: deliverable, error: deliverableError } = await supabase
+      .from("deliverables")
+      .select("id,status,completion_criteria,project_id")
+      .eq("id", idResult.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (deliverableError || !deliverable) fail(path, deliverableError?.message ?? "Entregável não encontrado.");
+    if (deliverable.status === "completed") {
+      fail(path, "Este entregável já foi entregue e está bloqueado como versão canónica. Reabra o trabalho através do projecto para criar uma nova versão.");
+    }
+
+    if (status === "completed") {
+      if (!deliverable.completion_criteria?.trim()) {
+        fail(path, "Defina critérios de aceitação antes de marcar o entregável como entregue.");
+      }
+      const { count, error: evidenceError } = await supabase
+        .from("evidence")
+        .select("id", { count: "exact", head: true })
+        .eq("deliverable_id", deliverable.id)
+        .eq("user_id", user.id);
+      if (evidenceError) fail(path, evidenceError.message);
+      if (!count) {
+        fail(path, "Anexe primeiro uma evidência real do resultado/entrega (ficheiro, link, documento ou comprovativo).");
+      }
+    }
+  }
+
   const payload: Record<string, unknown> = { status };
 
   if (["objectives", "projects", "deliverables"].includes(entity)) {
@@ -1972,7 +2103,6 @@ export async function updateStatusProgress(formData: FormData) {
     payload.resolved_at = status === "resolved" ? new Date().toISOString() : null;
   }
 
-  const { supabase, user } = await requireUser();
   const { error } = await supabase
     .from(entity)
     .update(payload)
@@ -1980,9 +2110,26 @@ export async function updateStatusProgress(formData: FormData) {
     .eq("user_id", user.id);
 
   if (error) fail(path, error.message);
+
+  if (entity === "actions") {
+    const { data: action } = await supabase
+      .from("actions")
+      .select("project_id")
+      .eq("id", idResult.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (action?.project_id) {
+      try {
+        await runProjectExecutionValidation(supabase, user.id, action.project_id);
+      } catch {
+        // A actualização mantém-se; a validação pode ser repetida manualmente.
+      }
+      revalidatePath(`/projects/${action.project_id}`);
+    }
+  }
+
   revalidatePath(path);
   revalidatePath("/dashboard");
-  revalidatePath("/focus");
 }
 
 const deletable = new Set([
@@ -2006,6 +2153,39 @@ export async function deleteRecord(formData: FormData) {
   if (!id.success) fail(path, "Identificador inválido.");
 
   const { supabase, user } = await requireUser();
+
+  if (table === "deliverables") {
+    const { data: deliverable } = await supabase
+      .from("deliverables")
+      .select("status")
+      .eq("id", id.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (deliverable?.status === "completed") {
+      fail(path, "Entregáveis entregues são arquivos canónicos e não podem ser eliminados.");
+    }
+  }
+
+  if (table === "evidence") {
+    const { data: evidence } = await supabase
+      .from("evidence")
+      .select("deliverable_id")
+      .eq("id", id.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (evidence?.deliverable_id) {
+      const { data: deliverable } = await supabase
+        .from("deliverables")
+        .select("status")
+        .eq("id", evidence.deliverable_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (deliverable?.status === "completed") {
+        fail(path, "A evidência pertence a um entregável entregue e está bloqueada no histórico.");
+      }
+    }
+  }
+
   const { error } = await supabase
     .from(table)
     .delete()
@@ -2075,9 +2255,24 @@ export async function setNextAction(formData: FormData) {
   });
 
   if (error) fail(path, error.message);
+
+  const { user } = await requireUser();
+  const { data: action } = await supabase
+    .from("actions")
+    .select("project_id")
+    .eq("id", actionId.data)
+    .maybeSingle();
+  if (action?.project_id) {
+    try {
+      await runProjectExecutionValidation(supabase, user.id, action.project_id);
+    } catch {
+      // A próxima acção foi definida; validação pode ser repetida manualmente.
+    }
+    revalidatePath(`/projects/${action.project_id}`);
+  }
+
   revalidatePath(path);
   revalidatePath("/dashboard");
-  revalidatePath("/focus");
 }
 
 export async function prepareProjectOperationalStructure(formData: FormData) {
