@@ -227,6 +227,32 @@ jobs:
             exit 1
           }
 
+      - name: Validate consolidated PCC workflow
+        shell: pwsh
+        run: |
+          $sidebar = Get-Content "../application/components/sidebar.tsx" -Raw
+          $mutations = Get-Content "../application/app/(protected)/mutations.ts" -Raw
+          $deliverables = Get-Content "../application/app/(protected)/deliverables/page.tsx" -Raw
+
+          foreach ($legacy in @("/agenda", "/focus", "/blockers", "/decisions")) {
+            if ($sidebar.Contains($legacy)) {
+              Write-Error "Legacy operational drawer returned to sidebar: $legacy"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "finalizeProjectClosure",
+            "Entregável entregue está bloqueado",
+            "Todos os entregáveis precisam de evidência",
+            "Entregáveis & Fecho"
+          )) {
+            if (-not $mutations.Contains($token) -and -not $deliverables.Contains($token)) {
+              Write-Error "Missing consolidated PCC closure guard: $token"
+              exit 1
+            }
+          }
+
       - name: Typecheck
         run: npm run typecheck
 
