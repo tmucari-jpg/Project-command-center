@@ -74,7 +74,18 @@ export default async function DeliverablesPage({
     ? selectedProjectId
     : "";
   const effectiveProject = (projects ?? []).find((project) => project.id === effectiveProjectId);
-  const preparedDraft = prepareDeliverableDraft(effectiveProject);
+  const previousVersion = (deliverables ?? []).find(
+    (item) => item.id === params.supersedes && item.project_id === effectiveProjectId && item.status === "completed",
+  );
+  const preparedDraft = previousVersion
+    ? {
+        title: previousVersion.title,
+        description: previousVersion.description ?? undefined,
+        priority: previousVersion.priority,
+        due_date: undefined,
+        completion_criteria: previousVersion.completion_criteria ?? undefined,
+      }
+    : prepareDeliverableDraft(effectiveProject);
   const ownerById = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name || "Utilizador"]));
 
   const projectGroups = (projects ?? []).map((project) => {
@@ -149,6 +160,9 @@ export default async function DeliverablesPage({
             Um entregável é um resultado utilizável: ficheiro final, website publicado, aplicação, dashboard, apresentação, modelo ou outro artefacto real.
           </p>
           <form action={createDeliverable} className="mt-5 space-y-4">
+            {previousVersion && (
+              <input type="hidden" name="supersedes_deliverable_id" value={previousVersion.id} />
+            )}
             {preparedDraft && (
               <p className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-xs font-medium text-[var(--cc-secondary)]">
                 Proposta preparada a partir do resultado esperado. Reveja o conteúdo e os critérios de aceitação.
@@ -171,7 +185,39 @@ export default async function DeliverablesPage({
             <input type="hidden" name="status" value="pending" />
             <input type="hidden" name="progress" value="0" />
             <TextArea label="Critérios de aceitação" name="completion_criteria" defaultValue={preparedDraft?.completion_criteria} />
-            <button className={primaryButtonClass} type="submit">Guardar entregável</button>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select label="Formato do resultado" name="artifact_type" defaultValue={previousVersion?.artifact_type ?? "other"}>
+                <option value="document">Documento Word / texto</option>
+                <option value="spreadsheet">Excel / folha de cálculo</option>
+                <option value="presentation">PowerPoint / apresentação</option>
+                <option value="pdf">PDF final</option>
+                <option value="website">Website publicado</option>
+                <option value="application">Aplicação / sistema</option>
+                <option value="dashboard">Dashboard funcional</option>
+                <option value="api">API / endpoint</option>
+                <option value="dataset">Base de dados / dataset</option>
+                <option value="prototype">Demo / protótipo</option>
+                <option value="other">Outro resultado utilizável</option>
+              </Select>
+              <Field
+                label="URL oficial, quando aplicável"
+                name="artifact_url"
+                type="url"
+                defaultValue={previousVersion?.artifact_url ?? undefined}
+                placeholder="https://..."
+              />
+            </div>
+            <Field
+              label="Referência imutável da versão"
+              name="artifact_reference"
+              defaultValue={undefined}
+              placeholder="Ex.: deployment ID, commit SHA, release ou hash"
+            />
+            <p className="text-xs leading-5 text-[var(--cc-secondary)]">
+              Para websites, aplicações, dashboards e APIs, o URL publicado e uma referência imutável da versão são obrigatórios antes da entrega final.
+              O arquivo oficial do PCC não é sobrescrito: qualquer alteração posterior cria uma nova versão.
+            </p>
+            <button className={primaryButtonClass} type="submit">{previousVersion ? "Criar nova versão" : "Guardar entregável"}</button>
           </form>
         </ManualEntry>
 
@@ -224,13 +270,14 @@ export default async function DeliverablesPage({
                                 <h4 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h4>
                                 <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                                   {deliverableState(item.status, item.progress)}
+                                  {item.artifact_version ? ` · versão ${item.artifact_version}` : ""}
                                   {item.due_date ? ` · prazo ${formatDate(item.due_date)}` : " · sem prazo"}
                                   {item.owner_id ? ` · ${ownerById.get(item.owner_id) ?? "Responsável definido"}` : ""}
                                 </p>
                               </div>
                               {locked && (
                                 <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-                                  Ficheiro final bloqueado
+                                  Arquivo oficial imutável
                                 </span>
                               )}
                             </div>
@@ -240,6 +287,21 @@ export default async function DeliverablesPage({
                               <p className="mt-3 text-sm text-[var(--cc-foreground)]">
                                 <span className="font-medium">Aceite quando:</span> {item.completion_criteria}
                               </p>
+                            )}
+                            {(item.artifact_url || item.artifact_reference) && (
+                              <div className="mt-3 text-sm text-[var(--cc-secondary)]">
+                                {item.artifact_url && (
+                                  <p>
+                                    <span className="font-medium text-[var(--cc-foreground)]">Resultado oficial:</span>{" "}
+                                    <a href={item.artifact_url} target="_blank" rel="noreferrer" className="text-[var(--cc-accent)] hover:underline">Abrir</a>
+                                  </p>
+                                )}
+                                {item.artifact_reference && (
+                                  <p className="mt-1 break-all">
+                                    <span className="font-medium text-[var(--cc-foreground)]">Versão imutável:</span> {item.artifact_reference}
+                                  </p>
+                                )}
+                              </div>
                             )}
 
                             <div className="mt-4 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-3">
@@ -278,9 +340,17 @@ export default async function DeliverablesPage({
                                 </p>
                               </div>
                             ) : (
-                              <p className="mt-4 text-xs text-[var(--cc-secondary)]">
-                                Entregável final bloqueado. Alterações posteriores devem ser registadas como uma nova versão/novo entregável no PCC.
-                              </p>
+                              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--cc-border)] pt-4">
+                                <p className="text-xs text-[var(--cc-secondary)]">
+                                  Arquivo oficial bloqueado. Cópias descarregadas podem ser editadas externamente, mas nunca alteram esta versão oficial.
+                                </p>
+                                <Link
+                                  className={secondaryButtonClass}
+                                  href={`/deliverables?project_id=${group.project.id}&supersedes=${item.id}`}
+                                >
+                                  Criar nova versão
+                                </Link>
+                              </div>
                             )}
                           </article>
                         );
