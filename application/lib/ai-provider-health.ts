@@ -45,7 +45,7 @@ async function validateOpenAI(profile: AIProviderHealthProfile): Promise<AIProvi
           };
     }
 
-    const { response, latency_ms } = await timedFetch(`${base}/responses`, {
+    const { response, latency_ms } = await timedFetch(`${base}/chat/completions`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -53,22 +53,36 @@ async function validateOpenAI(profile: AIProviderHealthProfile): Promise<AIProvi
       },
       body: JSON.stringify({
         model,
-        input: "Responda apenas OK.",
-        max_output_tokens: 8,
+        messages: [{ role: "user", content: "Responda apenas OK." }],
+        temperature: 0.1,
+        max_tokens: 64,
       }),
     });
 
     if (response.ok) {
       return {
         status: "healthy",
-        message: `Provider e modelo configurado responderam a uma chamada real.`,
+        message: `Provider e modelo configurado responderam no mesmo endpoint usado pelo BotIA.`,
         latency_ms,
       };
     }
 
+    let providerMessage = "";
+    try {
+      const body = (await response.json()) as {
+        error?: { message?: string };
+        message?: string;
+      };
+      providerMessage = body.error?.message?.trim() || body.message?.trim() || "";
+    } catch {
+      // Mantém diagnóstico apenas pelo código HTTP quando a resposta não é JSON.
+    }
+
+    const detail = providerMessage ? ` — ${providerMessage.slice(0, 220)}` : "";
+
     return {
       status: response.status >= 500 || response.status === 429 ? "degraded" : "offline",
-      message: `OpenAI respondeu HTTP ${response.status} ao teste real do modelo.`,
+      message: `OpenAI respondeu HTTP ${response.status} no endpoint real do BotIA${detail}`,
       latency_ms,
     };
   } catch (error) {

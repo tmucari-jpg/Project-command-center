@@ -183,6 +183,21 @@ jobs:
             }
           }
 
+      - name: Validate BotIA-aligned OpenAI health check
+        shell: pwsh
+        run: |
+          $health = Get-Content "../application/lib/ai-provider-health.ts" -Raw
+          foreach ($token in @(
+            "/chat/completions",
+            "mesmo endpoint usado pelo BotIA",
+            "providerMessage"
+          )) {
+            if (-not $health.Contains($token)) {
+              Write-Error "Missing BotIA-aligned OpenAI health guard: $token"
+              exit 1
+            }
+          }
+
       - name: Typecheck
         run: npm run typecheck
 
