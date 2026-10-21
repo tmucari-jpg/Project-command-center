@@ -16,10 +16,17 @@ export type ProjectAutonomyContext = {
 
 export function prepareObjectiveDraft(project?: ProjectAutonomyContext) {
   if (!project) return null;
+  const expected = project.expected_result?.trim();
+  const objectiveTitle = expected
+    ? expected.length <= 180
+      ? expected
+      : `${expected.slice(0, 177).trimEnd()}...`
+    : "Definir Objectivo Central";
+
   return {
-    title: project.title,
+    title: objectiveTitle,
     description: project.description?.trim() || undefined,
-    expected_result: project.expected_result?.trim() || undefined,
+    expected_result: expected || undefined,
     priority: project.priority,
     start_date: project.start_date || undefined,
     due_date: project.due_date || undefined,
@@ -39,18 +46,42 @@ export function prepareDeliverableDraft(project?: ProjectAutonomyContext) {
   };
 }
 
-export function prepareMetricDraft(project?: ProjectAutonomyContext) {
-  if (!project || !project.expected_result?.trim()) return null;
-  const current = Number(project.progress ?? 0);
+export type ObjectiveMetricContext = {
+  id?: string | null;
+  title?: string | null;
+  expected_result?: string | null;
+  metric_name?: string | null;
+  baseline_value?: number | string | null;
+  target_value?: number | string | null;
+  current_value?: number | string | null;
+};
+
+export function prepareMetricDraft(
+  project?: ProjectAutonomyContext,
+  objective?: ObjectiveMetricContext | null,
+) {
+  if (!project) return null;
+
+  const objectiveText =
+    objective?.expected_result?.trim() ||
+    objective?.title?.trim() ||
+    project.expected_result?.trim();
+
+  if (!objectiveText) return null;
+
+  const metricName = objective?.metric_name?.trim();
   return {
     project_id: project.id,
-    name: `Progresso de ${project.title}`,
-    description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
-    metric_type: "custom" as const,
-    unit: "%",
-    baseline_value: 0,
-    target_value: 100,
-    current_value: Number.isFinite(current) ? current : 0,
+    objective_id: objective?.id || undefined,
+    name: metricName || "Métrica principal do Objectivo Central",
+    description: metricName
+      ? `Mede o Objectivo Central: ${objectiveText}`
+      : `Defina a unidade e a meta mensurável que comprovam este Objectivo Central: ${objectiveText}`,
+    metric_type: "outcome_ratio" as const,
+    unit: undefined,
+    baseline_value: objective?.baseline_value ?? undefined,
+    target_value: objective?.target_value ?? undefined,
+    current_value: objective?.current_value ?? undefined,
   };
 }
 
