@@ -274,7 +274,7 @@ jobs:
           }
 
           foreach ($token in @(
-            "Arquivo oficial imutável",
+            "Registo oficial imutável",
             "Criar nova versão",
             "referência imutável"
           )) {
