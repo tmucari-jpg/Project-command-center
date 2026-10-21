@@ -81,6 +81,9 @@ export default async function DashboardPage() {
     .sort((a, b) => b.attention - a.attention || a.title.localeCompare(b.title));
 
   const projectsToReview = projectRows.filter((project) => project.attention > 0).length;
+  const nextActionProject = nextAction
+    ? (Array.isArray(nextAction.projects) ? nextAction.projects[0] : nextAction.projects)
+    : null;
   const chartItems = projectRows
     .filter((project) => project.attention > 0)
     .map((project) => ({
@@ -140,7 +143,7 @@ export default async function DashboardPage() {
             <>
               <h2 className="mt-3 font-semibold text-[var(--cc-foreground)]">{nextAction.title}</h2>
               <p className="mt-2 text-sm text-[var(--cc-secondary)]">
-                {nextAction.projects?.title ?? "Sem projecto"}
+                {nextActionProject?.title ?? "Sem projecto"}
                 {nextAction.due_at ? ` · prazo ${formatDate(nextAction.due_at)}` : " · sem prazo"}
               </p>
               <Link href="/actions" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--cc-accent)]">
