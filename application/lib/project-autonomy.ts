@@ -17,7 +17,7 @@ export type ProjectAutonomyContext = {
 export function prepareObjectiveDraft(project?: ProjectAutonomyContext) {
   if (!project) return null;
   return {
-    title: project.title,
+    title: project.expected_result?.trim() || `Objectivo central de ${project.title}`,
     description: project.description?.trim() || undefined,
     expected_result: project.expected_result?.trim() || undefined,
     priority: project.priority,
@@ -41,16 +41,15 @@ export function prepareDeliverableDraft(project?: ProjectAutonomyContext) {
 
 export function prepareMetricDraft(project?: ProjectAutonomyContext) {
   if (!project || !project.expected_result?.trim()) return null;
-  const current = Number(project.progress ?? 0);
   return {
     project_id: project.id,
-    name: `Progresso de ${project.title}`,
-    description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
-    metric_type: "custom" as const,
-    unit: "%",
-    baseline_value: 0,
-    target_value: 100,
-    current_value: Number.isFinite(current) ? current : 0,
+    name: `Indicador principal — ${project.title}`,
+    description: `Defina a medida que comprova o resultado esperado: ${project.expected_result.trim()}`,
+    metric_type: "outcome_ratio" as const,
+    unit: undefined,
+    baseline_value: undefined,
+    target_value: undefined,
+    current_value: undefined,
   };
 }
 
