@@ -20,7 +20,7 @@ const project = {
 describe("project autonomy", () => {
   it("prepares an objective only from project context", () => {
     expect(prepareObjectiveDraft(project)).toMatchObject({
-      title: "Gestor de Vendas",
+      title: "Pipeline comercial claro e utilizável.",
       expected_result: "Pipeline comercial claro e utilizável.",
       priority: "high",
     });
@@ -34,13 +34,14 @@ describe("project autonomy", () => {
     });
   });
 
-  it("prepares a progress metric without inventing business numbers", () => {
+  it("prepares an outcome metric without inventing measurement values", () => {
     expect(prepareMetricDraft(project)).toMatchObject({
-      name: "Progresso de Gestor de Vendas",
-      unit: "%",
-      baseline_value: 0,
-      target_value: 100,
-      current_value: 25,
+      name: "Indicador principal — Gestor de Vendas",
+      metric_type: "outcome_ratio",
+      unit: undefined,
+      baseline_value: undefined,
+      target_value: undefined,
+      current_value: undefined,
     });
   });
 
