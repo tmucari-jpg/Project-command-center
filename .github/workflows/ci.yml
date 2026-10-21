@@ -198,6 +198,35 @@ jobs:
             }
           }
 
+      - name: Validate BotIA provider failover guards
+        shell: pwsh
+        run: |
+          $actions = Get-Content "../application/app/(protected)/bot-ia/actions.ts" -Raw
+          $provider = Get-Content "../application/lib/bot-ia-provider.ts" -Raw
+          $health = Get-Content "../application/lib/ai-provider-health.ts" -Raw
+
+          foreach ($token in @(
+            "resolveBotIAProviders",
+            "generateBotIAPlanWithFallback",
+            "provider_attempts",
+            'last_health_status: "degraded"'
+          )) {
+            if (-not $actions.Contains($token) -and -not $provider.Contains($token)) {
+              Write-Error "Missing BotIA failover guard: $token"
+              exit 1
+            }
+          }
+
+          if ($provider.Contains("dashscope-intl.aliyuncs.com/compatible-mode/v1")) {
+            Write-Error "Legacy generic Qwen endpoint must not be used; configure an explicit Workspace/Region endpoint."
+            exit 1
+          }
+
+          if (-not $health.Contains("Workspace/Região")) {
+            Write-Error "Qwen Cloud health check must require explicit Workspace/Region configuration."
+            exit 1
+          }
+
       - name: Typecheck
         run: npm run typecheck
 

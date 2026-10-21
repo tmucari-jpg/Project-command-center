@@ -107,9 +107,7 @@ async function validateOpenAICompatibleCloud(
       : profile.provider === "qwen_cloud"
         ? {
             apiKey: process.env.QWEN_API_KEY,
-            base:
-              profile.endpoint_hint?.trim() ||
-              "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+            base: profile.endpoint_hint?.trim() || "",
             model: process.env.QWEN_MODEL?.trim() || profile.model_hint?.trim(),
             label: "Qwen cloud",
           }
@@ -117,6 +115,13 @@ async function validateOpenAICompatibleCloud(
 
   if (!config) {
     return { status: "unknown", message: "Provider cloud sem adaptador dedicado." };
+  }
+
+  if (profile.provider === "qwen_cloud" && !config.base) {
+    return {
+      status: "unknown",
+      message: "Qwen Cloud requer o endpoint do Workspace/Região do Alibaba Model Studio.",
+    };
   }
 
   if (!config.apiKey) {

@@ -9,7 +9,7 @@ import {
   validateBotIAOperation,
   type BotIAOperation,
 } from "@/lib/bot-ia";
-import { generateBotIAPlan, type BotIAProviderProfile } from "@/lib/bot-ia-provider";
+import { generateBotIAPlanWithFallback, type BotIAProviderProfile } from "@/lib/bot-ia-provider";
 import { validateAIProviderHealth } from "@/lib/ai-provider-health";
 
 const prepareSchema = z.object({
@@ -41,7 +41,7 @@ function sanitizeOperations(
   });
 }
 
-async function resolveBotIAProvider(
+async function resolveBotIAProviders(
   supabase: Awaited<ReturnType<typeof requireAdmin>>["supabase"],
   userId: string,
 ) {
@@ -56,12 +56,14 @@ async function resolveBotIAProvider(
     throw new Error("Nenhum provider de IA está registado na Administração.");
   }
 
-  const alreadyHealthy = providers.find(
-    (provider) => provider.enabled && provider.last_health_status === "healthy",
-  );
-  if (alreadyHealthy) return alreadyHealthy;
+  const healthyProviders = [];
 
   for (const provider of providers) {
+    if (provider.enabled && provider.last_health_status === "healthy") {
+      healthyProviders.push(provider);
+      continue;
+    }
+
     const health = await validateAIProviderHealth(provider);
     const enabled = health.status === "healthy";
 
@@ -78,15 +80,19 @@ async function resolveBotIAProvider(
     if (updateError) throw new Error(updateError.message);
 
     if (enabled) {
-      return {
+      healthyProviders.push({
         ...provider,
         enabled: true,
         last_health_status: "healthy" as const,
-      };
+      });
     }
   }
 
-  throw new Error("Nenhum provider de IA respondeu como saudável. Valide a configuração na Administração.");
+  if (!healthyProviders.length) {
+    throw new Error("Nenhum provider de IA respondeu como saudável. Valide a configuração na Administração.");
+  }
+
+  return healthyProviders;
 }
 
 export async function prepareBotIARun(input: {
@@ -169,7 +175,7 @@ export async function prepareBotIARun(input: {
       throw new Error("O bloqueio seleccionado não pertence ao projecto.");
     }
 
-    const provider = await resolveBotIAProvider(supabase, user.id);
+    const providers = await resolveBotIAProviders(supabase, user.id);
 
     const factualContext = {
       user_objective: parsed.data.objective,
@@ -195,15 +201,35 @@ export async function prepareBotIARun(input: {
       recent_decisions: decisions ?? [],
     };
 
-    const rawPlan = await generateBotIAPlan(
-      {
-        provider: provider.provider,
-        label: provider.label,
-        mode: provider.mode,
-        endpoint_hint: provider.endpoint_hint,
-        model_hint: provider.model_hint,
-      } satisfies BotIAProviderProfile,
+    const providerProfiles = providers.map((provider) => ({
+      id: provider.id,
+      provider: provider.provider,
+      label: provider.label,
+      mode: provider.mode,
+      endpoint_hint: provider.endpoint_hint,
+      model_hint: provider.model_hint,
+    } satisfies BotIAProviderProfile & { id: string }));
+
+    const {
+      plan: rawPlan,
+      provider,
+      attempts: providerAttempts,
+    } = await generateBotIAPlanWithFallback(
+      providerProfiles,
       factualContext,
+      async (failedProvider) => {
+        const { error: degradeError } = await supabase
+          .from("ai_provider_profiles")
+          .update({
+            enabled: false,
+            last_health_status: "degraded",
+            last_health_at: new Date().toISOString(),
+          })
+          .eq("id", failedProvider.id)
+          .eq("user_id", user.id);
+
+        if (degradeError) throw new Error(degradeError.message);
+      },
     );
 
     const validBlockerIds = new Set((blockers ?? []).map((item) => item.id));
@@ -240,6 +266,7 @@ export async function prepareBotIARun(input: {
             mode: provider.mode,
             model: provider.model_hint,
           },
+          provider_attempts: providerAttempts,
           selected_blocker_id: parsed.data.blockerId ?? null,
           intent: plan.intent,
           response: plan.response,
