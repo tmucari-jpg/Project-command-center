@@ -167,6 +167,22 @@ jobs:
             }
           }
 
+      - name: Validate authenticated REST row normalization
+        shell: pwsh
+        run: |
+          $smoke = Get-Content "../scripts/FULL_SMOKE_POWERSHELL.ps1" -Raw
+
+          foreach ($token in @(
+            "ConvertTo-RestRows",
+            "Project RLS read returned",
+            "Project titles visible to operator"
+          )) {
+            if (-not $smoke.Contains($token)) {
+              Write-Error "Missing authenticated REST smoke diagnostic/normalization guard: $token"
+              exit 1
+            }
+          }
+
       - name: Typecheck
         run: npm run typecheck
 

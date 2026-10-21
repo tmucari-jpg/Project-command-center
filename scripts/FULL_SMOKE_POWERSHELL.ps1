@@ -396,6 +396,18 @@ function Clear-SmokePort([int]$Port, [string]$RepoPath) {
   Write-Pass "Port $Port cleared for current smoke runtime"
 }
 
+function ConvertTo-RestRows([object]$Response) {
+  if ($null -eq $Response) {
+    return @()
+  }
+
+  if ($Response -is [System.Array]) {
+    return @($Response | ForEach-Object { $_ })
+  }
+
+  return @($Response)
+}
+
 function Invoke-SupabaseRest(
   [string]$BaseUrl,
   [string]$ApiKey,
@@ -770,7 +782,13 @@ try {
     $userId = [string]$auth.user.id
     Write-Pass "Operator authentication"
 
-    $projects = @(Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "projects?select=id,title,status,progress,owner_id,next_action,next_review_date,review_cadence_days,governance_gate,governance_gate_status&order=created_at.desc")
+    $projectsResponse = Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "projects?select=id,title,status,progress,owner_id,next_action,next_review_date,review_cadence_days,governance_gate,governance_gate_status&order=created_at.desc"
+    $projects = @(ConvertTo-RestRows -Response $projectsResponse)
+
+    Write-Pass "Project RLS read returned $($projects.Count) row(s)"
+    if ($projects.Count -gt 0) {
+      Write-Host ("INFO - Project titles visible to operator: " + ((@($projects | ForEach-Object { [string]$_.title })) -join " | ")) -ForegroundColor DarkGray
+    }
 
     $expectedProjects = @(
       "Gestor de Actividades",
@@ -794,7 +812,7 @@ try {
       Write-Pass "Real project present: $expected"
     }
 
-    $deliverables = @(Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "deliverables?select=id,project_id,title,status,owner_id")
+    $deliverables = @(ConvertTo-RestRows -Response (Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "deliverables?select=id,project_id,title,status,owner_id"))
     $missingOwner = @($deliverables | Where-Object { -not $_.owner_id })
 
     if ($missingOwner.Count -gt 0) {
@@ -803,7 +821,7 @@ try {
 
     Write-Pass "Deliverable ownership integrity"
 
-    $blockingDeps = @(Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "project_governance_dependencies?select=id,project_id,status,kind,blocks_progress&blocks_progress=eq.true&status=in.(pending,resolving)")
+    $blockingDeps = @(ConvertTo-RestRows -Response (Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "project_governance_dependencies?select=id,project_id,status,kind,blocks_progress&blocks_progress=eq.true&status=in.(pending,resolving)"))
 
     if ($blockingDeps.Count -gt 0) {
       Stop-WithError "$($blockingDeps.Count) blocking governance dependency/dependencies detected."
@@ -811,11 +829,11 @@ try {
 
     Write-Pass "No blocking governance dependencies"
 
-    $actions = @(Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "actions?select=id,project_id,title,status,due_at,is_next_action")
-    $blockers = @(Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "blockers?select=id,project_id,title,status")
-    $evidence = @(Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "evidence?select=id,project_id,title,evidence_type")
-    $metrics = @(Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "metrics?select=id,project_id,name,current_value,target_value")
-    $providers = @(Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "ai_provider_profiles?select=id,provider,label,enabled,last_health_status,mode,model_hint")
+    $actions = @(ConvertTo-RestRows -Response (Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "actions?select=id,project_id,title,status,due_at,is_next_action"))
+    $blockers = @(ConvertTo-RestRows -Response (Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "blockers?select=id,project_id,title,status"))
+    $evidence = @(ConvertTo-RestRows -Response (Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "evidence?select=id,project_id,title,evidence_type"))
+    $metrics = @(ConvertTo-RestRows -Response (Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "metrics?select=id,project_id,name,current_value,target_value"))
+    $providers = @(ConvertTo-RestRows -Response (Invoke-SupabaseRest -BaseUrl $supabaseUrl -ApiKey $supabaseKey -AccessToken $accessToken -Path "ai_provider_profiles?select=id,provider,label,enabled,last_health_status,mode,model_hint"))
 
     Write-Pass "RLS reads: actions=$($actions.Count), blockers=$($blockers.Count), evidence=$($evidence.Count), metrics=$($metrics.Count), AI profiles=$($providers.Count)"
 
