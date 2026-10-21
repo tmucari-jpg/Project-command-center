@@ -165,17 +165,35 @@ async function validateOpenAICompatibleCloud(
       }),
     });
 
-    return response.ok
-      ? {
-          status: "healthy",
-          message: `${config.label} e modelo configurado responderam a uma chamada real.`,
-          latency_ms,
-        }
-      : {
-          status: response.status >= 500 || response.status === 429 ? "degraded" : "offline",
-          message: `${config.label} respondeu HTTP ${response.status} ao teste real do modelo.`,
-          latency_ms,
-        };
+    if (response.ok) {
+      return {
+        status: "healthy",
+        message: `${config.label} e modelo configurado responderam a uma chamada real.`,
+        latency_ms,
+      };
+    }
+
+    let providerMessage = "";
+    try {
+      const body = (await response.json()) as {
+        code?: string;
+        message?: string;
+        error?: { code?: string; message?: string };
+      };
+      const code = body.error?.code?.trim() || body.code?.trim() || "";
+      const message = body.error?.message?.trim() || body.message?.trim() || "";
+      providerMessage = [code, message].filter(Boolean).join(": ");
+    } catch {
+      // Mantém diagnóstico apenas pelo código HTTP quando a resposta não é JSON.
+    }
+
+    const detail = providerMessage ? ` — ${providerMessage.slice(0, 260)}` : "";
+
+    return {
+      status: response.status >= 500 || response.status === 429 ? "degraded" : "offline",
+      message: `${config.label} respondeu HTTP ${response.status} ao teste real do modelo${detail}`,
+      latency_ms,
+    };
   } catch (error) {
     return {
       status: "offline",
