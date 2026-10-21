@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { validateAIProviderHealth } from "@/lib/ai-provider-health";
 
 const ORIGINAL_ENV = {
@@ -18,6 +18,7 @@ function restore(name: keyof typeof ORIGINAL_ENV) {
 
 afterEach(() => {
   (Object.keys(ORIGINAL_ENV) as Array<keyof typeof ORIGINAL_ENV>).forEach(restore);
+  vi.unstubAllGlobals();
 });
 
 describe("AI provider health guards", () => {
@@ -68,6 +69,32 @@ describe("AI provider health guards", () => {
 
     expect(result.status).toBe("unknown");
     expect(result.message).toContain("Workspace/Região");
+  });
+
+  it("surfaces Qwen 403 provider details", async () => {
+    process.env.QWEN_API_KEY = "test-qwen";
+    process.env.QWEN_MODEL = "qwen-plus";
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        code: "AccessDenied.Unpurchased",
+        message: "Access to model denied.",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await validateAIProviderHealth({
+      provider: "qwen_cloud",
+      mode: "cloud",
+      endpoint_hint: "https://workspace.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+      model_hint: "qwen-plus",
+    });
+
+    expect(result.status).toBe("offline");
+    expect(result.message).toContain("AccessDenied.Unpurchased");
+    expect(result.message).toContain("Access to model denied");
   });
 
   it("keeps local AI unknown until an endpoint is configured", async () => {
