@@ -98,6 +98,7 @@ export const projectSchema = z
 export const deliverableSchema = z.object({
   project_id: z.string().uuid(),
   owner_id: optionalUuid,
+  supersedes_deliverable_id: optionalUuid,
   title: z.string().trim().min(2).max(180),
   description: optionalText(),
   priority: z.enum(PRIORITIES),
@@ -105,6 +106,24 @@ export const deliverableSchema = z.object({
   due_date: optionalDate,
   progress,
   completion_criteria: optionalText(),
+  artifact_type: z.enum([
+    "document",
+    "spreadsheet",
+    "presentation",
+    "pdf",
+    "website",
+    "application",
+    "dashboard",
+    "api",
+    "dataset",
+    "prototype",
+    "other",
+  ]),
+  artifact_url: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().trim().url().max(1000).optional(),
+  ),
+  artifact_reference: optionalText(500),
 });
 
 export const actionSchema = z.object({
