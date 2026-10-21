@@ -439,20 +439,54 @@ export async function createOrchestratorRoute(formData: FormData) {
 export async function createObjective(formData: FormData) {
   const path = "/objectives";
   const parsed = objectiveSchema.safeParse(values(formData));
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
+  if (!projectId.success) fail(path, "Seleccione o projecto deste Objectivo Central.");
 
   const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("objectives").insert({
-    ...parsed.data,
-    user_id: user.id,
-  });
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,objective_id")
+    .eq("id", projectId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  if (error) fail(path, error.message);
+  if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+
+  let objectiveId = project.objective_id as string | null;
+
+  if (objectiveId) {
+    const { error } = await supabase
+      .from("objectives")
+      .update({ ...parsed.data })
+      .eq("id", objectiveId)
+      .eq("user_id", user.id);
+    if (error) fail(path, error.message);
+  } else {
+    const { data: objective, error } = await supabase
+      .from("objectives")
+      .insert({ ...parsed.data, user_id: user.id })
+      .select("id")
+      .single();
+
+    if (error || !objective) fail(path, error?.message ?? "Não foi possível criar o Objectivo Central.");
+    objectiveId = objective.id;
+
+    const { error: linkError } = await supabase
+      .from("projects")
+      .update({ objective_id: objectiveId })
+      .eq("id", project.id)
+      .eq("user_id", user.id);
+
+    if (linkError) fail(path, linkError.message);
+  }
+
   revalidatePath(path);
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${project.id}`);
   revalidatePath("/dashboard");
-  redirect(`${path}?created=1`);
+  redirect(`${path}?project_id=${project.id}&created=1`);
 }
-
 
 
 async function syncProjectStrategyExecutionPlan(
@@ -1587,7 +1621,8 @@ export async function createFactoryIntake(formData: FormData) {
 
   if (gateEventError) fail(path, gateEventError.message);
   revalidatePath(path);
-  redirect(`${path}?created=1`);
+  revalidatePath("/projects");
+  redirect(`/project-factory/${factoryCase.id}?created=1`);
 }
 
 export async function saveCompetitiveIntelligence(formData: FormData) {
@@ -1789,6 +1824,106 @@ export async function createDecision(formData: FormData) {
   redirect(`${path}?created=1`);
 }
 
+export async function finalizeProjectClosure(formData: FormData) {
+  const path = "/deliverables";
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  const decision = z.enum(["continue", "close"]).safeParse(formData.get("decision"));
+  const rationale = z.string().trim().max(5000).safeParse(formData.get("rationale") ?? "");
+
+  if (!projectId.success || !decision.success || !rationale.success) {
+    fail(path, "Decisão final inválida.");
+  }
+
+  const { supabase, user } = await requireUser();
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,title,status")
+    .eq("id", projectId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+
+  if (decision.data === "close") {
+    const [
+      { data: deliverables, error: deliverablesError },
+      { data: blockers, error: blockersError },
+      { data: evidence, error: evidenceError },
+    ] = await Promise.all([
+      supabase
+        .from("deliverables")
+        .select("id,status,completion_criteria")
+        .eq("project_id", project.id)
+        .eq("user_id", user.id),
+      supabase
+        .from("blockers")
+        .select("id")
+        .eq("project_id", project.id)
+        .eq("user_id", user.id)
+        .in("status", ["open", "investigating", "waiting"]),
+      supabase
+        .from("evidence")
+        .select("deliverable_id")
+        .eq("project_id", project.id)
+        .eq("user_id", user.id)
+        .not("deliverable_id", "is", null),
+    ]);
+
+    const gateError = deliverablesError ?? blockersError ?? evidenceError;
+    if (gateError) fail(path, gateError.message);
+
+    if (!(deliverables ?? []).length) {
+      fail(path, "O projecto não pode fechar sem entregáveis definidos.");
+    }
+
+    const incomplete = (deliverables ?? []).filter((item) => item.status !== "completed");
+    if (incomplete.length) {
+      fail(path, "Existem entregáveis ainda não entregues/validados.");
+    }
+
+    const evidenceIds = new Set((evidence ?? []).map((item) => item.deliverable_id).filter(Boolean));
+    const missingEvidence = (deliverables ?? []).filter((item) => !evidenceIds.has(item.id));
+    if (missingEvidence.length) {
+      fail(path, "Todos os entregáveis precisam de evidência de entrega antes do fecho.");
+    }
+
+    if ((blockers ?? []).length) {
+      fail(path, "Resolva os bloqueios activos antes de fechar o projecto.");
+    }
+  }
+
+  const { error: decisionError } = await supabase.from("decisions").insert({
+    user_id: user.id,
+    project_id: project.id,
+    title: decision.data === "close" ? `Fecho · ${project.title}` : `Continuidade · ${project.title}`,
+    decision: decision.data === "close" ? "Encerrar projecto" : "Continuar projecto",
+    rationale: rationale.data || null,
+    outcome: decision.data === "close" ? "Projecto fechado após validação dos entregáveis e evidências." : "Projecto continua em acompanhamento.",
+  });
+
+  if (decisionError) fail(path, decisionError.message);
+
+  if (decision.data === "close") {
+    const { error: closeError } = await supabase
+      .from("projects")
+      .update({
+        status: "completed",
+        progress: 100,
+        next_action: null,
+      })
+      .eq("id", project.id)
+      .eq("user_id", user.id);
+
+    if (closeError) fail(path, closeError.message);
+  }
+
+  revalidatePath(path);
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${project.id}`);
+  revalidatePath("/dashboard");
+  redirect(`${path}?project_id=${project.id}&${decision.data === "close" ? "closed=1" : "created=1"}`);
+}
+
 export async function upsertCommercialProfile(formData: FormData) {
   const path = "/monetization";
   const parsed = commercialProfileSchema.safeParse(values(formData));
@@ -1963,6 +2098,43 @@ export async function updateStatusProgress(formData: FormData) {
     payload.progress = progress.data;
   }
 
+  const { supabase, user } = await requireUser();
+
+  if (entity === "deliverables") {
+    const { data: deliverable, error: deliverableError } = await supabase
+      .from("deliverables")
+      .select("id,status,completion_criteria")
+      .eq("id", idResult.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (deliverableError || !deliverable) fail(path, deliverableError?.message ?? "Entregável não encontrado.");
+
+    if (deliverable.status === "completed" && status !== "completed") {
+      fail(path, "Entregável entregue está bloqueado. Registe uma nova versão no PCC em vez de alterar o arquivo final.");
+    }
+
+    if (status === "completed") {
+      if (Number(payload.progress ?? 0) !== 100) {
+        fail(path, "Defina o progresso em 100% antes de marcar o entregável como entregue.");
+      }
+      if (!deliverable.completion_criteria?.trim()) {
+        fail(path, "Defina critérios de aceitação antes de concluir o entregável.");
+      }
+
+      const { count, error: evidenceError } = await supabase
+        .from("evidence")
+        .select("id", { count: "exact", head: true })
+        .eq("deliverable_id", deliverable.id)
+        .eq("user_id", user.id);
+
+      if (evidenceError) fail(path, evidenceError.message);
+      if (!count) {
+        fail(path, "Anexe pelo menos uma evidência, ficheiro ou link do resultado utilizável antes de concluir o entregável.");
+      }
+    }
+  }
+
   if (entity === "actions") {
     payload.completed_at = status === "completed" ? new Date().toISOString() : null;
   }
@@ -1971,7 +2143,6 @@ export async function updateStatusProgress(formData: FormData) {
     payload.resolved_at = status === "resolved" ? new Date().toISOString() : null;
   }
 
-  const { supabase, user } = await requireUser();
   const { error } = await supabase
     .from(entity)
     .update(payload)
@@ -1981,7 +2152,8 @@ export async function updateStatusProgress(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   revalidatePath("/dashboard");
-  revalidatePath("/focus");
+  revalidatePath("/actions");
+  revalidatePath("/deliverables");
 }
 
 const deletable = new Set([
@@ -2005,6 +2177,45 @@ export async function deleteRecord(formData: FormData) {
   if (!id.success) fail(path, "Identificador inválido.");
 
   const { supabase, user } = await requireUser();
+
+  if (table === "deliverables") {
+    const { data: deliverable, error: deliverableError } = await supabase
+      .from("deliverables")
+      .select("status")
+      .eq("id", id.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (deliverableError) fail(path, deliverableError.message);
+    if (deliverable?.status === "completed") {
+      fail(path, "Entregáveis finais entregues são arquivos bloqueados e não podem ser eliminados.");
+    }
+  }
+
+  if (table === "evidence") {
+    const { data: proof, error: proofError } = await supabase
+      .from("evidence")
+      .select("deliverable_id")
+      .eq("id", id.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (proofError) fail(path, proofError.message);
+    if (proof?.deliverable_id) {
+      const { data: deliverable, error: deliverableError } = await supabase
+        .from("deliverables")
+        .select("status")
+        .eq("id", proof.deliverable_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (deliverableError) fail(path, deliverableError.message);
+      if (deliverable?.status === "completed") {
+        fail(path, "A evidência de um entregável final está bloqueada e deve permanecer no histórico.");
+      }
+    }
+  }
+
   const { error } = await supabase
     .from(table)
     .delete()
@@ -2014,7 +2225,8 @@ export async function deleteRecord(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   revalidatePath("/dashboard");
-  revalidatePath("/focus");
+  revalidatePath("/actions");
+  revalidatePath("/deliverables");
 }
 
 export async function startTimeSession(formData: FormData) {

@@ -13,11 +13,12 @@ import { formatDateTime } from "@/lib/format";
 export default async function EvidencePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string; project_id?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string; deliverable_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
   const selectedProjectId = params.project_id ?? "";
+  const selectedDeliverableId = params.deliverable_id ?? "";
 
   let evidenceQuery = supabase
     .from("evidence")
@@ -74,7 +75,7 @@ export default async function EvidencePage({
               <option value="">Sem acção</option>
               {visibleActions.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>
-            <Select label="Entregável, se não houver acção" name="deliverable_id" defaultValue="">
+            <Select label="Entregável, se não houver acção" name="deliverable_id" defaultValue={selectedDeliverableId}>
               <option value="">Sem entregável</option>
               {visibleDeliverables.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
             </Select>

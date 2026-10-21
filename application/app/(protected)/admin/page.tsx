@@ -3,59 +3,90 @@ import {
   Bot,
   BrainCircuit,
   BookOpenCheck,
+  CircleHelp,
   FlaskConical,
   HardDrive,
-  CircleHelp,
-  Workflow,
   LockKeyhole,
   Radar,
   Repeat2,
+  Workflow,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 
-const tools = [
-  { href: "/automation", label: "Automações", description: "Configuração, aprovação e acompanhamento das execuções automáticas.", icon: Workflow },
-  { href: "/help", label: "Manual", description: "Referência operacional e ajuda do PCC.", icon: CircleHelp },
-  { href: "/bot-ia", label: "BotIA", description: "Melhorias operacionais e tratamento de bloqueios reais dentro dos projectos.", icon: Bot },
-  { href: "/agents", label: "Agentes", description: "Execuções especializadas e controlos avançados.", icon: BrainCircuit },
-  { href: "/orchestrator", label: "Orquestração", description: "Regras de encaminhamento e execução.", icon: BrainCircuit },
-  { href: "/execution-arena", label: "Testes", description: "Testes controlados antes da decisão final.", icon: FlaskConical },
-  { href: "/factory-library", label: "Biblioteca", description: "Conhecimento e activos reutilizáveis.", icon: BookOpenCheck },
-  { href: "/intelligence", label: "Inteligência", description: "Sinais, oportunidades e informação de apoio.", icon: Radar },
-  { href: "/security", label: "Segurança", description: "Acessos, controlos e eventos de segurança.", icon: LockKeyhole },
-  { href: "/optimization", label: "Optimização", description: "Saúde operacional e melhoria contínua.", icon: Repeat2 },
-  { href: "/ai-providers", label: "IA", description: "Motor técnico para diagnóstico, melhoria e tratamento assistido de falhas, limitado às capacidades realmente configuradas.", icon: HardDrive },
+const groups = [
+  {
+    title: "IA & Automação",
+    description: "Capacidades usadas pelos projectos sem obrigar o utilizador a sair do fluxo operacional.",
+    tools: [
+      { href: "/ai-providers", label: "IA / Providers", description: "Configuração e saúde dos providers.", icon: HardDrive },
+      { href: "/bot-ia", label: "BotIA", description: "Assistência operacional dentro dos projectos.", icon: Bot },
+      { href: "/agents", label: "Agentes", description: "Execuções especializadas e controladas.", icon: BrainCircuit },
+      { href: "/automation", label: "Automações", description: "Execuções automáticas e aprovações.", icon: Workflow },
+      { href: "/orchestrator", label: "Orquestração", description: "Regras de encaminhamento entre capacidades.", icon: BrainCircuit },
+    ],
+  },
+  {
+    title: "Conhecimento & Qualidade",
+    description: "Conhecimento, testes e melhoria contínua das capacidades do PCC.",
+    tools: [
+      { href: "/factory-library", label: "Biblioteca", description: "Conhecimento e activos reutilizáveis.", icon: BookOpenCheck },
+      { href: "/help", label: "Manual", description: "Referência operacional do PCC.", icon: CircleHelp },
+      { href: "/execution-arena", label: "Testes", description: "Testes controlados antes de decisões relevantes.", icon: FlaskConical },
+      { href: "/intelligence", label: "Inteligência", description: "Sinais e informação de apoio.", icon: Radar },
+      { href: "/optimization", label: "Optimização", description: "Saúde operacional e melhoria contínua.", icon: Repeat2 },
+    ],
+  },
+  {
+    title: "Sistema & Segurança",
+    description: "Governação, acessos e controlos técnicos da plataforma.",
+    tools: [
+      { href: "/security", label: "Segurança", description: "Acessos, controlos e eventos de segurança.", icon: LockKeyhole },
+    ],
+  },
 ];
 
 export default async function AdminPage() {
   await requireAdmin();
+
   return (
     <>
-      <PageHeader
-        eyebrow="Administração"
-        title="Administração"
-      />
+      <PageHeader eyebrow="Administração" title="Administração" />
 
       <Card className="mb-6 p-5">
-        <p className="font-semibold text-[var(--cc-foreground)]">Configuração do sistema</p>
+        <p className="font-semibold text-[var(--cc-foreground)]">Capacidades do PCC</p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Área reservada à configuração, segurança, manutenção e execução assistida do PCC.
+          Administração configura e governa as capacidades. O trabalho normal do projecto acontece no próprio fluxo do projecto.
         </p>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {tools.map(({ href, label, description, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 transition hover:bg-[var(--cc-surface-muted)]"
-          >
-            <Icon size={20} aria-hidden="true" />
-            <h2 className="mt-4 font-semibold text-[var(--cc-foreground)]">{label}</h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">{description}</p>
-          </Link>
+      <div className="space-y-6">
+        {groups.map((group) => (
+          <section key={group.title}>
+            <div className="mb-3">
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">{group.title}</h2>
+              <p className="mt-1 text-sm text-[var(--cc-secondary)]">{group.description}</p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {group.tools.map(({ href, label, description, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-4 transition hover:bg-[var(--cc-surface-muted)]"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <Icon size={19} aria-hidden="true" />
+                    <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">
+                      Configurar
+                    </span>
+                  </div>
+                  <h3 className="mt-3 font-semibold text-[var(--cc-foreground)]">{label}</h3>
+                  <p className="mt-1 text-sm leading-6 text-[var(--cc-secondary)]">{description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </>

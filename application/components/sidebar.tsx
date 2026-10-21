@@ -5,23 +5,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
-  Blocks,
-  CalendarCheck2,
   CheckSquare2,
   Factory,
   FolderKanban,
   Gauge,
-  Scale,
+  PackageCheck,
   Settings,
   Target,
-  TimerReset,
 } from "lucide-react";
 
 const navigationGroups = [
   {
     label: "Começar",
     items: [
-      { href: "/project-factory", label: "Novos projectos", icon: Factory },
+      { href: "/project-factory", label: "Novo projecto", icon: Factory },
       { href: "/objectives", label: "Objectivos", icon: Target },
       { href: "/projects", label: "Projectos", icon: FolderKanban },
     ],
@@ -29,22 +26,17 @@ const navigationGroups = [
   {
     label: "Executar",
     items: [
-      { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-      { href: "/actions", label: "Acções", icon: CheckSquare2 },
-      { href: "/focus", label: "Foco", icon: TimerReset },
-      { href: "/blockers", label: "Bloqueios", icon: Blocks },
+      { href: "/actions", label: "Executar", icon: CheckSquare2 },
     ],
   },
   {
-    label: "Validar",
+    label: "Validar / concluir",
     items: [
       { href: "/metrics", label: "Métricas", icon: BarChart3 },
-      { href: "/decisions", label: "Decisões", icon: Scale },
+      { href: "/deliverables", label: "Entregáveis & Fecho", icon: PackageCheck },
     ],
   },
 ];
-
-
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -80,18 +72,15 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
 
         <nav className="relative z-10 mt-5 space-y-5" aria-label="Navegação principal">
           <div>
-            <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">
-              Resumo
-            </p>
+            <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">Resumo</p>
             <div className="space-y-1">
               <NavLink pathname={pathname} href="/dashboard" label="Painel" Icon={Gauge} />
             </div>
           </div>
+
           {navigationGroups.map((group) => (
             <div key={group.label}>
-              <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">
-                {group.label}
-              </p>
+              <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">{group.label}</p>
               <div className="space-y-1">
                 {group.items.map(({ href, label, icon }) => (
                   <NavLink key={href} pathname={pathname} href={href} label={label} Icon={icon} />
@@ -102,9 +91,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
         </nav>
 
         <nav className="relative z-10 mt-5 space-y-1 border-t border-[var(--cc-border)] pt-4" aria-label="Administração">
-          {isAdmin && (
-            <NavLink pathname={pathname} href="/admin" label="Administração" Icon={Settings} />
-          )}
+          {isAdmin && <NavLink pathname={pathname} href="/admin" label="Administração" Icon={Settings} />}
         </nav>
       </div>
     </aside>
@@ -117,10 +104,9 @@ export function MobileNav() {
     { href: "/dashboard", label: "Painel", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
-    { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-    { href: "/actions", label: "Acções", icon: CheckSquare2 },
-    { href: "/focus", label: "Foco", icon: TimerReset },
-    { href: "/blockers", label: "Bloqueios", icon: Blocks },
+    { href: "/actions", label: "Executar", icon: CheckSquare2 },
+    { href: "/metrics", label: "Métricas", icon: BarChart3 },
+    { href: "/deliverables", label: "Fecho", icon: PackageCheck },
   ];
 
   return (
