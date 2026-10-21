@@ -1,32 +1,38 @@
 import Link from "next/link";
-import { DeleteForm } from "@/components/delete-form";
-import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
-import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
+import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
 import { projectHealth } from "@/lib/project-metrics";
-import { StatusBadge } from "@/components/status-badge";
 
 const FACTORY_STAGE_LABELS: Record<string, string> = {
   new_idea: "Ideia recebida",
-  viability: "Em análise",
+  viability: "Em avaliação",
   competitive_intelligence: "Análise de mercado",
-  validation: "Validação",
+  validation: "Avaliação de viabilidade",
   execution_arena: "Teste",
-  factory_report: "Preparação final",
+  factory_report: "Síntese para decisão",
   decision: "Decisão",
-  on_hold: "Em espera",
+  converted_to_project: "Aprovado",
+  on_hold: "Adiado",
+  killed: "Não aprovado",
 };
+
+function relationTitle(relation: { title?: string | null } | { title?: string | null }[] | null | undefined) {
+  return Array.isArray(relation) ? relation[0]?.title : relation?.title;
+}
 
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; view?: string }>;
 }) {
   const params = await searchParams;
+  const view = ["all", "active", "analysis", "closed"].includes(params.view ?? "")
+    ? params.view!
+    : "all";
   const { supabase, user } = await requireUser();
 
   const [
@@ -47,7 +53,7 @@ export default async function ProjectsPage({
       .in("status", ["open", "investigating", "waiting"]),
     supabase
       .from("actions")
-      .select("project_id,status,due_at")
+      .select("project_id,status,due_at,is_next_action,title")
       .eq("user_id", user.id)
       .neq("status", "completed")
       .neq("status", "cancelled"),
@@ -58,145 +64,241 @@ export default async function ProjectsPage({
       .order("created_at", { ascending: false }),
   ]);
 
-  const blockerCounts = new Map<string, number>();
-  (blockers ?? []).forEach((blocker) => {
-    if (!blocker.project_id) return;
-    blockerCounts.set(blocker.project_id, (blockerCounts.get(blocker.project_id) ?? 0) + 1);
-  });
-
-  const overdueActionCounts = new Map<string, number>();
   const now = new Date();
-  (actions ?? []).forEach((action) => {
-    if (!action.project_id || !action.due_at || new Date(action.due_at) >= now) return;
-    overdueActionCounts.set(
-      action.project_id,
-      (overdueActionCounts.get(action.project_id) ?? 0) + 1,
-    );
-  });
+  const blockerCounts = new Map<string, number>();
+  const openActionCounts = new Map<string, number>();
+  const overdueActionCounts = new Map<string, number>();
+  const nextActionByProject = new Map<string, string>();
+
+  for (const blocker of blockers ?? []) {
+    if (!blocker.project_id) continue;
+    blockerCounts.set(blocker.project_id, (blockerCounts.get(blocker.project_id) ?? 0) + 1);
+  }
+
+  for (const action of actions ?? []) {
+    if (!action.project_id) continue;
+    openActionCounts.set(action.project_id, (openActionCounts.get(action.project_id) ?? 0) + 1);
+    if (action.due_at && new Date(action.due_at) < now) {
+      overdueActionCounts.set(action.project_id, (overdueActionCounts.get(action.project_id) ?? 0) + 1);
+    }
+    if (action.is_next_action && !nextActionByProject.has(action.project_id)) {
+      nextActionByProject.set(action.project_id, action.title);
+    }
+  }
+
+  const analysisCases = (factoryCases ?? []).filter(
+    (item) => !["converted_to_project", "killed"].includes(item.stage),
+  );
+  const closedCases = (factoryCases ?? []).filter((item) => item.stage === "killed");
+  const activeProjects = (projects ?? []).filter(
+    (project) => !["completed", "cancelled"].includes(project.status),
+  );
+  const closedProjects = (projects ?? []).filter(
+    (project) => ["completed", "cancelled"].includes(project.status),
+  );
+
+  const tabs = [
+    { value: "all", label: "Todos", count: (projects?.length ?? 0) + (factoryCases?.length ?? 0) },
+    { value: "active", label: "Em aberto", count: activeProjects.length },
+    { value: "analysis", label: "Em análise", count: analysisCases.length },
+    { value: "closed", label: "Não seguiram / fechados", count: closedCases.length + closedProjects.length },
+  ];
+
+  const showActive = view === "all" || view === "active";
+  const showAnalysis = view === "all" || view === "analysis";
+  const showClosed = view === "all" || view === "closed";
 
   return (
     <>
-      <PageHeader
-        eyebrow="Portfólio"
-        title="Projectos"
-      />
-      <FlashMessage error={params.error ?? error?.message ?? factoryError?.message} created={params.created} />
+      <PageHeader eyebrow="Portfólio" title="Projectos" />
 
-      <Card className="mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--cc-border)] p-5">
-          <div>
-            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Projectos em avaliação</h2>
-            <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-              Novos projectos que ainda estão a passar pela Factory antes de entrarem na execução.
-            </p>
-          </div>
-          <Link className={secondaryButtonClass} href="/project-factory">
-            Novo projecto
-          </Link>
+      {(error || factoryError) && (
+        <Card className="mb-5 p-4 text-sm text-[var(--cc-danger)]">
+          {error?.message ?? factoryError?.message}
+        </Card>
+      )}
+
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab) => (
+            <Link
+              key={tab.value}
+              href={`/projects?view=${tab.value}`}
+              className={`rounded-full px-3 py-2 text-sm font-semibold transition ${
+                view === tab.value
+                  ? "bg-[var(--cc-accent)] text-white"
+                  : "border border-[var(--cc-border)] bg-[var(--cc-surface)] text-[var(--cc-foreground)]"
+              }`}
+            >
+              {tab.label} · {tab.count}
+            </Link>
+          ))}
         </div>
-        <div className="p-5">
-          {!(factoryCases ?? []).filter((item) => !["converted_to_project", "killed"].includes(item.stage)).length ? (
-            <EmptyState>
-              Não existem projectos em avaliação.
-            </EmptyState>
-          ) : (
-            <div className="space-y-4">
-              {(factoryCases ?? [])
-                .filter((item) => !["converted_to_project", "killed"].includes(item.stage))
-                .map((item) => (
-                  <article
-                    key={item.id}
-                    className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-4"
-                  >
-                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
-                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-                          {FACTORY_STAGE_LABELS[item.stage] ?? item.stage}
-                        </p>
-                        {item.problem && (
-                          <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">{item.problem}</p>
-                        )}
-                      </div>
-                      <span className="w-fit rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
-                        {item.project_type === "commercial" ? "Comercial" : "Interno"}
-                      </span>
-                    </div>
-                    <div className="mt-4">
-                      <Link className={secondaryButtonClass} href={`/project-factory/${item.id}`}>
-                        Continuar avaliação
-                      </Link>
-                    </div>
-                  </article>
-                ))}
+        <Link className={secondaryButtonClass} href="/project-factory">Novo projecto</Link>
+      </div>
+
+      <div className="space-y-5">
+        {showAnalysis && (
+          <Card>
+            <div className="border-b border-[var(--cc-border)] p-5">
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Em análise</h2>
+              <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+                Iniciativas ainda sem aprovação para planeamento ou execução.
+              </p>
             </div>
-          )}
-        </div>
-      </Card>
-
-      <Card>
-        <div className="border-b border-[var(--cc-border)] p-5">
-          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Projectos registados</h2>
-        </div>
-        <div className="p-5">
-          {!projects?.length ? (
-            <EmptyState>
-              Ainda não existem projectos registados.
-            </EmptyState>
-          ) : (
-            <div className="space-y-4">
-              {projects.map((project) => {
-                const health = projectHealth({
-                  progress: Number(project.progress ?? 0),
-                  dueDate: project.due_date,
-                  openBlockers: blockerCounts.get(project.id) ?? 0,
-                  overdueActions: overdueActionCounts.get(project.id) ?? 0,
-                });
-
-                return (
-                  <article key={project.id} className="rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] p-4">
-                    <div className="flex flex-col justify-between gap-3 md:flex-row">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold text-[var(--cc-foreground)]">{project.title}</h3>
-                          <StatusBadge status={health} />
+            <div className="p-5">
+              {!analysisCases.length ? (
+                <EmptyState>Não existem projectos em avaliação.</EmptyState>
+              ) : (
+                <div className="space-y-2">
+                  {analysisCases.map((item) => (
+                    <details key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+                      <summary className="cursor-pointer list-none p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
+                            <p className="mt-1 text-xs text-[var(--cc-secondary)]">
+                              {FACTORY_STAGE_LABELS[item.stage] ?? item.stage}
+                            </p>
+                          </div>
+                          <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
+                            {item.project_type === "commercial" ? "Comercial" : "Interno"}
+                          </span>
                         </div>
-                        <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-                          Prazo {formatDate(project.due_date)} · Prioridade {displayLabel(project.priority)}
-                        </p>
-                        {project.objectives?.title && (
-                          <p className="mt-1 text-xs text-[var(--cc-accent)]">
-                            Objectivo: {project.objectives.title}
-                          </p>
+                      </summary>
+                      <div className="border-t border-[var(--cc-border)] p-4">
+                        {item.problem && (
+                          <p className="text-sm leading-6 text-[var(--cc-foreground)]">{item.problem}</p>
                         )}
-                        {project.next_action && (
-                          <p className="mt-3 text-sm leading-6 text-[var(--cc-foreground)]">
-                            <span className="font-medium">Próximo passo:</span> {project.next_action}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <Link className={secondaryButtonClass} href={`/projects/${project.id}`}>
-                          Abrir projecto
+                        <Link className={secondaryButtonClass + " mt-4"} href={`/project-factory/${item.id}`}>
+                          Continuar avaliação
                         </Link>
-                        <DeleteForm table="projects" id={project.id} />
                       </div>
-                    </div>
-                    <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
-                      <StatusProgressForm
-                        entity="projects"
-                        id={project.id}
-                        status={project.status}
-                        progress={project.progress}
-                      />
-                    </div>
-                  </article>
-                );
-              })}
+                    </details>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </Card>
+          </Card>
+        )}
+
+        {showActive && (
+          <Card>
+            <div className="border-b border-[var(--cc-border)] p-5">
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Em aberto</h2>
+              <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+                Projectos aprovados em planeamento, execução ou acompanhamento.
+              </p>
+            </div>
+            <div className="p-5">
+              {!activeProjects.length ? (
+                <EmptyState>Não existem projectos em aberto.</EmptyState>
+              ) : (
+                <div className="space-y-2">
+                  {activeProjects.map((project) => {
+                    const blockerCount = blockerCounts.get(project.id) ?? 0;
+                    const overdueCount = overdueActionCounts.get(project.id) ?? 0;
+                    const openCount = openActionCounts.get(project.id) ?? 0;
+                    const health = projectHealth({
+                      progress: Number(project.progress ?? 0),
+                      dueDate: project.due_date,
+                      openBlockers: blockerCount,
+                      overdueActions: overdueCount,
+                    });
+                    const objective = relationTitle(project.objectives);
+                    const nextAction = nextActionByProject.get(project.id) ?? project.next_action;
+
+                    return (
+                      <details key={project.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+                        <summary className="cursor-pointer list-none p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Link
+                                  href={`/projects/${project.id}`}
+                                  className="font-semibold text-[var(--cc-foreground)] hover:underline"
+                                >
+                                  {project.title}
+                                </Link>
+                                <StatusBadge status={health} />
+                              </div>
+                              <p className="mt-1 text-xs text-[var(--cc-secondary)]">
+                                {displayLabel(project.status)}
+                                {openCount > 0 ? ` · ${openCount} aberta(s)` : ""}
+                                {overdueCount > 0 ? ` · ${overdueCount} em atraso` : ""}
+                                {blockerCount > 0 ? ` · ${blockerCount} bloqueio(s)` : ""}
+                              </p>
+                              {nextAction && (
+                                <p className="mt-2 text-sm text-[var(--cc-foreground)]">
+                                  <span className="font-medium">Próxima:</span> {nextAction}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-xs font-semibold text-[var(--cc-accent)]">Ver detalhes</span>
+                          </div>
+                        </summary>
+                        <div className="grid gap-3 border-t border-[var(--cc-border)] p-4 sm:grid-cols-2">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Objectivo Central</p>
+                            <p className="mt-1 text-sm text-[var(--cc-foreground)]">{objective ?? project.expected_result ?? "Por definir"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Prazo</p>
+                            <p className="mt-1 text-sm text-[var(--cc-foreground)]">{project.due_date ? formatDate(project.due_date) : "Sem prazo"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Progresso</p>
+                            <p className="mt-1 text-sm text-[var(--cc-foreground)]">{Number(project.progress ?? 0)}%</p>
+                          </div>
+                          <div className="flex items-end justify-end">
+                            <Link className={secondaryButtonClass} href={`/projects/${project.id}`}>Abrir projecto</Link>
+                          </div>
+                        </div>
+                      </details>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {showClosed && (
+          <Card>
+            <div className="border-b border-[var(--cc-border)] p-5">
+              <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Não seguiram / fechados</h2>
+              <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+                Histórico preservado para manter a decisão e a aprendizagem do portfólio.
+              </p>
+            </div>
+            <div className="p-5">
+              {!closedCases.length && !closedProjects.length ? (
+                <EmptyState>Não existem projectos nesta categoria.</EmptyState>
+              ) : (
+                <div className="space-y-2">
+                  {closedCases.map((item) => (
+                    <div key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+                      <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
+                      <p className="mt-1 text-xs text-[var(--cc-secondary)]">{FACTORY_STAGE_LABELS[item.stage] ?? item.stage}</p>
+                      {item.problem && <p className="mt-2 text-sm text-[var(--cc-secondary)]">{item.problem}</p>}
+                    </div>
+                  ))}
+                  {closedProjects.map((project) => (
+                    <Link
+                      key={project.id}
+                      href={`/projects/${project.id}`}
+                      className="block rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4 hover:bg-[var(--cc-surface-muted)]"
+                    >
+                      <h3 className="font-semibold text-[var(--cc-foreground)]">{project.title}</h3>
+                      <p className="mt-1 text-xs text-[var(--cc-secondary)]">{displayLabel(project.status)} · histórico disponível</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+      </div>
     </>
   );
 }
