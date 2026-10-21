@@ -7,9 +7,11 @@ type BarItem = {
 export function SimpleBarChart({
   items,
   emptyLabel = "Sem dados para apresentar.",
+  valueSuffix = "",
 }: {
   items: BarItem[];
   emptyLabel?: string;
+  valueSuffix?: string;
 }) {
   if (!items.length) {
     return <p className="text-sm text-[var(--cc-secondary)]">{emptyLabel}</p>;
@@ -34,7 +36,7 @@ export function SimpleBarChart({
                 aria-hidden="true"
               />
             </div>
-            <span className="text-sm font-semibold tabular-nums text-[var(--cc-foreground)]">{item.value}</span>
+            <span className="text-sm font-semibold tabular-nums text-[var(--cc-foreground)]">{item.value}{valueSuffix}</span>
           </div>
         );
       })}
