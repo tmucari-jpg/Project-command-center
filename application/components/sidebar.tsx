@@ -5,16 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
-  Blocks,
-  CalendarCheck2,
   CheckSquare2,
   Factory,
   FolderKanban,
   Gauge,
-  Scale,
+  PackageCheck,
   Settings,
   Target,
-  TimerReset,
 } from "lucide-react";
 
 const navigationGroups = [
@@ -29,17 +26,14 @@ const navigationGroups = [
   {
     label: "Executar",
     items: [
-      { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-      { href: "/actions", label: "Acções", icon: CheckSquare2 },
-      { href: "/focus", label: "Foco", icon: TimerReset },
-      { href: "/blockers", label: "Bloqueios", icon: Blocks },
+      { href: "/actions", label: "Executar", icon: CheckSquare2 },
     ],
   },
   {
-    label: "Validar",
+    label: "Validar / concluir",
     items: [
       { href: "/metrics", label: "Métricas", icon: BarChart3 },
-      { href: "/decisions", label: "Decisões", icon: Scale },
+      { href: "/decisions", label: "Entregáveis & Fecho", icon: PackageCheck },
     ],
   },
 ];
@@ -117,10 +111,9 @@ export function MobileNav() {
     { href: "/dashboard", label: "Painel", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
-    { href: "/agenda", label: "Agenda", icon: CalendarCheck2 },
-    { href: "/actions", label: "Acções", icon: CheckSquare2 },
-    { href: "/focus", label: "Foco", icon: TimerReset },
-    { href: "/blockers", label: "Bloqueios", icon: Blocks },
+    { href: "/actions", label: "Executar", icon: CheckSquare2 },
+    { href: "/metrics", label: "Métricas", icon: BarChart3 },
+    { href: "/decisions", label: "Fecho", icon: PackageCheck },
   ];
 
   return (
