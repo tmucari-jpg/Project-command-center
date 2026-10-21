@@ -439,20 +439,54 @@ export async function createOrchestratorRoute(formData: FormData) {
 export async function createObjective(formData: FormData) {
   const path = "/objectives";
   const parsed = objectiveSchema.safeParse(values(formData));
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
+  if (!projectId.success) fail(path, "Seleccione o projecto deste Objectivo Central.");
 
   const { supabase, user } = await requireUser();
-  const { error } = await supabase.from("objectives").insert({
-    ...parsed.data,
-    user_id: user.id,
-  });
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,objective_id")
+    .eq("id", projectId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  if (error) fail(path, error.message);
+  if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+
+  let objectiveId = project.objective_id as string | null;
+
+  if (objectiveId) {
+    const { error } = await supabase
+      .from("objectives")
+      .update({ ...parsed.data })
+      .eq("id", objectiveId)
+      .eq("user_id", user.id);
+    if (error) fail(path, error.message);
+  } else {
+    const { data: objective, error } = await supabase
+      .from("objectives")
+      .insert({ ...parsed.data, user_id: user.id })
+      .select("id")
+      .single();
+
+    if (error || !objective) fail(path, error?.message ?? "Não foi possível criar o Objectivo Central.");
+    objectiveId = objective.id;
+
+    const { error: linkError } = await supabase
+      .from("projects")
+      .update({ objective_id: objectiveId })
+      .eq("id", project.id)
+      .eq("user_id", user.id);
+
+    if (linkError) fail(path, linkError.message);
+  }
+
   revalidatePath(path);
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${project.id}`);
   revalidatePath("/dashboard");
-  redirect(`${path}?created=1`);
+  redirect(`${path}?project_id=${project.id}&created=1`);
 }
-
 
 
 async function syncProjectStrategyExecutionPlan(
