@@ -105,7 +105,7 @@ export default async function DeliverablesPage({
                       <div>
                         <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
                         <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-                          {item.projects?.title ?? "Projecto"} · Prazo {formatDate(item.due_date)}
+                          {item.projects?.title ?? "Projecto"} · {item.due_date ? `Prazo ${formatDate(item.due_date)}` : "Sem prazo"}
                         </p>
                         <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                           Responsável: {item.owner_id ? ownerById.get(item.owner_id) ?? "Definido" : "Por definir"}
@@ -116,15 +116,27 @@ export default async function DeliverablesPage({
                           </p>
                         )}
                       </div>
-                      <DeleteForm table="deliverables" id={item.id} />
+                      {item.status === "completed" ? (
+                        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
+                          Arquivo canónico bloqueado
+                        </span>
+                      ) : (
+                        <DeleteForm table="deliverables" id={item.id} />
+                      )}
                     </div>
                     <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
-                      <StatusProgressForm
-                        entity="deliverables"
-                        id={item.id}
-                        status={item.status}
-                        progress={item.progress}
-                      />
+                      {item.status === "completed" ? (
+                        <p className="text-xs font-semibold text-[var(--cc-secondary)]">
+                          Entregue · alterações só através de um novo ciclo controlado no PCC.
+                        </p>
+                      ) : (
+                        <StatusProgressForm
+                          entity="deliverables"
+                          id={item.id}
+                          status={item.status}
+                          progress={item.progress}
+                        />
+                      )}
                     </div>
                   </article>
                 ))}
