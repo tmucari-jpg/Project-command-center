@@ -74,6 +74,26 @@ async function ensureOwned(
   }
 }
 
+async function ensureProjectOpen(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  projectId: string | undefined,
+  userId: string,
+  path: string,
+) {
+  if (!projectId) return;
+  const { data: project, error } = await supabase
+    .from("projects")
+    .select("status")
+    .eq("id", projectId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error || !project) fail(path, error?.message ?? "Projecto inválido.");
+  if (project.status === "completed") {
+    fail(path, "O projecto está fechado. Inicie um novo ciclo controlado no PCC para efectuar alterações.");
+  }
+}
+
 export async function validateAIProviderProfile(formData: FormData) {
   const path = "/ai-providers";
   const providerId = z.string().uuid().safeParse(formData.get("provider_id"));
@@ -1236,12 +1256,15 @@ export async function createAction(formData: FormData) {
   if (parsed.data.deliverable_id) {
     const { data: deliverable, error: deliverableError } = await supabase
       .from("deliverables")
-      .select("project_id")
+      .select("project_id,status")
       .eq("id", parsed.data.deliverable_id)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (deliverableError || !deliverable) fail(path, "Entregável inválido.");
+    if (deliverable.status === "completed") {
+      fail(path, "O entregável seleccionado já foi entregue e está bloqueado.");
+    }
 
     if (projectId && deliverable.project_id && projectId !== deliverable.project_id) {
       fail(path, "O entregável seleccionado não pertence ao projecto seleccionado.");
@@ -1249,6 +1272,8 @@ export async function createAction(formData: FormData) {
 
     projectId = deliverable.project_id ?? projectId;
   }
+
+  await ensureProjectOpen(supabase, projectId, user.id, path);
 
   const wantsNextAction = parsed.data.is_next_action;
   const { data: createdAction, error } = await supabase
@@ -1322,18 +1347,23 @@ export async function createBlocker(formData: FormData) {
   if (deliverableId) {
     const { data: deliverable, error: deliverableError } = await supabase
       .from("deliverables")
-      .select("project_id")
+      .select("project_id,status")
       .eq("id", deliverableId)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (deliverableError || !deliverable) fail(path, "Entregável inválido.");
+    if (deliverable.status === "completed") {
+      fail(path, "O entregável seleccionado já foi entregue e está bloqueado.");
+    }
     if (projectId && deliverable.project_id && projectId !== deliverable.project_id) {
       fail(path, "O entregável seleccionado não pertence ao projecto seleccionado.");
     }
 
     projectId = deliverable.project_id ?? projectId;
   }
+
+  await ensureProjectOpen(supabase, projectId, user.id, path);
 
   const { error } = await supabase.from("blockers").insert({
     ...parsed.data,
@@ -1885,12 +1915,15 @@ export async function createMetric(formData: FormData) {
   if (parsed.data.project_id) {
     const { data: project, error: projectError } = await supabase
       .from("projects")
-      .select("objective_id")
+      .select("objective_id,status")
       .eq("id", parsed.data.project_id)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+    if (project.status === "completed") {
+      fail(path, "O projecto está fechado. Inicie um novo ciclo controlado no PCC para definir novas métricas.");
+    }
     if (!project.objective_id) {
       fail(path, "Defina primeiro o Objectivo Central do projecto antes de criar métricas.");
     }
@@ -2389,7 +2422,6 @@ export async function deleteRecord(formData: FormData) {
   if (error) fail(path, error.message);
   revalidatePath(path);
   revalidatePath("/dashboard");
-  revalidatePath("/focus");
 }
 
 export async function startTimeSession(formData: FormData) {
