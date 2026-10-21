@@ -18,7 +18,7 @@ import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
 import { prepareActionDraft } from "@/lib/action-autonomy";
 
-type View = "all" | "attention" | "completed";
+type View = "all" | "today" | "attention" | "completed";
 
 export default async function ActionsPage({
   searchParams,
@@ -34,7 +34,7 @@ export default async function ActionsPage({
   const params = await searchParams;
   const { supabase, user } = await requireUser();
   const selectedProjectId = params.project_id ?? "";
-  const view: View = params.view === "attention" || params.view === "completed" ? params.view : "all";
+  const view: View = params.view === "today" || params.view === "attention" || params.view === "completed" ? params.view : "all";
 
   const [
     { data: allActions, error },
@@ -81,6 +81,14 @@ export default async function ActionsPage({
 
   const now = new Date();
   const soon = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+  const maputoDate = (value: Date) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Africa/Maputo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(value);
+  const todayKey = maputoDate(now);
   const isClosed = (status: string) => ["completed", "cancelled"].includes(status);
   const isOverdue = (action: NonNullable<typeof allActions>[number]) =>
     Boolean(action.due_at && new Date(action.due_at) < now && !isClosed(action.status));
@@ -90,6 +98,13 @@ export default async function ActionsPage({
   const actions = (allActions ?? []).filter((action) => {
     if (effectiveProjectId && action.project_id !== effectiveProjectId) return false;
     if (view === "completed") return action.status === "completed";
+    if (view === "today") {
+      return Boolean(
+        action.due_at &&
+        maputoDate(new Date(action.due_at)) === todayKey &&
+        !isClosed(action.status),
+      );
+    }
     if (view === "attention") {
       const blocked = (blockers ?? []).some((blocker) => blocker.action_id === action.id);
       return isOverdue(action) || isDueSoon(action) || action.status === "blocked" || blocked;
@@ -206,6 +221,7 @@ export default async function ActionsPage({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           <Link className={view === "all" ? primaryButtonClass : secondaryButtonClass} href="/actions">Todas</Link>
+          <Link className={view === "today" ? primaryButtonClass : secondaryButtonClass} href="/actions?view=today">Hoje</Link>
           <Link className={view === "attention" ? primaryButtonClass : secondaryButtonClass} href="/actions?view=attention">Atenção</Link>
           <Link className={view === "completed" ? primaryButtonClass : secondaryButtonClass} href="/actions?view=completed">Concluídas</Link>
         </div>
