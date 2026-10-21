@@ -230,7 +230,7 @@ export default async function DeliverablesPage({
                               </div>
                               {locked && (
                                 <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-                                  Arquivo bloqueado
+                                  Ficheiro final bloqueado
                                 </span>
                               )}
                             </div>
