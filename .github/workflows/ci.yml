@@ -290,6 +290,7 @@ jobs:
           $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
           $offlineSync = Get-Content "./app/api/offline/sync/route.ts" -Raw
           $offlinePage = Get-Content "./public/offline.html" -Raw
+          $offlineApp = Get-Content "./public/offline-app.js" -Raw
           $factory = Get-Content "./app/(protected)/project-factory/page.tsx" -Raw
           $charts = Get-Content "./components/operational-charts.tsx" -Raw
           $globals = Get-Content "./app/globals.css" -Raw
@@ -319,7 +320,7 @@ jobs:
           }
 
           foreach ($token in @("Modo offline completo", "Projectos", "Executar", "Objectivos", "Entregáveis", "Métricas", "Evidências", "Factory", "Governança")) {
-            if (-not $offlinePage.Contains($token)) {
+            if (-not $offlinePage.Contains($token) -and -not $offlineApp.Contains($token)) {
               Write-Error "Offline workspace is missing navigation/content: $token"
               exit 1
             }
