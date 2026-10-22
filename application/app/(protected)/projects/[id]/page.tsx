@@ -422,7 +422,7 @@ export default async function ProjectHubPage({
               </div>
               <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium text-[var(--cc-foreground)]">Receita média por utilizador</p>
+                  <p className="text-sm font-medium text-[var(--cc-foreground)]">Receita média por cliente</p>
                   <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-foreground)]">
                     {autofillStateLabel[economicsSnapshot.arpu.state] ?? economicsSnapshot.arpu.state}
                   </span>
