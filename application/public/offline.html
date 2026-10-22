@@ -9,7 +9,7 @@
     :root{--bg:#f8f6f0;--surface:#fff;--muted:#667085;--fg:#142825;--border:#e0e8e3;--accent:#073f36;--gold:#c99439;--success:#2e7d5b;--blocked:#b42318;--blocked-soft:#fee4e2;--overdue:#d97706;--overdue-soft:#fff3e6;--due:#c99439;--due-soft:#fbf3e4;--progress:#0f766e;--progress-soft:#e6f4f1}
     *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 92% 3%,rgba(201,148,57,.10),transparent 24rem),var(--bg);color:var(--fg);font:14px/1.5 Inter,Arial,sans-serif}
     button,input,textarea,select{font:inherit}.shell{width:min(100% - 24px,1180px);margin:auto;padding:18px 0 80px}.top{position:sticky;top:0;z-index:20;margin:-18px -12px 0;padding:14px 12px;background:rgba(248,246,240,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
-    .topline{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px}.brand img{width:38px;height:38px;border-radius:11px}.brand strong{display:block;font-size:14px}.brand small{color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+    .topline{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px}.brand-icon{width:38px;height:38px;border-radius:11px}.brand-wordmark{width:168px;max-width:42vw;height:auto}.brand strong{display:block;font-size:14px}.brand small{color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.08em}.lang{display:inline-flex;border:1px solid var(--border);border-radius:999px;padding:3px;background:#fff}.lang button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:5px 8px;font-size:10px;font-weight:800}.lang button.active{background:var(--accent);color:#fff}
     .pill{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:#fff;font-size:11px;font-weight:700}.offline{color:var(--overdue)}.online{color:var(--success)}
     .nav{display:flex;gap:7px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}.nav button{white-space:nowrap;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--fg);padding:8px 11px;font-weight:700}.nav button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
     .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}.toolbar input{flex:1;min-width:180px}.field,input,textarea,select{width:100%;border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px 11px;color:var(--fg)}textarea{min-height:86px;resize:vertical}
@@ -27,10 +27,17 @@
     <div class="top">
       <div class="topline">
         <div class="brand">
-          <img src="/icons/icon-192.png" alt="PCC" />
-          <div><strong>Project Command Center</strong><small>Modo offline completo</small></div>
+          <img class="brand-icon" src="/icons/icon-192.png" alt="PCC" />
+          <img class="brand-wordmark" src="/brand/pcc-logo.png" alt="Project Command Center" />
+          <div class="hidden"><strong>Project Command Center</strong><small>Modo offline completo</small></div>
         </div>
-        <span id="network" class="pill offline">Offline</span>
+        <div class="row">
+          <div class="lang" role="group" aria-label="Idioma / Language">
+            <button id="langPt" type="button" class="active">PT</button>
+            <button id="langEn" type="button">ENG</button>
+          </div>
+          <span id="network" class="pill offline">Offline</span>
+        </div>
       </div>
       <div id="nav" class="nav"></div>
     </div>

@@ -1,9 +1,13 @@
 (() => {
   const DB_NAME="pcc-offline", DB_VERSION=1, META="meta", SNAPSHOT="snapshot", QUEUE="queue";
-  const sections=[
+  const LANG_KEY="pcc-language";
+  const sectionsPt=[
     ["dashboard","Painel"],["projects","Projectos"],["actions","Executar"],["objectives","Objectivos"],
     ["deliverables","Entregáveis"],["metrics","Métricas"],["evidence","Evidências"],["factory","Factory"],["governance","Governança"]
   ];
+  const sectionLabelsEn={dashboard:"Dashboard",projects:"Projects",actions:"Execute",objectives:"Objectives",deliverables:"Deliverables",metrics:"Metrics",evidence:"Evidence",factory:"Factory",governance:"Governance"};
+  const t=(pt,en)=>localStorage.getItem(LANG_KEY)==="en"?en:pt;
+  const sections=()=>sectionsPt.map(([key,label])=>[key,localStorage.getItem(LANG_KEY)==="en"?sectionLabelsEn[key]:label]);
   let current="dashboard", query="";
   let snapshot={generatedAt:"",projects:[],objectives:[],deliverables:[],actions:[],blockers:[],metrics:[],evidence:[],ideas:[],factoryCases:[],dependencies:[],risks:[],decisions:[]};
   const $=id=>document.getElementById(id);
@@ -22,7 +26,18 @@
   const uuid=()=>crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==="x"?r:(r&3|8);return v.toString(16)});
   function matches(row){if(!query)return true;return JSON.stringify(row).toLowerCase().includes(query.toLowerCase())}
   function tag(status){return `<span class="tag ${statusClass(status)}">${esc(status||"Sem estado")}</span>`}
-  function nav(){const box=$("nav");box.innerHTML="";sections.forEach(([key,label])=>{const b=document.createElement("button");b.textContent=label;b.className=key===current?"active":"";b.onclick=()=>{current=key;nav();render()};box.appendChild(b)})}
+  function nav(){const box=$("nav");box.innerHTML="";sections().forEach(([key,label])=>{const b=document.createElement("button");b.textContent=label;b.className=key===current?"active":"";b.onclick=()=>{current=key;nav();render()};box.appendChild(b)})}
+  function applyLanguage(){
+    const en=localStorage.getItem(LANG_KEY)==="en";
+    document.documentElement.lang=en?"en":"pt-MZ";
+    $("langPt").classList.toggle("active",!en);
+    $("langEn").classList.toggle("active",en);
+    $("search").placeholder=t("Pesquisar no PCC offline...","Search PCC offline...");
+    $("captureButton").textContent=t("Registar trabalho","Record work");
+    $("syncButton").textContent=t("Sincronizar","Sync");
+    nav();
+    render();
+  }
   function option(value,label){const o=document.createElement("option");o.value=value;o.textContent=label;return o}
   function options(el,rows,empty){el.innerHTML="";el.append(option("",empty));rows.forEach(r=>el.append(option(r.id,titleOf(r))))}
   function card(label,value,cls=""){return `<div class="card"><p class="small muted">${esc(label)}</p><div class="metric ${cls}">${esc(value)}</div></div>`}
@@ -73,6 +88,7 @@
   async function saveCapture(){const type=$("captureType").value,title=$("captureTitle").value.trim(),description=$("captureDescription").value.trim();if(title.length<2){$("message").textContent="Indique um título.";return}let payload={title,description,priority:"medium"};if(type==="create_action"){payload.project_id=$("captureProject").value;payload.deliverable_id=$("captureDeliverable").value}if(type==="create_idea")payload.project_id=$("captureProject").value;if(type==="create_evidence"||type==="create_blocker"){payload.action_id=$("captureAction").value;if(!payload.action_id){$("message").textContent="Seleccione uma acção.";return}}if(type==="create_evidence")payload.evidence_type="comment";if(type==="create_factory_intake"){const problem=$("captureProblem").value.trim();if(problem.length<3){$("message").textContent="Indique o problema ou oportunidade.";return}payload={title,description,problem,expected_value:$("captureExpected").value.trim(),target_user:"",project_type:"commercial",constraints:"",source:"offline_intake"}}await queue(type,payload);$("captureDialog").close();$("captureTitle").value="";$("captureDescription").value="";$("captureProblem").value="";$("captureExpected").value=""}
   async function init(){const enabled=await get(META,"offlineEnabled");$("network").textContent=navigator.onLine?"Online":"Offline";$("network").className="pill "+(navigator.onLine?"online":"offline");if(!enabled){$("locked").classList.remove("hidden");return}$("workspace").classList.remove("hidden");snapshot=(await get(SNAPSHOT,"workspace"))||snapshot;nav();fillCapture();captureMode();render();if(navigator.onLine)sync()}
   $("search").addEventListener("input",e=>{query=e.target.value;render()});$("syncButton").onclick=sync;$("captureButton").onclick=()=>$("captureDialog").showModal();$("closeDialog").onclick=()=>$("captureDialog").close();$("captureType").onchange=captureMode;$("saveCapture").onclick=saveCapture;
+  $("langPt").onclick=()=>{localStorage.setItem(LANG_KEY,"pt");applyLanguage()};$("langEn").onclick=()=>{localStorage.setItem(LANG_KEY,"en");applyLanguage()};
   window.addEventListener("online",()=>{$("network").textContent="Online";$("network").className="pill online";sync()});window.addEventListener("offline",()=>{$("network").textContent="Offline";$("network").className="pill offline"});
   init();
 })();
