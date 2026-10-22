@@ -47,7 +47,7 @@ function parseOpportunities(text: string): Opportunity[] {
     if (!parsed || !Array.isArray(parsed.opportunities)) return [];
     return parsed.opportunities
       .filter((item: unknown): item is Opportunity => Boolean(item && typeof item === "object"))
-      .map((item) => ({
+      .map((item: Opportunity) => ({
         title: String(item.title ?? "").trim(),
         problem: String(item.problem ?? "").trim(),
         expected_value: String(item.expected_value ?? "").trim(),
@@ -56,7 +56,7 @@ function parseOpportunities(text: string): Opportunity[] {
         assumptions: String(item.assumptions ?? "").trim(),
         missing_information: String(item.missing_information ?? "").trim(),
       }))
-      .filter((item) => item.title.length >= 2 && item.problem.length >= 3)
+      .filter((item: Opportunity) => item.title.length >= 2 && item.problem.length >= 3)
       .slice(0, 3);
   } catch {
     return [];
