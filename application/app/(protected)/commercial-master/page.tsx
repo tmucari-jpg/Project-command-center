@@ -61,8 +61,24 @@ export default async function CommercialMasterPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Marketing, vendas e lançamento" title="Master Comercial PCC" action={<Link className={secondaryButtonClass} href={`/projects/${project.id}`}>Abrir projecto</Link>} />
+      <PageHeader
+        eyebrow="Pré-visualização do entregável comercial"
+        title="Master Comercial do PCC"
+        action={
+          <div className="flex flex-wrap gap-2">
+            <a className={secondaryButtonClass} href="/api/exports/commercial-master">Baixar Word editável</a>
+            <Link className={secondaryButtonClass} href="/monetization">Voltar ao Comercial</Link>
+          </div>
+        }
+      />
       {error && <Card className="mb-5 p-4 text-sm text-[var(--cc-danger)]">{error.message}</Card>}
+
+      <Card className="mb-6 p-5">
+        <p className="text-sm leading-6 text-[var(--cc-secondary)]">
+          <strong className="text-[var(--cc-foreground)]">Entregável do projecto:</strong> Marketing, Vendas e Lançamento do PCC.
+          Esta página é a pré-visualização da versão de trabalho; o documento é descarregado e arquivado através de Entregáveis.
+        </p>
+      </Card>
 
       <Card className="mb-6 border-[color-mix(in_srgb,var(--cc-gold)_50%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_8%,var(--cc-surface))] p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-gold)]">Regra comercial</p>
@@ -127,7 +143,7 @@ export default async function CommercialMasterPage() {
           <p className="mt-4 text-sm font-semibold">Funil</p><p className="mt-1 text-sm text-[var(--cc-secondary)]">{strings(sales.funnel).join(" → ") || "Em falta"}</p>
           <p className="mt-4 text-sm font-semibold">Prioridades imediatas</p><p className="mt-1 text-sm text-[var(--cc-secondary)]">{strings(marketing.priority_ids).join(" → ") || "Em falta"}</p>
           <p className="mt-4 text-sm font-semibold">Pergunta de diagnóstico</p><p className="mt-1 rounded-[var(--cc-radius-md)] border-l-4 border-[var(--cc-gold)] bg-[var(--cc-surface-muted)] p-4 text-sm leading-6">{text(sales.discovery_opener)}</p>
-          <Link href="/monetization" className="mt-4 inline-flex text-sm font-semibold text-[var(--cc-accent)]">Abrir Monetização</Link>
+          <Link href="/monetization" className="mt-4 inline-flex text-sm font-semibold text-[var(--cc-accent)]">Abrir Comercial</Link>
         </Card>
       </div>
 
