@@ -3,13 +3,17 @@
   const LANG_KEY="pcc-language";
   const sectionsPt=[
     ["dashboard","Painel"],["projects","Projectos"],["actions","Executar"],["objectives","Objectivos"],
-    ["deliverables","Entregáveis"],["metrics","Métricas"],["evidence","Evidências"],["commercial","Comercial"],["factory","Factory"],["governance","Governança"]
+    ["deliverables","Entregáveis"],["metrics","Métricas"],["evidence","Evidências"],["factory","Factory"],["governance","Governança"]
   ];
-  const sectionLabelsEn={dashboard:"Dashboard",projects:"Projects",actions:"Execute",objectives:"Objectives",deliverables:"Deliverables",metrics:"Metrics",evidence:"Evidence",commercial:"Commercial",factory:"Factory",governance:"Governance"};
+  const sectionLabelsEn={dashboard:"Dashboard",projects:"Projects",actions:"Execute",objectives:"Objectives",deliverables:"Deliverables",metrics:"Metrics",evidence:"Evidence",factory:"Factory",governance:"Governance",admin:"Administration"};
   const t=(pt,en)=>localStorage.getItem(LANG_KEY)==="en"?en:pt;
-  const sections=()=>sectionsPt.map(([key,label])=>[key,localStorage.getItem(LANG_KEY)==="en"?sectionLabelsEn[key]:label]);
+  const sections=()=>{
+    const items=[...sectionsPt];
+    if(snapshot.isAdmin)items.push(["admin","Administração"]);
+    return items.map(([key,label])=>[key,localStorage.getItem(LANG_KEY)==="en"?sectionLabelsEn[key]:label]);
+  };
   let current="dashboard", query="";
-  let snapshot={generatedAt:"",projects:[],objectives:[],deliverables:[],actions:[],blockers:[],metrics:[],evidence:[],ideas:[],factoryCases:[],dependencies:[],risks:[],decisions:[],strategyPlans:[],commercialProfiles:[],financialEntries:[],commercialLeads:[]};
+  let snapshot={generatedAt:"",isAdmin:false,projects:[],objectives:[],deliverables:[],actions:[],blockers:[],metrics:[],evidence:[],ideas:[],factoryCases:[],dependencies:[],risks:[],decisions:[],strategyPlans:[],commercialProfiles:[],financialEntries:[],commercialLeads:[]};
   const $=id=>document.getElementById(id);
   const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const fmt=value=>{if(!value)return "—";const d=new Date(value);return Number.isNaN(d.getTime())?esc(value):d.toLocaleString("pt-MZ",{dateStyle:"medium",timeStyle:value.includes?.("T")?"short":undefined})};
@@ -74,7 +78,7 @@
     const actions=(snapshot.actions||[]).filter(x=>x.project_id===project.id&&!isClosed(x.status));
     const leads=(snapshot.commercialLeads||[]).filter(x=>x.project_id===project.id);
     const list=value=>Array.isArray(value)?value:[];
-    let html='<div class="card"><h2>Master Comercial PCC</h2><p class="small muted">PCC = consultoria de projectos. Tecnologia e IA apoiam nos bastidores; o cliente recebe consultoria e entregáveis concretos.</p>';
+    let html='<div class="card"><h2>Administração · Master Comercial PCC</h2><p class="small muted">Área interna do PCC. Tecnologia e IA apoiam nos bastidores; o cliente recebe consultoria e entregáveis concretos.</p>';
     html+='<div class="grid cards section">'+card("Pacotes",packages.length)+card("Entregáveis",deliverables.length)+card("Acções abertas",actions.length)+card("Leads",leads.length)+'</div></div>';
     html+='<div class="grid two section"><div class="card"><h2>Pacotes e preços</h2><div class="list section">'+packages.map(p=>'<article class="item"><div class="itemtop"><h3>'+esc(p.name||"Pacote")+'</h3><b>'+esc((p.price_mzn_from?"desde ":"")+(p.price_mzn_from||p.price_mzn||"—")+" MZN / "+(p.period||""))+'</b></div><div class="meta">'+esc(p.scope||"")+(p.max_simultaneous_projects?" · até "+esc(p.max_simultaneous_projects)+" projectos em simultâneo":"")+'</div></article>').join("")+'</div></div>';
     html+='<div class="card"><h2>Custos internos</h2><div class="list section">'+costs.slice(0,8).map(x=>'<article class="item"><div class="itemtop"><h3>'+esc(x.description||"Custo")+'</h3><b>'+esc(x.amount||"—")+" "+esc(x.currency||"")+'</b></div><div class="meta">'+esc(x.status||"")+(x.evidence_reference?" · "+esc(x.evidence_reference):"")+'</div></article>').join("")+'</div></div></div>';
@@ -91,7 +95,7 @@
     if(current==="deliverables")html=renderGeneric("Entregáveis",snapshot.deliverables,r=>[projectName(r.project_id),`Progresso ${r.progress??0}%`,r.due_date?fmt(r.due_date):""]);
     if(current==="metrics")html=renderGeneric("Métricas",snapshot.metrics,r=>[projectName(r.project_id),`Actual: ${r.current_value??"—"} ${r.unit??""}`,`Meta: ${r.target_value??"—"} ${r.unit??""}`]);
     if(current==="evidence")html=renderGeneric("Evidências",snapshot.evidence,r=>[projectName(r.project_id),r.evidence_type||"",r.created_at?fmt(r.created_at):""]);
-    if(current==="commercial")html=renderCommercial();
+    if(current==="admin")html=renderCommercial();
     if(current==="factory")html=renderGeneric("Factory / Avaliações",snapshot.factoryCases,r=>[r.stage||"",r.governance_gate||"",r.project_type||""]);
     if(current==="governance"){
       html=`<div class="grid two">${renderGeneric("Dependências",snapshot.dependencies,r=>[projectName(r.project_id),r.responsible||"",r.missing_key||""])}${renderGeneric("Riscos",snapshot.risks,r=>[projectName(r.project_id),r.severity||r.impact||""])}</div><div class="section">${renderGeneric("Decisões",snapshot.decisions,r=>[projectName(r.project_id),r.decision||"",r.created_at?fmt(r.created_at):""])}</div>`;
