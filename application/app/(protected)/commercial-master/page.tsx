@@ -119,7 +119,7 @@ export default async function CommercialMasterPage() {
             <div className="flex justify-between gap-4"><span>Envelope conservador PCC</span><strong>{money(costModel.internal_budget_mzn_month_min)}–{money(costModel.internal_budget_mzn_month_max)}/mês</strong></div>
           </div>
           <div className="mt-4 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4 text-sm leading-6"><strong>Margem/reserva:</strong> {text(monetization.margin_policy)}</div>
-          {(costs ?? []).length>0&&<p className="mt-3 text-xs text-[var(--cc-secondary)]">Forecast registado: {costs[0].amount} {costs[0].currency} · {costs[0].description}</p>}
+          {(costs ?? []).length>0&&<p className="mt-3 text-xs text-[var(--cc-secondary)]">Forecast registado: {(costs ?? [])[0]?.amount} {(costs ?? [])[0]?.currency} · {(costs ?? [])[0]?.description}</p>}
         </Card>
         <Card className="p-5">
           <h2 className="inline-flex items-center gap-2 text-lg font-semibold"><Megaphone size={18}/> Marketing e vendas</h2>
