@@ -377,9 +377,8 @@ jobs:
 
           foreach ($token in @(
             "O PCC funciona como consultor de projectos",
-            "PERSONALIZADO",
-            "AGREGADO",
-            "INTEGRADO",
+            "Personalizado · Agregado · Integrado",
+            "Pacotes e preços",
             "Custos associados",
             "Base de entregáveis da consultoria",
             "Avaliar",
