@@ -372,6 +372,9 @@ jobs:
           $admin = Get-Content "./app/(protected)/admin/page.tsx" -Raw
           $monetization = Get-Content "./app/(protected)/monetization/page.tsx" -Raw
           $briefingMonetization = Get-Content "./app/(protected)/monetization/briefing-diario/page.tsx" -Raw
+          $deliverables = Get-Content "./app/(protected)/deliverables/page.tsx" -Raw
+          $workstreamMigration = Get-Content "../supabase/migrations/20261022154500_deliverable_workstreams.sql" -Raw
+          $masterExport = Get-Content "./app/api/exports/commercial-master/route.ts" -Raw
           $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
           $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
           $offlineApp = Get-Content "./public/offline-app.js" -Raw
@@ -396,11 +399,16 @@ jobs:
             }
           }
 
-          foreach ($token in @("/commercial-master", "/monetization", "Master Comercial", "Comercial PCC")) {
+          foreach ($token in @("/monetization", "Comercial", "Backlog, pipeline, leads")) {
             if (-not $admin.Contains($token)) {
               Write-Error "Commercial administration navigation is missing: $token"
               exit 1
             }
+          }
+
+          if ($admin.Contains('href: "/commercial-master"')) {
+            Write-Error "Master Comercial must be a project deliverable, not a separate Administration module."
+            exit 1
           }
 
           foreach ($token in @("/commercial-master", "/monetization")) {
@@ -427,6 +435,34 @@ jobs:
           foreach ($token in @("strategyPlans", "commercialProfiles", "financialEntries", "commercialLeads", "/commercial-master", "/monetization")) {
             if (-not $offlineClient.Contains($token) -and -not $offlineApp.Contains($token)) {
               Write-Error "Offline commercial workspace is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("Backlog comercial", "Pipeline", "Novo entregável comercial", "Entregáveis comerciais")) {
+            if (-not $monetization.Contains($token)) {
+              Write-Error "Transversal Commercial workspace is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("commercial", "financial", "operational", "governance", "technical")) {
+            if (-not $workstreamMigration.Contains($token)) {
+              Write-Error "Deliverable workstream taxonomy is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("Vertente do entregável", "Baixar / abrir")) {
+            if (-not $deliverables.Contains($token)) {
+              Write-Error "Deliverables central archive is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("PCC_Master_Comercial.doc", "application/msword", "Marketing, Vendas e Lançamento do PCC")) {
+            if (-not $masterExport.Contains($token)) {
+              Write-Error "Master Comercial downloadable deliverable is missing: $token"
               exit 1
             }
           }
