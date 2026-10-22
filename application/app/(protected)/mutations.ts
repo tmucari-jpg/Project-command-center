@@ -1090,11 +1090,12 @@ export async function upsertProjectUnitEconomics(formData: FormData) {
 }
 
 export async function createDeliverable(formData: FormData) {
-  const path = "/deliverables";
+  const returnPath = formData.get("return_path") === "/monetization" ? "/monetization" : "/deliverables";
   const parsed = deliverableSchema.safeParse(values(formData));
-  if (!parsed.success) fail(path, zodMessage(parsed.error));
+  if (!parsed.success) fail(returnPath, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
+  const session = parsed.data.workstream === "commercial" ? await requireAdmin() : await requireUser();
+  const { supabase, user } = session;
   const { data: project, error: projectError } = await supabase
     .from("projects")
     .select("id,owner_id")
@@ -1102,7 +1103,7 @@ export async function createDeliverable(formData: FormData) {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+  if (projectError || !project) fail(returnPath, projectError?.message ?? "Projecto inválido.");
 
   const ownerId = parsed.data.owner_id ?? project.owner_id ?? null;
   if (ownerId) {
@@ -1111,21 +1112,22 @@ export async function createDeliverable(formData: FormData) {
       .select("id")
       .eq("id", ownerId)
       .maybeSingle();
-    if (ownerError || !owner) fail(path, "Responsável do entregável inválido.");
+    if (ownerError || !owner) fail(returnPath, "Responsável do entregável inválido.");
   }
 
   let artifactVersion = 1;
   if (parsed.data.supersedes_deliverable_id) {
     const { data: previous, error: previousError } = await supabase
       .from("deliverables")
-      .select("id,project_id,status,artifact_version")
+      .select("id,project_id,status,artifact_version,workstream")
       .eq("id", parsed.data.supersedes_deliverable_id)
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (previousError || !previous) fail(path, previousError?.message ?? "Versão anterior inválida.");
-    if (previous.project_id !== parsed.data.project_id) fail(path, "A versão anterior não pertence ao mesmo projecto.");
-    if (previous.status !== "completed") fail(path, "Só é possível criar uma nova versão a partir de um entregável final já bloqueado.");
+    if (previousError || !previous) fail(returnPath, previousError?.message ?? "Versão anterior inválida.");
+    if (previous.project_id !== parsed.data.project_id) fail(returnPath, "A versão anterior não pertence ao mesmo projecto.");
+    if ((previous.workstream ?? "general") !== parsed.data.workstream) fail(returnPath, "A nova versão deve manter a mesma vertente.");
+    if (previous.status !== "completed") fail(returnPath, "Só é possível criar uma nova versão a partir de um entregável final já bloqueado.");
 
     artifactVersion = Number(previous.artifact_version ?? 1) + 1;
   }
@@ -1137,12 +1139,12 @@ export async function createDeliverable(formData: FormData) {
     user_id: user.id,
   });
 
-  if (error) fail(path, error.message);
-  revalidatePath(path);
+  if (error) fail(returnPath, error.message);
+  revalidatePath("/deliverables");
+  revalidatePath("/monetization");
   revalidatePath("/dashboard");
-  redirect(`${path}?created=1`);
+  redirect(`${returnPath}?created=1`);
 }
-
 export async function createAction(formData: FormData) {
   const path = "/actions";
   const parsed = actionSchema.safeParse(values(formData));
@@ -1953,7 +1955,7 @@ export async function upsertCommercialProfile(formData: FormData) {
   const parsed = commercialProfileSchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
   await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
 
   const payload = { ...parsed.data, user_id: user.id };
@@ -1979,7 +1981,7 @@ export async function createCommercialLead(formData: FormData) {
   const parsed = commercialLeadSchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
   await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
 
   const { error } = await supabase.from("commercial_leads").insert({
@@ -2003,7 +2005,7 @@ export async function createFinancialEntry(formData: FormData) {
   const parsed = financialEntrySchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
   await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
 
   const { error } = await supabase.from("financial_entries").insert({
@@ -2022,7 +2024,7 @@ export async function upsertSubscriptionFunnelMetric(formData: FormData) {
   const parsed = subscriptionFunnelMetricSchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
   await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
 
   const payload = {
