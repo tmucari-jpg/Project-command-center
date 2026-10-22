@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BriefcaseBusiness, CircleDollarSign, FileCheck2, Megaphone, PackageCheck, Target } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 
 type JsonObject = Record<string, unknown>;
 const obj = (value: unknown): JsonObject => value && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : {};
@@ -16,7 +16,7 @@ const money = (value: unknown, prefix = "") => {
 };
 
 export default async function CommercialMasterPage() {
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
   const { data: project, error: projectError } = await supabase
     .from("projects")
     .select("id,title,status,progress,next_action")
