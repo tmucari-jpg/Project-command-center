@@ -16,6 +16,16 @@ function objectiveTitle(relation: { title?: string | null } | { title?: string |
   return Array.isArray(relation) ? relation[0]?.title : relation?.title;
 }
 
+const WORKSTREAM_LABELS: Record<string, string> = {
+  general: "Geral",
+  commercial: "Comercial",
+  financial: "Financeiro",
+  operational: "Operacional",
+  governance: "Governação",
+  technical: "Técnico",
+  other: "Outro",
+};
+
 function deliverableState(status: string, progress: number | string | null) {
   if (status === "completed") return "Entregue · bloqueado";
   if (status === "blocked") return "Bloqueado";
@@ -175,6 +185,15 @@ export default async function DeliverablesPage({
               ))}
             </Select>
             <Field label="Resultado / entregável" name="title" required defaultValue={preparedDraft?.title} placeholder="Ex.: Website institucional publicado" />
+            <Select label="Vertente do entregável" name="workstream" defaultValue={previousVersion?.workstream ?? "general"}>
+              <option value="general">Geral</option>
+              <option value="commercial">Comercial</option>
+              <option value="financial">Financeiro</option>
+              <option value="operational">Operacional</option>
+              <option value="governance">Governação</option>
+              <option value="technical">Técnico</option>
+              <option value="other">Outro</option>
+            </Select>
             <TextArea label="Matéria real a entregar" name="description" defaultValue={preparedDraft?.description} placeholder="Descreva o resultado utilizável que deve existir no final." />
             <div className="grid gap-4 sm:grid-cols-2">
               <Select label="Prioridade" name="priority" defaultValue={preparedDraft?.priority ?? "medium"}>
@@ -269,7 +288,7 @@ export default async function DeliverablesPage({
                               <div>
                                 <h4 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h4>
                                 <p className="mt-1 text-xs text-[var(--cc-secondary)]">
-                                  {deliverableState(item.status, item.progress)}
+                                  {WORKSTREAM_LABELS[item.workstream ?? "general"] ?? displayLabel(item.workstream ?? "general")} · {deliverableState(item.status, item.progress)}
                                   {item.artifact_version ? ` · versão ${item.artifact_version}` : ""}
                                   {item.due_date ? ` · prazo ${formatDate(item.due_date)}` : " · sem prazo"}
                                   {item.owner_id ? ` · ${ownerById.get(item.owner_id) ?? "Responsável definido"}` : ""}
@@ -293,7 +312,9 @@ export default async function DeliverablesPage({
                                 {item.artifact_url && (
                                   <p>
                                     <span className="font-medium text-[var(--cc-foreground)]">Resultado oficial:</span>{" "}
-                                    <a href={item.artifact_url} target="_blank" rel="noreferrer" className="text-[var(--cc-accent)] hover:underline">Abrir</a>
+                                    <a href={item.artifact_url} target="_blank" rel="noreferrer" className="text-[var(--cc-accent)] hover:underline">
+                                      {["document", "spreadsheet", "presentation", "pdf"].includes(item.artifact_type) ? "Baixar / abrir" : "Abrir"}
+                                    </a>
                                   </p>
                                 )}
                                 {item.artifact_reference && (
