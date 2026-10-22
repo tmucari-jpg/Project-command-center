@@ -71,7 +71,7 @@ export default async function CommercialMasterPage() {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="p-5"><p className="text-sm text-[var(--cc-secondary)]">Projecto comercial</p><p className="mt-2 text-2xl font-semibold">{project.progress ?? 0}%</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">{openActions.length} acções abertas</p></Card>
+        <Card className="p-5"><p className="text-sm text-[var(--cc-secondary)]">Projecto comercial</p><p className="mt-2 text-2xl font-semibold">{project.progress ?? 0}%</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">{openActions.length} acções abertas · {metrics?.length ?? 0} métricas</p></Card>
         <Card className="p-5"><p className="text-sm text-[var(--cc-secondary)]">Entregáveis em aberto</p><p className="mt-2 text-2xl font-semibold">{openDeliverables.length}</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">Fecho apenas com resultado utilizável e evidência.</p></Card>
         <Card className="p-5"><p className="text-sm text-[var(--cc-secondary)]">Pacotes definidos</p><p className="mt-2 text-2xl font-semibold">{packages.length}</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">Personalizado · Agregado · Integrado</p></Card>
         <Card className="p-5"><p className="text-sm text-[var(--cc-secondary)]">Custo tecnológico interno</p><p className="mt-2 text-2xl font-semibold">{money(costModel.internal_budget_mzn_month_max)}</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">Envelope conservador mensal.</p></Card>
