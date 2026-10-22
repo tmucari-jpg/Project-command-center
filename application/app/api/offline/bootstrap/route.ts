@@ -11,20 +11,64 @@ export async function GET() {
     return NextResponse.json({ error: "Sessão necessária." }, { status: 401 });
   }
 
-  const [{ data: projects, error: projectsError }, { data: deliverables, error: deliverablesError }, { data: actions, error: actionsError }] =
-    await Promise.all([
-      supabase.from("projects").select("id,title,status").eq("user_id", user.id).order("created_at", { ascending: false }).limit(200),
-      supabase.from("deliverables").select("id,title,project_id,status").eq("user_id", user.id).order("created_at", { ascending: false }).limit(300),
-      supabase.from("actions").select("id,title,project_id,deliverable_id,status,priority,due_at,is_next_action").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
-    ]);
+  const [
+    projectsResult,
+    objectivesResult,
+    deliverablesResult,
+    actionsResult,
+    blockersResult,
+    metricsResult,
+    evidenceResult,
+    ideasResult,
+    factoryCasesResult,
+    dependenciesResult,
+    risksResult,
+    decisionsResult,
+  ] = await Promise.all([
+    supabase.from("projects").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(250),
+    supabase.from("objectives").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(250),
+    supabase.from("deliverables").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("actions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1000),
+    supabase.from("blockers").select("*").eq("user_id", user.id).order("identified_at", { ascending: false }).limit(500),
+    supabase.from("metrics").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("evidence").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1000),
+    supabase.from("ideas").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("project_factory_cases").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(250),
+    supabase.from("project_governance_dependencies").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("project_governance_risks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("decisions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+  ]);
 
-  const error = projectsError ?? deliverablesError ?? actionsError;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const results = [
+    projectsResult,
+    objectivesResult,
+    deliverablesResult,
+    actionsResult,
+    blockersResult,
+    metricsResult,
+    evidenceResult,
+    ideasResult,
+    factoryCasesResult,
+    dependenciesResult,
+    risksResult,
+    decisionsResult,
+  ];
+  const failed = results.find((result) => result.error);
+  if (failed?.error) return NextResponse.json({ error: failed.error.message }, { status: 500 });
 
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
-    projects: projects ?? [],
-    deliverables: deliverables ?? [],
-    actions: actions ?? [],
+    projects: projectsResult.data ?? [],
+    objectives: objectivesResult.data ?? [],
+    deliverables: deliverablesResult.data ?? [],
+    actions: actionsResult.data ?? [],
+    blockers: blockersResult.data ?? [],
+    metrics: metricsResult.data ?? [],
+    evidence: evidenceResult.data ?? [],
+    ideas: ideasResult.data ?? [],
+    factoryCases: factoryCasesResult.data ?? [],
+    dependencies: dependenciesResult.data ?? [],
+    risks: risksResult.data ?? [],
+    decisions: decisionsResult.data ?? [],
   });
 }

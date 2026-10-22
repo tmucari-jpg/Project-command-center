@@ -6,8 +6,9 @@ const META_STORE = "meta";
 const SNAPSHOT_STORE = "snapshot";
 const QUEUE_STORE = "queue";
 
-export type OfflineProject = { id: string; title: string; status?: string | null };
-export type OfflineDeliverable = { id: string; title: string; project_id?: string | null; status?: string | null };
+export type OfflineRecord = { id: string; [key: string]: unknown };
+export type OfflineProject = { id: string; title: string; status?: string | null; [key: string]: unknown };
+export type OfflineDeliverable = { id: string; title: string; project_id?: string | null; status?: string | null; [key: string]: unknown };
 export type OfflineAction = {
   id: string;
   title: string;
@@ -17,13 +18,23 @@ export type OfflineAction = {
   priority?: string | null;
   due_at?: string | null;
   is_next_action?: boolean | null;
+  [key: string]: unknown;
 };
 
 export type OfflineSnapshot = {
   generatedAt: string;
   projects: OfflineProject[];
+  objectives: OfflineRecord[];
   deliverables: OfflineDeliverable[];
   actions: OfflineAction[];
+  blockers: OfflineRecord[];
+  metrics: OfflineRecord[];
+  evidence: OfflineRecord[];
+  ideas: OfflineRecord[];
+  factoryCases: OfflineRecord[];
+  dependencies: OfflineRecord[];
+  risks: OfflineRecord[];
+  decisions: OfflineRecord[];
 };
 
 export type OfflineQueueType =
@@ -31,6 +42,7 @@ export type OfflineQueueType =
   | "create_idea"
   | "create_evidence"
   | "create_blocker"
+  | "create_factory_intake"
   | "update_action_status";
 
 export type OfflineQueueItem = {
@@ -183,6 +195,32 @@ export async function syncOfflineQueue() {
   await refreshOfflineSnapshot().catch(() => false);
   const pending = (await getOfflineQueue()).length;
   return { synced: successful.length, pending };
+}
+
+const OFFLINE_ROUTE_CACHE = "project-command-center-v5";
+const OFFLINE_ROUTES = [
+  "/dashboard",
+  "/projects",
+  "/actions",
+  "/objectives",
+  "/metrics",
+  "/deliverables",
+  "/evidence",
+  "/project-factory",
+  "/weekly-review",
+];
+
+export async function refreshOfflineRouteCache() {
+  if (typeof window === "undefined" || !("caches" in window) || !navigator.onLine) return false;
+  const cache = await caches.open(OFFLINE_ROUTE_CACHE);
+  const results = await Promise.allSettled(
+    OFFLINE_ROUTES.map(async (route) => {
+      const response = await fetch(route, { credentials: "include", cache: "no-store" });
+      if (!response.ok) return;
+      await cache.put(new Request(route), response.clone());
+    }),
+  );
+  return results.some((result) => result.status === "fulfilled");
 }
 
 export async function clearOfflineData() {

@@ -5,6 +5,7 @@ import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { ManualEntry } from "@/components/manual-entry";
 import { PageHeader } from "@/components/page-header";
+import { PressureBar, PressureLegend } from "@/components/operational-charts";
 import { StatusProgressForm } from "@/components/status-progress-form";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { PRIORITIES } from "@/lib/constants";
@@ -25,6 +26,14 @@ function actionState(action: { status: string; due_at: string | null }, now: Dat
   if (action.due_at && new Date(action.due_at) < now) return "Em atraso";
   if (action.status === "in_progress") return "Em curso";
   return "Pendente";
+}
+
+function actionStateClass(state: string) {
+  if (state === "Bloqueada") return "bg-[var(--cc-blocked-soft)] text-[var(--cc-blocked)]";
+  if (state === "Em atraso") return "bg-[var(--cc-overdue-soft)] text-[var(--cc-overdue)]";
+  if (state === "Em curso") return "bg-[var(--cc-in-progress-soft)] text-[var(--cc-in-progress)]";
+  if (state === "Concluída") return "bg-[var(--cc-success-soft)] text-[var(--cc-success)]";
+  return "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)]";
 }
 
 export default async function ActionsPage({
@@ -193,7 +202,10 @@ export default async function ActionsPage({
                 Acções que exigem atenção por projecto: atrasos, bloqueios e prazos próximos.
               </p>
             </div>
-            <span className="text-xs text-[var(--cc-secondary)]">Quanto maior a barra, maior a pressão operacional.</span>
+            <span className="text-xs text-[var(--cc-secondary)]">A barra mostra a composição da pressão, não apenas o total.</span>
+          </div>
+          <div className="mt-3">
+            <PressureLegend />
           </div>
           <div className="mt-5 space-y-3">
             {allGroups.filter((group) => group.project.id).map((group) => (
@@ -201,12 +213,12 @@ export default async function ActionsPage({
                 <Link href={`/actions?project_id=${group.project.id}&view=attention`} className="truncate text-sm font-medium text-[var(--cc-foreground)] hover:underline">
                   {group.project.title}
                 </Link>
-                <div className="h-3 overflow-hidden rounded-full bg-[var(--cc-surface-muted)]">
-                  <div
-                    className="h-full rounded-full bg-[var(--cc-accent)]"
-                    style={{ width: `${Math.max(group.attention ? 8 : 0, (group.attention / maxAttention) * 100)}%` }}
-                  />
-                </div>
+                <PressureBar
+                  blocked={group.blocked.length + group.blockers.length}
+                  overdue={group.overdue.length}
+                  dueSoon={group.dueSoon.length}
+                  max={maxAttention}
+                />
                 <span className="text-right text-sm font-semibold text-[var(--cc-foreground)]">{group.attention}</span>
               </div>
             ))}
@@ -223,15 +235,15 @@ export default async function ActionsPage({
             </Card>
             <Link href="/actions?view=attention"><Card className="h-full p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Em atraso</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{overdueActions.length}</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--cc-overdue)]">{overdueActions.length}</p>
             </Card></Link>
             <Link href="/actions?view=blocked"><Card className="h-full p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Bloqueadas</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{blockedActions.length + (blockers?.length ?? 0)}</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--cc-blocked)]">{blockedActions.length + (blockers?.length ?? 0)}</p>
             </Card></Link>
             <Link href="/actions?view=attention"><Card className="h-full p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">A vencer</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{dueSoonActions.length}</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--cc-due-soon)]">{dueSoonActions.length}</p>
             </Card></Link>
           </div>
         </section>
@@ -328,11 +340,7 @@ export default async function ActionsPage({
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <h4 className="font-semibold text-[var(--cc-foreground)]">{action.title}</h4>
-                                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                                      state === "Em atraso" || state === "Bloqueada"
-                                        ? "bg-[var(--cc-danger-soft)] text-[var(--cc-danger)]"
-                                        : "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)]"
-                                    }`}>{state}</span>
+                                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${actionStateClass(state)}`}>{state}</span>
                                     {action.is_next_action && <span className="rounded-full bg-[color-mix(in_srgb,var(--cc-gold)_18%,white)] px-2 py-1 text-xs font-semibold text-[var(--cc-accent)]">Próxima acção</span>}
                                   </div>
                                   <p className="mt-2 text-sm text-[var(--cc-secondary)]">

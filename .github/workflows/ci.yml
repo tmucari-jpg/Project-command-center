@@ -284,6 +284,85 @@ jobs:
             }
           }
 
+      - name: Validate consolidated PCC diagnostic upgrades
+        shell: pwsh
+        run: |
+          $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
+          $offlineSync = Get-Content "./app/api/offline/sync/route.ts" -Raw
+          $offlinePage = Get-Content "./public/offline.html" -Raw
+          $factory = Get-Content "./app/(protected)/project-factory/page.tsx" -Raw
+          $charts = Get-Content "./components/operational-charts.tsx" -Raw
+          $globals = Get-Content "./app/globals.css" -Raw
+          $manifest = Get-Content "./app/manifest.ts" -Raw
+          $layout = Get-Content "./app/layout.tsx" -Raw
+          $vercel = Get-Content "./vercel.json" -Raw
+
+          foreach ($token in @(
+            '"objectives"',
+            '"metrics"',
+            '"project_factory_cases"',
+            '"project_governance_dependencies"',
+            '"project_governance_risks"',
+            '"decisions"'
+          )) {
+            if (-not $offlineBootstrap.Contains($token)) {
+              Write-Error "Offline snapshot is missing PCC area: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("create_factory_intake", "project_gate_events")) {
+            if (-not $offlineSync.Contains($token)) {
+              Write-Error "Offline sync is missing project intake guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("Modo offline completo", "Projectos", "Executar", "Objectivos", "Entregáveis", "Métricas", "Evidências", "Factory", "Governança")) {
+            if (-not $offlinePage.Contains($token)) {
+              Write-Error "Offline workspace is missing navigation/content: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("Já tenho uma ideia para avaliar", "Quero investir, mas ainda não tenho uma ideia", "InvestmentOpportunityAssistant")) {
+            if (-not $factory.Contains($token)) {
+              Write-Error "New project dual-entry flow is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("conic-gradient", "PressureBar", "PressureLegend")) {
+            if (-not $charts.Contains($token)) {
+              Write-Error "Operational chart system is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("--cc-blocked", "--cc-overdue", "--cc-due-soon", "--cc-in-progress")) {
+            if (-not $globals.Contains($token)) {
+              Write-Error "Semantic status colour is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("/icons/icon-192.png", "/icons/icon-512.png", "/icons/icon-maskable-512.png")) {
+            if (-not $manifest.Contains($token)) {
+              Write-Error "PWA manifest icon is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $layout.Contains("/icons/apple-touch-icon.png")) {
+            Write-Error "Apple touch icon is not configured."
+            exit 1
+          }
+
+          if (-not $vercel.Contains('"audit/consolidated-diagnostic-20261022": false')) {
+            Write-Error "Audit branch must not trigger a Vercel preview deployment."
+            exit 1
+          }
+
       - name: Typecheck
         run: npm run typecheck
 

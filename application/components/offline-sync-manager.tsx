@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getOfflineQueue, refreshOfflineSnapshot, syncOfflineQueue } from "@/lib/offline-client";
+import { getOfflineQueue, refreshOfflineRouteCache, refreshOfflineSnapshot, syncOfflineQueue } from "@/lib/offline-client";
+
+let lastRouteCacheAt = 0;
 
 export function OfflineSyncManager() {
   const [online, setOnline] = useState(true);
@@ -27,6 +29,10 @@ export function OfflineSyncManager() {
         setSyncing(true);
       }
       await refreshOfflineSnapshot().catch(() => false);
+      if (Date.now() - lastRouteCacheAt > 15 * 60 * 1000) {
+        await refreshOfflineRouteCache().catch(() => false);
+        lastRouteCacheAt = Date.now();
+      }
       await syncOfflineQueue().catch(() => ({ synced: 0, pending: 0 }));
       await updatePending();
       if (active) setSyncing(false);

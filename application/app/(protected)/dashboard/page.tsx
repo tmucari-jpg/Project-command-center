@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { DonutChart, PressureBar, PressureLegend } from "@/components/operational-charts";
 import { Card, EmptyState } from "@/components/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
@@ -79,6 +80,23 @@ export default async function DashboardPage() {
 
   const projectsToReview = projectRows.filter((row) => row.attention > 0 || row.project.status === "at_risk").length;
   const maxAttention = Math.max(1, ...projectRows.map((row) => row.attention));
+  const healthItems = [
+    {
+      label: "No caminho",
+      value: projectRows.filter((row) => row.health === "on_track").length,
+      color: "var(--cc-success)",
+    },
+    {
+      label: "Em risco",
+      value: projectRows.filter((row) => row.health === "at_risk").length,
+      color: "var(--cc-due-soon)",
+    },
+    {
+      label: "Em atraso",
+      value: projectRows.filter((row) => row.health === "delayed").length,
+      color: "var(--cc-overdue)",
+    },
+  ];
 
   return (
     <>
@@ -93,11 +111,11 @@ export default async function DashboardPage() {
         </Card></Link>
         <Link href="/actions?view=attention"><Card className="h-full p-5">
           <p className="text-sm font-medium text-[var(--cc-secondary)]">Acções em atraso</p>
-          <p className="mt-2 text-[2rem] font-semibold leading-none text-[var(--cc-foreground)]">{overdueActions.length}</p>
+          <p className="mt-2 text-[2rem] font-semibold leading-none text-[var(--cc-overdue)]">{overdueActions.length}</p>
         </Card></Link>
         <Link href="/actions?view=blocked"><Card className="h-full p-5">
           <p className="text-sm font-medium text-[var(--cc-secondary)]">Bloqueios activos</p>
-          <p className="mt-2 text-[2rem] font-semibold leading-none text-[var(--cc-foreground)]">{blockers?.length ?? 0}</p>
+          <p className="mt-2 text-[2rem] font-semibold leading-none text-[var(--cc-blocked)]">{blockers?.length ?? 0}</p>
         </Card></Link>
         <Link href="/projects"><Card className="h-full p-5">
           <p className="text-sm font-medium text-[var(--cc-secondary)]">Projectos a rever</p>
@@ -106,34 +124,52 @@ export default async function DashboardPage() {
       </div>
 
       <Card className="mt-6 p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Pressão operacional por projecto</h2>
+        <div className="grid gap-7 xl:grid-cols-[320px_1fr]">
+          <section>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Saúde dos projectos</h2>
             <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-              Combina acções em atraso, prazos próximos, bloqueios e revisões vencidas.
+              Distribuição dos projectos activos pelo estado operacional actual.
             </p>
-          </div>
-          <Link href="/actions" className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--cc-accent)]">
-            Abrir Executar <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className="mt-5 space-y-3">
-          {projectRows.length === 0 ? (
-            <EmptyState>Não existem projectos activos.</EmptyState>
-          ) : projectRows.map((row) => (
-            <div key={row.project.id} className="grid gap-2 sm:grid-cols-[190px_1fr_48px] sm:items-center">
-              <Link href={`/projects/${row.project.id}`} className="truncate text-sm font-medium text-[var(--cc-foreground)] hover:underline">
-                {row.project.title}
-              </Link>
-              <div className="h-3 overflow-hidden rounded-full bg-[var(--cc-surface-muted)]">
-                <div
-                  className="h-full rounded-full bg-[var(--cc-accent)]"
-                  style={{ width: `${Math.max(row.attention ? 8 : 0, (row.attention / maxAttention) * 100)}%` }}
-                />
-              </div>
-              <span className="text-right text-sm font-semibold text-[var(--cc-foreground)]">{row.attention}</span>
+            <div className="mt-5">
+              <DonutChart items={healthItems} centerLabel="Projectos" />
             </div>
-          ))}
+          </section>
+
+          <section className="min-w-0">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Pressão operacional por projecto</h2>
+                <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+                  A barra mostra a composição da pressão: bloqueios, atrasos, prazos próximos e revisão vencida.
+                </p>
+              </div>
+              <Link href="/actions" className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--cc-accent)]">
+                Abrir Executar <ArrowRight size={14} />
+              </Link>
+            </div>
+            <div className="mt-3">
+              <PressureLegend />
+            </div>
+            <div className="mt-5 space-y-4">
+              {projectRows.length === 0 ? (
+                <EmptyState>Não existem projectos activos.</EmptyState>
+              ) : projectRows.map((row) => (
+                <div key={row.project.id} className="grid gap-2 sm:grid-cols-[190px_1fr_48px] sm:items-center">
+                  <Link href={`/projects/${row.project.id}`} className="truncate text-sm font-medium text-[var(--cc-foreground)] hover:underline">
+                    {row.project.title}
+                  </Link>
+                  <PressureBar
+                    blocked={row.blockers}
+                    overdue={row.overdue}
+                    dueSoon={row.dueSoon}
+                    reviewOverdue={row.reviewOverdue}
+                    max={maxAttention}
+                  />
+                  <span className="text-right text-sm font-semibold text-[var(--cc-foreground)]">{row.attention}</span>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </Card>
 

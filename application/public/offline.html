@@ -6,122 +6,80 @@
   <meta name="theme-color" content="#073f36" />
   <title>Modo offline · Project Command Center</title>
   <style>
-    :root{--bg:#f8f6f0;--fg:#142825;--muted:#667085;--border:#e0e8e3;--accent:#073f36;--gold:#c99439;--surface:#fff}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 90% 0,rgba(201,148,57,.12),transparent 28rem),var(--bg);color:var(--fg);font:15px/1.5 Arial,sans-serif}
-    main{width:min(100% - 28px,860px);margin:0 auto;padding:28px 0 60px}.brand{width:min(100%,320px);height:auto}.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-    .pill{border:1px solid var(--border);border-radius:999px;padding:7px 11px;background:#fff;font-size:12px;font-weight:700}.offline{color:#9a5b00}.online{color:#08714f}.lang{display:inline-flex;border:1px solid var(--border);border-radius:999px;padding:3px;background:#fff}.lang button{padding:5px 8px;border-radius:999px;background:transparent;color:var(--muted);font-size:11px}.lang button.active{background:var(--accent);color:#fff}
-    .card{margin-top:20px;border:1px solid var(--border);border-radius:22px;background:rgba(255,255,255,.94);padding:20px;box-shadow:0 16px 45px rgba(7,63,54,.07)}
-    h1{font-size:28px;margin:18px 0 5px}h2{font-size:18px;margin:0 0 14px}p{color:var(--muted)}label{display:block;font-size:13px;font-weight:700;margin-top:12px}
-    input,textarea,select{width:100%;margin-top:6px;border:1px solid var(--border);border-radius:12px;background:#fff;padding:11px 12px;color:var(--fg);font:inherit}textarea{min-height:90px;resize:vertical}
-    button{border:0;border-radius:12px;padding:11px 14px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}button.secondary{background:#fff;color:var(--accent);border:1px solid var(--border)}button.small{padding:7px 9px;font-size:12px}
-    .grid{display:grid;gap:16px}@media(min-width:720px){.grid.two{grid-template-columns:1fr 1fr}}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.muted{font-size:13px;color:var(--muted)}
-    .action{padding:12px 0;border-top:1px solid var(--border)}.action:first-child{border-top:0}.hidden{display:none}.notice{border-left:3px solid var(--gold);padding-left:12px}.ok{color:#08714f}.error{color:#b42318}
+    :root{--bg:#f8f6f0;--surface:#fff;--muted:#667085;--fg:#142825;--border:#e0e8e3;--accent:#073f36;--gold:#c99439;--success:#2e7d5b;--blocked:#b42318;--blocked-soft:#fee4e2;--overdue:#d97706;--overdue-soft:#fff3e6;--due:#c99439;--due-soft:#fbf3e4;--progress:#0f766e;--progress-soft:#e6f4f1}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 92% 3%,rgba(201,148,57,.10),transparent 24rem),var(--bg);color:var(--fg);font:14px/1.5 Inter,Arial,sans-serif}
+    button,input,textarea,select{font:inherit}.shell{width:min(100% - 24px,1180px);margin:auto;padding:18px 0 80px}.top{position:sticky;top:0;z-index:20;margin:-18px -12px 0;padding:14px 12px;background:rgba(248,246,240,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+    .topline{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px}.brand img{width:38px;height:38px;border-radius:11px}.brand strong{display:block;font-size:14px}.brand small{color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+    .pill{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:6px 10px;background:#fff;font-size:11px;font-weight:700}.offline{color:var(--overdue)}.online{color:var(--success)}
+    .nav{display:flex;gap:7px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}.nav button{white-space:nowrap;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--fg);padding:8px 11px;font-weight:700}.nav button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}.toolbar input{flex:1;min-width:180px}.field,input,textarea,select{width:100%;border:1px solid var(--border);border-radius:12px;background:#fff;padding:10px 11px;color:var(--fg)}textarea{min-height:86px;resize:vertical}
+    .grid{display:grid;gap:14px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}@media(min-width:760px){.cards{grid-template-columns:repeat(4,minmax(0,1fr))}.two{grid-template-columns:1fr 1fr}}
+    .card{border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.95);padding:16px;box-shadow:0 8px 28px rgba(7,63,54,.05)}.card h2,.card h3{margin:0}.metric{font-size:28px;font-weight:800;margin-top:6px}.muted{color:var(--muted)}.small{font-size:12px}.section{margin-top:18px}.list{display:grid;gap:9px}.item{border:1px solid var(--border);border-radius:14px;background:#fff;padding:13px}.itemtop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.item h3{font-size:14px;margin:0}.meta{margin-top:5px;color:var(--muted);font-size:12px}.tag{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:10px;font-weight:800;background:#f3f6f4;color:var(--muted)}
+    .tag.blocked{background:var(--blocked-soft);color:var(--blocked)}.tag.overdue{background:var(--overdue-soft);color:var(--overdue)}.tag.progress{background:var(--progress-soft);color:var(--progress)}.tag.success{background:#e8f3ef;color:var(--success)}.tag.due{background:var(--due-soft);color:#8a611c}
+    .bar{height:10px;border-radius:999px;overflow:hidden;background:#f3f6f4}.bar span{display:block;height:100%;background:var(--accent);border-radius:999px}.donut{width:128px;height:128px;border-radius:50%;position:relative}.donut:after{content:"";position:absolute;inset:25%;border-radius:50%;background:#fff}.donutvalue{position:absolute;inset:0;z-index:1;display:grid;place-items:center;font-weight:800;font-size:22px}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.button{border:0;border-radius:12px;padding:10px 12px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}.button.secondary{border:1px solid var(--border);background:#fff;color:var(--accent)}.button.small{padding:6px 9px;font-size:11px}
+    .notice{border-left:3px solid var(--gold);padding:10px 12px;background:#fff8e9;border-radius:0 12px 12px 0}.error{color:var(--blocked)}.ok{color:var(--success)}.hidden{display:none!important}
+    dialog{width:min(94vw,680px);border:1px solid var(--border);border-radius:20px;padding:0;box-shadow:0 30px 80px rgba(0,0,0,.18)}dialog::backdrop{background:rgba(20,40,37,.34)}.dialogbody{padding:18px}.formgrid{display:grid;gap:12px}@media(min-width:640px){.formgrid.two{grid-template-columns:1fr 1fr}}label{font-weight:700;font-size:12px}.empty{padding:28px 12px;text-align:center;color:var(--muted)}
   </style>
 </head>
 <body>
-<main>
-  <div class="top">
-    <img class="brand" src="/brand/pcc-logo.png" alt="Project Command Center" />
-    <div class="row">
-      <div class="lang" role="group" aria-label="Idioma / Language">
-        <button id="langPt" type="button">PT</button>
-        <button id="langEn" type="button">ENG</button>
+  <main class="shell">
+    <div class="top">
+      <div class="topline">
+        <div class="brand">
+          <img src="/icons/icon-192.png" alt="PCC" />
+          <div><strong>Project Command Center</strong><small>Modo offline completo</small></div>
+        </div>
+        <span id="network" class="pill offline">Offline</span>
       </div>
-      <span id="network" class="pill offline">Offline</span>
+      <div id="nav" class="nav"></div>
     </div>
-  </div>
 
-  <section id="locked" class="card hidden">
-    <h1>Acesso offline ainda não activado</h1>
-    <p>Por segurança, este dispositivo precisa de iniciar uma sessão online pelo menos uma vez. Depois disso, o PCC guarda uma área de trabalho local e pode ser usado sem ligação.</p>
-    <button class="secondary" onclick="location.href='/auth/login'">Entrar quando houver internet</button>
-  </section>
+    <section id="locked" class="card section hidden">
+      <h2>Acesso offline ainda não activado</h2>
+      <p class="muted">Este dispositivo precisa de uma sessão online pelo menos uma vez para guardar o workspace do PCC com segurança.</p>
+      <button class="button secondary" onclick="location.href='/auth/login'">Entrar quando houver internet</button>
+    </section>
 
-  <div id="workspace" class="hidden">
-    <section class="card">
-      <h1>Modo offline</h1>
-      <p class="notice">Pode continuar a trabalhar. As alterações ficam guardadas neste dispositivo e serão sincronizadas automaticamente quando a ligação voltar.</p>
-      <div class="row">
+    <section id="workspace" class="hidden">
+      <div class="toolbar">
+        <input id="search" class="field" placeholder="Pesquisar no PCC offline..." />
         <span id="queueCount" class="pill">0 por sincronizar</span>
-        <button id="syncButton" class="secondary" type="button">Sincronizar agora</button>
+        <button id="captureButton" class="button">Registar trabalho</button>
+        <button id="syncButton" class="button secondary">Sincronizar</button>
       </div>
-      <p id="message" class="muted"></p>
+      <p id="message" class="small muted"></p>
+      <div id="content" class="section"></div>
     </section>
+  </main>
 
-    <section class="card">
-      <h2>Registar trabalho</h2>
-      <label>Tipo
-        <select id="type">
-          <option value="create_action">Nova acção</option>
-          <option value="create_idea">Nova ideia</option>
-          <option value="create_evidence">Nova evidência</option>
-          <option value="create_blocker">Novo bloqueio</option>
-        </select>
-      </label>
-      <div id="projectWrap"><label>Projecto<select id="project"></select></label></div>
-      <div id="deliverableWrap"><label>Entregável<select id="deliverable"></select></label></div>
-      <div id="actionWrap" class="hidden"><label>Acção<select id="action"></select></label></div>
-      <label>Título<input id="title" maxlength="180" required /></label>
-      <label>Descrição<textarea id="description"></textarea></label>
-      <div id="evidenceWrap" class="hidden"><label>Tipo de evidência
-        <select id="evidenceType"><option value="comment">Comentário</option><option value="result">Resultado</option><option value="link">Ligação</option><option value="document">Documento</option></select>
-      </label></div>
-      <div style="margin-top:16px"><button id="save" type="button">Guardar no dispositivo</button></div>
-    </section>
+  <dialog id="captureDialog">
+    <div class="dialogbody">
+      <div class="itemtop"><div><h2>Registar trabalho offline</h2><p class="small muted">Fica no dispositivo até a ligação voltar.</p></div><button id="closeDialog" class="button secondary small">Fechar</button></div>
+      <div class="formgrid two" style="margin-top:14px">
+        <label>Tipo
+          <select id="captureType">
+            <option value="create_action">Nova acção</option>
+            <option value="create_idea">Nova ideia</option>
+            <option value="create_evidence">Nova evidência</option>
+            <option value="create_blocker">Novo bloqueio</option>
+            <option value="create_factory_intake">Novo projecto para avaliação</option>
+          </select>
+        </label>
+        <label id="projectField">Projecto<select id="captureProject"></select></label>
+        <label id="actionField" class="hidden">Acção<select id="captureAction"></select></label>
+        <label id="deliverableField">Entregável<select id="captureDeliverable"></select></label>
+      </div>
+      <div class="formgrid" style="margin-top:12px">
+        <label>Título<input id="captureTitle" maxlength="180" /></label>
+        <label id="problemField" class="hidden">Problema / oportunidade<textarea id="captureProblem"></textarea></label>
+        <label>Descrição<textarea id="captureDescription"></textarea></label>
+        <label id="expectedField" class="hidden">Resultado esperado<textarea id="captureExpected"></textarea></label>
+      </div>
+      <div class="row" style="margin-top:14px"><button id="saveCapture" class="button">Guardar no dispositivo</button></div>
+    </div>
+  </dialog>
 
-    <section class="card">
-      <h2>Acções disponíveis</h2>
-      <div id="actions"><p class="muted">Sem acções guardadas localmente.</p></div>
-    </section>
-  </div>
-</main>
-<script>
-const DB_NAME="pcc-offline", DB_VERSION=1, META="meta", SNAPSHOT="snapshot", QUEUE="queue";
-const LANG_KEY="pcc-language";
-const UI_EN={
-  "Acesso offline ainda não activado":"Offline access not yet enabled",
-  "Por segurança, este dispositivo precisa de iniciar uma sessão online pelo menos uma vez. Depois disso, o PCC guarda uma área de trabalho local e pode ser usado sem ligação.":"For security, this device must sign in online at least once. After that, PCC stores a local workspace and can be used without a connection.",
-  "Entrar quando houver internet":"Sign in when internet is available",
-  "Modo offline":"Offline mode",
-  "Pode continuar a trabalhar. As alterações ficam guardadas neste dispositivo e serão sincronizadas automaticamente quando a ligação voltar.":"You can keep working. Changes are stored on this device and will sync automatically when the connection returns.",
-  "Sincronizar agora":"Sync now",
-  "Registar trabalho":"Record work",
-  "Tipo":"Type","Nova acção":"New action","Nova ideia":"New idea","Nova evidência":"New evidence","Novo bloqueio":"New blocker",
-  "Projecto":"Project","Entregável":"Deliverable","Acção":"Action","Título":"Title","Descrição":"Description","Tipo de evidência":"Evidence type",
-  "Comentário":"Comment","Resultado":"Result","Ligação":"Link","Documento":"Document","Guardar no dispositivo":"Save on device",
-  "Acções disponíveis":"Available actions","Sem acções guardadas localmente.":"No actions stored locally.","Em curso":"In progress",
-  "Concluir":"Complete","Bloquear":"Block","Guardado no dispositivo.":"Saved on device.","Indique um título.":"Enter a title.",
-  "Seleccione uma acção.":"Select an action.","A ligação voltou, mas a sessão precisa de ser renovada. Os dados continuam guardados.":"The connection is back, but the session needs to be renewed. Your data remains saved.",
-  "Não foi possível sincronizar ainda.":"Unable to sync yet.","Sincronização concluída.":"Sync completed.","Sem projecto":"No project",
-  "Sem entregável":"No deliverable","Seleccione uma acção":"Select an action","Online":"Online","Offline":"Offline"
-};
-const UI_PT=Object.fromEntries(Object.entries(UI_EN).map(([pt,en])=>[en,pt]));
-function lang(){return localStorage.getItem(LANG_KEY)==="en"?"en":"pt"}
-function t(value){return trValue(value,lang())}
-function trValue(value,lang){const core=(value||"").trim();if(!core)return value;const map=lang==="en"?UI_EN:UI_PT;let translated=map[core];let m;if(!translated&&lang==="en"&&(m=core.match(/^(\d+) por sincronizar$/)))translated=m[1]+" to sync";if(!translated&&lang==="pt"&&(m=core.match(/^(\d+) to sync$/)))translated=m[1]+" por sincronizar";return translated?value.replace(core,translated):value}
-function applyLanguage(lang){document.documentElement.lang=lang==="en"?"en":"pt-MZ";document.querySelectorAll("body *").forEach(el=>{if(el.closest(".lang"))return;for(const node of [...el.childNodes])if(node.nodeType===3)node.nodeValue=trValue(node.nodeValue,lang);["placeholder","title","aria-label"].forEach(a=>{const v=el.getAttribute?.(a);if(v)el.setAttribute(a,trValue(v,lang))})});$("langPt").classList.toggle("active",lang==="pt");$("langEn").classList.toggle("active",lang==="en")}
-function setLanguage(lang){localStorage.setItem(LANG_KEY,lang);applyLanguage(lang)}
-function openDb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains(META))d.createObjectStore(META);if(!d.objectStoreNames.contains(SNAPSHOT))d.createObjectStore(SNAPSHOT);if(!d.objectStoreNames.contains(QUEUE))d.createObjectStore(QUEUE,{keyPath:"id"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-function req(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-async function get(store,key){const d=await openDb(),t=d.transaction(store,"readonly"),v=await req(t.objectStore(store).get(key));d.close();return v}
-async function put(store,value,key){const d=await openDb(),t=d.transaction(store,"readwrite");key===undefined?t.objectStore(store).put(value):t.objectStore(store).put(value,key);await new Promise((res,rej)=>{t.oncomplete=res;t.onerror=()=>rej(t.error)});d.close()}
-async function all(store){const d=await openDb(),t=d.transaction(store,"readonly"),v=await req(t.objectStore(store).getAll());d.close();return v}
-async function del(store,key){const d=await openDb(),t=d.transaction(store,"readwrite");t.objectStore(store).delete(key);await new Promise((res)=>{t.oncomplete=res});d.close()}
-function uuid(){return crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==="x"?r:(r&3|8);return v.toString(16)})}
-let snapshot={projects:[],deliverables:[],actions:[]};
-const $=id=>document.getElementById(id);
-function option(value,label){const o=document.createElement("option");o.value=value;o.textContent=label;return o}
-function setOptions(el,rows,empty){el.innerHTML="";el.append(option("",t(empty)));rows.forEach(r=>el.append(option(r.id,r.title)))}
-function updateForm(){const type=$("type").value,needsAction=type==="create_evidence"||type==="create_blocker";$("actionWrap").classList.toggle("hidden",!needsAction);$("evidenceWrap").classList.toggle("hidden",type!=="create_evidence");$("deliverableWrap").classList.toggle("hidden",type!=="create_action");$("projectWrap").classList.toggle("hidden",needsAction)}
-function renderActions(){const box=$("actions");const active=(snapshot.actions||[]).filter(a=>!["completed","cancelled"].includes(a.status)).slice(0,80);box.innerHTML="";if(!active.length){box.innerHTML='<p class="muted">'+t("Sem acções guardadas localmente.")+'</p>';return}active.forEach(a=>{const d=document.createElement("div");d.className="action";d.innerHTML='<strong></strong><div class="muted"></div><div class="row" style="margin-top:8px"></div>';d.querySelector("strong").textContent=a.title;d.querySelector(".muted").textContent=t("Estado")+": "+t(a.status);const row=d.querySelector(".row");[["in_progress",t("Em curso")],["completed",t("Concluir")],["blocked",t("Bloquear")]].forEach(([status,label])=>{const b=document.createElement("button");b.className="secondary small";b.textContent=label;b.onclick=()=>queue("update_action_status",{action_id:a.id,status});row.append(b)});box.append(d)})}
-async function queue(type,payload){const item={id:uuid(),type,payload,createdAt:new Date().toISOString(),status:"pending"};await put(QUEUE,item);await renderQueue();$("message").textContent=t("Guardado no dispositivo.");$("message").className="muted ok";if(navigator.onLine)sync()}
-async function renderQueue(){const q=await all(QUEUE);$("queueCount").textContent=trValue(q.length+" por sincronizar",lang())}
-async function save(){const type=$("type").value,title=$("title").value.trim(),description=$("description").value.trim();if(!title){$("message").textContent=t("Indique um título.");return}const payload={title,description,priority:"medium"};if(type==="create_action"){payload.project_id=$("project").value;payload.deliverable_id=$("deliverable").value}if(type==="create_idea"){payload.project_id=$("project").value}if(type==="create_evidence"||type==="create_blocker"){payload.action_id=$("action").value;if(!payload.action_id){$("message").textContent=t("Seleccione uma acção.");return}}if(type==="create_evidence")payload.evidence_type=$("evidenceType").value;await queue(type,payload);$("title").value="";$("description").value=""}
-async function refreshSnapshot(){const r=await fetch("/api/offline/bootstrap",{credentials:"include",cache:"no-store"});if(!r.ok)return false;snapshot=await r.json();await put(SNAPSHOT,snapshot,"workspace");await put(META,true,"offlineEnabled");fill();return true}
-async function sync(){if(!navigator.onLine)return;const q=await all(QUEUE);if(!q.length){await refreshSnapshot().catch(()=>false);return}const r=await fetch("/api/offline/sync",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({items:q})});if(r.status===401){$("message").textContent=t("A ligação voltou, mas a sessão precisa de ser renovada. Os dados continuam guardados.");return}if(!r.ok){$("message").textContent=t("Não foi possível sincronizar ainda.");return}const body=await r.json();for(const result of body.results){if(result.ok)await del(QUEUE,result.id);else{const item=q.find(x=>x.id===result.id);if(item)await put(QUEUE,{...item,status:"failed",error:result.error})}}await renderQueue();await refreshSnapshot().catch(()=>false);$("message").textContent=t("Sincronização concluída."); $("message").className="muted ok"}
-function fill(){setOptions($("project"),snapshot.projects||[],"Sem projecto");setOptions($("deliverable"),snapshot.deliverables||[],"Sem entregável");setOptions($("action"),(snapshot.actions||[]).filter(a=>!["completed","cancelled"].includes(a.status)),"Seleccione uma acção");renderActions();applyLanguage(lang())}
-async function init(){const enabled=await get(META,"offlineEnabled");$("network").textContent=t(navigator.onLine?"Online":"Offline");$("network").className="pill "+(navigator.onLine?"online":"offline");if(!enabled){$("locked").classList.remove("hidden");applyLanguage(lang());return}$("workspace").classList.remove("hidden");snapshot=(await get(SNAPSHOT,"workspace"))||snapshot;fill();updateForm();await renderQueue();if(navigator.onLine)await sync()}
-$("type").addEventListener("change",updateForm);$("save").addEventListener("click",save);$("syncButton").addEventListener("click",sync);$("langPt").addEventListener("click",()=>setLanguage("pt"));$("langEn").addEventListener("click",()=>setLanguage("en"));window.addEventListener("online",()=>{ $("network").textContent="Online";$("network").className="pill online";applyLanguage(localStorage.getItem(LANG_KEY)==="en"?"en":"pt");sync()});window.addEventListener("offline",()=>{ $("network").textContent="Offline";$("network").className="pill offline";applyLanguage(localStorage.getItem(LANG_KEY)==="en"?"en":"pt")});applyLanguage(localStorage.getItem(LANG_KEY)==="en"?"en":"pt");init();
-</script>
+  <script src="/offline-app.js"></script>
 </body>
 </html>

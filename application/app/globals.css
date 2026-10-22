@@ -18,6 +18,14 @@
 
   --cc-danger: #c94b3c;
   --cc-danger-soft: #fcece9;
+  --cc-blocked: #b42318;
+  --cc-blocked-soft: #fee4e2;
+  --cc-overdue: #d97706;
+  --cc-overdue-soft: #fff3e6;
+  --cc-due-soon: #c99439;
+  --cc-due-soon-soft: #fbf3e4;
+  --cc-in-progress: #0f766e;
+  --cc-in-progress-soft: #e6f4f1;
   --cc-success: #2e7d5b;
   --cc-success-soft: #e8f3ef;
   --cc-warning: #c99439;

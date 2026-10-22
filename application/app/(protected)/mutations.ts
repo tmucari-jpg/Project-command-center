@@ -1624,7 +1624,9 @@ export async function createFactoryIntake(formData: FormData) {
       factory_case_id: factoryCase.id,
       gate: "g1_triage",
       event_type: "approved",
-      rationale: "Triagem concluída automaticamente a partir das cinco respostas obrigatórias do One-Pager.",
+      rationale: parsed.data.source === "investment_discovery"
+        ? "Oportunidade seleccionada pelo utilizador a partir de um brief de investimento. Segue para validação formal sem assumir viabilidade."
+        : "Triagem concluída automaticamente a partir das cinco respostas obrigatórias do One-Pager.",
       created_by: authUser.id,
     },
     {

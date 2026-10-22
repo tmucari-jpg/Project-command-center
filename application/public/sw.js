@@ -1,6 +1,7 @@
-const CACHE_NAME = "project-command-center-v4";
+const CACHE_NAME = "project-command-center-v5";
 const STATIC_ASSETS = [
   "/offline.html",
+  "/offline-app.js",
   "/manifest.webmanifest",
   "/brand/pcc-logo.png",
   "/icons/icon-192.png",
@@ -22,36 +23,58 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+async function cacheSuccessful(request, response) {
+  if (!response || !response.ok) return response;
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone());
+  return response;
+}
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) return;
 
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(async () => {
-        const offline = await caches.match("/offline.html");
-        return offline || Response.error();
+      fetch(event.request)
+        .then((response) => cacheSuccessful(event.request, response))
+        .catch(async () => {
+          const cached = await caches.match(event.request, { ignoreSearch: true });
+          if (cached) return cached;
+          const offline = await caches.match("/offline.html");
+          return offline || Response.error();
+        }),
+    );
+    return;
+  }
+
+  const cacheFirst =
+    STATIC_ASSETS.includes(url.pathname) ||
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/") ||
+    url.pathname.startsWith("/brand/");
+
+  if (cacheFirst) {
+    event.respondWith(
+      caches.match(event.request).then(async (cached) => {
+        if (cached) return cached;
+        try {
+          const response = await fetch(event.request);
+          return cacheSuccessful(event.request, response);
+        } catch {
+          return Response.error();
+        }
       }),
     );
     return;
   }
 
-  if (STATIC_ASSETS.includes(url.pathname)) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        const network = fetch(event.request)
-          .then((response) => {
-            if (response.ok) {
-              const copy = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-            }
-            return response;
-          })
-          .catch(() => cached);
-        return cached || network;
-      }),
-    );
-  }
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => cacheSuccessful(event.request, response))
+      .catch(() => caches.match(event.request)),
+  );
 });

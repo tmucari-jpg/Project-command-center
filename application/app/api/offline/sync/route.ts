@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { actionSchema, blockerSchema, evidenceSchema, ideaSchema } from "@/lib/validation";
+import { actionSchema, blockerSchema, evidenceSchema, factoryIntakeSchema, ideaSchema } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 const itemSchema = z.object({
   id: z.string().uuid(),
-  type: z.enum(["create_action", "create_idea", "create_evidence", "create_blocker", "update_action_status"]),
+  type: z.enum(["create_action", "create_idea", "create_evidence", "create_blocker", "create_factory_intake", "update_action_status"]),
   payload: z.record(z.string(), z.unknown()),
   createdAt: z.string().optional(),
   status: z.string().optional(),
@@ -29,7 +29,7 @@ async function owned(
 
 async function duplicateBelongsToUser(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  table: "actions" | "ideas" | "evidence" | "blockers",
+  table: "actions" | "ideas" | "evidence" | "blockers" | "project_factory_cases",
   id: string,
   userId: string,
 ) {
@@ -200,6 +200,67 @@ export async function POST(request: Request) {
         entityType = "blocker";
         entityId = item.id;
         projectId = resolvedProjectId ?? null;
+      }
+
+      if (item.type === "create_factory_intake") {
+        const parsed = factoryIntakeSchema.safeParse({
+          ...item.payload,
+          project_type: item.payload.project_type ?? "commercial",
+          description: item.payload.description ?? "",
+          target_user: item.payload.target_user ?? "",
+          expected_value: item.payload.expected_value ?? "",
+          constraints: item.payload.constraints ?? "",
+          source: item.payload.source ?? "offline_intake",
+        });
+        if (!parsed.success) throw new Error("Novo projecto offline inválido.");
+
+        const { data: existingCase } = await supabase
+          .from("project_factory_cases")
+          .select("id")
+          .eq("id", item.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (!existingCase) {
+          const now = new Date().toISOString();
+          const { error: caseError } = await supabase.from("project_factory_cases").insert({
+            id: item.id,
+            ...parsed.data,
+            user_id: user.id,
+            stage: "viability",
+            competitive_intelligence_required: parsed.data.project_type === "commercial",
+            governance_gate: "g2_viability",
+            governance_gate_status: "in_progress",
+            g1_completed_at: now,
+          });
+          if (caseError) throw caseError;
+
+          const discovery = parsed.data.source === "investment_discovery";
+          const { error: gateEventError } = await supabase.from("project_gate_events").insert([
+            {
+              user_id: user.id,
+              factory_case_id: item.id,
+              gate: "g1_triage",
+              event_type: "approved",
+              rationale: discovery
+                ? "Oportunidade seleccionada pelo utilizador a partir de um brief de investimento. Segue para validação formal sem assumir viabilidade."
+                : "Triagem concluída a partir do One-Pager registado offline e sincronizado pelo utilizador.",
+              created_by: user.id,
+            },
+            {
+              user_id: user.id,
+              factory_case_id: item.id,
+              gate: "g2_viability",
+              event_type: "entered",
+              created_by: user.id,
+            },
+          ]);
+          if (gateEventError) throw gateEventError;
+        }
+
+        entityType = "factory_case";
+        entityId = item.id;
+        projectId = null;
       }
 
       if (item.type === "update_action_status") {
