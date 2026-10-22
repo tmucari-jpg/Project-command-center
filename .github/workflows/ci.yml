@@ -369,6 +369,9 @@ jobs:
         run: |
           $master = Get-Content "./app/(protected)/commercial-master/page.tsx" -Raw
           $sidebar = Get-Content "./components/sidebar.tsx" -Raw
+          $admin = Get-Content "./app/(protected)/admin/page.tsx" -Raw
+          $monetization = Get-Content "./app/(protected)/monetization/page.tsx" -Raw
+          $briefingMonetization = Get-Content "./app/(protected)/monetization/briefing-diario/page.tsx" -Raw
           $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
           $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
           $offlineApp = Get-Content "./public/offline-app.js" -Raw
@@ -393,9 +396,23 @@ jobs:
             }
           }
 
-          foreach ($token in @("/commercial-master", "/monetization", "Master Comercial")) {
-            if (-not $sidebar.Contains($token)) {
-              Write-Error "Commercial navigation is missing: $token"
+          foreach ($token in @("/commercial-master", "/monetization", "Master Comercial", "Comercial PCC")) {
+            if (-not $admin.Contains($token)) {
+              Write-Error "Commercial administration navigation is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("/commercial-master", "/monetization")) {
+            if ($sidebar.Contains($token)) {
+              Write-Error "Commercial area must not appear in primary navigation: $token"
+              exit 1
+            }
+          }
+
+          foreach ($page in @($master, $monetization, $briefingMonetization)) {
+            if (-not $page.Contains("requireAdmin")) {
+              Write-Error "Commercial routes must require administrator access."
               exit 1
             }
           }
