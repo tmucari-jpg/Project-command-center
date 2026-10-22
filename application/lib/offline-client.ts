@@ -23,6 +23,7 @@ export type OfflineAction = {
 
 export type OfflineSnapshot = {
   generatedAt: string;
+  isAdmin: boolean;
   projects: OfflineProject[];
   objectives: OfflineRecord[];
   deliverables: OfflineDeliverable[];
@@ -211,16 +212,18 @@ const OFFLINE_ROUTES = [
   "/deliverables",
   "/evidence",
   "/project-factory",
-  "/commercial-master",
-  "/monetization",
   "/weekly-review",
 ];
+
+const OFFLINE_ADMIN_ROUTES = ["/admin", "/commercial-master", "/monetization"];
 
 export async function refreshOfflineRouteCache() {
   if (typeof window === "undefined" || !("caches" in window) || !navigator.onLine) return false;
   const cache = await caches.open(OFFLINE_ROUTE_CACHE);
+  const snapshot = await getOfflineSnapshot().catch(() => undefined);
+  const routes = snapshot?.isAdmin ? [...OFFLINE_ROUTES, ...OFFLINE_ADMIN_ROUTES] : OFFLINE_ROUTES;
   const results = await Promise.allSettled(
-    OFFLINE_ROUTES.map(async (route) => {
+    routes.map(async (route) => {
       const response = await fetch(route, { credentials: "include", cache: "no-store" });
       if (!response.ok) return;
       await cache.put(new Request(route), response.clone());
