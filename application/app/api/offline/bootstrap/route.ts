@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,8 @@ export async function GET() {
   if (authError || !user) {
     return NextResponse.json({ error: "Sessão necessária." }, { status: 401 });
   }
+
+  const isAdmin = await isAdminUser(supabase, user.id, user.email);
 
   const [
     projectsResult,
@@ -70,6 +73,7 @@ export async function GET() {
 
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
+    isAdmin,
     projects: projectsResult.data ?? [],
     objectives: objectivesResult.data ?? [],
     deliverables: deliverablesResult.data ?? [],
@@ -82,9 +86,9 @@ export async function GET() {
     dependencies: dependenciesResult.data ?? [],
     risks: risksResult.data ?? [],
     decisions: decisionsResult.data ?? [],
-    strategyPlans: strategyPlansResult.data ?? [],
-    commercialProfiles: commercialProfilesResult.data ?? [],
-    financialEntries: financialEntriesResult.data ?? [],
-    commercialLeads: commercialLeadsResult.data ?? [],
+    strategyPlans: isAdmin ? strategyPlansResult.data ?? [] : [],
+    commercialProfiles: isAdmin ? commercialProfilesResult.data ?? [] : [],
+    financialEntries: isAdmin ? financialEntriesResult.data ?? [] : [],
+    commercialLeads: isAdmin ? commercialLeadsResult.data ?? [] : [],
   });
 }
