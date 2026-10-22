@@ -91,7 +91,15 @@ export async function GET() {
       .order("created_at"),
   ]);
 
-  const plan = planResult.data ?? {};
+  const plan = (planResult.data ?? {}) as {
+    strategy?: unknown;
+    monetization?: unknown;
+    marketing?: unknown;
+    sales?: unknown;
+    execution?: unknown;
+    measurement?: unknown;
+    updated_at?: unknown;
+  };
   const strategy = obj(plan.strategy);
   const monetization = obj(plan.monetization);
   const marketing = obj(plan.marketing);
