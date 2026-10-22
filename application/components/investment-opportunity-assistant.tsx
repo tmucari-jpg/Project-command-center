@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFactoryIntake } from "@/app/(protected)/mutations";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 
@@ -87,17 +87,25 @@ export function InvestmentOpportunityAssistant() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const storageReady = useRef(false);
 
   useEffect(() => {
+    let savedBrief: Brief | null = null;
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) setBrief({ ...EMPTY_BRIEF, ...JSON.parse(saved) });
+      if (saved) savedBrief = { ...EMPTY_BRIEF, ...JSON.parse(saved) };
     } catch {
       // O formulário continua disponível mesmo quando o armazenamento local não está acessível.
     }
+
+    queueMicrotask(() => {
+      storageReady.current = true;
+      if (savedBrief) setBrief(savedBrief);
+    });
   }, []);
 
   useEffect(() => {
+    if (!storageReady.current) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(brief));
     } catch {

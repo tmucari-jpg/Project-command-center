@@ -20,7 +20,7 @@
   function openDb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains(META))d.createObjectStore(META);if(!d.objectStoreNames.contains(SNAPSHOT))d.createObjectStore(SNAPSHOT);if(!d.objectStoreNames.contains(QUEUE))d.createObjectStore(QUEUE,{keyPath:"id"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
   function req(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
   async function get(store,key){const d=await openDb(),tx=d.transaction(store,"readonly"),v=await req(tx.objectStore(store).get(key));d.close();return v}
-  async function put(store,value,key){const d=await openDb(),tx=d.transaction(store,"readwrite");key===undefined?tx.objectStore(store).put(value):tx.objectStore(store).put(value,key);await new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});d.close()}
+  async function put(store,value,key){const d=await openDb(),tx=d.transaction(store,"readwrite");if(key===undefined){tx.objectStore(store).put(value)}else{tx.objectStore(store).put(value,key)}await new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});d.close()}
   async function all(store){const d=await openDb(),tx=d.transaction(store,"readonly"),v=await req(tx.objectStore(store).getAll());d.close();return v}
   async function del(store,key){const d=await openDb(),tx=d.transaction(store,"readwrite");tx.objectStore(store).delete(key);await new Promise(res=>{tx.oncomplete=res});d.close()}
   const uuid=()=>crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0,v=c==="x"?r:(r&3|8);return v.toString(16)});
