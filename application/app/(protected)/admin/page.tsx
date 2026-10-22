@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   Bot,
-  BriefcaseBusiness,
   CircleDollarSign,
   BrainCircuit,
   BookOpenCheck,
@@ -19,11 +18,10 @@ import { requireAdmin } from "@/lib/auth";
 
 const groups = [
   {
-    title: "Comercial PCC",
-    description: "Gestão interna do posicionamento, pacotes, custos, marketing, vendas, leads e validação comercial do próprio PCC.",
+    title: "Comercial",
+    description: "Capacidade transversal para todos os projectos que exigem avaliação ou execução comercial.",
     tools: [
-      { href: "/commercial-master", label: "Master Comercial", description: "Referência oficial de oferta, pacotes, custos, entregáveis, marketing e vendas.", icon: BriefcaseBusiness },
-      { href: "/monetization", label: "Monetização", description: "Operação comercial: perfis, leads, receitas, custos e validação de mercado.", icon: CircleDollarSign },
+      { href: "/monetization", label: "Comercial", description: "Backlog, pipeline, leads, oferta/preço, custos/receitas e entregáveis comerciais ligados aos projectos.", icon: CircleDollarSign },
     ],
   },
   {
@@ -88,7 +86,7 @@ export default async function AdminPage() {
                   <div className="flex items-center justify-between gap-3">
                     <Icon size={19} aria-hidden="true" />
                     <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">
-                      {group.title === "Comercial PCC" ? "Interno" : "Configurar"}
+                      {group.title === "Comercial" ? "Interno" : "Configurar"}
                     </span>
                   </div>
                   <h3 className="mt-3 font-semibold text-[var(--cc-foreground)]">{label}</h3>
