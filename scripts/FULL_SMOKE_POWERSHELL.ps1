@@ -727,6 +727,7 @@ try {
   Assert-Status "Offline bootstrap rejects anonymous access" (Invoke-Status "$baseLocal/api/offline/bootstrap") @(401)
   Assert-Status "Offline sync rejects anonymous access" (Invoke-Status "$baseLocal/api/offline/sync" "POST" '{"items":[]}') @(401)
   Assert-Status "AI assist rejects anonymous access" (Invoke-Status "$baseLocal/api/ai/assist") @(401)
+  Assert-Status "Master Comercial export rejects anonymous access" (Invoke-Status "$baseLocal/api/exports/commercial-master") @(401)
 
   Write-Step "9/12 Probe production deployment"
 
@@ -745,6 +746,7 @@ try {
     Assert-ProtectedRedirect -BaseUrl $prod -Path "/projects"
     Assert-ProtectedRedirect -BaseUrl $prod -Path "/commercial-master"
     Assert-ProtectedRedirect -BaseUrl $prod -Path "/monetization"
+    Assert-Status "Production Master Comercial export rejects anonymous access" (Invoke-Status "$prod/api/exports/commercial-master") @(401)
     Assert-ProtectedRedirect -BaseUrl $prod -Path "/bot-ia"
     Write-Pass "Production public/protection probe complete"
   }
