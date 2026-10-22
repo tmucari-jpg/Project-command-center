@@ -467,7 +467,7 @@ jobs:
             }
           }
 
-          foreach ($token in @("PCC mobile icon 192", "PCC mobile icon 512", "PCC maskable icon", "/commercial-master")) {
+          foreach ($token in @("PCC mobile icon 192", "PCC mobile icon 512", "PCC maskable icon", "/commercial-master", "Master Comercial export rejects anonymous access")) {
             if (-not $smoke.Contains($token)) {
               Write-Error "Smoke coverage is missing: $token"
               exit 1
