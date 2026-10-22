@@ -9,7 +9,7 @@ import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { displayLabel } from "@/lib/display-label";
 import { monetizationReadiness } from "@/lib/monetization";
@@ -24,7 +24,7 @@ export default async function MonetizationPage({
   searchParams: Promise<{ error?: string; saved?: string; lead?: string; entry?: string }>;
 }) {
   const params = await searchParams;
-  const { supabase, user } = await requireUser();
+  const { supabase, user } = await requireAdmin();
 
   const [
     { data: projects, error: projectsError },
