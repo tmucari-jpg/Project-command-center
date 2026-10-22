@@ -66,7 +66,7 @@
   function renderCommercial(){
     const project=snapshot.projects.find(p=>p.title==="Marketing, Vendas e Lançamento do PCC");
     if(!project)return '<div class="card"><h2>Master Comercial PCC</h2><div class="empty">Projecto comercial ainda não sincronizado.</div></div>';
-    const plan=snapshot.strategyPlans.find(p=>p.project_id===project.id)||{};
+    const plan=(snapshot.strategyPlans||[]).find(p=>p.project_id===project.id)||{};
     const monetization=plan.monetization||{},marketing=plan.marketing||{},sales=plan.sales||{},execution=plan.execution||{},measurement=plan.measurement||{};
     const packages=Array.isArray(monetization.packages)?monetization.packages:[];
     const costs=(snapshot.financialEntries||[]).filter(x=>x.project_id===project.id&&x.entry_type==="cost");
