@@ -24,6 +24,10 @@ export async function GET() {
     dependenciesResult,
     risksResult,
     decisionsResult,
+    strategyPlansResult,
+    commercialProfilesResult,
+    financialEntriesResult,
+    commercialLeadsResult,
   ] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(250),
     supabase.from("objectives").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(250),
@@ -37,6 +41,10 @@ export async function GET() {
     supabase.from("project_governance_dependencies").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
     supabase.from("project_governance_risks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
     supabase.from("decisions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("project_strategy_execution_plans").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(250),
+    supabase.from("project_commercial_profiles").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(250),
+    supabase.from("financial_entries").select("*").eq("user_id", user.id).order("occurred_on", { ascending: false }).limit(1000),
+    supabase.from("commercial_leads").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1000),
   ]);
 
   const results = [
@@ -52,6 +60,10 @@ export async function GET() {
     dependenciesResult,
     risksResult,
     decisionsResult,
+    strategyPlansResult,
+    commercialProfilesResult,
+    financialEntriesResult,
+    commercialLeadsResult,
   ];
   const failed = results.find((result) => result.error);
   if (failed?.error) return NextResponse.json({ error: failed.error.message }, { status: 500 });
@@ -70,5 +82,9 @@ export async function GET() {
     dependencies: dependenciesResult.data ?? [],
     risks: risksResult.data ?? [],
     decisions: decisionsResult.data ?? [],
+    strategyPlans: strategyPlansResult.data ?? [],
+    commercialProfiles: commercialProfilesResult.data ?? [],
+    financialEntries: financialEntriesResult.data ?? [],
+    commercialLeads: commercialLeadsResult.data ?? [],
   });
 }

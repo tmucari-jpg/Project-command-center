@@ -219,7 +219,7 @@ export default async function MonetizationPage({
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card>
           <div className="border-b border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-950">Funil comercial comercial</h2>
+            <h2 className="text-lg font-semibold text-slate-950">Funil comercial</h2>
           </div>
           <div className="p-5">
             {!leads?.length ? <EmptyState>Sem leads registados.</EmptyState> : (

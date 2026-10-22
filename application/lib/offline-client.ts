@@ -35,6 +35,10 @@ export type OfflineSnapshot = {
   dependencies: OfflineRecord[];
   risks: OfflineRecord[];
   decisions: OfflineRecord[];
+  strategyPlans: OfflineRecord[];
+  commercialProfiles: OfflineRecord[];
+  financialEntries: OfflineRecord[];
+  commercialLeads: OfflineRecord[];
 };
 
 export type OfflineQueueType =
@@ -197,7 +201,7 @@ export async function syncOfflineQueue() {
   return { synced: successful.length, pending };
 }
 
-const OFFLINE_ROUTE_CACHE = "project-command-center-v5";
+const OFFLINE_ROUTE_CACHE = "project-command-center-v6";
 const OFFLINE_ROUTES = [
   "/dashboard",
   "/projects",
@@ -207,6 +211,8 @@ const OFFLINE_ROUTES = [
   "/deliverables",
   "/evidence",
   "/project-factory",
+  "/commercial-master",
+  "/monetization",
   "/weekly-review",
 ];
 

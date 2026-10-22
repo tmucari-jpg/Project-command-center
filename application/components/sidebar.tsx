@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  BriefcaseBusiness,
   CheckSquare2,
+  CircleDollarSign,
   Factory,
   FolderKanban,
   Gauge,
@@ -27,6 +29,13 @@ const navigationGroups = [
     label: "Executar",
     items: [
       { href: "/actions", label: "Executar", icon: CheckSquare2 },
+    ],
+  },
+  {
+    label: "Comercial",
+    items: [
+      { href: "/commercial-master", label: "Master Comercial", icon: BriefcaseBusiness },
+      { href: "/monetization", label: "Monetização", icon: CircleDollarSign },
     ],
   },
   {
@@ -105,6 +114,7 @@ export function MobileNav() {
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
     { href: "/actions", label: "Executar", icon: CheckSquare2 },
+    { href: "/commercial-master", label: "Comercial", icon: BriefcaseBusiness },
     { href: "/metrics", label: "Métricas", icon: BarChart3 },
     { href: "/deliverables", label: "Fecho", icon: PackageCheck },
   ];

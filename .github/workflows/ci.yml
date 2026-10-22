@@ -364,6 +364,68 @@ jobs:
             exit 1
           }
 
+      - name: Validate commercial master, consulting model and offline coverage
+        shell: pwsh
+        run: |
+          $master = Get-Content "./app/(protected)/commercial-master/page.tsx" -Raw
+          $sidebar = Get-Content "./components/sidebar.tsx" -Raw
+          $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
+          $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
+          $offlineApp = Get-Content "./public/offline-app.js" -Raw
+          $smoke = Get-Content "../scripts/FULL_SMOKE_POWERSHELL.ps1" -Raw
+          $vercel = Get-Content "./vercel.json" -Raw
+
+          foreach ($token in @(
+            "O PCC funciona como consultor de projectos",
+            "Personalizado · Agregado · Integrado",
+            "Pacotes e preços",
+            "Custos associados",
+            "Base de entregáveis da consultoria",
+            "Avaliar",
+            "Decidir",
+            "Estruturar",
+            "Acompanhar",
+            "Comprovar valor"
+          )) {
+            if (-not $master.Contains($token)) {
+              Write-Error "Commercial master is missing required content: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("/commercial-master", "/monetization", "Master Comercial")) {
+            if (-not $sidebar.Contains($token)) {
+              Write-Error "Commercial navigation is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("project_strategy_execution_plans", "project_commercial_profiles", "financial_entries", "commercial_leads")) {
+            if (-not $offlineBootstrap.Contains($token)) {
+              Write-Error "Offline commercial snapshot is missing source: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("strategyPlans", "commercialProfiles", "financialEntries", "commercialLeads", "/commercial-master", "/monetization")) {
+            if (-not $offlineClient.Contains($token) -and -not $offlineApp.Contains($token)) {
+              Write-Error "Offline commercial workspace is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("PCC mobile icon 192", "PCC mobile icon 512", "PCC maskable icon", "/commercial-master")) {
+            if (-not $smoke.Contains($token)) {
+              Write-Error "Smoke coverage is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $vercel.Contains('"audit/commercial-master-20261022": false')) {
+            Write-Error "Commercial audit branch must not trigger a Vercel preview deployment."
+            exit 1
+          }
+
       - name: Typecheck
         run: npm run typecheck
 

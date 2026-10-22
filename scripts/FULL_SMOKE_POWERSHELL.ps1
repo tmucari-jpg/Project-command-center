@@ -688,6 +688,9 @@ try {
   Assert-Status "Service worker" (Invoke-Status "$baseLocal/sw.js") @(200)
   Assert-Status "Web manifest" (Invoke-Status "$baseLocal/manifest.webmanifest") @(200)
   Assert-Status "PCC logo" (Invoke-Status "$baseLocal/brand/pcc-logo.png") @(200)
+  Assert-Status "PCC mobile icon 192" (Invoke-Status "$baseLocal/icons/icon-192.png") @(200)
+  Assert-Status "PCC mobile icon 512" (Invoke-Status "$baseLocal/icons/icon-512.png") @(200)
+  Assert-Status "PCC maskable icon" (Invoke-Status "$baseLocal/icons/icon-maskable-512.png") @(200)
 
   Write-Step "7/12 Smoke all protected application routes"
 
@@ -695,6 +698,8 @@ try {
     "/dashboard",
     "/objectives",
     "/project-factory",
+    "/commercial-master",
+    "/monetization",
     "/projects",
     "/agenda",
     "/actions",
@@ -738,6 +743,8 @@ try {
     Assert-Status "Production service worker" (Invoke-Status "$prod/sw.js") @(200)
     Assert-ProtectedRedirect -BaseUrl $prod -Path "/dashboard"
     Assert-ProtectedRedirect -BaseUrl $prod -Path "/projects"
+    Assert-ProtectedRedirect -BaseUrl $prod -Path "/commercial-master"
+    Assert-ProtectedRedirect -BaseUrl $prod -Path "/monetization"
     Assert-ProtectedRedirect -BaseUrl $prod -Path "/bot-ia"
     Write-Pass "Production public/protection probe complete"
   }
