@@ -3,13 +3,13 @@
   const LANG_KEY="pcc-language";
   const sectionsPt=[
     ["dashboard","Painel"],["projects","Projectos"],["actions","Executar"],["objectives","Objectivos"],
-    ["deliverables","Entregáveis"],["metrics","Métricas"],["evidence","Evidências"],["factory","Factory"],["governance","Governança"]
+    ["deliverables","Entregáveis"],["metrics","Métricas"],["evidence","Evidências"],["commercial","Comercial"],["factory","Factory"],["governance","Governança"]
   ];
-  const sectionLabelsEn={dashboard:"Dashboard",projects:"Projects",actions:"Execute",objectives:"Objectives",deliverables:"Deliverables",metrics:"Metrics",evidence:"Evidence",factory:"Factory",governance:"Governance"};
+  const sectionLabelsEn={dashboard:"Dashboard",projects:"Projects",actions:"Execute",objectives:"Objectives",deliverables:"Deliverables",metrics:"Metrics",evidence:"Evidence",commercial:"Commercial",factory:"Factory",governance:"Governance"};
   const t=(pt,en)=>localStorage.getItem(LANG_KEY)==="en"?en:pt;
   const sections=()=>sectionsPt.map(([key,label])=>[key,localStorage.getItem(LANG_KEY)==="en"?sectionLabelsEn[key]:label]);
   let current="dashboard", query="";
-  let snapshot={generatedAt:"",projects:[],objectives:[],deliverables:[],actions:[],blockers:[],metrics:[],evidence:[],ideas:[],factoryCases:[],dependencies:[],risks:[],decisions:[]};
+  let snapshot={generatedAt:"",projects:[],objectives:[],deliverables:[],actions:[],blockers:[],metrics:[],evidence:[],ideas:[],factoryCases:[],dependencies:[],risks:[],decisions:[],strategyPlans:[],commercialProfiles:[],financialEntries:[],commercialLeads:[]};
   const $=id=>document.getElementById(id);
   const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const fmt=value=>{if(!value)return "—";const d=new Date(value);return Number.isNaN(d.getTime())?esc(value):d.toLocaleString("pt-MZ",{dateStyle:"medium",timeStyle:value.includes?.("T")?"short":undefined})};
@@ -62,6 +62,26 @@
   function actionButtons(a){if(isClosed(a.status))return"";return `<div class="row" style="margin-top:9px"><button class="button secondary small" data-action="${a.id}" data-status="in_progress">Em curso</button><button class="button secondary small" data-action="${a.id}" data-status="blocked">Bloquear</button><button class="button secondary small" data-action="${a.id}" data-status="completed">Concluir</button></div>`}
   function renderActions(){const now=Date.now();const rows=snapshot.actions.filter(matches);return `<div class="card"><h2>Executar</h2><p class="small muted">Acções, prazos e bloqueios disponíveis offline.</p><div class="list section">${rows.map(a=>{const overdue=a.due_at&&!isClosed(a.status)&&new Date(a.due_at).getTime()<now;const cls=overdue?"overdue":statusClass(a.status);return `<article class="item"><div class="itemtop"><h3>${esc(a.title)}</h3><span class="tag ${cls}">${overdue?"Em atraso":esc(a.status||"Pendente")}</span></div><div class="meta">${esc(projectName(a.project_id))} · ${a.due_at?fmt(a.due_at):"Sem prazo"}</div>${actionButtons(a)}</article>`}).join("")||'<div class="empty">Sem acções.</div>'}</div><h3 class="section">Bloqueios</h3><div class="list">${snapshot.blockers.filter(matches).map(b=>item(b,[projectName(b.project_id),b.impact||"",b.resolution_due_at?fmt(b.resolution_due_at):""])).join("")||'<div class="empty">Sem bloqueios.</div>'}</div></div>`}
   function renderGeneric(title,rows,metaFn){const filtered=rows.filter(matches);return `<div class="card"><h2>${esc(title)}</h2><div class="list section">${filtered.map(r=>item(r,metaFn(r))).join("")||'<div class="empty">Sem registos.</div>'}</div></div>`}
+
+  function renderCommercial(){
+    const project=snapshot.projects.find(p=>p.title==="Marketing, Vendas e Lançamento do PCC");
+    if(!project)return '<div class="card"><h2>Master Comercial PCC</h2><div class="empty">Projecto comercial ainda não sincronizado.</div></div>';
+    const plan=snapshot.strategyPlans.find(p=>p.project_id===project.id)||{};
+    const monetization=plan.monetization||{},marketing=plan.marketing||{},sales=plan.sales||{},execution=plan.execution||{},measurement=plan.measurement||{};
+    const packages=Array.isArray(monetization.packages)?monetization.packages:[];
+    const costs=(snapshot.financialEntries||[]).filter(x=>x.project_id===project.id&&x.entry_type==="cost");
+    const deliverables=(snapshot.deliverables||[]).filter(x=>x.project_id===project.id);
+    const actions=(snapshot.actions||[]).filter(x=>x.project_id===project.id&&!isClosed(x.status));
+    const leads=(snapshot.commercialLeads||[]).filter(x=>x.project_id===project.id);
+    const list=value=>Array.isArray(value)?value:[];
+    let html='<div class="card"><h2>Master Comercial PCC</h2><p class="small muted">PCC = consultoria de projectos. Tecnologia e IA apoiam nos bastidores; o cliente recebe consultoria e entregáveis concretos.</p>';
+    html+='<div class="grid cards section">'+card("Pacotes",packages.length)+card("Entregáveis",deliverables.length)+card("Acções abertas",actions.length)+card("Leads",leads.length)+'</div></div>';
+    html+='<div class="grid two section"><div class="card"><h2>Pacotes e preços</h2><div class="list section">'+packages.map(p=>'<article class="item"><div class="itemtop"><h3>'+esc(p.name||"Pacote")+'</h3><b>'+esc((p.price_mzn_from?"desde ":"")+(p.price_mzn_from||p.price_mzn||"—")+" MZN / "+(p.period||""))+'</b></div><div class="meta">'+esc(p.scope||"")+(p.max_simultaneous_projects?" · até "+esc(p.max_simultaneous_projects)+" projectos em simultâneo":"")+'</div></article>').join("")+'</div></div>';
+    html+='<div class="card"><h2>Custos internos</h2><div class="list section">'+costs.slice(0,8).map(x=>'<article class="item"><div class="itemtop"><h3>'+esc(x.description||"Custo")+'</h3><b>'+esc(x.amount||"—")+" "+esc(x.currency||"")+'</b></div><div class="meta">'+esc(x.status||"")+(x.evidence_reference?" · "+esc(x.evidence_reference):"")+'</div></article>').join("")+'</div></div></div>';
+    html+='<div class="grid two section"><div class="card"><h2>Marketing e vendas</h2><p class="small muted"><b>Canais:</b> '+esc(list(marketing.channels).join(" · ")||"Em falta")+'</p><p class="small muted"><b>Funil:</b> '+esc(list(sales.funnel).join(" → ")||"Em falta")+'</p><p class="small muted"><b>Prioridades:</b> '+esc(list(marketing.priority_ids).join(" → ")||"Em falta")+'</p></div>';
+    html+='<div class="card"><h2>Validação</h2><p class="small muted"><b>Lançamento:</b> '+esc(list(execution.launch_sequence).join(" → ")||"Em falta")+'</p><p class="small muted"><b>KPIs:</b> '+esc(list(measurement.master_kpis).join(" · ")||"Em falta")+'</p><p class="small muted">Validação funcional, operacional e de mercado permanecem separadas.</p></div></div>';
+    return html;
+  }
   function render(){
     let html="";
     if(current==="dashboard")html=renderDashboard();
@@ -71,6 +91,7 @@
     if(current==="deliverables")html=renderGeneric("Entregáveis",snapshot.deliverables,r=>[projectName(r.project_id),`Progresso ${r.progress??0}%`,r.due_date?fmt(r.due_date):""]);
     if(current==="metrics")html=renderGeneric("Métricas",snapshot.metrics,r=>[projectName(r.project_id),`Actual: ${r.current_value??"—"} ${r.unit??""}`,`Meta: ${r.target_value??"—"} ${r.unit??""}`]);
     if(current==="evidence")html=renderGeneric("Evidências",snapshot.evidence,r=>[projectName(r.project_id),r.evidence_type||"",r.created_at?fmt(r.created_at):""]);
+    if(current==="commercial")html=renderCommercial();
     if(current==="factory")html=renderGeneric("Factory / Avaliações",snapshot.factoryCases,r=>[r.stage||"",r.governance_gate||"",r.project_type||""]);
     if(current==="governance"){
       html=`<div class="grid two">${renderGeneric("Dependências",snapshot.dependencies,r=>[projectName(r.project_id),r.responsible||"",r.missing_key||""])}${renderGeneric("Riscos",snapshot.risks,r=>[projectName(r.project_id),r.severity||r.impact||""])}</div><div class="section">${renderGeneric("Decisões",snapshot.decisions,r=>[projectName(r.project_id),r.decision||"",r.created_at?fmt(r.created_at):""])}</div>`;
