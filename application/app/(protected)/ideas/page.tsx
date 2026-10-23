@@ -35,7 +35,7 @@ export default async function IdeasPage({
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
       <div className="space-y-6">
-        <ManualEntry>
+        <ManualEntry label="Nova ideia">
           <h2 className="text-lg font-semibold text-slate-950">Nova ideia</h2>
           <form action={createIdea} className="mt-5 space-y-4">
             <Field label="Título" name="title" required />
