@@ -2,9 +2,9 @@ $ErrorActionPreference = "Stop"
 
 $migration = Get-Content "../supabase/migrations/20261023143000_delivery_commitment_acceptance.sql" -Raw
 $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
-$commitment = Get-Content "./app/(protected)/projects/[id]/commitment/page.tsx" -Raw
+$commitment = Get-Content -LiteralPath "./app/(protected)/projects/[id]/commitment/page.tsx" -Raw
 $deliverables = Get-Content "./app/(protected)/deliverables/page.tsx" -Raw
-$projectDetail = Get-Content "./app/(protected)/projects/[id]/page.tsx" -Raw
+$projectDetail = Get-Content -LiteralPath "./app/(protected)/projects/[id]/page.tsx" -Raw
 $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
 $logoutButton = Get-Content "./components/logout-button.tsx" -Raw
 $manualEntry = Get-Content "./components/manual-entry.tsx" -Raw
