@@ -18,6 +18,9 @@ create table if not exists public.project_commitments (
   dependencies text,
   external_costs text,
   security_requirements text,
+  information_classification text not null default 'confidential'
+    check (information_classification in ('public','internal','confidential','restricted')),
+  data_retention_terms text,
   capacity_basis text,
   payment_conditions text,
   client_approval_sla text,
