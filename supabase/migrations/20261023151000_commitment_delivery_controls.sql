@@ -234,3 +234,46 @@ alter table public.commercial_leads
     'lead','contacted','qualified','negotiation','won',
     'contact','interest','diagnosis','demo','proposal','client','lost'
   ));
+
+
+-- Expand deliverable workstreams so Marketing, Sales and Monetization remain
+-- distinct operational responsibilities while still belonging to one project.
+alter table public.deliverables
+  drop constraint if exists deliverables_workstream_check;
+
+alter table public.deliverables
+  add constraint deliverables_workstream_check
+  check (
+    workstream in (
+      'general','commercial','marketing','sales','monetization',
+      'financial','operational','governance','technical','other'
+    )
+  );
+
+-- Reclassify the known PCC launch deliverables by their primary responsibility.
+-- The project remains one project and the central deliverables archive is unchanged.
+update public.deliverables d
+set workstream = case d.title
+  when 'V01/V02 · Segmentos prioritários e ICP' then 'sales'
+  when 'P04 · One-Pager comercial PCC' then 'marketing'
+  when 'P06 · Pitch comercial PCC' then 'sales'
+  when 'WA01/WA07 · Kit WhatsApp e roteiro de diagnóstico' then 'sales'
+  when 'BLOG · Plano editorial e conteúdo de autoridade' then 'marketing'
+  when 'WEB · Website comercial e captação' then 'marketing'
+  when 'Relatório de validação de mercado e pricing v1' then 'monetization'
+  when 'V08 · Modelo de consultoria e condições dos pacotes' then 'monetization'
+  else d.workstream
+end
+from public.projects p
+where d.project_id = p.id
+  and p.title = 'Marketing, Vendas e Lançamento do PCC'
+  and d.title in (
+    'V01/V02 · Segmentos prioritários e ICP',
+    'P04 · One-Pager comercial PCC',
+    'P06 · Pitch comercial PCC',
+    'WA01/WA07 · Kit WhatsApp e roteiro de diagnóstico',
+    'BLOG · Plano editorial e conteúdo de autoridade',
+    'WEB · Website comercial e captação',
+    'Relatório de validação de mercado e pricing v1',
+    'V08 · Modelo de consultoria e condições dos pacotes'
+  );
