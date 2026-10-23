@@ -40,6 +40,10 @@ export type OfflineSnapshot = {
   commercialProfiles: OfflineRecord[];
   financialEntries: OfflineRecord[];
   commercialLeads: OfflineRecord[];
+  commitments: OfflineRecord[];
+  changeRequests: OfflineRecord[];
+  acceptances: OfflineRecord[];
+  closureStates: OfflineRecord[];
 };
 
 export type OfflineQueueType =
@@ -202,7 +206,7 @@ export async function syncOfflineQueue() {
   return { synced: successful.length, pending };
 }
 
-const OFFLINE_ROUTE_CACHE = "project-command-center-v6";
+const OFFLINE_ROUTE_CACHE = "project-command-center-v7";
 const OFFLINE_ROUTES = [
   "/dashboard",
   "/projects",
