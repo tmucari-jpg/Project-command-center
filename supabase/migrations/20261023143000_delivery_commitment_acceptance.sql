@@ -11,7 +11,7 @@ alter table public.deliverables add constraint deliverables_workstream_check che
 
 alter table public.commercial_leads drop constraint if exists commercial_leads_stage_check;
 update public.commercial_leads set stage=case stage when 'lead' then 'contact' when 'contacted' then 'interest' when 'qualified' then 'diagnosis' when 'negotiation' then 'proposal' else stage end where stage in ('lead','contacted','qualified','negotiation');
-alter table public.commercial_leads add constraint commercial_leads_stage_check check (stage in ('contact','interest','diagnosis','demo','proposal','won','lost'));
+alter table public.commercial_leads add constraint commercial_leads_stage_check check (stage in ('contact','interest','diagnosis','demo','proposal','won','lost','lead','contacted','qualified','negotiation'));
 
 alter table public.financial_entries
   add column if not exists cost_classification text,
@@ -26,6 +26,22 @@ alter table public.financial_entries drop constraint if exists financial_entries
 alter table public.financial_entries add constraint financial_entries_cost_requires_classification check (entry_type<>'cost' or cost_classification is not null);
 alter table public.financial_entries drop constraint if exists financial_entries_recurrence_check;
 alter table public.financial_entries add constraint financial_entries_recurrence_check check (recurrence is null or recurrence in ('one_off','monthly','annual','usage'));
+
+create or replace function private.normalize_financial_cost_classification()
+returns trigger language plpgsql security invoker set search_path = '' as $
+begin
+  if new.entry_type = 'revenue' then
+    new.cost_classification := null;
+  elsif new.entry_type = 'cost' and new.cost_classification is null then
+    new.cost_classification := 'internal_pcc';
+  end if;
+  return new;
+end; $;
+
+drop trigger if exists normalize_financial_cost_classification on public.financial_entries;
+create trigger normalize_financial_cost_classification
+before insert or update of entry_type,cost_classification on public.financial_entries
+for each row execute function private.normalize_financial_cost_classification();
 
 create table if not exists public.project_commitment_baselines (
   id uuid primary key default uuid_generate_v4(),
@@ -290,9 +306,9 @@ on conflict (user_id,control_key) do update set
   notes = excluded.notes,
   enabled = case
     when excluded.control_key in ('offline_secure_logout','vault_reference_only') then true
-    else public.security_controls.enabled
+    else security_controls.enabled
   end,
   last_checked_at = case
     when excluded.control_key in ('offline_secure_logout','vault_reference_only') then now()
-    else public.security_controls.last_checked_at
+    else security_controls.last_checked_at
   end;

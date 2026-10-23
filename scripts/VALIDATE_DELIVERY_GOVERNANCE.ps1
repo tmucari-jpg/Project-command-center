@@ -20,6 +20,7 @@ foreach ($token in @(
   "enforce_change_baseline_consistency",
   "project_closure_handover_notes_check",
   "backup_restore_continuity",
+  "normalize_financial_cost_classification",
   "'sales'",
   "'marketing'",
   "'monetization'",
