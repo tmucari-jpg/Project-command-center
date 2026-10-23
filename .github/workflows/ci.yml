@@ -543,7 +543,7 @@ jobs:
 
           foreach ($token in @(
             "G3 · Compromisso de Entrega",
-            "Registar validação do cliente e autorizar execução",
+            "Registar validação e autorizar execução",
             "Alterações de âmbito"
           )) {
             if (-not $project.Contains($token)) {
