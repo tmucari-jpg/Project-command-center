@@ -2629,15 +2629,27 @@ export async function updateStatusProgress(formData: FormData) {
         }
       }
 
-      const { count, error: evidenceError } = await supabase
+      const { data: deliveryEvidence, error: evidenceError } = await supabase
         .from("evidence")
-        .select("id", { count: "exact", head: true })
+        .select("id,evidence_type")
         .eq("deliverable_id", deliverable.id)
         .eq("user_id", user.id);
 
       if (evidenceError) fail(path, evidenceError.message);
-      if (!count) {
-        fail(path, "Anexe pelo menos uma evidência, ficheiro ou link do resultado utilizável antes de concluir o entregável.");
+      const evidenceTypes = new Set((deliveryEvidence ?? []).map((item) => item.evidence_type));
+      const hasMaterialEvidence = [...evidenceTypes].some((type) =>
+        ["file", "link", "document", "screenshot", "result", "external_reference", "production", "delivery"].includes(type),
+      );
+      if (!hasMaterialEvidence) {
+        fail(path, "Registe evidência material do resultado; comentário ou valor numérico isolado não comprovam a entrega.");
+      }
+      if (["website", "application", "dashboard", "api"].includes(deliverable.artifact_type)) {
+        if (!evidenceTypes.has("test")) {
+          fail(path, "Entregáveis digitais executáveis exigem evidência de teste antes da entrega.");
+        }
+        if (!evidenceTypes.has("delivery")) {
+          fail(path, "Entregáveis digitais executáveis exigem evidência de entrega/publicação.");
+        }
       }
     }
   }

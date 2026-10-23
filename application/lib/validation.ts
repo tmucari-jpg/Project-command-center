@@ -515,14 +515,18 @@ export const projectCommitmentSchema = z
       }
     }
   });
-export const projectCommitmentDecisionSchema = z.object({
-  project_id: z.string().uuid(),
-  baseline_id: z.string().uuid(),
-  decision: z.enum(["approved", "rejected"]),
-  client_validator: z.string().trim().min(2).max(180),
-  approval_reference: optionalText(1000),
-  notes: optionalText(4000),
-});
+export const projectCommitmentDecisionSchema = z
+  .object({
+    project_id: z.string().uuid(),
+    baseline_id: z.string().uuid(),
+    decision: z.enum(["approved", "rejected"]),
+    client_validator: z.string().trim().min(2).max(180),
+    approval_reference: optionalText(1000),
+    notes: optionalText(4000),
+  })
+  .refine((data) => data.decision !== "approved" || Boolean(data.approval_reference?.trim()), {
+    message: "Registe a referência da aprovação do cliente.",
+  });
 
 export const projectChangeRequestSchema = z.object({
   project_id: z.string().uuid(),
@@ -555,14 +559,21 @@ export const deliverableQaSchema = z.object({
   qa_notes: optionalText(4000),
 });
 
-export const deliverableAcceptanceSchema = z.object({
-  deliverable_id: z.string().uuid(),
-  project_id: z.string().uuid(),
-  status: z.enum(["in_review", "accepted", "accepted_with_reservations", "changes_requested"]),
-  actor_name: z.string().trim().min(2).max(180),
-  notes: optionalText(6000),
-  evidence_reference: optionalText(1000),
-});
+export const deliverableAcceptanceSchema = z
+  .object({
+    deliverable_id: z.string().uuid(),
+    project_id: z.string().uuid(),
+    status: z.enum(["in_review", "accepted", "accepted_with_reservations", "changes_requested"]),
+    actor_name: z.string().trim().min(2).max(180),
+    notes: optionalText(6000),
+    evidence_reference: optionalText(1000),
+  })
+  .refine(
+    (data) =>
+      !["accepted", "accepted_with_reservations"].includes(data.status) ||
+      Boolean(data.evidence_reference?.trim()),
+    { message: "Registe a referência que comprova a aceitação do cliente." },
+  );
 
 export const projectClosureAssessmentSchema = z.object({
   project_id: z.string().uuid(),
