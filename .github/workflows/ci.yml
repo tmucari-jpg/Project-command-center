@@ -529,7 +529,7 @@ jobs:
 
           foreach ($token in @(
             "Baseline de Compromisso",
-            "Validação do cliente",
+            "Resumo para validação do cliente",
             "Controlo de alterações"
           )) {
             if (-not $project.Contains($token)) {
