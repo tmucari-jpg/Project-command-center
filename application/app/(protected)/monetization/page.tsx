@@ -95,15 +95,6 @@ export default async function CommercialPage({
         }
       />
 
-      <Card className="mb-6 border-[color-mix(in_srgb,var(--cc-gold)_45%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_7%,var(--cc-surface))] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-gold)]">Regra da área</p>
-        <h2 className="mt-2 text-xl font-semibold text-[var(--cc-accent)]">Comercial serve todos os projectos que precisam de vertente comercial.</h2>
-        <p className="mt-2 max-w-5xl text-sm leading-6 text-[var(--cc-secondary)]">
-          Aqui são tratados backlog, avaliação comercial, oferta e preço, pipeline, leads, custos/receitas e entregáveis comerciais.
-          Nada é separado do projecto: cada registo mantém a ligação ao projecto de origem e os resultados finais aparecem também em Entregáveis.
-        </p>
-      </Card>
-
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Backlog comercial</p>
@@ -126,6 +117,9 @@ export default async function CommercialPage({
           <p className="mt-2 text-xs text-[var(--cc-secondary)]">Projectos actualmente ligados a esta capacidade.</p>
         </Card>
       </div>
+      <p className="mt-3 text-xs leading-5 text-[var(--cc-secondary)]">
+        Comercial é uma capacidade transversal: backlog, oferta, pipeline, leads, custos/receitas e resultados permanecem sempre ligados ao projecto de origem.
+      </p>
 
       <Card className="mt-6">
         <div className="border-b border-[var(--cc-border)] p-5">
