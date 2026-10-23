@@ -376,6 +376,19 @@ export default async function ProjectHubPage({
             <TextArea label="Dependências" name="dependencies" defaultValue={activeCommitment?.dependencies ?? ""} />
             <TextArea label="Custos externos e trabalhos adicionais" name="external_costs" defaultValue={activeCommitment?.external_costs ?? "Domínio, hosting, licenças, publicidade, fornecedores e trabalho paralelo não incluído no serviço PCC são orçamentados separadamente, salvo indicação expressa em contrário."} />
             <TextArea label="Condições de segurança" name="security_requirements" defaultValue={activeCommitment?.security_requirements ?? ""} />
+            <TextArea
+              label="Base da capacidade confirmada"
+              name="capacity_basis"
+              defaultValue={activeCommitment?.capacity_basis ?? ""}
+              placeholder="Ex.: equipa disponível, esforço estimado, período e compromissos já assumidos."
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextArea label="Condições de pagamento" name="payment_conditions" defaultValue={activeCommitment?.payment_conditions ?? ""} />
+              <TextArea label="Prazo / regra para aprovações do cliente" name="client_approval_sla" defaultValue={activeCommitment?.client_approval_sla ?? ""} />
+              <TextArea label="Propriedade dos activos" name="asset_ownership" defaultValue={activeCommitment?.asset_ownership ?? ""} />
+              <TextArea label="Propriedade intelectual" name="intellectual_property_terms" defaultValue={activeCommitment?.intellectual_property_terms ?? ""} />
+              <TextArea label="Suporte / garantia pós-entrega" name="post_delivery_support" defaultValue={activeCommitment?.post_delivery_support ?? ""} />
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               {[
                 ["capacity_confirmed", "Capacidade disponível confirmada"],
@@ -411,6 +424,12 @@ export default async function ProjectHubPage({
                 ["Dependências", pendingCommitment.dependencies || "Sem dependências adicionais registadas."],
                 ["Custos externos / trabalho adicional", pendingCommitment.external_costs || "Sem custos externos registados."],
                 ["Condições de segurança", pendingCommitment.security_requirements || "Sem condições adicionais registadas."],
+                ["Base de capacidade", pendingCommitment.capacity_basis],
+                ["Condições de pagamento", pendingCommitment.payment_conditions || "Não especificadas."],
+                ["Prazo/regra de aprovação do cliente", pendingCommitment.client_approval_sla || "Não especificado."],
+                ["Propriedade dos activos", pendingCommitment.asset_ownership || "Não especificada."],
+                ["Propriedade intelectual", pendingCommitment.intellectual_property_terms || "Não especificada."],
+                ["Suporte / garantia pós-entrega", pendingCommitment.post_delivery_support || "Não especificado."],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">{label}</p>
