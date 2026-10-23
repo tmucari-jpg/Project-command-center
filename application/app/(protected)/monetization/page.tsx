@@ -17,12 +17,13 @@ import { displayLabel } from "@/lib/display-label";
 import { monetizationReadiness } from "@/lib/monetization";
 
 const PIPELINE_STAGES = [
-  ["lead", "Lead"],
-  ["contacted", "Contactado"],
-  ["qualified", "Qualificado"],
+  ["contact", "Contacto"],
+  ["interest", "Interesse"],
+  ["diagnosis", "Diagnóstico"],
+  ["demonstration", "Demonstração"],
   ["proposal", "Proposta"],
-  ["negotiation", "Negociação"],
-  ["won", "Ganho"],
+  ["client", "Cliente"],
+  ["handoff", "Handoff"],
   ["lost", "Perdido"],
 ] as const;
 
@@ -65,7 +66,7 @@ export default async function CommercialPage({
   const commercialProjects = (projects ?? []).filter((project) => commercialProjectIds.has(project.id));
   const projectOptions = commercialProjects.length ? commercialProjects : (projects ?? []);
   const backlog = commercialProjects.filter((project) => profileByProject.get(project.id)?.validation_status !== "validated");
-  const activeLeads = (leads ?? []).filter((lead) => !["won", "lost"].includes(lead.stage));
+  const activeLeads = (leads ?? []).filter((lead) => !["handoff", "lost"].includes(lead.stage));
   const openCommercialDeliverables = (commercialDeliverables ?? []).filter(
     (item) => !["completed", "cancelled"].includes(item.status),
   );
@@ -113,7 +114,7 @@ export default async function CommercialPage({
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Pipeline activo</p>
           <p className="mt-2 text-3xl font-semibold text-[var(--cc-foreground)]">{activeLeads.length}</p>
-          <p className="mt-2 text-xs text-[var(--cc-secondary)]">Leads ainda em contacto, qualificação, proposta ou negociação.</p>
+          <p className="mt-2 text-xs text-[var(--cc-secondary)]">Oportunidades ainda entre contacto, interesse, diagnóstico, demonstração, proposta ou cliente.</p>
         </Card>
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Entregáveis comerciais</p>
