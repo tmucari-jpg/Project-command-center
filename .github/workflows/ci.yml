@@ -488,7 +488,7 @@ jobs:
         run: |
           $migration = Get-Content "../supabase/migrations/20261023152000_commitment_acceptance_and_safe_closure.sql" -Raw
           $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
-          $project = Get-Content "./app/(protected)/projects/[id]/page.tsx" -Raw
+          $project = Get-Content -LiteralPath "./app/(protected)/projects/[id]/page.tsx" -Raw
           $deliverables = Get-Content "./app/(protected)/deliverables/page.tsx" -Raw
           $objectives = Get-Content "./app/(protected)/objectives/page.tsx" -Raw
           $commercial = Get-Content "./app/(protected)/monetization/page.tsx" -Raw
