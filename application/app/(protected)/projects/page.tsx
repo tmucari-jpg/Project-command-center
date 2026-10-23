@@ -20,10 +20,6 @@ const FACTORY_STAGE_LABELS: Record<string, string> = {
   killed: "Não aprovado",
 };
 
-function relationTitle(relation: { title?: string | null } | { title?: string | null }[] | null | undefined) {
-  return Array.isArray(relation) ? relation[0]?.title : relation?.title;
-}
-
 export default async function ProjectsPage({
   searchParams,
 }: {
