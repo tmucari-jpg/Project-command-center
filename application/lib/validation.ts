@@ -99,7 +99,7 @@ export const deliverableSchema = z.object({
   project_id: z.string().uuid(),
   workstream: z.preprocess(
     (value) => (value === "" || value === null || value === undefined ? "general" : value),
-    z.enum(["general", "commercial", "financial", "operational", "governance", "technical", "other"]),
+    z.enum(["general", "commercial", "marketing", "sales", "monetization", "financial", "operational", "governance", "technical", "other"]),
   ),
   owner_id: optionalUuid,
   supersedes_deliverable_id: optionalUuid,
