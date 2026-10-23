@@ -196,3 +196,22 @@ for each row execute function public.touch_pcc_commitment_tables();
 drop trigger if exists touch_project_closure_state on public.project_closure_state;
 create trigger touch_project_closure_state before update on public.project_closure_state
 for each row execute function public.touch_pcc_commitment_tables();
+
+
+-- Align the commercial funnel with the PCC consultancy flow.
+alter table public.commercial_leads
+  drop constraint if exists commercial_leads_stage_check;
+
+update public.commercial_leads
+set stage = case stage
+  when 'lead' then 'contact'
+  when 'contacted' then 'contact'
+  when 'qualified' then 'diagnosis'
+  when 'negotiation' then 'proposal'
+  when 'won' then 'client'
+  else stage
+end;
+
+alter table public.commercial_leads
+  add constraint commercial_leads_stage_check
+  check (stage in ('contact','interest','diagnosis','demo','proposal','client','lost'));
