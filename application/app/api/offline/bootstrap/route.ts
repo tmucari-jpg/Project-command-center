@@ -31,6 +31,10 @@ export async function GET() {
     commercialProfilesResult,
     financialEntriesResult,
     commercialLeadsResult,
+    commitmentsResult,
+    changeRequestsResult,
+    acceptancesResult,
+    closureStatesResult,
   ] = await Promise.all([
     supabase.from("projects").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(250),
     supabase.from("objectives").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(250),
@@ -48,6 +52,10 @@ export async function GET() {
     supabase.from("project_commercial_profiles").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(250),
     supabase.from("financial_entries").select("*").eq("user_id", user.id).order("occurred_on", { ascending: false }).limit(1000),
     supabase.from("commercial_leads").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1000),
+    supabase.from("project_commitments").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("project_change_requests").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("deliverable_acceptances").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("project_closure_state").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(250),
   ]);
 
   const results = [
@@ -67,6 +75,10 @@ export async function GET() {
     commercialProfilesResult,
     financialEntriesResult,
     commercialLeadsResult,
+    commitmentsResult,
+    changeRequestsResult,
+    acceptancesResult,
+    closureStatesResult,
   ];
   const failed = results.find((result) => result.error);
   if (failed?.error) return NextResponse.json({ error: failed.error.message }, { status: 500 });
@@ -90,5 +102,9 @@ export async function GET() {
     commercialProfiles: isAdmin ? commercialProfilesResult.data ?? [] : [],
     financialEntries: isAdmin ? financialEntriesResult.data ?? [] : [],
     commercialLeads: isAdmin ? commercialLeadsResult.data ?? [] : [],
+    commitments: commitmentsResult.data ?? [],
+    changeRequests: changeRequestsResult.data ?? [],
+    acceptances: acceptancesResult.data ?? [],
+    closureStates: closureStatesResult.data ?? [],
   });
 }
