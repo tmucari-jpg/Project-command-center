@@ -500,7 +500,13 @@ jobs:
             "deliverable_acceptances",
             "project_closure_state",
             "qa_status",
-            "cost_scope"
+            "cost_scope",
+            "'marketing'",
+            "'sales'",
+            "'monetization'",
+            "Plano Operacional de Lançamento e Execução",
+            "information_classification",
+            "continuity_status"
           )) {
             if (-not $migration.Contains($token)) {
               Write-Error "Missing commitment/delivery database control: $token"
