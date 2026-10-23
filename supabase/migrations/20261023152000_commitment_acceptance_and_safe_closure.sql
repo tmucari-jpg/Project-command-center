@@ -4,6 +4,7 @@
 alter table public.projects
   add column if not exists value_status text not null default 'not_assessed',
   add column if not exists handover_status text not null default 'not_required',
+  add column if not exists continuity_status text not null default 'not_required',
   add column if not exists information_classification text not null default 'internal';
 
 alter table public.projects
@@ -15,6 +16,11 @@ alter table public.projects
   drop constraint if exists projects_handover_status_check,
   add constraint projects_handover_status_check
     check (handover_status in ('not_required','pending','completed'));
+
+alter table public.projects
+  drop constraint if exists projects_continuity_status_check,
+  add constraint projects_continuity_status_check
+    check (continuity_status in ('not_required','pending','verified'));
 
 alter table public.projects
   drop constraint if exists projects_information_classification_check,
