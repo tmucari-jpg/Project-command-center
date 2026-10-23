@@ -487,7 +487,7 @@ jobs:
         shell: pwsh
         run: |
           $mutations = Get-Content "../application/app/(protected)/mutations.ts" -Raw
-          $project = Get-Content "../application/app/(protected)/projects/[id]/page.tsx" -Raw
+          $project = Get-Content -LiteralPath "../application/app/(protected)/projects/[id]/page.tsx" -Raw
           $deliverables = Get-Content "../application/app/(protected)/deliverables/page.tsx" -Raw
           $commercial = Get-Content "../application/app/(protected)/monetization/page.tsx" -Raw
           $migration = Get-Content "../supabase/migrations/20261023151000_commitment_delivery_controls.sql" -Raw
