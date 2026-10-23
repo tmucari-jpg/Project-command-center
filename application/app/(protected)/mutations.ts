@@ -2013,6 +2013,14 @@ export async function validateCommitmentByClient(formData: FormData) {
     .eq("status", "client_approved")
     .lt("version", baseline.version);
 
+  await supabase
+    .from("project_change_requests")
+    .update({ incorporated_baseline_id: baseline.id })
+    .eq("project_id", projectId.data)
+    .eq("user_id", user.id)
+    .eq("decision", "approved")
+    .is("incorporated_baseline_id", null);
+
   await supabase.from("project_gate_events").insert({
     user_id: user.id,
     project_id: projectId.data,
@@ -2122,6 +2130,92 @@ export async function decideProjectChangeRequest(formData: FormData) {
   redirect(`${path}?change=decided`);
 }
 
+export async function createProjectAsset(formData: FormData) {
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    deliverable_id: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().uuid().optional(),
+    ),
+    asset_type: z.enum(["domain","website","hosting","license","account","api","dataset","advertising","supplier_service","other"]),
+    title: z.string().trim().min(2).max(180),
+    provider: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(180).optional(),
+    ),
+    ownership_target: z.enum(["client","pcc","third_party"]),
+    cost_treatment: z.enum(["pcc_internal","client_direct","reimbursable_external","additional_scope"]),
+    cost_frequency: z.enum(["one_off","monthly","annual","usage"]),
+    estimated_cost: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? undefined : value),
+      z.coerce.number().finite().min(0).optional(),
+    ),
+    currency: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(8).optional(),
+    ),
+    renewal_date: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    ),
+    notes: z.preprocess(
+      (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+      z.string().trim().max(4000).optional(),
+    ),
+  }).safeParse(values(formData));
+
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+  const path = \`/projects/\${parsed.data.project_id}\`;
+  const { supabase, user } = await requireUser();
+
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  if (parsed.data.deliverable_id) {
+    const { data: deliverable, error: deliverableError } = await supabase
+      .from("deliverables")
+      .select("project_id")
+      .eq("id", parsed.data.deliverable_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (deliverableError || !deliverable || deliverable.project_id !== parsed.data.project_id) {
+      fail(path, "O activo deve estar ligado a um entregável do mesmo projecto.");
+    }
+  }
+
+  const { error } = await supabase.from("project_assets").insert({
+    ...parsed.data,
+    transfer_status: parsed.data.ownership_target === "pcc" ? "not_required" : "pending",
+    user_id: user.id,
+  });
+  if (error) fail(path, error.message);
+
+  revalidatePath(path);
+  revalidatePath("/deliverables");
+  redirect(\`\${path}?asset=created\`);
+}
+
+export async function updateProjectAssetTransfer(formData: FormData) {
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  const assetId = z.string().uuid().safeParse(formData.get("asset_id"));
+  const transferStatus = z.enum(["pending","ready","transferred","revoked","not_required"]).safeParse(formData.get("transfer_status"));
+  if (!projectId.success || !assetId.success || !transferStatus.success) {
+    fail("/projects", "Estado de transferência inválido.");
+  }
+
+  const path = \`/projects/\${projectId.data}\`;
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("project_assets")
+    .update({ transfer_status: transferStatus.data })
+    .eq("id", assetId.data)
+    .eq("project_id", projectId.data)
+    .eq("user_id", user.id);
+  if (error) fail(path, error.message);
+
+  revalidatePath(path);
+  revalidatePath("/deliverables");
+  redirect(\`\${path}?asset=updated\`);
+}
+
 export async function recordDeliverableQA(formData: FormData) {
   const deliverableId = z.string().uuid().safeParse(formData.get("deliverable_id"));
   const projectId = z.string().uuid().safeParse(formData.get("project_id"));
@@ -2181,9 +2275,18 @@ export async function updateProjectOutcomeStatus(formData: FormData) {
   const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   const valueStatus = z.enum(["not_assessed", "proven", "observing", "not_proven"]).safeParse(formData.get("value_status"));
   const handoverStatus = z.enum(["not_required", "pending", "completed"]).safeParse(formData.get("handover_status"));
+  const securityTransferStatus = z.enum(["not_required", "pending", "completed"]).safeParse(formData.get("security_transfer_status"));
+  const financialCloseStatus = z.enum(["not_required", "pending", "completed"]).safeParse(formData.get("financial_close_status"));
   const continuityStatus = z.enum(["not_required", "pending", "verified"]).safeParse(formData.get("continuity_status"));
-  if (!projectId.success || !valueStatus.success || !handoverStatus.success || !continuityStatus.success) {
-    fail("/deliverables", "Estado de valor, handover ou continuidade inválido.");
+  if (
+    !projectId.success ||
+    !valueStatus.success ||
+    !handoverStatus.success ||
+    !securityTransferStatus.success ||
+    !financialCloseStatus.success ||
+    !continuityStatus.success
+  ) {
+    fail("/deliverables", "Estado de valor, handover, segurança, financeiro ou continuidade inválido.");
   }
 
   const { supabase, user } = await requireUser();
@@ -2192,6 +2295,8 @@ export async function updateProjectOutcomeStatus(formData: FormData) {
     .update({
       value_status: valueStatus.data,
       handover_status: handoverStatus.data,
+      security_transfer_status: securityTransferStatus.data,
+      financial_close_status: financialCloseStatus.data,
       continuity_status: continuityStatus.data,
     })
     .eq("id", projectId.data)
@@ -2199,8 +2304,8 @@ export async function updateProjectOutcomeStatus(formData: FormData) {
   if (error) fail("/deliverables", error.message);
 
   revalidatePath("/deliverables");
-  revalidatePath(`/projects/${projectId.data}`);
-  redirect(`/deliverables?project_id=${projectId.data}&closure=updated`);
+  revalidatePath(\`/projects/\${projectId.data}\`);
+  redirect(\`/deliverables?project_id=\${projectId.data}&closure=updated\`);
 }
 
 export async function finalizeProjectClosure(formData: FormData) {
@@ -2216,7 +2321,7 @@ export async function finalizeProjectClosure(formData: FormData) {
   const { supabase, user } = await requireUser();
   const { data: project, error: projectError } = await supabase
     .from("projects")
-    .select("id,title,status,value_status,handover_status,continuity_status")
+    .select("id,title,status,value_status,handover_status,security_transfer_status,financial_close_status,continuity_status")
     .eq("id", projectId.data)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -2232,6 +2337,7 @@ export async function finalizeProjectClosure(formData: FormData) {
       { data: governanceDependencies, error: governanceDependenciesError },
       { data: commitmentBaselines, error: commitmentError },
       { data: pendingChanges, error: changesError },
+      { data: projectAssets, error: assetsError },
     ] = await Promise.all([
       supabase
         .from("deliverables")
@@ -2274,10 +2380,15 @@ export async function finalizeProjectClosure(formData: FormData) {
         .limit(1),
       supabase
         .from("project_change_requests")
-        .select("id")
+        .select("id,decision,incorporated_baseline_id")
         .eq("project_id", project.id)
         .eq("user_id", user.id)
-        .eq("decision", "pending"),
+        .in("decision", ["pending", "approved"]),
+      supabase
+        .from("project_assets")
+        .select("id,transfer_status")
+        .eq("project_id", project.id)
+        .eq("user_id", user.id),
     ]);
 
     const gateError =
@@ -2287,7 +2398,8 @@ export async function finalizeProjectClosure(formData: FormData) {
       governanceRisksError ??
       governanceDependenciesError ??
       commitmentError ??
-      changesError;
+      changesError ??
+      assetsError;
     if (gateError) fail(path, gateError.message);
 
     if (!(deliverables ?? []).length) {
@@ -2322,14 +2434,26 @@ export async function finalizeProjectClosure(formData: FormData) {
     if (!(commitmentBaselines ?? []).length) {
       fail(path, "O projecto precisa de uma Baseline de Compromisso validada pelo cliente antes do fecho.");
     }
-    if ((pendingChanges ?? []).length) {
+    if ((pendingChanges ?? []).some((item) => item.decision === "pending")) {
       fail(path, "Existem alterações de âmbito pendentes de decisão.");
+    }
+    if ((pendingChanges ?? []).some((item) => item.decision === "approved" && !item.incorporated_baseline_id)) {
+      fail(path, "Existem alterações aprovadas que ainda não foram incorporadas numa nova baseline validada.");
+    }
+    if ((projectAssets ?? []).some((item) => !["transferred", "revoked", "not_required"].includes(item.transfer_status))) {
+      fail(path, "Existem activos, contas ou acessos ainda por transferir ou revogar.");
     }
     if (project.value_status === "not_assessed") {
       fail(path, "Registe se o valor foi comprovado, está em observação ou não foi comprovado antes do fecho.");
     }
     if (project.handover_status === "pending") {
       fail(path, "Conclua a transferência/handover antes do fecho.");
+    }
+    if (project.security_transfer_status === "pending") {
+      fail(path, "Conclua a transferência/revogação de segurança e acessos antes do fecho.");
+    }
+    if (project.financial_close_status === "pending") {
+      fail(path, "Conclua a verificação financeira do projecto antes do fecho.");
     }
     if (project.continuity_status === "pending") {
       fail(path, "Verifique continuidade/recuperação antes do fecho.");

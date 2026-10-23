@@ -604,6 +604,68 @@ jobs:
             exit 1
           }
 
+      - name: Validate final G5 and external asset hardening
+        shell: pwsh
+        run: |
+          $migration = Get-Content "../supabase/migrations/20261023162000_final_delivery_hardening.sql" -Raw
+          $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+          $project = Get-Content -LiteralPath "./app/(protected)/projects/[id]/page.tsx" -Raw
+          $deliverables = Get-Content "./app/(protected)/deliverables/page.tsx" -Raw
+          $vercel = Get-Content "./vercel.json" -Raw
+
+          foreach ($token in @(
+            "security_transfer_status",
+            "financial_close_status",
+            "incorporated_baseline_id",
+            "project_assets",
+            "enforce_project_safe_closure"
+          )) {
+            if (-not $migration.Contains($token)) {
+              Write-Error "Missing final delivery hardening database guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "createProjectAsset",
+            "updateProjectAssetTransfer",
+            "incorporated_baseline_id",
+            "security_transfer_status",
+            "financial_close_status"
+          )) {
+            if (-not $mutations.Contains($token)) {
+              Write-Error "Missing final delivery hardening workflow: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Activos, custos externos e transferência",
+            "Propriedade final",
+            "Renovação, quando aplicável"
+          )) {
+            if (-not $project.Contains($token)) {
+              Write-Error "Project detail is missing external asset control: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Segurança / acessos",
+            "Fecho financeiro",
+            "alterações incorporadas em baseline"
+          )) {
+            if (-not $deliverables.Contains($token)) {
+              Write-Error "Closure UI is missing final hardening: $token"
+              exit 1
+            }
+          }
+
+          if (-not $vercel.Contains('"audit/pcc-final-hardening-20261023": false')) {
+            Write-Error "Hardening branch must not trigger a Vercel preview deployment."
+            exit 1
+          }
+
       - name: Typecheck
         run: npm run typecheck
 

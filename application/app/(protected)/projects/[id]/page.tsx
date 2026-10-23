@@ -4,6 +4,7 @@ import { ArrowLeft, BarChart3, CalendarCheck2, CheckSquare2, CircleDollarSign, G
 import {
   approveCommitmentInternally,
   completeProjectReview,
+  createProjectAsset,
   createProjectChangeRequest,
   createProjectMemory,
   decideProjectChangeRequest,
@@ -11,6 +12,7 @@ import {
   saveCommitmentBaseline,
   validateCommitmentByClient,
   resolveGovernanceDependency,
+  updateProjectAssetTransfer,
   updateProjectGovernance,
   updateProjectNextAction,
 } from "@/app/(protected)/mutations";
@@ -59,6 +61,7 @@ export default async function ProjectHubPage({
     { data: commercialProfile },
     { data: commitmentBaselines },
     { data: changeRequests },
+    { data: projectAssets },
   ] = await Promise.all([
     supabase
       .from("actions")
@@ -157,6 +160,12 @@ export default async function ProjectHubPage({
       .eq("user_id", user.id)
       .eq("project_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("project_assets")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
@@ -197,7 +206,9 @@ export default async function ProjectHubPage({
   });
   const latestBaseline = commitmentBaselines?.[0];
   const approvedBaseline = (commitmentBaselines ?? []).find((item) => item.status === "client_approved");
-  const pendingChanges = (changeRequests ?? []).filter((item) => item.decision === "pending");
+  const pendingChanges = (changeRequests ?? []).filter(
+    (item) => item.decision === "pending" || (item.decision === "approved" && !item.incorporated_baseline_id),
+  );
   const autofillStateLabel: Record<string, string> = {
     calculated: "Calculado",
     inferred: "Inferido",
@@ -348,6 +359,114 @@ export default async function ProjectHubPage({
             )}
           </div>
         </details>
+      </Card>
+
+      <Card className="mb-6 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Activos, custos externos e transferência</h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-[var(--cc-secondary)]">
+              Domínio, hosting, licenças, publicidade, contas, fornecedores e trabalhos paralelos são registados separadamente do preço base do PCC.
+              O registo identifica quem paga, quem será o proprietário, quando renova e se o activo/acesso já foi transferido ou revogado.
+            </p>
+          </div>
+          <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
+            {(projectAssets ?? []).length} activo(s)
+          </span>
+        </div>
+
+        <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+          <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">Registar activo / custo externo</summary>
+          <form action={createProjectAsset} className="space-y-4 border-t border-[var(--cc-border)] p-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Select label="Tipo" name="asset_type" defaultValue="domain">
+                <option value="domain">Domínio</option>
+                <option value="website">Website / desenvolvimento</option>
+                <option value="hosting">Hosting</option>
+                <option value="license">Licença</option>
+                <option value="account">Conta</option>
+                <option value="api">API</option>
+                <option value="dataset">Dados</option>
+                <option value="advertising">Publicidade</option>
+                <option value="supplier_service">Fornecedor / serviço externo</option>
+                <option value="other">Outro</option>
+              </Select>
+              <Field label="Activo / serviço" name="title" required />
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Select label="Entregável relacionado, se aplicável" name="deliverable_id" defaultValue="">
+                <option value="">Sem ligação directa</option>
+                {(deliverables ?? []).map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+              </Select>
+              <Field label="Fornecedor" name="provider" />
+            </div>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Select label="Propriedade final" name="ownership_target" defaultValue="client">
+                <option value="client">Cliente</option>
+                <option value="pcc">PCC</option>
+                <option value="third_party">Terceiro</option>
+              </Select>
+              <Select label="Tratamento do custo" name="cost_treatment" defaultValue="client_direct">
+                <option value="client_direct">Cliente paga directamente</option>
+                <option value="reimbursable_external">Externo reembolsável</option>
+                <option value="additional_scope">Trabalho adicional</option>
+                <option value="pcc_internal">Custo interno PCC</option>
+              </Select>
+              <Select label="Frequência" name="cost_frequency" defaultValue="one_off">
+                <option value="one_off">Único</option>
+                <option value="monthly">Mensal</option>
+                <option value="annual">Anual</option>
+                <option value="usage">Por utilização</option>
+              </Select>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Field label="Custo estimado" name="estimated_cost" type="number" min={0} step="any" />
+              <Field label="Moeda" name="currency" defaultValue={project.currency ?? "MZN"} />
+              <Field label="Renovação, quando aplicável" name="renewal_date" type="date" />
+            </div>
+            <TextArea label="Notas / condições" name="notes" />
+            <button className={secondaryButtonClass} type="submit">Registar activo / custo</button>
+          </form>
+        </details>
+
+        <div className="mt-4 space-y-3">
+          {!(projectAssets ?? []).length ? (
+            <EmptyState>Sem activos externos registados.</EmptyState>
+          ) : (projectAssets ?? []).map((asset) => (
+            <div key={asset.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--cc-foreground)]">{asset.title}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">
+                    {displayLabel(asset.asset_type)} · {displayLabel(asset.cost_treatment)} · {displayLabel(asset.cost_frequency)}
+                    {asset.provider ? ` · ${asset.provider}` : ""}
+                    {asset.renewal_date ? ` · renovação ${formatDate(asset.renewal_date)}` : ""}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">
+                    Propriedade: {displayLabel(asset.ownership_target)}
+                    {asset.estimated_cost != null ? ` · ${asset.estimated_cost} ${asset.currency ?? ""}` : ""}
+                  </p>
+                </div>
+                <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
+                  {displayLabel(asset.transfer_status)}
+                </span>
+              </div>
+              <form action={updateProjectAssetTransfer} className="mt-3 flex flex-wrap items-end gap-2 border-t border-[var(--cc-border)] pt-3">
+                <input type="hidden" name="project_id" value={project.id} />
+                <input type="hidden" name="asset_id" value={asset.id} />
+                <Select label="Transferência / acesso" name="transfer_status" defaultValue={asset.transfer_status}>
+                  <option value="pending">Pendente</option>
+                  <option value="ready">Pronto para transferir</option>
+                  <option value="transferred">Transferido</option>
+                  <option value="revoked">Acesso temporário revogado</option>
+                  <option value="not_required">Não aplicável</option>
+                </Select>
+                <button className={secondaryButtonClass} type="submit">Actualizar</button>
+              </form>
+            </div>
+          ))}
+        </div>
       </Card>
 
       <div className="mb-4">
