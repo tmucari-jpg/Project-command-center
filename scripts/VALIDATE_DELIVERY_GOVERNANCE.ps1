@@ -32,7 +32,7 @@ foreach ($token in @(
   "G3 bloqueado: o cliente ainda não aprovou",
   'deliverable.qa_status !== "passed"',
   "Todos os entregáveis precisam de aceitação do cliente",
-  "Custos externos, directos do cliente ou de âmbito adicional",
+  '["client_direct", "reimbursable_external", "additional_scope"]',
   "upsertProjectClosureAssessment",
   "project_change_requests"
 )) {
