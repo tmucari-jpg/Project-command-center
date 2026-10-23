@@ -392,6 +392,85 @@ export const financialEntrySchema = z.object({
   occurred_on: optionalDate,
   status: z.enum(["actual", "forecast", "pending"]),
   evidence_reference: optionalText(1000),
+  cost_scope: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? "pcc_internal" : value),
+    z.enum(["pcc_internal", "client_direct", "reimbursable_external", "additional_scope"]),
+  ),
+  supplier: optionalText(180),
+  recurrence: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? "one_off" : value),
+    z.enum(["one_off", "monthly", "annual", "usage"]),
+  ),
+});
+
+
+export const projectCommitmentSchema = z.object({
+  project_id: z.string().uuid(),
+  expected_result: z.string().trim().min(3).max(8000),
+  scope_included: z.string().trim().min(3).max(12000),
+  scope_excluded: optionalText(8000),
+  deliverables_summary: z.string().trim().min(3).max(12000),
+  acceptance_summary: z.string().trim().min(3).max(8000),
+  pcc_responsibilities: optionalText(8000),
+  client_responsibilities: optionalText(8000),
+  dependencies: optionalText(8000),
+  external_costs: optionalText(8000),
+  security_requirements: optionalText(8000),
+  pcc_validation_notes: optionalText(8000),
+});
+
+export const projectCommitmentClientValidationSchema = z.object({
+  project_id: z.string().uuid(),
+  commitment_id: z.string().uuid(),
+  client_validated_by: z.string().trim().min(2).max(180),
+  client_validation_notes: optionalText(8000),
+});
+
+export const projectChangeRequestSchema = z.object({
+  project_id: z.string().uuid(),
+  commitment_id: optionalUuid,
+  title: z.string().trim().min(2).max(180),
+  requested_change: z.string().trim().min(3).max(12000),
+  impact_scope: optionalText(8000),
+  impact_schedule: optionalText(4000),
+  impact_cost: optionalText(4000),
+  impact_capacity: optionalText(4000),
+  impact_security: optionalText(4000),
+});
+
+export const projectChangeDecisionSchema = z.object({
+  project_id: z.string().uuid(),
+  change_request_id: z.string().uuid(),
+  decision: z.enum(["approved", "rejected", "deferred"]),
+  decision_notes: optionalText(8000),
+});
+
+export const deliverableQaSchema = z.object({
+  project_id: z.string().uuid(),
+  deliverable_id: z.string().uuid(),
+  qa_status: z.enum(["ready_for_review", "approved", "changes_required"]),
+  qa_notes: optionalText(8000),
+});
+
+export const deliverableAcceptanceSchema = z.object({
+  project_id: z.string().uuid(),
+  deliverable_id: z.string().uuid(),
+  status: z.enum(["pending_review", "accepted", "accepted_with_reservations", "correction_required"]),
+  accepted_by: optionalText(180),
+  notes: optionalText(8000),
+});
+
+export const projectClosureStateSchema = z.object({
+  project_id: z.string().uuid(),
+  value_status: z.enum(["not_assessed", "proved", "observing", "not_proved"]),
+  value_evidence: optionalText(8000),
+  handover_status: z.enum(["not_applicable", "pending", "completed"]),
+  handover_notes: optionalText(8000),
+  security_transfer_status: z.enum(["not_applicable", "pending", "completed"]),
+  security_transfer_notes: optionalText(8000),
+  financial_status: z.enum(["pending", "updated"]),
+  lessons_learned: optionalText(8000),
+  next_follow_up: optionalText(4000),
 });
 
 export const subscriptionFunnelMetricSchema = z.object({
