@@ -406,6 +406,10 @@ export const financialEntrySchema = z.object({
 
 export const commitmentBaselineSchema = z.object({
   project_id: z.string().uuid(),
+  information_classification: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? "internal" : value),
+    z.enum(["public", "internal", "confidential", "restricted"]),
+  ),
   expected_result: z.string().trim().min(3).max(8000),
   scope: z.string().trim().min(3).max(12000),
   exclusions: optionalText(8000),
