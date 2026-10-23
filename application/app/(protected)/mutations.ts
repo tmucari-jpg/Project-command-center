@@ -2146,12 +2146,13 @@ export async function decideProjectChangeRequest(formData: FormData) {
   const { supabase, user } = await requireUser();
   const { data: request, error: requestError } = await supabase
     .from("project_change_requests")
-    .select("id,status,baseline_version")
+    .select("id,status,baseline_version,affected_areas")
     .eq("id", parsed.data.change_request_id)
     .eq("project_id", parsed.data.project_id)
     .eq("user_id", user.id)
     .maybeSingle();
   if (requestError || !request) fail(path, requestError?.message ?? "Pedido de alteração inválido.");
+
   if (parsed.data.decision === "implemented") {
     if (request.status !== "approved") fail(path, "Apenas alterações aprovadas podem ser marcadas como implementadas.");
     const { data: revisedBaseline, error: revisedError } = await supabase
@@ -2166,6 +2167,7 @@ export async function decideProjectChangeRequest(formData: FormData) {
     if (revisedError) fail(path, revisedError.message);
     if (!revisedBaseline) fail(path, "Antes de implementar a alteração, obtenha aprovação do cliente para uma nova baseline.");
   }
+
   const { error } = await supabase
     .from("project_change_requests")
     .update({
@@ -2176,7 +2178,49 @@ export async function decideProjectChangeRequest(formData: FormData) {
     .eq("id", request.id)
     .eq("user_id", user.id);
   if (error) fail(path, error.message);
+
+  const changeReference = `change_request:${request.id}`;
+  if (parsed.data.decision === "approved") {
+    const { data: currentProject, error: projectError } = await supabase
+      .from("projects")
+      .select("governance_gate")
+      .eq("id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (projectError || !currentProject) fail(path, projectError?.message ?? "Projecto não encontrado.");
+
+    const { error: dependencyError } = await supabase.from("project_governance_dependencies").insert({
+      user_id: user.id,
+      project_id: parsed.data.project_id,
+      gate: currentProject.governance_gate,
+      kind: "validation",
+      owner_role: "pcc",
+      required_item: `Revalidar áreas afectadas pela alteração: ${request.affected_areas}`,
+      description: "A alteração aprovada só fica incorporada após revalidar os impactos e obter uma nova baseline aprovada quando material.",
+      status: "pending",
+      source_reference: changeReference,
+      blocks_progress: true,
+    });
+    if (dependencyError) fail(path, dependencyError.message);
+  }
+
+  if (parsed.data.decision === "implemented") {
+    const { error: resolveError } = await supabase
+      .from("project_governance_dependencies")
+      .update({
+        status: "resolved",
+        evidence: parsed.data.decision_rationale,
+        resolved_at: new Date().toISOString(),
+      })
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .eq("source_reference", changeReference)
+      .in("status", ["pending", "resolving"]);
+    if (resolveError) fail(path, resolveError.message);
+  }
+
   revalidatePath(path);
+  revalidatePath(`/projects/${parsed.data.project_id}`);
   redirect(`${path}?change=${parsed.data.decision}`);
 }
 

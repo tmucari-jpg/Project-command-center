@@ -159,6 +159,7 @@ export default async function ProjectCommitmentPage({ params }: { params: Promis
                 <div key={change.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
                   <p className="text-sm font-semibold text-[var(--cc-foreground)]">{change.request_summary}</p>
                   <p className="mt-1 text-xs text-[var(--cc-secondary)]">Baseline v{change.baseline_version} · {displayLabel(change.status)}</p>
+                  <p className="mt-1 text-xs text-[var(--cc-secondary)]">Áreas afectadas: {change.affected_areas}</p>
                   {["requested", "approved"].includes(change.status) && (
                     <form action={decideProjectChangeRequest} className="mt-3 space-y-2">
                       <input type="hidden" name="project_id" value={project.id} />
