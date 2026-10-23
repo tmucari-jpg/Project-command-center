@@ -127,14 +127,20 @@ export default async function DeliverablesPage({
 
   const projectGroups = (projects ?? []).map((project) => {
     const projectDeliverables = (deliverables ?? []).filter((item) => item.project_id === project.id);
+    const supersededIds = new Set(
+      projectDeliverables
+        .map((item) => item.supersedes_deliverable_id)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const currentDeliverables = projectDeliverables.filter((item) => !supersededIds.has(item.id));
     const projectEvidence = (evidence ?? []).filter((item) => item.project_id === project.id);
     const projectBlockers = (blockers ?? []).filter((item) => item.project_id === project.id);
-    const completed = projectDeliverables.filter((item) => item.status === "completed");
-    const withEvidence = projectDeliverables.filter((item) =>
+    const completed = currentDeliverables.filter((item) => item.status === "completed");
+    const withEvidence = currentDeliverables.filter((item) =>
       projectEvidence.some((proof) => proof.deliverable_id === item.id),
     );
     const projectAcceptances = (acceptances ?? []).filter((item) => item.project_id === project.id);
-    const accepted = projectDeliverables.filter((item) =>
+    const accepted = currentDeliverables.filter((item) =>
       projectAcceptances.some((acceptance) =>
         acceptance.deliverable_id === item.id &&
         ["accepted", "accepted_with_reservations"].includes(acceptance.status),
@@ -157,10 +163,10 @@ export default async function DeliverablesPage({
       closureState.handover_status !== "pending" &&
       closureState.security_transfer_status !== "pending";
     const readyToClose =
-      projectDeliverables.length > 0 &&
-      completed.length === projectDeliverables.length &&
-      withEvidence.length === projectDeliverables.length &&
-      accepted.length === projectDeliverables.length &&
+      currentDeliverables.length > 0 &&
+      completed.length === currentDeliverables.length &&
+      withEvidence.length === currentDeliverables.length &&
+      accepted.length === currentDeliverables.length &&
       projectBlockers.length === 0 &&
       blockingRisks.length === 0 &&
       blockingDependencies.length === 0 &&
@@ -169,6 +175,8 @@ export default async function DeliverablesPage({
     return {
       project,
       deliverables: projectDeliverables,
+      currentDeliverables,
+      supersededIds,
       evidence: projectEvidence,
       blockers: projectBlockers,
       completed: completed.length,
@@ -188,7 +196,7 @@ export default async function DeliverablesPage({
     ? projectGroups.filter((group) => group.project.id === effectiveProjectId)
     : projectGroups;
 
-  const totalDeliverables = visibleGroups.reduce((sum, group) => sum + group.deliverables.length, 0);
+  const totalDeliverables = visibleGroups.reduce((sum, group) => sum + group.currentDeliverables.length, 0);
   const totalCompleted = visibleGroups.reduce((sum, group) => sum + group.completed, 0);
   const totalEvidenceReady = visibleGroups.reduce((sum, group) => sum + group.withEvidence, 0);
   const readyProjects = visibleGroups.filter((group) => group.readyToClose).length;
@@ -325,7 +333,7 @@ export default async function DeliverablesPage({
                         <div>
                           <h3 className="font-semibold text-[var(--cc-foreground)]">{group.project.title}</h3>
                           <p className="mt-1 text-xs text-[var(--cc-secondary)]">
-                            {group.completed}/{group.deliverables.length} entregues · {group.withEvidence}/{group.deliverables.length} com evidência
+                            {group.completed}/{group.currentDeliverables.length} entregues · {group.withEvidence}/{group.currentDeliverables.length} com evidência
                             {group.blockers.length ? ` · ${group.blockers.length} bloqueio(s)` : ""}
                           </p>
                         </div>
@@ -348,6 +356,7 @@ export default async function DeliverablesPage({
                       ) : group.deliverables.map((item) => {
                         const proofs = group.evidence.filter((proof) => proof.deliverable_id === item.id);
                         const locked = item.status === "completed";
+                        const superseded = group.supersededIds.has(item.id);
                         return (
                           <article key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
                             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -360,11 +369,15 @@ export default async function DeliverablesPage({
                                   {item.owner_id ? ` · ${ownerById.get(item.owner_id) ?? "Responsável definido"}` : ""}
                                 </p>
                               </div>
-                              {locked && (
+                              {superseded ? (
+                                <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
+                                  Histórico · substituído
+                                </span>
+                              ) : locked ? (
                                 <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
                                   Registo oficial imutável
                                 </span>
-                              )}
+                              ) : null}
                             </div>
 
                             {item.description && <p className="mt-3 text-sm leading-6 text-[var(--cc-secondary)]">{item.description}</p>}
@@ -435,6 +448,12 @@ export default async function DeliverablesPage({
                                 <StatusProgressForm entity="deliverables" id={item.id} status={item.status} progress={item.progress} />
                                 <p className="text-xs text-[var(--cc-secondary)]">
                                   A entrega oficial exige progresso a 100%, evidência associada, critérios de aceitação e QA aprovado.
+                                </p>
+                              </div>
+                            ) : superseded ? (
+                              <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
+                                <p className="text-xs text-[var(--cc-secondary)]">
+                                  Esta versão permanece no histórico e foi substituída por uma versão posterior.
                                 </p>
                               </div>
                             ) : (
