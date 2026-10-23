@@ -329,13 +329,16 @@ export default async function DeliverablesPage({
                             {group.blockers.length ? ` · ${group.blockers.length} bloqueio(s)` : ""}
                           </p>
                         </div>
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          group.readyToClose
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)]"
-                        }`}>
-                          {group.readyToClose ? "Pronto para decisão final" : "Fecho pendente"}
-                        </span>
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            group.readyToClose
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)]"
+                          }`}>
+                            {group.readyToClose ? "Pronto para decisão final" : "Fecho pendente"}
+                          </span>
+                          <span className="text-xs font-semibold text-[var(--cc-accent)]">Ver detalhes</span>
+                        </div>
                       </div>
                     </summary>
 
