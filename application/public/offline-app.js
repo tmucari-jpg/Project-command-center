@@ -71,10 +71,10 @@
     const profiles=snapshot.commercialProfiles||[];
     const commercialIds=new Set(profiles.map(x=>x.project_id));
     (snapshot.commercialLeads||[]).forEach(x=>commercialIds.add(x.project_id));
-    (snapshot.deliverables||[]).filter(x=>x.workstream==="commercial").forEach(x=>commercialIds.add(x.project_id));
+    (snapshot.deliverables||[]).filter(x=>["commercial","marketing","sales","monetization"].includes(x.workstream)).forEach(x=>commercialIds.add(x.project_id));
     const projects=snapshot.projects.filter(p=>commercialIds.has(p.id));
     const leads=(snapshot.commercialLeads||[]).filter(x=>commercialIds.has(x.project_id));
-    const deliverables=(snapshot.deliverables||[]).filter(x=>x.workstream==="commercial"&&commercialIds.has(x.project_id));
+    const deliverables=(snapshot.deliverables||[]).filter(x=>["commercial","marketing","sales","monetization"].includes(x.workstream)&&commercialIds.has(x.project_id));
     const entries=(snapshot.financialEntries||[]).filter(x=>commercialIds.has(x.project_id));
     const normStage=s=>s==="lead"||s==="contacted"?"contact":s==="qualified"?"diagnosis":s==="negotiation"?"proposal":s==="won"?"client":s||"contact";const active=leads.filter(x=>!["client","lost"].includes(normStage(String(x.stage||""))));
     const backlog=projects.filter(p=>{const profile=profiles.find(x=>x.project_id===p.id);return !profile||profile.validation_status!=="validated"});
