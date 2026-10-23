@@ -224,7 +224,7 @@ export default async function DeliverablesPage({
           </p>
         </Card>
 
-        <ManualEntry defaultOpen={Boolean(preparedDraft)}>
+        <ManualEntry defaultOpen={Boolean(preparedDraft)} label="Definir entregável">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Definir entregável</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
             Um entregável é um resultado utilizável: ficheiro final, website publicado, aplicação, dashboard, apresentação, modelo ou outro artefacto real.
