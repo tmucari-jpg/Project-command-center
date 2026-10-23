@@ -584,8 +584,8 @@ jobs:
             }
           }
 
-          if ($serviceWorker.Contains("cacheSuccessful(event.request, response)")) {
-            Write-Error "Protected navigations must not be persisted by the service worker."
+          if (-not $serviceWorker.Contains('if (event.request.mode === "navigate")') -or -not $serviceWorker.Contains("fetch(event.request).catch(async () => {")) {
+            Write-Error "Protected navigations must fall back to the offline shell without persisting authenticated HTML."
             exit 1
           }
 
