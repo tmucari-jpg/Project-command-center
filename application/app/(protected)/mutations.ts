@@ -1227,11 +1227,23 @@ export async function validateProjectCommitmentWithClient(formData: FormData) {
 
   if (error) fail(path, error.message);
 
-  await supabase
+  const { error: backfillError } = await supabase
+    .from("deliverables")
+    .update({ commitment_id: commitment.id })
+    .eq("project_id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .is("commitment_id", null)
+    .neq("status", "completed");
+
+  if (backfillError) fail(path, backfillError.message);
+
+  const { error: projectGateError } = await supabase
     .from("projects")
     .update({ governance_gate: "g4_execution", governance_gate_status: "approved" })
     .eq("id", parsed.data.project_id)
     .eq("user_id", user.id);
+
+  if (projectGateError) fail(path, projectGateError.message);
 
   revalidatePath(path);
   revalidatePath("/projects");
@@ -1381,6 +1393,16 @@ export async function createDeliverable(formData: FormData) {
 
   if (projectError || !project) fail(returnPath, projectError?.message ?? "Projecto inválido.");
 
+  const { data: activeCommitment, error: commitmentError } = await supabase
+    .from("project_commitments")
+    .select("id")
+    .eq("project_id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .eq("status", "client_validated")
+    .maybeSingle();
+
+  if (commitmentError) fail(returnPath, commitmentError.message);
+
   const ownerId = parsed.data.owner_id ?? project.owner_id ?? null;
   if (ownerId) {
     const { data: owner, error: ownerError } = await supabase
@@ -1412,6 +1434,7 @@ export async function createDeliverable(formData: FormData) {
     ...parsed.data,
     owner_id: ownerId,
     artifact_version: artifactVersion,
+    commitment_id: activeCommitment?.id ?? null,
     user_id: user.id,
   });
 
@@ -2154,7 +2177,7 @@ export async function finalizeProjectClosure(formData: FormData) {
     ] = await Promise.all([
       supabase
         .from("deliverables")
-        .select("id,status,completion_criteria,locked_at")
+        .select("id,status,completion_criteria,locked_at,supersedes_deliverable_id")
         .eq("project_id", project.id)
         .eq("user_id", user.id),
       supabase
@@ -2204,20 +2227,27 @@ export async function finalizeProjectClosure(formData: FormData) {
       fail(path, "O projecto não pode fechar sem entregáveis definidos.");
     }
 
-    const incomplete = (deliverables ?? []).filter((item) => item.status !== "completed");
+    const supersededIds = new Set(
+      (deliverables ?? [])
+        .map((item) => item.supersedes_deliverable_id)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const currentDeliverables = (deliverables ?? []).filter((item) => !supersededIds.has(item.id));
+
+    const incomplete = currentDeliverables.filter((item) => item.status !== "completed");
     if (incomplete.length) {
-      fail(path, "Existem entregáveis ainda não entregues/validados.");
+      fail(path, "Existem entregáveis vigentes ainda não entregues/validados.");
     }
 
-    const unlocked = (deliverables ?? []).filter((item) => !item.locked_at);
+    const unlocked = currentDeliverables.filter((item) => !item.locked_at);
     if (unlocked.length) {
-      fail(path, "Existem entregáveis finais que ainda não foram arquivados de forma imutável.");
+      fail(path, "Existem entregáveis vigentes que ainda não foram arquivados de forma imutável.");
     }
 
     const evidenceIds = new Set((evidence ?? []).map((item) => item.deliverable_id).filter(Boolean));
-    const missingEvidence = (deliverables ?? []).filter((item) => !evidenceIds.has(item.id));
+    const missingEvidence = currentDeliverables.filter((item) => !evidenceIds.has(item.id));
     if (missingEvidence.length) {
-      fail(path, "Todos os entregáveis precisam de evidência de entrega antes do fecho.");
+      fail(path, "Todos os entregáveis vigentes precisam de evidência de entrega antes do fecho.");
     }
 
     if ((blockers ?? []).length) {
@@ -2229,7 +2259,7 @@ export async function finalizeProjectClosure(formData: FormData) {
         .filter((item) => ["accepted", "accepted_with_reservations"].includes(item.status))
         .map((item) => item.deliverable_id),
     );
-    const missingAcceptance = (deliverables ?? []).filter((item) => !acceptedIds.has(item.id));
+    const missingAcceptance = currentDeliverables.filter((item) => !acceptedIds.has(item.id));
     if (missingAcceptance.length) {
       fail(path, "Todos os entregáveis precisam de aceitação do cliente antes do fecho.");
     }
