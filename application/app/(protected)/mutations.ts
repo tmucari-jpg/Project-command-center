@@ -2294,6 +2294,9 @@ export async function finalizeProjectClosure(formData: FormData) {
     if (closureState.security_transfer_status === "pending") {
       fail(path, "Conclua ou marque como não aplicável a transferência/revogação de acessos antes do fecho.");
     }
+    if (closureState.continuity_status === "pending") {
+      fail(path, "Confirme ou marque como não aplicável a continuidade/recuperação antes do fecho.");
+    }
   }
 
   const { error: decisionError } = await supabase.from("decisions").insert({
