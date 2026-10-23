@@ -41,13 +41,6 @@ export default async function ObjectivesPage({
       <PageHeader eyebrow="Direcção" title="Objectivos" />
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
-      <Card className="mb-6 p-5">
-        <h2 className="font-semibold text-[var(--cc-foreground)]">Objectivo Central do Projecto</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Cada projecto aprovado deve ter um objectivo central claro. Prazos, métricas, acções, bloqueios e entregáveis são avaliados em função desse objectivo.
-        </p>
-      </Card>
-
       <div className="space-y-6">
         <ManualEntry defaultOpen={Boolean(preparedDraft)}>
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Definir Objectivo Central</h2>
