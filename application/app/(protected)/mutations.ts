@@ -1219,6 +1219,7 @@ export async function validateProjectCommitmentWithClient(formData: FormData) {
     .update({
       status: "client_validated",
       client_validated_by: parsed.data.client_validated_by,
+      client_validation_reference: parsed.data.client_validation_reference ?? null,
       client_validation_notes: parsed.data.client_validation_notes ?? null,
       client_validated_at: new Date().toISOString(),
     })
