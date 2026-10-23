@@ -3,7 +3,8 @@
 
 alter table public.projects
   add column if not exists value_status text not null default 'not_assessed',
-  add column if not exists handover_status text not null default 'not_required';
+  add column if not exists handover_status text not null default 'not_required',
+  add column if not exists information_classification text not null default 'internal';
 
 alter table public.projects
   drop constraint if exists projects_value_status_check,
@@ -14,6 +15,11 @@ alter table public.projects
   drop constraint if exists projects_handover_status_check,
   add constraint projects_handover_status_check
     check (handover_status in ('not_required','pending','completed'));
+
+alter table public.projects
+  drop constraint if exists projects_information_classification_check,
+  add constraint projects_information_classification_check
+    check (information_classification in ('public','internal','confidential','restricted'));
 
 alter table public.deliverables
   add column if not exists qa_status text not null default 'pending',
@@ -81,6 +87,8 @@ create table if not exists public.project_commitment_baselines (
   user_id uuid not null references public.profiles(id) on delete cascade,
   project_id uuid not null references public.projects(id) on delete cascade,
   version integer not null default 1 check (version >= 1),
+  information_classification text not null default 'internal'
+    check (information_classification in ('public','internal','confidential','restricted')),
   expected_result text not null,
   scope text not null,
   exclusions text,
