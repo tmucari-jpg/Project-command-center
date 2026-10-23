@@ -301,6 +301,9 @@ jobs:
           $manifest = Get-Content "./app/manifest.ts" -Raw
           $layout = Get-Content "./app/layout.tsx" -Raw
           $vercel = Get-Content "./vercel.json" -Raw
+          $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
+          $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
+          $serviceWorker = Get-Content "./public/sw.js" -Raw
 
           foreach ($token in @(
             '"objectives"',
@@ -436,9 +439,16 @@ jobs:
             }
           }
 
-          foreach ($token in @("strategyPlans", "commercialProfiles", "financialEntries", "commercialLeads", "/commercial-master", "/monetization")) {
+          foreach ($token in @("strategyPlans", "commercialProfiles", "financialEntries", "commercialLeads")) {
             if (-not $offlineClient.Contains($token) -and -not $offlineApp.Contains($token)) {
-              Write-Error "Offline commercial workspace is missing: $token"
+              Write-Error "Offline commercial snapshot support is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("/commercial-master", "/monetization")) {
+            if ($offlineClient.Contains($token)) {
+              Write-Error "Protected commercial pages must not be cached as offline HTML: $token"
               exit 1
             }
           }
@@ -502,7 +512,9 @@ jobs:
             "acceptance_status",
             "cost_treatment",
             "value_status",
-            "handover_status"
+            "handover_status",
+            "information_classification",
+            "enforce_project_execution_commitment"
           )) {
             if (-not $migration.Contains($token)) {
               Write-Error "Missing PCC commitment/safe-closure database guard: $token"
@@ -558,6 +570,28 @@ jobs:
               Write-Error "Validated commercial pipeline is missing: $token"
               exit 1
             }
+          }
+
+          foreach ($token in @(
+            "confidential",
+            "restricted",
+            "allowedProjectIds",
+            "safeProjectRows"
+          )) {
+            if (-not $offlineBootstrap.Contains($token)) {
+              Write-Error "Sensitive-project offline filter is missing: $token"
+              exit 1
+            }
+          }
+
+          if ($serviceWorker.Contains("cacheSuccessful(event.request, response)")) {
+            Write-Error "Protected navigations must not be persisted by the service worker."
+            exit 1
+          }
+
+          if (-not $offlineClient.Contains("caches.delete(OFFLINE_ROUTE_CACHE)")) {
+            Write-Error "Logout/offline cleanup must remove the protected route cache."
+            exit 1
           }
 
           if (-not $vercel.Contains('"audit/pcc-final-consolidation-20261023": false')) {
