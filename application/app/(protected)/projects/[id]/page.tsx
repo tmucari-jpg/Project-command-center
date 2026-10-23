@@ -376,6 +376,20 @@ export default async function ProjectHubPage({
             <TextArea label="Dependências" name="dependencies" defaultValue={activeCommitment?.dependencies ?? ""} />
             <TextArea label="Custos externos e trabalhos adicionais" name="external_costs" defaultValue={activeCommitment?.external_costs ?? "Domínio, hosting, licenças, publicidade, fornecedores e trabalho paralelo não incluído no serviço PCC são orçamentados separadamente, salvo indicação expressa em contrário."} />
             <TextArea label="Condições de segurança" name="security_requirements" defaultValue={activeCommitment?.security_requirements ?? ""} />
+            <div className="grid gap-3 md:grid-cols-2">
+              {[
+                ["capacity_confirmed", "Capacidade disponível confirmada"],
+                ["deliverability_confirmed", "Entregabilidade dos resultados confirmada"],
+                ["financial_confirmed", "Custos, preço e margem confirmados"],
+                ["security_confirmed", "Condições de segurança confirmadas"],
+                ["dependencies_confirmed", "Dependências críticas confirmadas"],
+              ].map(([name, label]) => (
+                <label key={name} className="flex items-start gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3 text-sm text-[var(--cc-foreground)]">
+                  <input className="mt-1" type="checkbox" name={name} required />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
             <TextArea label="Validação interna PCC / notas" name="pcc_validation_notes" />
             <button className={primaryButtonClass} type="submit">Validar internamente e preparar baseline</button>
           </form>
