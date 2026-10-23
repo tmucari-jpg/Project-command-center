@@ -345,10 +345,13 @@ create or replace function private.enforce_project_execution_commitment()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $pcc$
 begin
   if new.status = 'active'
-     and (tg_op = 'INSERT' or old.status is distinct from 'active')
+     and (
+       tg_op = 'INSERT'
+       or (tg_op = 'UPDATE' and old.status is distinct from 'active')
+     )
      and not exists (
        select 1
        from public.project_commitment_baselines b
@@ -363,7 +366,7 @@ begin
 
   return new;
 end;
-$;
+$pcc$;
 
 drop trigger if exists enforce_project_execution_commitment on public.projects;
 create trigger enforce_project_execution_commitment
