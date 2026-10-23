@@ -503,6 +503,9 @@ jobs:
           $objectives = Get-Content "./app/(protected)/objectives/page.tsx" -Raw
           $commercial = Get-Content "./app/(protected)/monetization/page.tsx" -Raw
           $vercel = Get-Content "./vercel.json" -Raw
+          $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
+          $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
+          $serviceWorker = Get-Content "./public/sw.js" -Raw
 
           foreach ($token in @(
             "project_commitment_baselines",
