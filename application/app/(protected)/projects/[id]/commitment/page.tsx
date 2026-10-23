@@ -176,7 +176,7 @@ export default async function ProjectCommitmentPage({ params }: { params: Promis
             ["handover_complete", "Handover concluído"],
             ["access_transfer_complete", "Propriedade e acessos transferidos"],
             ["temporary_access_revoked", "Acessos temporários revogados"],
-            ["data_retention_reviewed", "Arquivo e retenção de dados revistos"],
+            ["data_retention_reviewed", "Registo e retenção de dados revistos"],
           ].map(([name, label]) => (
             <label key={name} className="flex items-start gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3 text-sm">
               <input type="checkbox" name={name} defaultChecked={Boolean(closure?.[name])} className="mt-1" />
