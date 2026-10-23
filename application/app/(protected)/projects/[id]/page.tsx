@@ -5,6 +5,10 @@ import {
   completeProjectReview,
   createProjectMemory,
   prepareProjectOperationalStructure,
+  saveProjectCommitment,
+  validateProjectCommitmentWithClient,
+  createProjectChangeRequest,
+  decideProjectChangeRequest,
   resolveGovernanceDependency,
   updateProjectGovernance,
   updateProjectNextAction,
@@ -52,6 +56,8 @@ export default async function ProjectHubPage({
     { data: leads },
     { data: financialEntries },
     { data: commercialProfile },
+    { data: commitments },
+    { data: changeRequests },
   ] = await Promise.all([
     supabase
       .from("actions")
@@ -138,6 +144,18 @@ export default async function ProjectHubPage({
       .eq("user_id", user.id)
       .eq("project_id", id)
       .maybeSingle(),
+    supabase
+      .from("project_commitments")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("baseline_version", { ascending: false }),
+    supabase
+      .from("project_change_requests")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
@@ -176,6 +194,10 @@ export default async function ProjectHubPage({
     projectCurrency: project.currency,
     commercialCurrency: commercialProfile?.currency,
   });
+  const activeCommitment = (commitments ?? []).find((item) => item.status === "client_validated");
+  const pendingCommitment = (commitments ?? []).find((item) => item.status === "pcc_validated");
+  const pendingChanges = (changeRequests ?? []).filter((item) => item.decision === "pending");
+
   const autofillStateLabel: Record<string, string> = {
     calculated: "Calculado",
     inferred: "Inferido",
@@ -300,6 +322,204 @@ export default async function ProjectHubPage({
           </div>
         </Card>
       </div>
+
+
+      <Card className="mt-6 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-gold)]">G3 · Compromisso de entrega</p>
+            <h2 className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">Definição do projecto e Baseline de Compromisso</h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-[var(--cc-secondary)]">
+              O PCC valida primeiro capacidade, custos, segurança e dependências. O trabalho material só começa depois de o cliente confirmar o resultado esperado, o âmbito, os entregáveis, os critérios de aceitação, as responsabilidades e as exclusões.
+            </p>
+          </div>
+          <span className="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
+            {activeCommitment ? `Baseline v${activeCommitment.baseline_version} validada` : pendingCommitment ? "Aguardando validação do cliente" : "Por definir"}
+          </span>
+        </div>
+
+        {activeCommitment && (
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Resultado esperado</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{activeCommitment.expected_result}</p>
+            </div>
+            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Entregáveis acordados</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{activeCommitment.deliverables_summary}</p>
+            </div>
+            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Incluído</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{activeCommitment.scope_included}</p>
+            </div>
+            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Exclusões e custos externos</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{activeCommitment.scope_excluded || "Sem exclusões adicionais registadas."}</p>
+              {activeCommitment.external_costs && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-secondary)]">{activeCommitment.external_costs}</p>}
+            </div>
+          </div>
+        )}
+
+        <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+          <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-foreground)]">
+            {activeCommitment ? "Preparar nova versão da baseline" : "Preparar compromisso para validação"}
+          </summary>
+          <form action={saveProjectCommitment} className="space-y-4 border-t border-[var(--cc-border)] p-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <TextArea label="Resultado esperado do projecto" name="expected_result" defaultValue={activeCommitment?.expected_result ?? project.expected_result ?? ""} />
+            <TextArea label="Âmbito incluído" name="scope_included" defaultValue={activeCommitment?.scope_included ?? ""} />
+            <TextArea label="Entregáveis a apresentar ao cliente" name="deliverables_summary" defaultValue={activeCommitment?.deliverables_summary ?? ""} />
+            <TextArea label="Critérios de aceitação" name="acceptance_summary" defaultValue={activeCommitment?.acceptance_summary ?? ""} />
+            <TextArea label="Exclusões" name="scope_excluded" defaultValue={activeCommitment?.scope_excluded ?? ""} />
+            <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={activeCommitment?.pcc_responsibilities ?? ""} />
+            <TextArea label="Responsabilidades / informação necessária do cliente" name="client_responsibilities" defaultValue={activeCommitment?.client_responsibilities ?? ""} />
+            <TextArea label="Dependências" name="dependencies" defaultValue={activeCommitment?.dependencies ?? ""} />
+            <TextArea label="Custos externos e trabalhos adicionais" name="external_costs" defaultValue={activeCommitment?.external_costs ?? "Domínio, hosting, licenças, publicidade, fornecedores e trabalho paralelo não incluído no serviço PCC são orçamentados separadamente, salvo indicação expressa em contrário."} />
+            <TextArea label="Condições de segurança" name="security_requirements" defaultValue={activeCommitment?.security_requirements ?? ""} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Select label="Classificação da informação" name="information_classification" defaultValue={activeCommitment?.information_classification ?? "confidential"}>
+                <option value="public">Pública</option>
+                <option value="internal">Interna</option>
+                <option value="confidential">Confidencial</option>
+                <option value="restricted">Restrita</option>
+              </Select>
+              <TextArea label="Retenção / eliminação de dados após fecho" name="data_retention_terms" defaultValue={activeCommitment?.data_retention_terms ?? ""} />
+            </div>
+            <TextArea
+              label="Base da capacidade confirmada"
+              name="capacity_basis"
+              defaultValue={activeCommitment?.capacity_basis ?? ""}
+              placeholder="Ex.: equipa disponível, esforço estimado, período e compromissos já assumidos."
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextArea label="Condições de pagamento" name="payment_conditions" defaultValue={activeCommitment?.payment_conditions ?? ""} />
+              <TextArea label="Prazo / regra para aprovações do cliente" name="client_approval_sla" defaultValue={activeCommitment?.client_approval_sla ?? ""} />
+              <TextArea label="Propriedade dos activos" name="asset_ownership" defaultValue={activeCommitment?.asset_ownership ?? ""} />
+              <TextArea label="Propriedade intelectual" name="intellectual_property_terms" defaultValue={activeCommitment?.intellectual_property_terms ?? ""} />
+              <TextArea label="Suporte / garantia pós-entrega" name="post_delivery_support" defaultValue={activeCommitment?.post_delivery_support ?? ""} />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {[
+                ["capacity_confirmed", "Capacidade disponível confirmada"],
+                ["deliverability_confirmed", "Entregabilidade dos resultados confirmada"],
+                ["financial_confirmed", "Custos, preço e margem confirmados"],
+                ["security_confirmed", "Condições de segurança confirmadas"],
+                ["dependencies_confirmed", "Dependências críticas confirmadas"],
+              ].map(([name, label]) => (
+                <label key={name} className="flex items-start gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3 text-sm text-[var(--cc-foreground)]">
+                  <input className="mt-1" type="checkbox" name={name} required />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+            <TextArea label="Validação interna PCC / notas" name="pcc_validation_notes" />
+            <button className={primaryButtonClass} type="submit">Validar internamente e preparar baseline</button>
+          </form>
+        </details>
+
+        {pendingCommitment && (
+          <div className="mt-4 rounded-[var(--cc-radius-md)] border border-[color-mix(in_srgb,var(--cc-gold)_45%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_6%,var(--cc-surface))] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-gold)]">Resumo para validação do cliente</p>
+            <p className="mt-2 text-sm font-semibold text-[var(--cc-foreground)]">Baseline v{pendingCommitment.baseline_version}</p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {[
+                ["Resultado esperado", pendingCommitment.expected_result],
+                ["Âmbito incluído", pendingCommitment.scope_included],
+                ["Entregáveis", pendingCommitment.deliverables_summary],
+                ["Critérios de aceitação", pendingCommitment.acceptance_summary],
+                ["Exclusões", pendingCommitment.scope_excluded || "Sem exclusões adicionais registadas."],
+                ["Responsabilidades do PCC", pendingCommitment.pcc_responsibilities || "Não especificadas."],
+                ["Responsabilidades do cliente", pendingCommitment.client_responsibilities || "Não especificadas."],
+                ["Dependências", pendingCommitment.dependencies || "Sem dependências adicionais registadas."],
+                ["Custos externos / trabalho adicional", pendingCommitment.external_costs || "Sem custos externos registados."],
+                ["Condições de segurança", pendingCommitment.security_requirements || "Sem condições adicionais registadas."],
+                ["Classificação da informação", displayLabel(pendingCommitment.information_classification)],
+                ["Retenção / eliminação de dados", pendingCommitment.data_retention_terms || "Não especificada."],
+                ["Base de capacidade", pendingCommitment.capacity_basis],
+                ["Condições de pagamento", pendingCommitment.payment_conditions || "Não especificadas."],
+                ["Prazo/regra de aprovação do cliente", pendingCommitment.client_approval_sla || "Não especificado."],
+                ["Propriedade dos activos", pendingCommitment.asset_ownership || "Não especificada."],
+                ["Propriedade intelectual", pendingCommitment.intellectual_property_terms || "Não especificada."],
+                ["Suporte / garantia pós-entrega", pendingCommitment.post_delivery_support || "Não especificado."],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">{label}</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{value}</p>
+                </div>
+              ))}
+            </div>
+            <form action={validateProjectCommitmentWithClient} className="mt-4 space-y-4 border-t border-[var(--cc-border)] pt-4">
+              <input type="hidden" name="project_id" value={project.id} />
+              <input type="hidden" name="commitment_id" value={pendingCommitment.id} />
+              <p className="text-sm leading-6 text-[var(--cc-secondary)]">
+                Registe a aprovação apenas depois de o cliente validar este resumo. Só então o projecto pode seguir para execução material.
+              </p>
+              <Field label="Validado por" name="client_validated_by" required placeholder="Nome do cliente / responsável" />
+              <Field label="Referência da aprovação" name="client_validation_reference" placeholder="Ex.: email, proposta assinada, reunião de 23/10/2026" />
+              <TextArea label="Notas da validação" name="client_validation_notes" />
+              <button className={primaryButtonClass} type="submit">Registar validação do cliente e autorizar execução</button>
+            </form>
+          </div>
+        )}
+      </Card>
+
+      <Card className="mt-6 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-gold)]">Controlo de alterações</p>
+            <h2 className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">Alterações depois da baseline</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+              Qualquer mudança material de âmbito, prazo, custo, capacidade ou segurança deve ser analisada e decidida antes de alterar o compromisso aprovado.
+            </p>
+          </div>
+          <span className="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--cc-foreground)]">{pendingChanges.length} pendente(s)</span>
+        </div>
+
+        <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+          <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-foreground)]">Registar pedido de alteração</summary>
+          <form action={createProjectChangeRequest} className="space-y-4 border-t border-[var(--cc-border)] p-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <input type="hidden" name="commitment_id" value={activeCommitment?.id ?? ""} />
+            <Field label="Alteração" name="title" required />
+            <TextArea label="O que foi solicitado" name="requested_change" />
+            <TextArea label="Impacto no âmbito" name="impact_scope" />
+            <TextArea label="Impacto no prazo" name="impact_schedule" />
+            <TextArea label="Impacto no custo" name="impact_cost" />
+            <TextArea label="Impacto na capacidade" name="impact_capacity" />
+            <TextArea label="Impacto na segurança" name="impact_security" />
+            <button className={secondaryButtonClass} type="submit">Registar para decisão</button>
+          </form>
+        </details>
+
+        {!!changeRequests?.length && (
+          <div className="mt-4 space-y-3">
+            {changeRequests.slice(0, 6).map((item) => (
+              <div key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--cc-foreground)]">{item.title}</p>
+                    <p className="mt-1 text-xs text-[var(--cc-secondary)]">{displayLabel(item.decision)}</p>
+                  </div>
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--cc-secondary)]">{item.requested_change}</p>
+                {item.decision === "pending" && (
+                  <form action={decideProjectChangeRequest} className="mt-4 grid gap-3 sm:grid-cols-[180px_1fr_auto]">
+                    <input type="hidden" name="project_id" value={project.id} />
+                    <input type="hidden" name="change_request_id" value={item.id} />
+                    <Select label="Decisão" name="decision" defaultValue="approved">
+                      <option value="approved">Aprovar</option>
+                      <option value="rejected">Rejeitar</option>
+                      <option value="deferred">Adiar</option>
+                    </Select>
+                    <TextArea label="Notas / condições" name="decision_notes" />
+                    <button className={secondaryButtonClass} type="submit">Decidir</button>
+                  </form>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-3">
         <Card className="p-5">

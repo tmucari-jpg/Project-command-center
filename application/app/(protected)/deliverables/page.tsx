@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { createDeliverable, finalizeProjectClosure } from "@/app/(protected)/mutations";
+import {
+  createDeliverable,
+  finalizeProjectClosure,
+  recordDeliverableAcceptance,
+  updateDeliverableQa,
+  updateProjectClosureState,
+} from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { ManualEntry } from "@/components/manual-entry";
@@ -12,13 +18,12 @@ import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
 import { prepareDeliverableDraft } from "@/lib/project-autonomy";
 
-function objectiveTitle(relation: { title?: string | null } | { title?: string | null }[] | null | undefined) {
-  return Array.isArray(relation) ? relation[0]?.title : relation?.title;
-}
-
 const WORKSTREAM_LABELS: Record<string, string> = {
   general: "Geral",
   commercial: "Comercial",
+  marketing: "Marketing",
+  sales: "Vendas",
+  monetization: "Monetização",
   financial: "Financeiro",
   operational: "Operacional",
   governance: "Governação",
@@ -51,6 +56,11 @@ export default async function DeliverablesPage({
     { data: evidence },
     { data: blockers },
     { data: decisions },
+    { data: acceptances },
+    { data: closureStates },
+    { data: governanceRisks },
+    { data: governanceDependencies },
+    { data: changeRequests },
   ] = await Promise.all([
     supabase
       .from("deliverables")
@@ -78,6 +88,26 @@ export default async function DeliverablesPage({
       .select("id,project_id,title,decision,rationale,decided_at")
       .eq("user_id", user.id)
       .order("decided_at", { ascending: false }),
+    supabase
+      .from("deliverable_acceptances")
+      .select("*")
+      .eq("user_id", user.id),
+    supabase
+      .from("project_closure_state")
+      .select("*")
+      .eq("user_id", user.id),
+    supabase
+      .from("project_governance_risks")
+      .select("id,project_id,status,blocks_progress")
+      .eq("user_id", user.id),
+    supabase
+      .from("project_governance_dependencies")
+      .select("id,project_id,status,blocks_progress")
+      .eq("user_id", user.id),
+    supabase
+      .from("project_change_requests")
+      .select("id,project_id,decision")
+      .eq("user_id", user.id),
   ]);
 
   const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
@@ -100,24 +130,67 @@ export default async function DeliverablesPage({
 
   const projectGroups = (projects ?? []).map((project) => {
     const projectDeliverables = (deliverables ?? []).filter((item) => item.project_id === project.id);
+    const supersededIds = new Set(
+      projectDeliverables
+        .map((item) => item.supersedes_deliverable_id)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const currentDeliverables = projectDeliverables.filter((item) => !supersededIds.has(item.id));
     const projectEvidence = (evidence ?? []).filter((item) => item.project_id === project.id);
     const projectBlockers = (blockers ?? []).filter((item) => item.project_id === project.id);
-    const completed = projectDeliverables.filter((item) => item.status === "completed");
-    const withEvidence = projectDeliverables.filter((item) =>
+    const completed = currentDeliverables.filter((item) => item.status === "completed");
+    const withEvidence = currentDeliverables.filter((item) =>
       projectEvidence.some((proof) => proof.deliverable_id === item.id),
     );
+    const projectAcceptances = (acceptances ?? []).filter((item) => item.project_id === project.id);
+    const accepted = currentDeliverables.filter((item) =>
+      projectAcceptances.some((acceptance) =>
+        acceptance.deliverable_id === item.id &&
+        ["accepted", "accepted_with_reservations"].includes(acceptance.status),
+      ),
+    );
+    const closureState = (closureStates ?? []).find((item) => item.project_id === project.id);
+    const blockingRisks = (governanceRisks ?? []).filter(
+      (item) => item.project_id === project.id && item.blocks_progress && !["mitigated", "accepted", "resolved"].includes(item.status),
+    );
+    const blockingDependencies = (governanceDependencies ?? []).filter(
+      (item) => item.project_id === project.id && item.blocks_progress && !["resolved", "confirmed"].includes(item.status),
+    );
+    const pendingChanges = (changeRequests ?? []).filter(
+      (item) => item.project_id === project.id && item.decision === "pending",
+    );
+    const closureReady =
+      Boolean(closureState) &&
+      closureState.value_status !== "not_assessed" &&
+      closureState.financial_status === "updated" &&
+      closureState.handover_status !== "pending" &&
+      closureState.security_transfer_status !== "pending" &&
+      closureState.continuity_status !== "pending";
     const readyToClose =
-      projectDeliverables.length > 0 &&
-      completed.length === projectDeliverables.length &&
-      withEvidence.length === projectDeliverables.length &&
-      projectBlockers.length === 0;
+      currentDeliverables.length > 0 &&
+      completed.length === currentDeliverables.length &&
+      withEvidence.length === currentDeliverables.length &&
+      accepted.length === currentDeliverables.length &&
+      projectBlockers.length === 0 &&
+      blockingRisks.length === 0 &&
+      blockingDependencies.length === 0 &&
+      pendingChanges.length === 0 &&
+      closureReady;
     return {
       project,
       deliverables: projectDeliverables,
+      currentDeliverables,
+      supersededIds,
       evidence: projectEvidence,
       blockers: projectBlockers,
       completed: completed.length,
       withEvidence: withEvidence.length,
+      accepted: accepted.length,
+      acceptances: projectAcceptances,
+      closureState,
+      blockingRisks,
+      blockingDependencies,
+      pendingChanges,
       readyToClose,
       latestDecision: (decisions ?? []).find((item) => item.project_id === project.id),
     };
@@ -127,7 +200,7 @@ export default async function DeliverablesPage({
     ? projectGroups.filter((group) => group.project.id === effectiveProjectId)
     : projectGroups;
 
-  const totalDeliverables = visibleGroups.reduce((sum, group) => sum + group.deliverables.length, 0);
+  const totalDeliverables = visibleGroups.reduce((sum, group) => sum + group.currentDeliverables.length, 0);
   const totalCompleted = visibleGroups.reduce((sum, group) => sum + group.completed, 0);
   const totalEvidenceReady = visibleGroups.reduce((sum, group) => sum + group.withEvidence, 0);
   const readyProjects = visibleGroups.filter((group) => group.readyToClose).length;
@@ -158,10 +231,15 @@ export default async function DeliverablesPage({
               <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{readyProjects}</p>
             </div>
             <div className="rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Regra</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--cc-foreground)]">Entregar → comprovar → decidir → fechar</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Aceites</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">
+                {visibleGroups.reduce((sum, group) => sum + group.accepted, 0)}/{totalDeliverables}
+              </p>
             </div>
           </div>
+          <p className="mt-3 text-xs leading-5 text-[var(--cc-secondary)]">
+            Regra de fecho: entregar → QA → comprovar → obter aceitação → transferir com segurança → avaliar valor → fechar.
+          </p>
         </Card>
 
         <ManualEntry defaultOpen={Boolean(preparedDraft)}>
@@ -187,7 +265,10 @@ export default async function DeliverablesPage({
             <Field label="Resultado / entregável" name="title" required defaultValue={preparedDraft?.title} placeholder="Ex.: Website institucional publicado" />
             <Select label="Vertente do entregável" name="workstream" defaultValue={previousVersion?.workstream ?? "general"}>
               <option value="general">Geral</option>
-              <option value="commercial">Comercial</option>
+              <option value="commercial">Comercial transversal</option>
+              <option value="marketing">Marketing</option>
+              <option value="sales">Vendas</option>
+              <option value="monetization">Monetização</option>
               <option value="financial">Financeiro</option>
               <option value="operational">Operacional</option>
               <option value="governance">Governação</option>
@@ -259,20 +340,20 @@ export default async function DeliverablesPage({
                         <div>
                           <h3 className="font-semibold text-[var(--cc-foreground)]">{group.project.title}</h3>
                           <p className="mt-1 text-xs text-[var(--cc-secondary)]">
-                            {group.completed}/{group.deliverables.length} entregues · {group.withEvidence}/{group.deliverables.length} com evidência
+                            {group.completed}/{group.currentDeliverables.length} entregues · {group.withEvidence}/{group.currentDeliverables.length} com evidência
                             {group.blockers.length ? ` · ${group.blockers.length} bloqueio(s)` : ""}
                           </p>
-                          <p className="mt-2 text-sm text-[var(--cc-foreground)]">
-                            <span className="font-medium">Objectivo Central:</span> {objectiveTitle(group.project.objectives) ?? group.project.expected_result ?? "Por definir"}
-                          </p>
                         </div>
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          group.readyToClose
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)]"
-                        }`}>
-                          {group.readyToClose ? "Pronto para decisão final" : "Fecho pendente"}
-                        </span>
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            group.readyToClose
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)]"
+                          }`}>
+                            {group.readyToClose ? "Pronto para decisão final" : "Fecho pendente"}
+                          </span>
+                          <span className="text-xs font-semibold text-[var(--cc-accent)]">Ver detalhes</span>
+                        </div>
                       </div>
                     </summary>
 
@@ -282,6 +363,7 @@ export default async function DeliverablesPage({
                       ) : group.deliverables.map((item) => {
                         const proofs = group.evidence.filter((proof) => proof.deliverable_id === item.id);
                         const locked = item.status === "completed";
+                        const superseded = group.supersededIds.has(item.id);
                         return (
                           <article key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
                             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -294,11 +376,15 @@ export default async function DeliverablesPage({
                                   {item.owner_id ? ` · ${ownerById.get(item.owner_id) ?? "Responsável definido"}` : ""}
                                 </p>
                               </div>
-                              {locked && (
+                              {superseded ? (
+                                <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-secondary)]">
+                                  Histórico · substituído
+                                </span>
+                              ) : locked ? (
                                 <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
                                   Registo oficial imutável
                                 </span>
-                              )}
+                              ) : null}
                             </div>
 
                             {item.description && <p className="mt-3 text-sm leading-6 text-[var(--cc-secondary)]">{item.description}</p>}
@@ -354,23 +440,67 @@ export default async function DeliverablesPage({
                             </div>
 
                             {!locked ? (
-                              <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
+                              <div className="mt-4 space-y-4 border-t border-[var(--cc-border)] pt-4">
+                                <form action={updateDeliverableQa} className="grid gap-3 md:grid-cols-[220px_1fr_auto]">
+                                  <input type="hidden" name="project_id" value={group.project.id} />
+                                  <input type="hidden" name="deliverable_id" value={item.id} />
+                                  <Select label="QA" name="qa_status" defaultValue={item.qa_status === "approved" ? "approved" : "ready_for_review"}>
+                                    <option value="ready_for_review">Pronto para revisão</option>
+                                    <option value="approved">QA aprovado</option>
+                                    <option value="changes_required">Requer correcções</option>
+                                  </Select>
+                                  <TextArea label="Notas de QA" name="qa_notes" defaultValue={item.qa_notes ?? ""} />
+                                  <button className={secondaryButtonClass} type="submit">Guardar QA</button>
+                                </form>
                                 <StatusProgressForm entity="deliverables" id={item.id} status={item.status} progress={item.progress} />
-                                <p className="mt-2 text-xs text-[var(--cc-secondary)]">
-                                  Para marcar como concluído/entregue, o progresso deve estar em 100% e deve existir pelo menos uma evidência associada.
+                                <p className="text-xs text-[var(--cc-secondary)]">
+                                  A entrega oficial exige progresso a 100%, evidência associada, critérios de aceitação e QA aprovado.
+                                </p>
+                              </div>
+                            ) : superseded ? (
+                              <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
+                                <p className="text-xs text-[var(--cc-secondary)]">
+                                  Esta versão permanece no histórico e foi substituída por uma versão posterior.
                                 </p>
                               </div>
                             ) : (
-                              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--cc-border)] pt-4">
+                              <div className="mt-4 space-y-4 border-t border-[var(--cc-border)] pt-4">
                                 <p className="text-xs text-[var(--cc-secondary)]">
-                                  Registo oficial bloqueado. Cópias descarregadas podem ser editadas externamente, mas nunca alteram esta versão oficial.
+                                  Registo oficial bloqueado. A aceitação do cliente é independente da produção e fica registada por versão.
                                 </p>
-                                <Link
-                                  className={secondaryButtonClass}
-                                  href={`/deliverables?project_id=${group.project.id}&supersedes=${item.id}`}
-                                >
-                                  Criar nova versão
-                                </Link>
+                                <form action={recordDeliverableAcceptance} className="grid gap-3 md:grid-cols-[240px_220px_1fr_auto]">
+                                  <input type="hidden" name="project_id" value={group.project.id} />
+                                  <input type="hidden" name="deliverable_id" value={item.id} />
+                                  <Select
+                                    label="Aceitação"
+                                    name="status"
+                                    defaultValue={group.acceptances.find((acceptance) => acceptance.deliverable_id === item.id)?.status ?? "pending_review"}
+                                  >
+                                    <option value="pending_review">Aguardando validação</option>
+                                    <option value="accepted">Aceite</option>
+                                    <option value="accepted_with_reservations">Aceite com reservas</option>
+                                    <option value="correction_required">Requer correcção</option>
+                                  </Select>
+                                  <Field
+                                    label="Validado por"
+                                    name="accepted_by"
+                                    defaultValue={group.acceptances.find((acceptance) => acceptance.deliverable_id === item.id)?.accepted_by ?? ""}
+                                  />
+                                  <TextArea
+                                    label="Notas"
+                                    name="notes"
+                                    defaultValue={group.acceptances.find((acceptance) => acceptance.deliverable_id === item.id)?.notes ?? ""}
+                                  />
+                                  <button className={secondaryButtonClass} type="submit">Registar aceite</button>
+                                </form>
+                                <div className="flex justify-end">
+                                  <Link
+                                    className={secondaryButtonClass}
+                                    href={`/deliverables?project_id=${group.project.id}&supersedes=${item.id}`}
+                                  >
+                                    Criar nova versão
+                                  </Link>
+                                </div>
                               </div>
                             )}
                           </article>
@@ -382,6 +512,52 @@ export default async function DeliverablesPage({
                           Existem {group.blockers.length} bloqueio(s) activos que impedem o fecho.
                         </div>
                       )}
+
+                      <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+                        <h4 className="font-semibold text-[var(--cc-foreground)]">Valor, handover e segurança</h4>
+                        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+                          Antes do G5, registe o valor alcançado ou em observação, confirme o financeiro e trate a transferência de activos/acessos quando aplicável.
+                        </p>
+                        <form action={updateProjectClosureState} className="mt-4 grid gap-4 md:grid-cols-2">
+                          <input type="hidden" name="project_id" value={group.project.id} />
+                          <Select label="Valor" name="value_status" defaultValue={group.closureState?.value_status ?? "not_assessed"}>
+                            <option value="not_assessed">Ainda não avaliado</option>
+                            <option value="proved">Valor comprovado</option>
+                            <option value="observing">Valor em observação</option>
+                            <option value="not_proved">Valor não comprovado</option>
+                          </Select>
+                          <Select label="Financeiro" name="financial_status" defaultValue={group.closureState?.financial_status ?? "pending"}>
+                            <option value="pending">Pendente</option>
+                            <option value="updated">Actualizado</option>
+                          </Select>
+                          <Select label="Handover" name="handover_status" defaultValue={group.closureState?.handover_status ?? "not_applicable"}>
+                            <option value="not_applicable">Não aplicável</option>
+                            <option value="pending">Pendente</option>
+                            <option value="completed">Concluído</option>
+                          </Select>
+                          <Select label="Transferência / revogação de acessos" name="security_transfer_status" defaultValue={group.closureState?.security_transfer_status ?? "not_applicable"}>
+                            <option value="not_applicable">Não aplicável</option>
+                            <option value="pending">Pendente</option>
+                            <option value="completed">Concluída</option>
+                          </Select>
+                          <Select label="Continuidade / recuperação" name="continuity_status" defaultValue={group.closureState?.continuity_status ?? "not_applicable"}>
+                            <option value="not_applicable">Não aplicável</option>
+                            <option value="pending">Pendente</option>
+                            <option value="confirmed">Confirmada</option>
+                          </Select>
+                          <TextArea label="Evidência de valor" name="value_evidence" defaultValue={group.closureState?.value_evidence ?? ""} />
+                          <TextArea label="Notas de handover" name="handover_notes" defaultValue={group.closureState?.handover_notes ?? ""} />
+                          <TextArea label="Notas de segurança / acessos" name="security_transfer_notes" defaultValue={group.closureState?.security_transfer_notes ?? ""} />
+                          <TextArea label="Continuidade / backup / recuperação" name="continuity_notes" defaultValue={group.closureState?.continuity_notes ?? ""} />
+                          <TextArea label="Lições aprendidas" name="lessons_learned" defaultValue={group.closureState?.lessons_learned ?? ""} />
+                          <div className="md:col-span-2">
+                            <TextArea label="Acompanhamento posterior, quando necessário" name="next_follow_up" defaultValue={group.closureState?.next_follow_up ?? ""} />
+                          </div>
+                          <div className="md:col-span-2">
+                            <button className={secondaryButtonClass} type="submit">Guardar preparação do fecho</button>
+                          </div>
+                        </form>
+                      </div>
 
                       <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
                         <h4 className="font-semibold text-[var(--cc-foreground)]">Decisão final</h4>
@@ -402,7 +578,7 @@ export default async function DeliverablesPage({
                           </button>
                           {!group.readyToClose && (
                             <p className="text-xs text-[var(--cc-secondary)]">
-                              O fecho só fica disponível depois de todos os entregáveis estarem entregues, comprovados e sem bloqueios activos.
+                              O fecho só fica disponível depois de entrega, QA, evidência, aceitação, riscos/dependências, alterações, financeiro, valor, handover e segurança estarem tratados.
                             </p>
                           )}
                         </form>

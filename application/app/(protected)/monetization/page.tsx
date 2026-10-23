@@ -17,14 +17,22 @@ import { displayLabel } from "@/lib/display-label";
 import { monetizationReadiness } from "@/lib/monetization";
 
 const PIPELINE_STAGES = [
-  ["lead", "Lead"],
-  ["contacted", "Contactado"],
-  ["qualified", "Qualificado"],
+  ["contact", "Contacto"],
+  ["interest", "Interesse"],
+  ["diagnosis", "Diagnóstico"],
+  ["demo", "Demonstração"],
   ["proposal", "Proposta"],
-  ["negotiation", "Negociação"],
-  ["won", "Ganho"],
-  ["lost", "Perdido"],
+  ["client", "Cliente"],
+  ["lost", "Perdido / não avançar"],
 ] as const;
+
+function normalizedLeadStage(stage: string | null | undefined) {
+  if (stage === "lead" || stage === "contacted") return "contact";
+  if (stage === "qualified") return "diagnosis";
+  if (stage === "negotiation") return "proposal";
+  if (stage === "won") return "client";
+  return stage ?? "contact";
+}
 
 export default async function CommercialPage({
   searchParams,
@@ -45,7 +53,7 @@ export default async function CommercialPage({
     supabase.from("project_commercial_profiles").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabase.from("commercial_leads").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(100),
     supabase.from("financial_entries").select("*").eq("user_id", user.id).order("occurred_on", { ascending: false }).limit(100),
-    supabase.from("deliverables").select("*").eq("user_id", user.id).eq("workstream", "commercial").order("created_at", { ascending: false }).limit(150),
+    supabase.from("deliverables").select("*").eq("user_id", user.id).in("workstream", ["commercial", "marketing", "sales", "monetization"]).order("created_at", { ascending: false }).limit(150),
   ]);
 
   const error =
@@ -65,7 +73,7 @@ export default async function CommercialPage({
   const commercialProjects = (projects ?? []).filter((project) => commercialProjectIds.has(project.id));
   const projectOptions = commercialProjects.length ? commercialProjects : (projects ?? []);
   const backlog = commercialProjects.filter((project) => profileByProject.get(project.id)?.validation_status !== "validated");
-  const activeLeads = (leads ?? []).filter((lead) => !["won", "lost"].includes(lead.stage));
+  const activeLeads = (leads ?? []).filter((lead) => !["client", "lost"].includes(normalizedLeadStage(lead.stage)));
   const openCommercialDeliverables = (commercialDeliverables ?? []).filter(
     (item) => !["completed", "cancelled"].includes(item.status),
   );
@@ -95,15 +103,6 @@ export default async function CommercialPage({
         }
       />
 
-      <Card className="mb-6 border-[color-mix(in_srgb,var(--cc-gold)_45%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_7%,var(--cc-surface))] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-gold)]">Regra da área</p>
-        <h2 className="mt-2 text-xl font-semibold text-[var(--cc-accent)]">Comercial serve todos os projectos que precisam de vertente comercial.</h2>
-        <p className="mt-2 max-w-5xl text-sm leading-6 text-[var(--cc-secondary)]">
-          Aqui são tratados backlog, avaliação comercial, oferta e preço, pipeline, leads, custos/receitas e entregáveis comerciais.
-          Nada é separado do projecto: cada registo mantém a ligação ao projecto de origem e os resultados finais aparecem também em Entregáveis.
-        </p>
-      </Card>
-
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Backlog comercial</p>
@@ -113,7 +112,7 @@ export default async function CommercialPage({
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Pipeline activo</p>
           <p className="mt-2 text-3xl font-semibold text-[var(--cc-foreground)]">{activeLeads.length}</p>
-          <p className="mt-2 text-xs text-[var(--cc-secondary)]">Leads ainda em contacto, qualificação, proposta ou negociação.</p>
+          <p className="mt-2 text-xs text-[var(--cc-secondary)]">Oportunidades ainda entre contacto, interesse, diagnóstico, demonstração e proposta.</p>
         </Card>
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Entregáveis comerciais</p>
@@ -126,6 +125,9 @@ export default async function CommercialPage({
           <p className="mt-2 text-xs text-[var(--cc-secondary)]">Projectos actualmente ligados a esta capacidade.</p>
         </Card>
       </div>
+      <p className="mt-3 text-xs leading-5 text-[var(--cc-secondary)]">
+        Comercial é uma capacidade transversal: backlog, oferta, pipeline, leads, custos/receitas e resultados permanecem sempre ligados ao projecto de origem.
+      </p>
 
       <Card className="mt-6">
         <div className="border-b border-[var(--cc-border)] p-5">
@@ -239,7 +241,7 @@ export default async function CommercialPage({
             <Field label="Organização" name="organisation" />
             <Field label="Referência de contacto" name="contact_reference" placeholder="Email, telefone ou referência conhecida" />
             <Field label="Origem" name="source" />
-            <Select label="Etapa do pipeline" name="stage" defaultValue="lead">
+            <Select label="Etapa do pipeline" name="stage" defaultValue="contact">
               {PIPELINE_STAGES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </Select>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -263,7 +265,12 @@ export default async function CommercialPage({
             O resultado é processado aqui, mas fica arquivado no projecto e disponível em Entregáveis para consulta, download, evidência e fecho.
           </p>
           <form action={createDeliverable} className="mt-5 space-y-4">
-            <input type="hidden" name="workstream" value="commercial" />
+            <Select label="Vertente" name="workstream" defaultValue="sales">
+              <option value="sales">Vendas</option>
+              <option value="marketing">Marketing</option>
+              <option value="monetization">Monetização</option>
+              <option value="commercial">Comercial transversal</option>
+            </Select>
             <input type="hidden" name="return_path" value="/monetization" />
             <input type="hidden" name="status" value="pending" />
             <input type="hidden" name="progress" value="0" />
@@ -321,6 +328,19 @@ export default async function CommercialPage({
               <option value="forecast">Previsão</option>
               <option value="pending">Pendente</option>
             </Select>
+            <Select label="Enquadramento do custo/receita" name="cost_scope" defaultValue="pcc_internal">
+              <option value="pcc_internal">Serviço / custo interno PCC</option>
+              <option value="client_direct">Custo directo do cliente</option>
+              <option value="reimbursable_external">Custo externo reembolsável</option>
+              <option value="additional_scope">Trabalho adicional fora do âmbito</option>
+            </Select>
+            <Select label="Recorrência" name="recurrence" defaultValue="one_off">
+              <option value="one_off">Único</option>
+              <option value="monthly">Mensal</option>
+              <option value="annual">Anual</option>
+              <option value="usage">Por utilização</option>
+            </Select>
+            <Field label="Fornecedor, quando aplicável" name="supplier" />
             <Field label="Referência de evidência" name="evidence_reference" />
             <button className={primaryButtonClass} type="submit">Registar movimento</button>
           </form>
@@ -427,6 +447,7 @@ export default async function CommercialPage({
         <p className="text-sm leading-6 text-[var(--cc-secondary)]">
           O PCC não inventa leads, preços, probabilidades, receitas ou custos. A inteligência apoia análise e produção,
           mas os registos comerciais e a decisão permanecem baseados em informação real e validação humana.
+          Domínios, hosting, licenças, publicidade, fornecedores e trabalhos paralelos são registados separadamente do serviço PCC, salvo inclusão expressa no compromisso aprovado.
         </p>
       </Card>
     </>

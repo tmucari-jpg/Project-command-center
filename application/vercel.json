@@ -22,7 +22,8 @@
   "git": {
     "deploymentEnabled": {
       "audit/consolidated-diagnostic-20261022": false,
-      "audit/commercial-master-20261022": false
+      "audit/commercial-master-20261022": false,
+      "audit/commitment-delivery-20261023": false
     }
   }
 }

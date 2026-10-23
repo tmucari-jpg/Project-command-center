@@ -248,7 +248,7 @@ jobs:
           foreach ($token in @(
             "finalizeProjectClosure",
             "Entregável entregue está bloqueado",
-            "Todos os entregáveis precisam de evidência",
+            "Todos os entregáveis vigentes precisam de evidência",
             "Entregáveis & Fecho"
           )) {
             if (-not $mutations.Contains($token) -and -not $deliverables.Contains($token)) {
@@ -480,6 +480,97 @@ jobs:
 
           if (-not $vercel.Contains('"audit/commercial-master-20261022": false')) {
             Write-Error "Commercial audit branch must not trigger a Vercel preview deployment."
+            exit 1
+          }
+
+      - name: Validate commitment, acceptance and secure closure architecture
+        shell: pwsh
+        run: |
+          $mutations = Get-Content "../application/app/(protected)/mutations.ts" -Raw
+          $project = Get-Content -LiteralPath "../application/app/(protected)/projects/[id]/page.tsx" -Raw
+          $deliverables = Get-Content "../application/app/(protected)/deliverables/page.tsx" -Raw
+          $commercial = Get-Content "../application/app/(protected)/monetization/page.tsx" -Raw
+          $migration = Get-Content "../supabase/migrations/20261023151000_commitment_delivery_controls.sql" -Raw
+          $offlineLogout = Get-Content "../application/components/logout-button.tsx" -Raw
+          $vercel = Get-Content "./vercel.json" -Raw
+
+          foreach ($token in @(
+            "project_commitments",
+            "project_change_requests",
+            "deliverable_acceptances",
+            "project_closure_state",
+            "qa_status",
+            "cost_scope",
+            "'marketing'",
+            "'sales'",
+            "'monetization'",
+            "Plano Operacional de Lançamento e Execução",
+            "information_classification",
+            "continuity_status"
+          )) {
+            if (-not $migration.Contains($token)) {
+              Write-Error "Missing commitment/delivery database control: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "O projecto não pode entrar em execução antes da validação do cliente",
+            "QA aprovado",
+            "Todos os entregáveis precisam de aceitação do cliente",
+            "Existem pedidos de alteração ainda pendentes",
+            "Registe valor, financeiro, handover e segurança"
+          )) {
+            if (-not $mutations.Contains($token)) {
+              Write-Error "Missing commitment/delivery application guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Baseline de Compromisso",
+            "Resumo para validação do cliente",
+            "Controlo de alterações"
+          )) {
+            if (-not $project.Contains($token)) {
+              Write-Error "Project detail is missing G3 control: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Valor, handover e segurança",
+            "Aceitação",
+            "Regra de fecho: entregar → QA"
+          )) {
+            if (-not $deliverables.Contains($token)) {
+              Write-Error "Deliverables closure flow is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Contacto",
+            "Interesse",
+            "Diagnóstico",
+            "Demonstração",
+            "Cliente",
+            "Custo externo reembolsável",
+            "Trabalho adicional fora do âmbito"
+          )) {
+            if (-not $commercial.Contains($token)) {
+              Write-Error "Commercial architecture is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $offlineLogout.Contains("clearOfflineData")) {
+            Write-Error "Offline project data must be cleared on logout."
+            exit 1
+          }
+
+          if (-not $vercel.Contains('"audit/commitment-delivery-20261023": false')) {
+            Write-Error "Commitment audit branch must not trigger Vercel previews."
             exit 1
           }
 
