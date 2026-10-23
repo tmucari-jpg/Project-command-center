@@ -333,3 +333,18 @@ comment on table public.project_change_requests is
   'Controlo formal de alterações materiais de âmbito, prazo, custo, capacidade ou segurança após aprovação da baseline.';
 comment on column public.financial_entries.cost_treatment is
   'Separa custo interno PCC, custo directo do cliente, custo externo reembolsável e trabalho adicional fora do âmbito.';
+
+
+-- Reframe the PCC internal launch deliverable so Operations owns execution,
+-- while prospecting/pipeline remain in the commercial capability.
+update public.deliverables d
+set
+  title = 'Plano Operacional de Lançamento e Execução',
+  description = 'Sistema operacional que transforma o compromisso aprovado em execução coordenada: actividades, responsáveis, prazos, dependências, recursos, riscos, checkpoints, evidências, desvios e critérios de conclusão.',
+  completion_criteria = 'Plano operacional utilizável com sequência de lançamento, actividades, responsáveis, prazos, dependências, riscos, checkpoints, próximos passos e critérios de conclusão claramente definidos, sem duplicar funções de Marketing ou Vendas.'
+from public.projects p
+where d.project_id = p.id
+  and d.user_id = p.user_id
+  and p.title = 'Marketing, Vendas e Lançamento do PCC'
+  and d.title = 'Lançamento · Funil, prospects, pilotos e primeiros clientes'
+  and d.workstream = 'operational';
