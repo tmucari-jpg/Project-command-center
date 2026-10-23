@@ -2181,14 +2181,19 @@ export async function updateProjectOutcomeStatus(formData: FormData) {
   const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   const valueStatus = z.enum(["not_assessed", "proven", "observing", "not_proven"]).safeParse(formData.get("value_status"));
   const handoverStatus = z.enum(["not_required", "pending", "completed"]).safeParse(formData.get("handover_status"));
-  if (!projectId.success || !valueStatus.success || !handoverStatus.success) {
-    fail("/deliverables", "Estado de valor/handover inválido.");
+  const continuityStatus = z.enum(["not_required", "pending", "verified"]).safeParse(formData.get("continuity_status"));
+  if (!projectId.success || !valueStatus.success || !handoverStatus.success || !continuityStatus.success) {
+    fail("/deliverables", "Estado de valor, handover ou continuidade inválido.");
   }
 
   const { supabase, user } = await requireUser();
   const { error } = await supabase
     .from("projects")
-    .update({ value_status: valueStatus.data, handover_status: handoverStatus.data })
+    .update({
+      value_status: valueStatus.data,
+      handover_status: handoverStatus.data,
+      continuity_status: continuityStatus.data,
+    })
     .eq("id", projectId.data)
     .eq("user_id", user.id);
   if (error) fail("/deliverables", error.message);
@@ -2211,7 +2216,7 @@ export async function finalizeProjectClosure(formData: FormData) {
   const { supabase, user } = await requireUser();
   const { data: project, error: projectError } = await supabase
     .from("projects")
-    .select("id,title,status,value_status,handover_status")
+    .select("id,title,status,value_status,handover_status,continuity_status")
     .eq("id", projectId.data)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -2325,6 +2330,9 @@ export async function finalizeProjectClosure(formData: FormData) {
     }
     if (project.handover_status === "pending") {
       fail(path, "Conclua a transferência/handover antes do fecho.");
+    }
+    if (project.continuity_status === "pending") {
+      fail(path, "Verifique continuidade/recuperação antes do fecho.");
     }
   }
 
