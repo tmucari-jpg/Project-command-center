@@ -416,6 +416,8 @@ export const projectCommitmentSchema = z.object({
   dependencies: optionalText(8000),
   external_costs: optionalText(8000),
   security_requirements: optionalText(8000),
+  information_classification: z.enum(["public", "internal", "confidential", "restricted"]),
+  data_retention_terms: optionalText(4000),
   capacity_basis: z.string().trim().min(3).max(8000),
   payment_conditions: optionalText(4000),
   client_approval_sla: optionalText(4000),
