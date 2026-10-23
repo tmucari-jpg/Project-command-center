@@ -397,7 +397,7 @@ export default async function ActionsPage({
         </Card>
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <ManualEntry defaultOpen={Boolean(preparedDraft)}>
+          <ManualEntry defaultOpen={Boolean(preparedDraft)} label="Adicionar acção">
             <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Adicionar acção</h2>
             <p className="mt-1 text-sm text-[var(--cc-secondary)]">
               A informação pode ser automática ou manual; qualquer alteração deve permanecer coerente com o projecto.
@@ -425,7 +425,7 @@ export default async function ActionsPage({
             </form>
           </ManualEntry>
 
-          <ManualEntry>
+          <ManualEntry label="Registar bloqueio">
             <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Registar bloqueio</h2>
             <form action={createBlocker} className="mt-5 space-y-4">
               <Field label="Título" name="title" required placeholder="Ex.: Aguardar aprovação do conteúdo final." />
