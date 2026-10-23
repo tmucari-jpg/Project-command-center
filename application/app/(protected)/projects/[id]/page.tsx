@@ -251,6 +251,9 @@ export default async function ProjectHubPage({
         <Link className={secondaryButtonClass} href={`/evidence?project_id=${project.id}`}>
           Evidências
         </Link>
+        <Link className={primaryButtonClass} href={`/projects/${project.id}/commitment`}>
+          Compromisso & Fecho
+        </Link>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">

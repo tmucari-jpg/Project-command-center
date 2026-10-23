@@ -27,6 +27,13 @@ import {
   commercialLeadSchema,
   competitiveIntelligenceSchema,
   financialEntrySchema,
+  projectCommitmentSchema,
+  projectCommitmentDecisionSchema,
+  projectChangeRequestSchema,
+  projectChangeDecisionSchema,
+  deliverableQaSchema,
+  deliverableAcceptanceSchema,
+  projectClosureAssessmentSchema,
   subscriptionFunnelMetricSchema,
   agentRunSchema,
   intelligenceSignalSchema,
@@ -1094,7 +1101,8 @@ export async function createDeliverable(formData: FormData) {
   const parsed = deliverableSchema.safeParse(values(formData));
   if (!parsed.success) fail(returnPath, zodMessage(parsed.error));
 
-  const session = parsed.data.workstream === "commercial" ? await requireAdmin() : await requireUser();
+  const commercialWorkstreams = new Set(["commercial", "sales", "marketing", "monetization"]);
+  const session = commercialWorkstreams.has(parsed.data.workstream) ? await requireAdmin() : await requireUser();
   const { supabase, user } = session;
   const { data: project, error: projectError } = await supabase
     .from("projects")
@@ -1845,24 +1853,335 @@ export async function createDecision(formData: FormData) {
   redirect(`${path}?created=1`);
 }
 
+export async function saveProjectCommitment(formData: FormData) {
+  const parsed = projectCommitmentSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+
+  const path = `/projects/${parsed.data.project_id}/commitment`;
+  const { supabase, user, authUser } = await requireUser();
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id,governance_gate,governance_gate_status")
+    .eq("id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
+
+  const [{ data: latest, error: baselineError }, { data: openChanges, error: changesError }] = await Promise.all([
+    supabase
+      .from("project_commitment_baselines")
+      .select("*")
+      .eq("project_id", project.id)
+      .eq("user_id", user.id)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("project_change_requests")
+      .select("id,status")
+      .eq("project_id", project.id)
+      .eq("user_id", user.id)
+      .in("status", ["requested", "approved"]),
+  ]);
+  const existingError = baselineError ?? changesError;
+  if (existingError) fail(path, existingError.message);
+
+  if (project.governance_gate === "g4_execution" && latest?.status === "approved" && !(openChanges ?? []).length) {
+    fail(path, "Durante a execução, registe primeiro um Pedido de Alteração antes de criar uma nova baseline.");
+  }
+
+  if (parsed.data.intent === "submit_client") {
+    const [{ data: risks, error: riskError }, { data: dependencies, error: dependencyError }] = await Promise.all([
+      supabase
+        .from("project_governance_risks")
+        .select("id")
+        .eq("project_id", project.id)
+        .eq("user_id", user.id)
+        .eq("gate", "g3_planning")
+        .eq("blocks_progress", true)
+        .in("status", ["open", "mitigating"]),
+      supabase
+        .from("project_governance_dependencies")
+        .select("id")
+        .eq("project_id", project.id)
+        .eq("user_id", user.id)
+        .eq("gate", "g3_planning")
+        .eq("blocks_progress", true)
+        .in("status", ["pending", "resolving"]),
+    ]);
+    const gateError = riskError ?? dependencyError;
+    if (gateError) fail(path, gateError.message);
+    if ((risks ?? []).length || (dependencies ?? []).length) {
+      fail(path, "G3 bloqueado: resolva riscos e dependências críticas antes de apresentar o compromisso ao cliente.");
+    }
+  }
+
+  const payload = {
+    expected_result: parsed.data.expected_result,
+    scope_included: parsed.data.scope_included,
+    exclusions: parsed.data.exclusions,
+    deliverables_summary: parsed.data.deliverables_summary,
+    acceptance_summary: parsed.data.acceptance_summary,
+    pcc_responsibilities: parsed.data.pcc_responsibilities,
+    client_responsibilities: parsed.data.client_responsibilities,
+    assumptions_dependencies: parsed.data.assumptions_dependencies,
+    capacity_validation: parsed.data.capacity_validation,
+    financial_validation: parsed.data.financial_validation,
+    security_validation: parsed.data.security_validation,
+    external_costs_note: parsed.data.external_costs_note,
+    price: parsed.data.price ?? null,
+    currency: parsed.data.currency ?? null,
+    due_date: parsed.data.due_date ?? null,
+    status: parsed.data.intent === "submit_client" ? "awaiting_client" : "draft",
+    pcc_validated_at: parsed.data.intent === "submit_client" ? new Date().toISOString() : null,
+  };
+
+  if (latest && ["draft", "awaiting_client"].includes(latest.status)) {
+    const { error } = await supabase
+      .from("project_commitment_baselines")
+      .update(payload)
+      .eq("id", latest.id)
+      .eq("user_id", user.id);
+    if (error) fail(path, error.message);
+  } else {
+    const { error } = await supabase.from("project_commitment_baselines").insert({
+      ...payload,
+      project_id: project.id,
+      user_id: user.id,
+      version: Number(latest?.version ?? 0) + 1,
+      created_by: authUser.id,
+    });
+    if (error) fail(path, error.message);
+  }
+
+  if (parsed.data.intent === "submit_client") {
+    const { error: projectUpdateError } = await supabase
+      .from("projects")
+      .update({ governance_gate: "g3_planning", governance_gate_status: "ready" })
+      .eq("id", project.id)
+      .eq("user_id", user.id);
+    if (projectUpdateError) fail(path, projectUpdateError.message);
+  }
+  revalidatePath(path);
+  revalidatePath(`/projects/${project.id}`);
+  redirect(`${path}?${parsed.data.intent === "submit_client" ? "submitted" : "saved"}=1`);
+}
+
+export async function recordProjectCommitmentDecision(formData: FormData) {
+  const parsed = projectCommitmentDecisionSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+  const path = `/projects/${parsed.data.project_id}/commitment`;
+  const { supabase, user, authUser } = await requireUser();
+  const { data: baseline, error: baselineError } = await supabase
+    .from("project_commitment_baselines")
+    .select("id,project_id,status,version")
+    .eq("id", parsed.data.baseline_id)
+    .eq("project_id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (baselineError || !baseline) fail(path, baselineError?.message ?? "Baseline inválida.");
+  if (baseline.status !== "awaiting_client") fail(path, "Apenas uma baseline apresentada ao cliente pode ser validada.");
+
+  if (parsed.data.decision === "approved") {
+    const { error: supersedeError } = await supabase
+      .from("project_commitment_baselines")
+      .update({ status: "superseded" })
+      .eq("project_id", baseline.project_id)
+      .eq("user_id", user.id)
+      .eq("status", "approved")
+      .neq("id", baseline.id);
+    if (supersedeError) fail(path, supersedeError.message);
+  }
+
+  const { error: updateError } = await supabase
+    .from("project_commitment_baselines")
+    .update({
+      status: parsed.data.decision,
+      client_validator: parsed.data.client_validator,
+      approval_reference: parsed.data.approval_reference ?? null,
+      client_notes: parsed.data.notes ?? null,
+      client_validated_at: new Date().toISOString(),
+    })
+    .eq("id", baseline.id)
+    .eq("user_id", user.id);
+  if (updateError) fail(path, updateError.message);
+
+  const gateStatus = parsed.data.decision === "approved" ? "approved" : "blocked";
+  const { error: projectUpdateError } = await supabase
+    .from("projects")
+    .update({ governance_gate: "g3_planning", governance_gate_status: gateStatus })
+    .eq("id", baseline.project_id)
+    .eq("user_id", user.id);
+  if (projectUpdateError) fail(path, projectUpdateError.message);
+
+  const { error: eventError } = await supabase.from("project_gate_events").insert({
+    user_id: user.id,
+    project_id: baseline.project_id,
+    gate: "g3_planning",
+    event_type: parsed.data.decision === "approved" ? "approved" : "blocked",
+    decision: parsed.data.decision === "approved" ? "go" : "modify",
+    rationale: parsed.data.notes || `Cliente ${parsed.data.decision === "approved" ? "aprovou" : "rejeitou"} a baseline v${baseline.version}.`,
+    created_by: authUser.id,
+  });
+  if (eventError) fail(path, eventError.message);
+  revalidatePath(path);
+  revalidatePath(`/projects/${baseline.project_id}`);
+  redirect(`${path}?client_decision=${parsed.data.decision}`);
+}
+
+export async function createProjectChangeRequest(formData: FormData) {
+  const parsed = projectChangeRequestSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+  const path = `/projects/${parsed.data.project_id}/commitment`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  const { data: baseline, error: baselineError } = await supabase
+    .from("project_commitment_baselines")
+    .select("id,version")
+    .eq("project_id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (baselineError || !baseline) fail(path, baselineError?.message ?? "Não existe baseline aprovada para alterar.");
+  const { error } = await supabase.from("project_change_requests").insert({
+    ...parsed.data,
+    user_id: user.id,
+    baseline_id: baseline.id,
+    baseline_version: baseline.version,
+    status: "requested",
+  });
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?change=created`);
+}
+
+export async function decideProjectChangeRequest(formData: FormData) {
+  const parsed = projectChangeDecisionSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+  const path = `/projects/${parsed.data.project_id}/commitment`;
+  const { supabase, user } = await requireUser();
+  const { data: request, error: requestError } = await supabase
+    .from("project_change_requests")
+    .select("id,status,baseline_version")
+    .eq("id", parsed.data.change_request_id)
+    .eq("project_id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (requestError || !request) fail(path, requestError?.message ?? "Pedido de alteração inválido.");
+  if (parsed.data.decision === "implemented") {
+    if (request.status !== "approved") fail(path, "Apenas alterações aprovadas podem ser marcadas como implementadas.");
+    const { data: revisedBaseline, error: revisedError } = await supabase
+      .from("project_commitment_baselines")
+      .select("id")
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .eq("status", "approved")
+      .gt("version", request.baseline_version)
+      .limit(1)
+      .maybeSingle();
+    if (revisedError) fail(path, revisedError.message);
+    if (!revisedBaseline) fail(path, "Antes de implementar a alteração, obtenha aprovação do cliente para uma nova baseline.");
+  }
+  const { error } = await supabase
+    .from("project_change_requests")
+    .update({
+      status: parsed.data.decision,
+      decision_rationale: parsed.data.decision_rationale,
+      decided_at: new Date().toISOString(),
+    })
+    .eq("id", request.id)
+    .eq("user_id", user.id);
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?change=${parsed.data.decision}`);
+}
+
+export async function recordDeliverableQa(formData: FormData) {
+  const parsed = deliverableQaSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/deliverables", zodMessage(parsed.error));
+  const path = `/deliverables?project_id=${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  const { data: deliverable, error: deliverableError } = await supabase
+    .from("deliverables")
+    .select("id,status")
+    .eq("id", parsed.data.deliverable_id)
+    .eq("project_id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (deliverableError || !deliverable) fail(path, deliverableError?.message ?? "Entregável inválido.");
+  if (deliverable.status === "completed") fail(path, "O QA de um entregável final já bloqueado não pode ser alterado.");
+  const { error } = await supabase
+    .from("deliverables")
+    .update({ qa_status: parsed.data.qa_status, qa_notes: parsed.data.qa_notes ?? null, qa_checked_at: new Date().toISOString() })
+    .eq("id", deliverable.id)
+    .eq("user_id", user.id);
+  if (error) fail(path, error.message);
+  revalidatePath("/deliverables");
+  redirect(`${path}&qa=${parsed.data.qa_status}`);
+}
+
+export async function recordDeliverableAcceptance(formData: FormData) {
+  const parsed = deliverableAcceptanceSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/deliverables", zodMessage(parsed.error));
+  const path = `/deliverables?project_id=${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  const { data: deliverable, error: deliverableError } = await supabase
+    .from("deliverables")
+    .select("id,status,artifact_version")
+    .eq("id", parsed.data.deliverable_id)
+    .eq("project_id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (deliverableError || !deliverable) fail(path, deliverableError?.message ?? "Entregável inválido.");
+  if (deliverable.status !== "completed") fail(path, "A aceitação só pode ser registada depois da entrega oficial.");
+  const { error } = await supabase.from("deliverable_acceptance_events").insert({
+    user_id: user.id,
+    project_id: parsed.data.project_id,
+    deliverable_id: deliverable.id,
+    deliverable_version: deliverable.artifact_version ?? 1,
+    status: parsed.data.status,
+    actor_type: "client",
+    actor_name: parsed.data.actor_name,
+    notes: parsed.data.notes ?? null,
+    evidence_reference: parsed.data.evidence_reference ?? null,
+  });
+  if (error) fail(path, error.message);
+  revalidatePath("/deliverables");
+  redirect(`${path}&acceptance=${parsed.data.status}`);
+}
+
+export async function upsertProjectClosureAssessment(formData: FormData) {
+  const parsed = projectClosureAssessmentSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/deliverables", zodMessage(parsed.error));
+  const path = `/projects/${parsed.data.project_id}/commitment`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  const { error } = await supabase.from("project_closure_assessments").upsert(
+    { ...parsed.data, user_id: user.id, updated_at: new Date().toISOString() },
+    { onConflict: "project_id" },
+  );
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath("/deliverables");
+  redirect(`${path}?closure=saved`);
+}
+
 export async function finalizeProjectClosure(formData: FormData) {
   const path = "/deliverables";
   const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   const decision = z.enum(["continue", "close"]).safeParse(formData.get("decision"));
   const rationale = z.string().trim().max(5000).safeParse(formData.get("rationale") ?? "");
+  if (!projectId.success || !decision.success || !rationale.success) fail(path, "Decisão final inválida.");
 
-  if (!projectId.success || !decision.success || !rationale.success) {
-    fail(path, "Decisão final inválida.");
-  }
-
-  const { supabase, user } = await requireUser();
+  const { supabase, user, authUser } = await requireUser();
   const { data: project, error: projectError } = await supabase
     .from("projects")
     .select("id,title,status")
     .eq("id", projectId.data)
     .eq("user_id", user.id)
     .maybeSingle();
-
   if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
 
   if (decision.data === "close") {
@@ -1870,51 +2189,48 @@ export async function finalizeProjectClosure(formData: FormData) {
       { data: deliverables, error: deliverablesError },
       { data: blockers, error: blockersError },
       { data: evidence, error: evidenceError },
+      { data: acceptanceEvents, error: acceptanceError },
+      { data: blockingRisks, error: risksError },
+      { data: blockingDependencies, error: dependenciesError },
+      { data: openChanges, error: changesError },
+      { data: baseline, error: baselineError },
+      { data: closure, error: closureError },
     ] = await Promise.all([
-      supabase
-        .from("deliverables")
-        .select("id,status,completion_criteria,locked_at")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id),
-      supabase
-        .from("blockers")
-        .select("id")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id)
-        .in("status", ["open", "investigating", "waiting"]),
-      supabase
-        .from("evidence")
-        .select("deliverable_id")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id)
-        .not("deliverable_id", "is", null),
+      supabase.from("deliverables").select("id,status,completion_criteria,locked_at").eq("project_id", project.id).eq("user_id", user.id),
+      supabase.from("blockers").select("id").eq("project_id", project.id).eq("user_id", user.id).in("status", ["open", "investigating", "waiting"]),
+      supabase.from("evidence").select("deliverable_id").eq("project_id", project.id).eq("user_id", user.id).not("deliverable_id", "is", null),
+      supabase.from("deliverable_acceptance_events").select("deliverable_id,status,created_at").eq("project_id", project.id).eq("user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("project_governance_risks").select("id").eq("project_id", project.id).eq("user_id", user.id).eq("blocks_progress", true).in("status", ["open", "mitigating"]),
+      supabase.from("project_governance_dependencies").select("id").eq("project_id", project.id).eq("user_id", user.id).eq("blocks_progress", true).in("status", ["pending", "resolving"]),
+      supabase.from("project_change_requests").select("id").eq("project_id", project.id).eq("user_id", user.id).in("status", ["requested", "approved"]),
+      supabase.from("project_commitment_baselines").select("id").eq("project_id", project.id).eq("user_id", user.id).eq("status", "approved").order("version", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("project_closure_assessments").select("*").eq("project_id", project.id).eq("user_id", user.id).maybeSingle(),
     ]);
-
-    const gateError = deliverablesError ?? blockersError ?? evidenceError;
+    const gateError = deliverablesError ?? blockersError ?? evidenceError ?? acceptanceError ?? risksError ?? dependenciesError ?? changesError ?? baselineError ?? closureError;
     if (gateError) fail(path, gateError.message);
-
-    if (!(deliverables ?? []).length) {
-      fail(path, "O projecto não pode fechar sem entregáveis definidos.");
-    }
-
-    const incomplete = (deliverables ?? []).filter((item) => item.status !== "completed");
-    if (incomplete.length) {
-      fail(path, "Existem entregáveis ainda não entregues/validados.");
-    }
-
-    const unlocked = (deliverables ?? []).filter((item) => !item.locked_at);
-    if (unlocked.length) {
-      fail(path, "Existem entregáveis finais que ainda não foram arquivados de forma imutável.");
-    }
-
+    if (!baseline) fail(path, "G5 bloqueado: não existe uma baseline de compromisso aprovada.");
+    if (!(deliverables ?? []).length) fail(path, "O projecto não pode fechar sem entregáveis definidos.");
+    if ((deliverables ?? []).some((item) => item.status !== "completed")) fail(path, "Existem entregáveis ainda não entregues/validados.");
+    if ((deliverables ?? []).some((item) => !item.locked_at)) fail(path, "Existem entregáveis finais ainda não arquivados de forma imutável.");
     const evidenceIds = new Set((evidence ?? []).map((item) => item.deliverable_id).filter(Boolean));
-    const missingEvidence = (deliverables ?? []).filter((item) => !evidenceIds.has(item.id));
-    if (missingEvidence.length) {
-      fail(path, "Todos os entregáveis precisam de evidência de entrega antes do fecho.");
+    if ((deliverables ?? []).some((item) => !evidenceIds.has(item.id))) fail(path, "Todos os entregáveis precisam de evidência antes do fecho.");
+    const latestAcceptance = new Map<string, string>();
+    for (const event of acceptanceEvents ?? []) if (!latestAcceptance.has(event.deliverable_id)) latestAcceptance.set(event.deliverable_id, event.status);
+    if ((deliverables ?? []).some((item) => !["accepted", "accepted_with_reservations"].includes(latestAcceptance.get(item.id) ?? ""))) {
+      fail(path, "Todos os entregáveis precisam de aceitação do cliente antes do fecho.");
     }
-
-    if ((blockers ?? []).length) {
-      fail(path, "Resolva os bloqueios activos antes de fechar o projecto.");
+    if ((blockers ?? []).length) fail(path, "Resolva os bloqueios activos antes de fechar o projecto.");
+    if ((blockingRisks ?? []).length) fail(path, "G5 bloqueado: existem riscos bloqueantes por resolver.");
+    if ((blockingDependencies ?? []).length) fail(path, "G5 bloqueado: existem dependências críticas por resolver.");
+    if ((openChanges ?? []).length) fail(path, "G5 bloqueado: existem alterações de âmbito ainda abertas.");
+    if (!closure) fail(path, "Preencha a avaliação de valor, handover e segurança antes do fecho.");
+    if (!closure.client_acceptance_complete) fail(path, "Confirme a aceitação global do cliente.");
+    if (!closure.changes_closed) fail(path, "Confirme que todas as alterações de âmbito estão encerradas.");
+    if (!closure.financials_updated) fail(path, "Actualize o financeiro antes do fecho.");
+    if (!closure.data_retention_reviewed) fail(path, "Reveja arquivo e retenção de dados antes do fecho.");
+    if (!closure.value_status || closure.value_status === "not_assessed") fail(path, "Registe o estado do valor alcançado antes do fecho.");
+    if (closure.handover_required && (!closure.handover_complete || !closure.access_transfer_complete || !closure.temporary_access_revoked)) {
+      fail(path, "Conclua handover, transferência de acessos e revogação de acessos temporários.");
     }
   }
 
@@ -1924,32 +2240,35 @@ export async function finalizeProjectClosure(formData: FormData) {
     title: decision.data === "close" ? `Fecho · ${project.title}` : `Continuidade · ${project.title}`,
     decision: decision.data === "close" ? "Encerrar projecto" : "Continuar projecto",
     rationale: rationale.data || null,
-    outcome: decision.data === "close" ? "Projecto fechado após validação dos entregáveis e evidências." : "Projecto continua em acompanhamento.",
+    outcome: decision.data === "close" ? "Projecto fechado após entrega, evidência, aceitação, valor e transferência segura." : "Projecto continua em acompanhamento.",
   });
-
   if (decisionError) fail(path, decisionError.message);
 
   if (decision.data === "close") {
     const { error: closeError } = await supabase
       .from("projects")
-      .update({
-        status: "completed",
-        progress: 100,
-        next_action: null,
-      })
+      .update({ status: "completed", progress: 100, next_action: null, governance_gate: "g5_closure", governance_gate_status: "completed" })
       .eq("id", project.id)
       .eq("user_id", user.id);
-
     if (closeError) fail(path, closeError.message);
+    const { error: eventError } = await supabase.from("project_gate_events").insert({
+      user_id: user.id,
+      project_id: project.id,
+      gate: "g5_closure",
+      event_type: "completed",
+      decision: "go",
+      rationale: rationale.data || "Fecho aprovado após validação dos critérios G5.",
+      created_by: authUser.id,
+    });
+    if (eventError) fail(path, eventError.message);
   }
-
   revalidatePath(path);
   revalidatePath("/projects");
   revalidatePath(`/projects/${project.id}`);
+  revalidatePath(`/projects/${project.id}/commitment`);
   revalidatePath("/dashboard");
   redirect(`${path}?project_id=${project.id}&${decision.data === "close" ? "closed=1" : "created=1"}`);
 }
-
 export async function upsertCommercialProfile(formData: FormData) {
   const path = "/monetization";
   const parsed = commercialProfileSchema.safeParse(values(formData));
@@ -2007,6 +2326,15 @@ export async function createFinancialEntry(formData: FormData) {
 
   const { supabase, user } = await requireAdmin();
   await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  await ensureOwned(supabase, "deliverables", parsed.data.related_deliverable_id, user.id, path);
+
+  if (
+    parsed.data.entry_type === "cost" &&
+    ["client_direct", "reimbursable_external", "additional_scope"].includes(parsed.data.cost_classification ?? "") &&
+    !parsed.data.client_approved
+  ) {
+    fail(path, "Custos externos, directos do cliente ou de âmbito adicional exigem aprovação do cliente.");
+  }
 
   const { error } = await supabase.from("financial_entries").insert({
     ...parsed.data,
@@ -2124,12 +2452,70 @@ export async function updateStatusProgress(formData: FormData) {
     payload.progress = progress.data;
   }
 
-  const { supabase, user } = await requireUser();
+  const { supabase, user, authUser } = await requireUser();
+  let enteringExecution = false;
+
+  if (entity === "projects") {
+    const { data: currentProject, error: projectError } = await supabase
+      .from("projects")
+      .select("id,status,governance_gate,governance_gate_status")
+      .eq("id", idResult.data)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (projectError || !currentProject) fail(path, projectError?.message ?? "Projecto não encontrado.");
+    if (status === "completed") {
+      fail(path, "O projecto só pode ser encerrado pelo Gate G5 em Entregáveis & Fecho.");
+    }
+
+    if (status === "active" && currentProject.governance_gate === "g3_planning") {
+      const [
+        { data: baseline, error: baselineError },
+        { data: blockingRisks, error: risksError },
+        { data: blockingDependencies, error: dependenciesError },
+      ] = await Promise.all([
+        supabase
+          .from("project_commitment_baselines")
+          .select("id,status")
+          .eq("project_id", currentProject.id)
+          .eq("user_id", user.id)
+          .eq("status", "approved")
+          .order("version", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("project_governance_risks")
+          .select("id")
+          .eq("project_id", currentProject.id)
+          .eq("user_id", user.id)
+          .eq("gate", "g3_planning")
+          .eq("blocks_progress", true)
+          .in("status", ["open", "mitigating"]),
+        supabase
+          .from("project_governance_dependencies")
+          .select("id")
+          .eq("project_id", currentProject.id)
+          .eq("user_id", user.id)
+          .eq("gate", "g3_planning")
+          .eq("blocks_progress", true)
+          .in("status", ["pending", "resolving"]),
+      ]);
+      const gateError = baselineError ?? risksError ?? dependenciesError;
+      if (gateError) fail(path, gateError.message);
+      if (!baseline) fail(path, "G3 bloqueado: o cliente ainda não aprovou o compromisso de entrega.");
+      if ((blockingRisks ?? []).length || (blockingDependencies ?? []).length) {
+        fail(path, "G3 bloqueado: existem riscos ou dependências críticas por resolver.");
+      }
+      payload.governance_gate = "g4_execution";
+      payload.governance_gate_status = "in_progress";
+      enteringExecution = true;
+    }
+  }
 
   if (entity === "deliverables") {
     const { data: deliverable, error: deliverableError } = await supabase
       .from("deliverables")
-      .select("id,status,completion_criteria,artifact_type,artifact_url,artifact_reference")
+      .select("id,status,completion_criteria,artifact_type,artifact_url,artifact_reference,qa_status")
       .eq("id", idResult.data)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -2146,6 +2532,9 @@ export async function updateStatusProgress(formData: FormData) {
       }
       if (!deliverable.completion_criteria?.trim()) {
         fail(path, "Defina critérios de aceitação antes de concluir o entregável.");
+      }
+      if (deliverable.qa_status !== "passed") {
+        fail(path, "O QA do entregável precisa estar aprovado antes da entrega.");
       }
 
       if (["website", "application", "dashboard", "api"].includes(deliverable.artifact_type)) {
@@ -2185,6 +2574,19 @@ export async function updateStatusProgress(formData: FormData) {
     .eq("user_id", user.id);
 
   if (error) fail(path, error.message);
+
+  if (entity === "projects" && enteringExecution) {
+    const { error: gateEventError } = await supabase.from("project_gate_events").insert({
+      user_id: user.id,
+      project_id: idResult.data,
+      gate: "g4_execution",
+      event_type: "entered",
+      rationale: "Execução iniciada após validação interna PCC e aprovação explícita do compromisso pelo cliente.",
+      created_by: authUser.id,
+    });
+    if (gateEventError) fail(path, gateEventError.message);
+  }
+
   revalidatePath(path);
   revalidatePath("/dashboard");
   revalidatePath("/actions");
