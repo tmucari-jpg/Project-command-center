@@ -331,6 +331,37 @@ comment on table public.project_commitment_baselines is
   'Baseline G3 aprovada: resultado esperado, âmbito, entregáveis, responsabilidades, exclusões e condições validadas antes da execução material.';
 comment on table public.project_change_requests is
   'Controlo formal de alterações materiais de âmbito, prazo, custo, capacidade ou segurança após aprovação da baseline.';
+
+
+create or replace function private.enforce_project_execution_commitment()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  if new.status = 'active'
+     and (tg_op = 'INSERT' or old.status is distinct from 'active')
+     and not exists (
+       select 1
+       from public.project_commitment_baselines b
+       where b.project_id = new.id
+         and b.user_id = new.user_id
+         and b.status = 'client_approved'
+     )
+  then
+    raise exception 'O projecto só pode entrar em execução após G3 interno e validação explícita do cliente.'
+      using errcode = '23514';
+  end if;
+
+  return new;
+end;
+$;
+
+drop trigger if exists enforce_project_execution_commitment on public.projects;
+create trigger enforce_project_execution_commitment
+before insert or update of status on public.projects
+for each row execute function private.enforce_project_execution_commitment();
+
 comment on column public.financial_entries.cost_treatment is
   'Separa custo interno PCC, custo directo do cliente, custo externo reembolsável e trabalho adicional fora do âmbito.';
 
