@@ -791,6 +791,9 @@ export async function createProject(formData: FormData) {
   const path = "/projects";
   const parsed = projectSchema.safeParse(values(formData));
   if (!parsed.success) fail(path, zodMessage(parsed.error));
+  if (parsed.data.status === "active") {
+    fail(path, "Um novo projecto deve passar pelo G3 e pela validação do cliente antes de entrar em execução.");
+  }
 
   const { supabase, user, authUser } = await requireUser();
   await ensureOwned(supabase, "objectives", parsed.data.objective_id, user.id, path);
