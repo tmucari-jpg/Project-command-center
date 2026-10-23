@@ -18,6 +18,11 @@ create table if not exists public.project_commitments (
   dependencies text,
   external_costs text,
   security_requirements text,
+  capacity_confirmed boolean not null default false,
+  deliverability_confirmed boolean not null default false,
+  financial_confirmed boolean not null default false,
+  security_confirmed boolean not null default false,
+  dependencies_confirmed boolean not null default false,
   pcc_validation_notes text,
   client_validation_notes text,
   pcc_validated_by uuid references auth.users(id) on delete set null,
@@ -33,6 +38,10 @@ create table if not exists public.project_commitments (
 create unique index if not exists project_commitments_one_live_baseline_idx
   on public.project_commitments(project_id)
   where status = 'client_validated';
+
+create unique index if not exists project_commitments_one_pending_validation_idx
+  on public.project_commitments(project_id)
+  where status = 'pcc_validated';
 
 create index if not exists project_commitments_user_project_idx
   on public.project_commitments(user_id, project_id);
