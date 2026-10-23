@@ -1105,39 +1105,83 @@ export async function saveProjectCommitment(formData: FormData) {
   const { supabase, user, authUser } = await requireUser();
   await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
 
-  const { data: liveBaseline, error: liveError } = await supabase
-    .from("project_commitments")
-    .select("id,baseline_version,status")
-    .eq("project_id", parsed.data.project_id)
-    .eq("user_id", user.id)
-    .eq("status", "client_validated")
-    .maybeSingle();
+  const [
+    { data: liveBaseline, error: liveError },
+    { data: pendingBaseline, error: pendingError },
+    { data: latest, error: latestError },
+    { data: blockingRisks, error: riskError },
+    { data: blockingDependencies, error: dependencyError },
+  ] = await Promise.all([
+    supabase
+      .from("project_commitments")
+      .select("id,baseline_version,status")
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .eq("status", "client_validated")
+      .maybeSingle(),
+    supabase
+      .from("project_commitments")
+      .select("id,baseline_version,status")
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .eq("status", "pcc_validated")
+      .maybeSingle(),
+    supabase
+      .from("project_commitments")
+      .select("baseline_version")
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .order("baseline_version", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("project_governance_risks")
+      .select("id,status,blocks_progress")
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .eq("gate", "g3_planning"),
+    supabase
+      .from("project_governance_dependencies")
+      .select("id,status,blocks_progress")
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .eq("gate", "g3_planning"),
+  ]);
 
-  if (liveError) fail(path, liveError.message);
+  const validationError = liveError ?? pendingError ?? latestError ?? riskError ?? dependencyError;
+  if (validationError) fail(path, validationError.message);
 
-  const { data: latest, error: latestError } = await supabase
-    .from("project_commitments")
-    .select("baseline_version")
-    .eq("project_id", parsed.data.project_id)
-    .eq("user_id", user.id)
-    .order("baseline_version", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  if ((blockingRisks ?? []).some((item) => item.blocks_progress && !["mitigated", "accepted", "resolved"].includes(item.status))) {
+    fail(path, "O G3 tem riscos bloqueantes por resolver antes da validação interna do compromisso.");
+  }
+  if ((blockingDependencies ?? []).some((item) => item.blocks_progress && !["resolved", "confirmed"].includes(item.status))) {
+    fail(path, "O G3 tem dependências bloqueantes por resolver antes da validação interna do compromisso.");
+  }
 
-  if (latestError) fail(path, latestError.message);
-
-  const baselineVersion = Number(latest?.baseline_version ?? 0) + 1;
-  const { error } = await supabase.from("project_commitments").insert({
-    ...parsed.data,
-    user_id: user.id,
-    baseline_version: baselineVersion,
-    status: "pcc_validated",
-    pcc_validated_by: authUser.id,
-    pcc_validated_at: new Date().toISOString(),
-    supersedes_commitment_id: liveBaseline?.id ?? null,
-  });
-
-  if (error) fail(path, error.message);
+  if (pendingBaseline) {
+    const { error } = await supabase
+      .from("project_commitments")
+      .update({
+        ...parsed.data,
+        pcc_validated_by: authUser.id,
+        pcc_validated_at: new Date().toISOString(),
+      })
+      .eq("id", pendingBaseline.id)
+      .eq("user_id", user.id);
+    if (error) fail(path, error.message);
+  } else {
+    const baselineVersion = Number(latest?.baseline_version ?? 0) + 1;
+    const { error } = await supabase.from("project_commitments").insert({
+      ...parsed.data,
+      user_id: user.id,
+      baseline_version: baselineVersion,
+      status: "pcc_validated",
+      pcc_validated_by: authUser.id,
+      pcc_validated_at: new Date().toISOString(),
+      supersedes_commitment_id: liveBaseline?.id ?? null,
+    });
+    if (error) fail(path, error.message);
+  }
   revalidatePath(path);
   redirect(`${path}?commitment=saved`);
 }
@@ -1233,6 +1277,16 @@ export async function decideProjectChangeRequest(formData: FormData) {
     .eq("user_id", user.id);
 
   if (error) fail(path, error.message);
+
+  if (parsed.data.decision === "approved") {
+    const { error: gateError } = await supabase
+      .from("projects")
+      .update({ governance_gate: "g3_planning", governance_gate_status: "blocked" })
+      .eq("id", parsed.data.project_id)
+      .eq("user_id", user.id);
+    if (gateError) fail(path, gateError.message);
+  }
+
   revalidatePath(path);
   redirect(`${path}?change=decided`);
 }
