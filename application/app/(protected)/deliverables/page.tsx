@@ -21,6 +21,9 @@ import { prepareDeliverableDraft } from "@/lib/project-autonomy";
 const WORKSTREAM_LABELS: Record<string, string> = {
   general: "Geral",
   commercial: "Comercial",
+  marketing: "Marketing",
+  sales: "Vendas",
+  monetization: "Monetização",
   financial: "Financeiro",
   operational: "Operacional",
   governance: "Governação",
@@ -262,7 +265,10 @@ export default async function DeliverablesPage({
             <Field label="Resultado / entregável" name="title" required defaultValue={preparedDraft?.title} placeholder="Ex.: Website institucional publicado" />
             <Select label="Vertente do entregável" name="workstream" defaultValue={previousVersion?.workstream ?? "general"}>
               <option value="general">Geral</option>
-              <option value="commercial">Comercial</option>
+              <option value="commercial">Comercial transversal</option>
+              <option value="marketing">Marketing</option>
+              <option value="sales">Vendas</option>
+              <option value="monetization">Monetização</option>
               <option value="financial">Financeiro</option>
               <option value="operational">Operacional</option>
               <option value="governance">Governação</option>
