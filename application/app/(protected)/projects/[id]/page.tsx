@@ -227,7 +227,7 @@ export default async function ProjectHubPage({
             <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">G3 · Compromisso de Entrega</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--cc-secondary)]">
               O trabalho material só começa depois de o PCC validar capacidade, custos e segurança e o cliente confirmar explicitamente
-              o resultado esperado, o âmbito, os entregáveis, as exclusões e os critérios de aceitação.
+              o resultado esperado, o âmbito, os entregáveis, as exclusões e os critérios de aceitação. Em projectos internos, esta validação cabe ao responsável interno.
             </p>
           </div>
           <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
@@ -288,12 +288,12 @@ export default async function ProjectHubPage({
                 <input type="hidden" name="baseline_id" value={latestBaseline.id} />
                 <input type="hidden" name="project_id" value={project.id} />
                 <Field
-                  label="Referência da validação explícita do cliente"
+                  label="Referência da validação explícita do cliente / responsável interno"
                   name="client_validation_reference"
                   required
                   placeholder="Ex.: email de aprovação, reunião de 23/10/2026, documento assinado."
                 />
-                <button className={primaryButtonClass} type="submit">Registar validação do cliente e autorizar execução</button>
+                <button className={primaryButtonClass} type="submit">Registar validação e autorizar execução</button>
               </form>
             )}
           </div>
