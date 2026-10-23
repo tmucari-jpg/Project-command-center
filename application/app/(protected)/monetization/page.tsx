@@ -53,7 +53,7 @@ export default async function CommercialPage({
     supabase.from("project_commercial_profiles").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabase.from("commercial_leads").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(100),
     supabase.from("financial_entries").select("*").eq("user_id", user.id).order("occurred_on", { ascending: false }).limit(100),
-    supabase.from("deliverables").select("*").eq("user_id", user.id).eq("workstream", "commercial").order("created_at", { ascending: false }).limit(150),
+    supabase.from("deliverables").select("*").eq("user_id", user.id).in("workstream", ["commercial", "marketing", "sales", "monetization"]).order("created_at", { ascending: false }).limit(150),
   ]);
 
   const error =
@@ -265,7 +265,12 @@ export default async function CommercialPage({
             O resultado é processado aqui, mas fica arquivado no projecto e disponível em Entregáveis para consulta, download, evidência e fecho.
           </p>
           <form action={createDeliverable} className="mt-5 space-y-4">
-            <input type="hidden" name="workstream" value="commercial" />
+            <Select label="Vertente" name="workstream" defaultValue="sales">
+              <option value="sales">Vendas</option>
+              <option value="marketing">Marketing</option>
+              <option value="monetization">Monetização</option>
+              <option value="commercial">Comercial transversal</option>
+            </Select>
             <input type="hidden" name="return_path" value="/monetization" />
             <input type="hidden" name="status" value="pending" />
             <input type="hidden" name="progress" value="0" />
