@@ -18,6 +18,12 @@ create table if not exists public.project_commitments (
   dependencies text,
   external_costs text,
   security_requirements text,
+  capacity_basis text,
+  payment_conditions text,
+  client_approval_sla text,
+  asset_ownership text,
+  intellectual_property_terms text,
+  post_delivery_support text,
   capacity_confirmed boolean not null default false,
   deliverability_confirmed boolean not null default false,
   financial_confirmed boolean not null default false,
@@ -158,6 +164,9 @@ create table if not exists public.project_closure_state (
   security_transfer_status text not null default 'not_applicable'
     check (security_transfer_status in ('not_applicable','pending','completed')),
   security_transfer_notes text,
+  continuity_status text not null default 'not_applicable'
+    check (continuity_status in ('not_applicable','pending','confirmed')),
+  continuity_notes text,
   financial_status text not null default 'pending'
     check (financial_status in ('pending','updated')),
   lessons_learned text,
