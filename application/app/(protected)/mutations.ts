@@ -1991,7 +1991,7 @@ export async function validateCommitmentByClient(formData: FormData) {
 
   if (baselineError || !baseline) fail(path, baselineError?.message ?? "Baseline não encontrada.");
   if (baseline.status !== "internal_approved") {
-    fail(path, "O PCC precisa validar internamente a baseline antes da validação do cliente.");
+    fail(path, "O PCC precisa validar internamente a baseline antes da validação do cliente ou responsável interno.");
   }
 
   const { error } = await supabase
@@ -2019,7 +2019,7 @@ export async function validateCommitmentByClient(formData: FormData) {
     gate: "g3_planning",
     event_type: "approved",
     decision: "go",
-    rationale: `Cliente validou explicitamente a baseline v${baseline.version}: ${reference.data}`,
+    rationale: `Cliente/responsável validou explicitamente a baseline v${baseline.version}: ${reference.data}`,
     created_by: authUser.id,
   });
 
@@ -2556,7 +2556,7 @@ export async function updateStatusProgress(formData: FormData) {
 
     if (baselineError) fail(path, baselineError.message);
     if (!approvedBaseline) {
-      fail(path, "O projecto só pode entrar em execução depois do G3 e da validação explícita do cliente.");
+      fail(path, "O projecto só pode entrar em execução depois do G3 e da validação explícita do cliente ou responsável interno.");
     }
   }
 
