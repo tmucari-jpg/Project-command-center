@@ -373,7 +373,7 @@ export const commercialLeadSchema = z.object({
   organisation: optionalText(180),
   contact_reference: optionalText(500),
   source: optionalText(500),
-  stage: z.enum(["lead", "contacted", "qualified", "proposal", "negotiation", "won", "lost"]),
+  stage: z.enum(["contact", "interest", "diagnosis", "demonstration", "proposal", "client", "handoff", "lost"]),
   value: optionalNumber,
   currency: optionalText(8),
   next_action: optionalText(1000),
