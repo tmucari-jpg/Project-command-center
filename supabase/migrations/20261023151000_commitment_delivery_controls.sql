@@ -28,6 +28,7 @@ create table if not exists public.project_commitments (
   pcc_validated_by uuid references auth.users(id) on delete set null,
   pcc_validated_at timestamptz,
   client_validated_by text,
+  client_validation_reference text,
   client_validated_at timestamptz,
   supersedes_commitment_id uuid references public.project_commitments(id) on delete restrict,
   created_at timestamptz not null default now(),
