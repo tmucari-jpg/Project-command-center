@@ -376,6 +376,15 @@ export default async function ProjectHubPage({
             <TextArea label="Dependências" name="dependencies" defaultValue={activeCommitment?.dependencies ?? ""} />
             <TextArea label="Custos externos e trabalhos adicionais" name="external_costs" defaultValue={activeCommitment?.external_costs ?? "Domínio, hosting, licenças, publicidade, fornecedores e trabalho paralelo não incluído no serviço PCC são orçamentados separadamente, salvo indicação expressa em contrário."} />
             <TextArea label="Condições de segurança" name="security_requirements" defaultValue={activeCommitment?.security_requirements ?? ""} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Select label="Classificação da informação" name="information_classification" defaultValue={activeCommitment?.information_classification ?? "confidential"}>
+                <option value="public">Pública</option>
+                <option value="internal">Interna</option>
+                <option value="confidential">Confidencial</option>
+                <option value="restricted">Restrita</option>
+              </Select>
+              <TextArea label="Retenção / eliminação de dados após fecho" name="data_retention_terms" defaultValue={activeCommitment?.data_retention_terms ?? ""} />
+            </div>
             <TextArea
               label="Base da capacidade confirmada"
               name="capacity_basis"
@@ -424,6 +433,8 @@ export default async function ProjectHubPage({
                 ["Dependências", pendingCommitment.dependencies || "Sem dependências adicionais registadas."],
                 ["Custos externos / trabalho adicional", pendingCommitment.external_costs || "Sem custos externos registados."],
                 ["Condições de segurança", pendingCommitment.security_requirements || "Sem condições adicionais registadas."],
+                ["Classificação da informação", displayLabel(pendingCommitment.information_classification)],
+                ["Retenção / eliminação de dados", pendingCommitment.data_retention_terms || "Não especificada."],
                 ["Base de capacidade", pendingCommitment.capacity_basis],
                 ["Condições de pagamento", pendingCommitment.payment_conditions || "Não especificadas."],
                 ["Prazo/regra de aprovação do cliente", pendingCommitment.client_approval_sla || "Não especificado."],
