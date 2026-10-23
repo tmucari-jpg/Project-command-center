@@ -44,6 +44,28 @@ alter table public.financial_entries
   add column if not exists cost_frequency text not null default 'one_off',
   add column if not exists external_provider text;
 
+-- Align the sales pipeline with the validated PCC commercial flow.
+alter table public.commercial_leads
+  add column if not exists loss_reason text;
+
+alter table public.commercial_leads
+  drop constraint if exists commercial_leads_stage_check;
+
+update public.commercial_leads
+set stage = case stage
+  when 'lead' then 'contact'
+  when 'contacted' then 'interest'
+  when 'qualified' then 'diagnosis'
+  when 'negotiation' then 'proposal'
+  when 'won' then 'client'
+  else stage
+end
+where stage in ('lead','contacted','qualified','negotiation','won');
+
+alter table public.commercial_leads
+  add constraint commercial_leads_stage_check
+    check (stage in ('contact','interest','diagnosis','demonstration','proposal','client','handoff','lost'));
+
 alter table public.financial_entries
   drop constraint if exists financial_entries_cost_treatment_check,
   add constraint financial_entries_cost_treatment_check
