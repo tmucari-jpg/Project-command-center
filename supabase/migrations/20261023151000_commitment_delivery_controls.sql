@@ -101,10 +101,15 @@ using ((user_id = (select auth.uid())) or (select private.is_global_admin()))
 with check ((user_id = (select auth.uid())) or (select private.is_global_admin()));
 
 alter table public.deliverables
+  add column if not exists commitment_id uuid references public.project_commitments(id) on delete restrict,
   add column if not exists qa_status text not null default 'not_ready'
     check (qa_status in ('not_ready','ready_for_review','approved','changes_required')),
   add column if not exists qa_notes text,
   add column if not exists qa_reviewed_at timestamptz;
+
+create index if not exists deliverables_commitment_idx
+  on public.deliverables(commitment_id)
+  where commitment_id is not null;
 
 create table if not exists public.deliverable_acceptances (
   id uuid primary key default uuid_generate_v4(),
