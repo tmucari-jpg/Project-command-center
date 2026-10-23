@@ -26,6 +26,14 @@ const PIPELINE_STAGES = [
   ["lost", "Perdido / não avançar"],
 ] as const;
 
+function normalizedLeadStage(stage: string | null | undefined) {
+  if (stage === "lead" || stage === "contacted") return "contact";
+  if (stage === "qualified") return "diagnosis";
+  if (stage === "negotiation") return "proposal";
+  if (stage === "won") return "client";
+  return stage ?? "contact";
+}
+
 export default async function CommercialPage({
   searchParams,
 }: {
@@ -65,7 +73,7 @@ export default async function CommercialPage({
   const commercialProjects = (projects ?? []).filter((project) => commercialProjectIds.has(project.id));
   const projectOptions = commercialProjects.length ? commercialProjects : (projects ?? []);
   const backlog = commercialProjects.filter((project) => profileByProject.get(project.id)?.validation_status !== "validated");
-  const activeLeads = (leads ?? []).filter((lead) => !["client", "lost"].includes(lead.stage));
+  const activeLeads = (leads ?? []).filter((lead) => !["client", "lost"].includes(normalizedLeadStage(lead.stage)));
   const openCommercialDeliverables = (commercialDeliverables ?? []).filter(
     (item) => !["completed", "cancelled"].includes(item.status),
   );
