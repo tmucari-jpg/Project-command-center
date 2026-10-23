@@ -523,6 +523,40 @@ export const projectClosureAssessmentSchema = z.object({
   continuity_notes: optionalText(8000),
 });
 
+export const projectGovernanceRiskSchema = z
+  .object({
+    project_id: z.string().uuid(),
+    gate: z.enum(["g3_planning", "g4_execution", "g5_closure"]),
+    category: z.enum(["security", "privacy", "compliance", "market", "financial", "operational", "technology", "third_party", "other"]),
+    title: z.string().trim().min(2).max(240),
+    description: optionalText(6000),
+    severity: z.enum(["low", "medium", "high", "critical"]),
+    blocks_progress: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    mitigation_plan: optionalText(6000),
+  })
+  .refine((data) => data.severity !== "critical" || data.blocks_progress, {
+    message: "Um risco crítico deve bloquear o avanço até ser mitigado, aceite formalmente ou resolvido.",
+  });
+
+export const projectGovernanceRiskUpdateSchema = z.object({
+  project_id: z.string().uuid(),
+  risk_id: z.string().uuid(),
+  status: z.enum(["open", "mitigating", "mitigated", "accepted", "resolved"]),
+  mitigation_plan: optionalText(6000),
+  evidence: optionalText(6000),
+});
+
+export const projectGovernanceDependencySchema = z.object({
+  project_id: z.string().uuid(),
+  gate: z.enum(["g3_planning", "g4_execution", "g5_closure"]),
+  kind: z.enum(["information", "validation", "confirmation", "decision"]),
+  owner_role: z.enum(["pcc", "project_owner", "client"]),
+  required_item: z.string().trim().min(2).max(500),
+  description: optionalText(6000),
+  source_reference: optionalText(1000),
+  blocks_progress: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+});
+
 export function zodMessage(error: z.ZodError) {
   return error.issues[0]?.message ?? "Dados inválidos.";
 }

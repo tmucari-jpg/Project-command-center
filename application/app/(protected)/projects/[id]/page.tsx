@@ -3,10 +3,13 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, CalendarCheck2, CheckSquare2, CircleDollarSign, GitBranch, Home, PackageCheck, ShieldCheck, TriangleAlert, UserRoundCheck } from "lucide-react";
 import {
   completeProjectReview,
+  createProjectGovernanceDependency,
+  createProjectGovernanceRisk,
   createProjectMemory,
   prepareProjectOperationalStructure,
   resolveGovernanceDependency,
   updateProjectGovernance,
+  updateProjectGovernanceRisk,
   updateProjectNextAction,
 } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
@@ -46,6 +49,7 @@ export default async function ProjectHubPage({
     { data: memory },
     { data: decisions },
     { data: dependencies },
+    { data: governanceRisks },
     { data: profiles },
     { data: economics },
     { data: strategyPlan },
@@ -107,6 +111,12 @@ export default async function ProjectHubPage({
       .eq("project_id", id)
       .order("created_at", { ascending: false }),
     supabase
+      .from("project_governance_risks")
+      .select("id,gate,category,title,description,severity,status,blocks_progress,mitigation_plan,evidence,created_at")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
       .from("profiles")
       .select("id,full_name")
       .order("full_name"),
@@ -143,6 +153,9 @@ export default async function ProjectHubPage({
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
   const activeDependencies = (dependencies ?? []).filter((item) =>
     ["pending", "resolving"].includes(item.status),
+  );
+  const activeGovernanceRisks = (governanceRisks ?? []).filter((item) =>
+    ["open", "mitigating"].includes(item.status),
   );
   const now = new Date();
   const overdueActions = (actions ?? []).filter(
@@ -359,7 +372,7 @@ export default async function ProjectHubPage({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-[var(--cc-foreground)]">{item.required_item}</p>
                   <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold text-[var(--cc-foreground)]">
-                    {item.owner_role === "pcc" ? "PCC" : "Dono do Projecto"}
+                    {item.owner_role === "pcc" ? "PCC" : item.owner_role === "client" ? "Cliente" : "Dono do Projecto"}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-[var(--cc-secondary)]">
@@ -367,18 +380,128 @@ export default async function ProjectHubPage({
                   {item.blocks_progress ? " · bloqueia avanço" : ""}
                 </p>
                 {item.description && <p className="mt-2 text-sm text-[var(--cc-secondary)]">{item.description}</p>}
-                {item.owner_role === "project_owner" && (
-                  <form action={resolveGovernanceDependency} className="mt-3">
-                    <input type="hidden" name="dependency_id" value={item.id} />
-                    <input type="hidden" name="project_id" value={project.id} />
-                    <button type="submit" className="text-xs font-semibold text-[var(--cc-accent)] hover:underline">
-                      Marcar como resolvida
-                    </button>
-                  </form>
-                )}
+                <form action={resolveGovernanceDependency} className="mt-3">
+                  <input type="hidden" name="dependency_id" value={item.id} />
+                  <input type="hidden" name="project_id" value={project.id} />
+                  <button type="submit" className="text-xs font-semibold text-[var(--cc-accent)] hover:underline">
+                    Marcar como resolvida
+                  </button>
+                </form>
               </div>
             ))}
           </div>
+          <details className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">Adicionar dependência / obrigação</summary>
+            <form action={createProjectGovernanceDependency} className="mt-4 space-y-3">
+              <input type="hidden" name="project_id" value={project.id} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select label="Gate" name="gate" defaultValue={project.governance_gate}>
+                  <option value="g3_planning">G3 · Compromisso</option>
+                  <option value="g4_execution">G4 · Execução</option>
+                  <option value="g5_closure">G5 · Fecho</option>
+                </Select>
+                <Select label="Responsável" name="owner_role" defaultValue="project_owner">
+                  <option value="pcc">PCC</option>
+                  <option value="project_owner">Dono do Projecto</option>
+                  <option value="client">Cliente</option>
+                </Select>
+                <Select label="Tipo" name="kind" defaultValue="information">
+                  <option value="information">Informação</option>
+                  <option value="validation">Validação</option>
+                  <option value="confirmation">Confirmação</option>
+                  <option value="decision">Decisão</option>
+                </Select>
+                <Field label="Referência de origem" name="source_reference" />
+              </div>
+              <Field label="O que é necessário" name="required_item" required />
+              <TextArea label="Descrição / impacto" name="description" />
+              <label className="flex items-start gap-3 text-sm text-[var(--cc-foreground)]">
+                <input type="checkbox" name="blocks_progress" className="mt-1" />
+                <span>Bloqueia avanço do Gate enquanto estiver pendente.</span>
+              </label>
+              <button className={secondaryButtonClass} type="submit">Registar dependência</button>
+            </form>
+          </details>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-[var(--cc-foreground)]">
+            <TriangleAlert size={18} /> Pontos de atenção e riscos
+          </h2>
+          <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+            Pontos cegos identificados durante o projecto entram aqui para tratamento. Quando o impacto justificar, podem bloquear o Gate até serem mitigados, aceites formalmente ou resolvidos.
+          </p>
+          <div className="mt-5 space-y-3">
+            {!activeGovernanceRisks.length ? (
+              <EmptyState>Sem riscos de governação abertos.</EmptyState>
+            ) : activeGovernanceRisks.map((risk) => (
+              <div key={risk.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--cc-foreground)]">{risk.title}</p>
+                    <p className="mt-1 text-xs text-[var(--cc-secondary)]">
+                      {displayLabel(risk.category)} · {displayLabel(risk.severity)} · {GOVERNANCE_GATE_LABELS[risk.gate] ?? risk.gate}
+                      {risk.blocks_progress ? " · bloqueia avanço" : ""}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-[var(--cc-surface-muted)] px-2 py-1 text-[11px] font-semibold">{displayLabel(risk.status)}</span>
+                </div>
+                {risk.description && <p className="mt-2 text-sm text-[var(--cc-secondary)]">{risk.description}</p>}
+                <form action={updateProjectGovernanceRisk} className="mt-3 space-y-2">
+                  <input type="hidden" name="project_id" value={project.id} />
+                  <input type="hidden" name="risk_id" value={risk.id} />
+                  <Select label="Tratamento" name="status" defaultValue={risk.status}>
+                    <option value="open">Aberto</option>
+                    <option value="mitigating">Em mitigação</option>
+                    <option value="mitigated">Mitigado</option>
+                    <option value="accepted">Aceite formalmente</option>
+                    <option value="resolved">Resolvido</option>
+                  </Select>
+                  <TextArea label="Plano de mitigação" name="mitigation_plan" defaultValue={risk.mitigation_plan ?? ""} />
+                  <TextArea label="Evidência / fundamento" name="evidence" defaultValue={risk.evidence ?? ""} />
+                  <button className={secondaryButtonClass} type="submit">Actualizar risco</button>
+                </form>
+              </div>
+            ))}
+          </div>
+          <details className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">Adicionar ponto de atenção / risco</summary>
+            <form action={createProjectGovernanceRisk} className="mt-4 space-y-3">
+              <input type="hidden" name="project_id" value={project.id} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select label="Gate" name="gate" defaultValue={project.governance_gate}>
+                  <option value="g3_planning">G3 · Compromisso</option>
+                  <option value="g4_execution">G4 · Execução</option>
+                  <option value="g5_closure">G5 · Fecho</option>
+                </Select>
+                <Select label="Categoria" name="category" defaultValue="operational">
+                  <option value="security">Segurança</option>
+                  <option value="privacy">Privacidade</option>
+                  <option value="compliance">Compliance</option>
+                  <option value="market">Mercado</option>
+                  <option value="financial">Financeiro</option>
+                  <option value="operational">Operacional</option>
+                  <option value="technology">Tecnologia</option>
+                  <option value="third_party">Terceiros / fornecedor</option>
+                  <option value="other">Outro</option>
+                </Select>
+                <Select label="Severidade" name="severity" defaultValue="medium">
+                  <option value="low">Baixa</option>
+                  <option value="medium">Média</option>
+                  <option value="high">Alta</option>
+                  <option value="critical">Crítica</option>
+                </Select>
+              </div>
+              <Field label="Ponto de atenção / risco" name="title" required />
+              <TextArea label="Descrição / impacto" name="description" />
+              <TextArea label="Plano de mitigação" name="mitigation_plan" />
+              <label className="flex items-start gap-3 text-sm text-[var(--cc-foreground)]">
+                <input type="checkbox" name="blocks_progress" className="mt-1" />
+                <span>Bloqueia avanço do Gate enquanto permanecer aberto.</span>
+              </label>
+              <button className={secondaryButtonClass} type="submit">Registar risco</button>
+            </form>
+          </details>
         </Card>
 
         <Card className="p-5">

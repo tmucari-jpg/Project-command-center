@@ -34,6 +34,9 @@ import {
   deliverableQaSchema,
   deliverableAcceptanceSchema,
   projectClosureAssessmentSchema,
+  projectGovernanceRiskSchema,
+  projectGovernanceRiskUpdateSchema,
+  projectGovernanceDependencySchema,
   subscriptionFunnelMetricSchema,
   agentRunSchema,
   intelligenceSignalSchema,
@@ -950,6 +953,71 @@ export async function completeProjectReview(formData: FormData) {
   revalidatePath(path);
   revalidatePath("/dashboard");
   redirect(`${path}?review=completed`);
+}
+
+export async function createProjectGovernanceRisk(formData: FormData) {
+  const parsed = projectGovernanceRiskSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user, authUser } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  const { error } = await supabase.from("project_governance_risks").insert({
+    ...parsed.data,
+    user_id: user.id,
+    status: "open",
+    owner_id: authUser.id,
+  });
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath(`/projects/${parsed.data.project_id}/commitment`);
+  redirect(`${path}?governance_risk=created`);
+}
+
+export async function updateProjectGovernanceRisk(formData: FormData) {
+  const parsed = projectGovernanceRiskUpdateSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  const { data: risk, error: riskError } = await supabase
+    .from("project_governance_risks")
+    .select("id,severity,blocks_progress")
+    .eq("id", parsed.data.risk_id)
+    .eq("project_id", parsed.data.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (riskError || !risk) fail(path, riskError?.message ?? "Risco de governação inválido.");
+  const closesRisk = ["mitigated", "accepted", "resolved"].includes(parsed.data.status);
+  const { error } = await supabase
+    .from("project_governance_risks")
+    .update({
+      status: parsed.data.status,
+      blocks_progress: closesRisk ? false : risk.blocks_progress,
+      mitigation_plan: parsed.data.mitigation_plan ?? null,
+      evidence: parsed.data.evidence ?? null,
+    })
+    .eq("id", risk.id)
+    .eq("user_id", user.id);
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath(`/projects/${parsed.data.project_id}/commitment`);
+  redirect(`${path}?governance_risk=${parsed.data.status}`);
+}
+
+export async function createProjectGovernanceDependency(formData: FormData) {
+  const parsed = projectGovernanceDependencySchema.safeParse(values(formData));
+  if (!parsed.success) fail("/projects", zodMessage(parsed.error));
+  const path = `/projects/${parsed.data.project_id}`;
+  const { supabase, user } = await requireUser();
+  await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
+  const { error } = await supabase.from("project_governance_dependencies").insert({
+    ...parsed.data,
+    user_id: user.id,
+    status: "pending",
+  });
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  revalidatePath(`/projects/${parsed.data.project_id}/commitment`);
+  redirect(`${path}?governance_dependency=created`);
 }
 
 export async function resolveGovernanceDependency(formData: FormData) {

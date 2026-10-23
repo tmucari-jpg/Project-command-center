@@ -148,3 +148,28 @@ begin
 end; $$;
 drop trigger if exists protect_acceptance_event_archive on public.deliverable_acceptance_events;
 create trigger protect_acceptance_event_archive before update or delete on public.deliverable_acceptance_events for each row execute function private.protect_acceptance_event_archive();
+
+-- Expand governance dependency ownership and align global-admin RLS.
+alter table public.project_governance_dependencies drop constraint if exists project_governance_dependencies_owner_role_check;
+alter table public.project_governance_dependencies add constraint project_governance_dependencies_owner_role_check check (owner_role in ('pcc','project_owner','client'));
+
+drop policy if exists "Users can view own governance risks" on public.project_governance_risks;
+create policy "Users can view own governance risks" on public.project_governance_risks for select to authenticated
+using (user_id=(select auth.uid()) or (select private.is_global_admin()));
+drop policy if exists "Users can create own governance risks" on public.project_governance_risks;
+create policy "Users can create own governance risks" on public.project_governance_risks for insert to authenticated
+with check (user_id=(select auth.uid()) or (select private.is_global_admin()));
+drop policy if exists "Users can update own governance risks" on public.project_governance_risks;
+create policy "Users can update own governance risks" on public.project_governance_risks for update to authenticated
+using (user_id=(select auth.uid()) or (select private.is_global_admin()))
+with check (user_id=(select auth.uid()) or (select private.is_global_admin()));
+drop policy if exists "Users can delete own governance risks" on public.project_governance_risks;
+create policy "Users can delete own governance risks" on public.project_governance_risks for delete to authenticated
+using (user_id=(select auth.uid()) or (select private.is_global_admin()));
+
+drop policy if exists "Users can view own gate events" on public.project_gate_events;
+create policy "Users can view own gate events" on public.project_gate_events for select to authenticated
+using (user_id=(select auth.uid()) or (select private.is_global_admin()));
+drop policy if exists "Users can create own gate events" on public.project_gate_events;
+create policy "Users can create own gate events" on public.project_gate_events for insert to authenticated
+with check (user_id=(select auth.uid()) or (select private.is_global_admin()));
