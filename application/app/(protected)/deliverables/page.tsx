@@ -65,7 +65,7 @@ export default async function DeliverablesPage({
       .order("due_date", { ascending: true, nullsFirst: false }),
     supabase
       .from("projects")
-      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,owner_id,status,value_status,handover_status")
+      .select("id,title,description,expected_result,priority,progress,start_date,due_date,notes,owner_id,status,value_status,handover_status,continuity_status")
       .eq("user_id", user.id)
       .order("title"),
     supabase.from("profiles").select("id,full_name").order("full_name"),
@@ -165,7 +165,8 @@ export default async function DeliverablesPage({
       pendingChanges.length === 0 &&
       Boolean(approvedBaseline) &&
       project.value_status !== "not_assessed" &&
-      project.handover_status !== "pending";
+      project.handover_status !== "pending" &&
+      project.continuity_status !== "pending";
     return {
       project,
       deliverables: projectDeliverables,
@@ -484,7 +485,7 @@ export default async function DeliverablesPage({
                         <p className="mt-2 text-sm text-[var(--cc-secondary)]">
                           Antes do fecho, registe se o valor foi comprovado e se activos, acessos, documentação e responsabilidades foram transferidos quando aplicável.
                         </p>
-                        <form action={updateProjectOutcomeStatus} className="mt-4 grid gap-4 lg:grid-cols-2">
+                        <form action={updateProjectOutcomeStatus} className="mt-4 grid gap-4 lg:grid-cols-3">
                           <input type="hidden" name="project_id" value={group.project.id} />
                           <Select label="Valor" name="value_status" defaultValue={group.project.value_status ?? "not_assessed"}>
                             <option value="not_assessed">Por avaliar</option>
@@ -497,7 +498,12 @@ export default async function DeliverablesPage({
                             <option value="pending">Pendente</option>
                             <option value="completed">Concluído</option>
                           </Select>
-                          <div className="lg:col-span-2">
+                          <Select label="Continuidade / recuperação" name="continuity_status" defaultValue={group.project.continuity_status ?? "not_required"}>
+                            <option value="not_required">Não aplicável</option>
+                            <option value="pending">Pendente</option>
+                            <option value="verified">Verificada</option>
+                          </Select>
+                          <div className="lg:col-span-3">
                             <button className={secondaryButtonClass} type="submit">Guardar estado de fecho</button>
                           </div>
                         </form>
