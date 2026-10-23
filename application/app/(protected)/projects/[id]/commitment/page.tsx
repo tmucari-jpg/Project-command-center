@@ -76,14 +76,31 @@ export default async function ProjectCommitmentPage({ params }: { params: Promis
             <TextArea label="Responsabilidades do cliente" name="client_responsibilities" required defaultValue={editable?.client_responsibilities ?? ""} />
             <TextArea label="Premissas e dependências" name="assumptions_dependencies" required defaultValue={editable?.assumptions_dependencies ?? ""} />
             <TextArea label="Validação de capacidade" name="capacity_validation" required defaultValue={editable?.capacity_validation ?? ""} />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Esforço necessário (horas)" name="capacity_required_hours" type="number" step="any" min={0} defaultValue={editable?.capacity_required_hours ?? undefined} />
+              <Field label="Capacidade disponível (horas)" name="capacity_available_hours" type="number" step="any" min={0} defaultValue={editable?.capacity_available_hours ?? undefined} />
+              <Field label="Período da capacidade" name="capacity_period" defaultValue={editable?.capacity_period ?? ""} placeholder="Ex.: 60 dias / mês" />
+            </div>
             <TextArea label="Validação financeira / margem" name="financial_validation" required defaultValue={editable?.financial_validation ?? ""} />
+            <div className="grid gap-4 sm:grid-cols-4">
+              <Field label="Preço" name="price" type="number" step="any" min={0} defaultValue={editable?.price ?? undefined} />
+              <Field label="Custo PCC estimado" name="estimated_pcc_cost" type="number" step="any" min={0} defaultValue={editable?.estimated_pcc_cost ?? undefined} />
+              <Field label="Margem mínima (%)" name="minimum_margin_pct" type="number" step="any" min={0} max={100} defaultValue={editable?.minimum_margin_pct ?? 20} />
+              <Field label="Moeda" name="currency" defaultValue={editable?.currency ?? project.currency ?? "MZN"} />
+            </div>
+            <label className="flex items-start gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3 text-sm">
+              <input type="checkbox" name="margin_exception_approved" defaultChecked={Boolean(editable?.margin_exception_approved)} className="mt-1" />
+              <span>Existe uma excepção formal aprovada para capacidade insuficiente e/ou margem abaixo do mínimo.</span>
+            </label>
+            <TextArea label="Fundamento da excepção, quando aplicável" name="margin_exception_rationale" defaultValue={editable?.margin_exception_rationale ?? ""} />
             <TextArea label="Validação de segurança" name="security_validation" required defaultValue={editable?.security_validation ?? ""} />
             <TextArea label="Custos externos e trabalhos paralelos" name="external_costs_note" required defaultValue={editable?.external_costs_note ?? "Domínios, hosting, licenças, publicidade, fornecedores e trabalhos paralelos são orçamentados separadamente, salvo aprovação expressa em contrário."} />
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Preço" name="price" type="number" step="any" min={0} defaultValue={editable?.price ?? undefined} />
-              <Field label="Moeda" name="currency" defaultValue={editable?.currency ?? project.currency ?? "MZN"} />
-              <Field label="Prazo" name="due_date" type="date" defaultValue={editable?.due_date ?? project.due_date ?? undefined} />
-            </div>
+            <TextArea label="Marcos de validação com o cliente" name="validation_milestones" defaultValue={editable?.validation_milestones ?? ""} placeholder="Defina validações antes de trabalho material ou difícil de reverter." />
+            <TextArea label="Condições de pagamento" name="payment_terms" defaultValue={editable?.payment_terms ?? ""} />
+            <TextArea label="Propriedade dos activos" name="asset_ownership_terms" defaultValue={editable?.asset_ownership_terms ?? ""} placeholder="Ex.: domínio, contas, website, CRM e outros activos devem terminar sob propriedade do cliente quando aplicável." />
+            <TextArea label="Propriedade intelectual" name="intellectual_property_terms" defaultValue={editable?.intellectual_property_terms ?? ""} placeholder="Distinguir entregáveis do cliente de metodologias, templates e activos proprietários PCC." />
+            <TextArea label="Pós-entrega: correcção, garantia e suporte" name="post_delivery_terms" defaultValue={editable?.post_delivery_terms ?? ""} />
+            <Field label="Prazo" name="due_date" type="date" defaultValue={editable?.due_date ?? project.due_date ?? undefined} />
             <div className="flex flex-wrap gap-3">
               <button className={secondaryButtonClass} type="submit" name="intent" value="save">Guardar rascunho</button>
               <button className={primaryButtonClass} type="submit" name="intent" value="submit_client">Validar PCC e apresentar ao cliente</button>
@@ -124,6 +141,7 @@ export default async function ProjectCommitmentPage({ params }: { params: Promis
               <TextArea label="Impacto no custo" name="impact_cost" required />
               <TextArea label="Impacto na capacidade" name="impact_capacity" required />
               <TextArea label="Impacto na segurança" name="impact_security" required />
+              <TextArea label="Áreas afectadas" name="affected_areas" required placeholder="Ex.: Operações, Financeiro, Marketing, Vendas, Segurança" />
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="Variação de custo" name="cost_delta" type="number" step="any" />
                 <Field label="Moeda" name="currency" defaultValue={project.currency ?? "MZN"} />

@@ -439,26 +439,77 @@ export const intelligenceSignalSchema = z.object({
   action_hint: optionalText(2000),
 });
 
-export const projectCommitmentSchema = z.object({
-  project_id: z.string().uuid(),
-  expected_result: z.string().trim().min(3).max(8000),
-  scope_included: z.string().trim().min(3).max(12000),
-  exclusions: z.string().trim().min(2).max(8000),
-  deliverables_summary: z.string().trim().min(3).max(12000),
-  acceptance_summary: z.string().trim().min(3).max(8000),
-  pcc_responsibilities: z.string().trim().min(3).max(8000),
-  client_responsibilities: z.string().trim().min(3).max(8000),
-  assumptions_dependencies: z.string().trim().min(3).max(8000),
-  capacity_validation: z.string().trim().min(3).max(8000),
-  financial_validation: z.string().trim().min(3).max(8000),
-  security_validation: z.string().trim().min(3).max(8000),
-  external_costs_note: z.string().trim().min(3).max(8000),
-  price: optionalNumber,
-  currency: optionalText(8),
-  due_date: optionalDate,
-  intent: z.enum(["save", "submit_client"]),
-});
-
+export const projectCommitmentSchema = z
+  .object({
+    project_id: z.string().uuid(),
+    expected_result: z.string().trim().min(3).max(8000),
+    scope_included: z.string().trim().min(3).max(12000),
+    exclusions: z.string().trim().min(2).max(8000),
+    deliverables_summary: z.string().trim().min(3).max(12000),
+    acceptance_summary: z.string().trim().min(3).max(8000),
+    pcc_responsibilities: z.string().trim().min(3).max(8000),
+    client_responsibilities: z.string().trim().min(3).max(8000),
+    assumptions_dependencies: z.string().trim().min(3).max(8000),
+    capacity_validation: z.string().trim().min(3).max(8000),
+    financial_validation: z.string().trim().min(3).max(8000),
+    security_validation: z.string().trim().min(3).max(8000),
+    external_costs_note: z.string().trim().min(3).max(8000),
+    validation_milestones: optionalText(8000),
+    payment_terms: optionalText(4000),
+    asset_ownership_terms: optionalText(6000),
+    intellectual_property_terms: optionalText(6000),
+    post_delivery_terms: optionalText(6000),
+    capacity_required_hours: optionalNumber,
+    capacity_available_hours: optionalNumber,
+    capacity_period: optionalText(180),
+    estimated_pcc_cost: optionalNumber,
+    minimum_margin_pct: z.preprocess(
+      (value) => (value === "" || value === null || value === undefined ? 20 : value),
+      z.coerce.number().finite().min(0).max(100),
+    ),
+    margin_exception_approved: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    margin_exception_rationale: optionalText(4000),
+    price: optionalNumber,
+    currency: optionalText(8),
+    due_date: optionalDate,
+    intent: z.enum(["save", "submit_client"]),
+  })
+  .superRefine((data, ctx) => {
+    if ((data.capacity_required_hours == null) !== (data.capacity_available_hours == null)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Informe capacidade necessária e disponível em conjunto." });
+    }
+    if (
+      data.capacity_required_hours != null &&
+      data.capacity_available_hours != null &&
+      data.capacity_required_hours > data.capacity_available_hours &&
+      !data.margin_exception_approved
+    ) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A capacidade disponível é inferior à necessária. Registe uma excepção fundamentada antes de avançar." });
+    }
+    if (data.intent === "submit_client") {
+      for (const [value, message] of [
+        [data.validation_milestones, "Defina os marcos de validação antes de apresentar o compromisso ao cliente."],
+        [data.payment_terms, "Defina as condições de pagamento."],
+        [data.asset_ownership_terms, "Defina a propriedade dos activos."],
+        [data.intellectual_property_terms, "Defina as condições de propriedade intelectual."],
+        [data.post_delivery_terms, "Defina as condições pós-entrega, correcção e suporte."],
+      ] as const) {
+        if (!value?.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+      }
+      if (data.price != null && data.estimated_pcc_cost == null) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Antes do compromisso comercial, estime o custo PCC da entrega." });
+      }
+      if (data.price != null && data.estimated_pcc_cost != null && data.price > 0) {
+        const marginPct = ((data.price - data.estimated_pcc_cost) / data.price) * 100;
+        if (marginPct < data.minimum_margin_pct && !data.margin_exception_approved) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `A margem estimada (${marginPct.toFixed(1)}%) está abaixo do mínimo de ${data.minimum_margin_pct}%.` });
+        }
+      }
+      if (data.margin_exception_approved && !data.margin_exception_rationale?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Fundamente a excepção de capacidade/margem." });
+      }
+    }
+  });
 export const projectCommitmentDecisionSchema = z.object({
   project_id: z.string().uuid(),
   baseline_id: z.string().uuid(),
@@ -476,6 +527,7 @@ export const projectChangeRequestSchema = z.object({
   impact_cost: z.string().trim().min(2).max(4000),
   impact_capacity: z.string().trim().min(2).max(4000),
   impact_security: z.string().trim().min(2).max(4000),
+  affected_areas: z.string().trim().min(2).max(2000),
   cost_delta: optionalNumber,
   currency: optionalText(8),
   due_date_delta_days: z.preprocess(

@@ -37,6 +37,10 @@ create table if not exists public.project_commitment_baselines (
   deliverables_summary text not null, acceptance_summary text not null,
   pcc_responsibilities text not null, client_responsibilities text not null, assumptions_dependencies text not null,
   capacity_validation text not null, financial_validation text not null, security_validation text not null, external_costs_note text not null,
+  validation_milestones text, payment_terms text, asset_ownership_terms text, intellectual_property_terms text, post_delivery_terms text,
+  capacity_required_hours numeric, capacity_available_hours numeric, capacity_period text,
+  estimated_pcc_cost numeric, minimum_margin_pct numeric not null default 20,
+  margin_exception_approved boolean not null default false, margin_exception_rationale text,
   price numeric, currency text, due_date date, pcc_validated_at timestamptz, client_validated_at timestamptz,
   client_validator text, approval_reference text, client_notes text, created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
@@ -49,6 +53,7 @@ create table if not exists public.project_change_requests (
   project_id uuid not null references public.projects(id) on delete cascade,
   baseline_id uuid not null references public.project_commitment_baselines(id) on delete restrict, baseline_version integer not null,
   request_summary text not null, impact_scope text not null, impact_schedule text not null, impact_cost text not null, impact_capacity text not null, impact_security text not null,
+  affected_areas text not null,
   cost_delta numeric, currency text, due_date_delta_days integer,
   status text not null default 'requested' check (status in ('requested','approved','rejected','implemented')),
   decision_rationale text, decided_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
@@ -174,3 +179,16 @@ using (user_id=(select auth.uid()) or (select private.is_global_admin()));
 drop policy if exists "Users can create own gate events" on public.project_gate_events;
 create policy "Users can create own gate events" on public.project_gate_events for insert to authenticated
 with check (user_id=(select auth.uid()) or (select private.is_global_admin()));
+
+alter table public.project_commitment_baselines
+  add constraint project_commitment_capacity_required_check
+  check (capacity_required_hours is null or capacity_required_hours >= 0);
+alter table public.project_commitment_baselines
+  add constraint project_commitment_capacity_available_check
+  check (capacity_available_hours is null or capacity_available_hours >= 0);
+alter table public.project_commitment_baselines
+  add constraint project_commitment_estimated_cost_check
+  check (estimated_pcc_cost is null or estimated_pcc_cost >= 0);
+alter table public.project_commitment_baselines
+  add constraint project_commitment_min_margin_check
+  check (minimum_margin_pct >= 0 and minimum_margin_pct <= 100);
