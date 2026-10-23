@@ -483,6 +483,10 @@ jobs:
             exit 1
           }
 
+      - name: Validate PCC delivery governance
+        shell: pwsh
+        run: ../scripts/VALIDATE_DELIVERY_GOVERNANCE.ps1
+
       - name: Typecheck
         run: npm run typecheck
 
