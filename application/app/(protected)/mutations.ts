@@ -2165,7 +2165,7 @@ export async function createProjectAsset(formData: FormData) {
   }).safeParse(values(formData));
 
   if (!parsed.success) fail("/projects", zodMessage(parsed.error));
-  const path = \`/projects/\${parsed.data.project_id}\`;
+  const path = `/projects/${parsed.data.project_id}`;
   const { supabase, user } = await requireUser();
 
   await ensureOwned(supabase, "projects", parsed.data.project_id, user.id, path);
@@ -2190,7 +2190,7 @@ export async function createProjectAsset(formData: FormData) {
 
   revalidatePath(path);
   revalidatePath("/deliverables");
-  redirect(\`\${path}?asset=created\`);
+  redirect(`${path}?asset=created`);
 }
 
 export async function updateProjectAssetTransfer(formData: FormData) {
@@ -2201,7 +2201,7 @@ export async function updateProjectAssetTransfer(formData: FormData) {
     fail("/projects", "Estado de transferência inválido.");
   }
 
-  const path = \`/projects/\${projectId.data}\`;
+  const path = `/projects/${projectId.data}`;
   const { supabase, user } = await requireUser();
   const { error } = await supabase
     .from("project_assets")
@@ -2213,7 +2213,7 @@ export async function updateProjectAssetTransfer(formData: FormData) {
 
   revalidatePath(path);
   revalidatePath("/deliverables");
-  redirect(\`\${path}?asset=updated\`);
+  redirect(`${path}?asset=updated`);
 }
 
 export async function recordDeliverableQA(formData: FormData) {
@@ -2304,8 +2304,8 @@ export async function updateProjectOutcomeStatus(formData: FormData) {
   if (error) fail("/deliverables", error.message);
 
   revalidatePath("/deliverables");
-  revalidatePath(\`/projects/\${projectId.data}\`);
-  redirect(\`/deliverables?project_id=\${projectId.data}&closure=updated\`);
+  revalidatePath(`/projects/${projectId.data}`);
+  redirect(`/deliverables?project_id=${projectId.data}&closure=updated`);
 }
 
 export async function finalizeProjectClosure(formData: FormData) {
