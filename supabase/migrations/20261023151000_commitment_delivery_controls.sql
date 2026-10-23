@@ -207,20 +207,15 @@ create trigger touch_project_closure_state before update on public.project_closu
 for each row execute function public.touch_pcc_commitment_tables();
 
 
--- Align the commercial funnel with the PCC consultancy flow.
+-- Align the commercial funnel with the PCC consultancy flow without breaking
+-- the currently deployed application during the schema-first rollout. Historical
+-- stages remain valid and are normalized by the new UI; new writes use the new funnel.
 alter table public.commercial_leads
   drop constraint if exists commercial_leads_stage_check;
 
-update public.commercial_leads
-set stage = case stage
-  when 'lead' then 'contact'
-  when 'contacted' then 'contact'
-  when 'qualified' then 'diagnosis'
-  when 'negotiation' then 'proposal'
-  when 'won' then 'client'
-  else stage
-end;
-
 alter table public.commercial_leads
   add constraint commercial_leads_stage_check
-  check (stage in ('contact','interest','diagnosis','demo','proposal','client','lost'));
+  check (stage in (
+    'lead','contacted','qualified','negotiation','won',
+    'contact','interest','diagnosis','demo','proposal','client','lost'
+  ));
