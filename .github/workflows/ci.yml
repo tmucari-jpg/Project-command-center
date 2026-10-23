@@ -516,6 +516,7 @@ jobs:
             "cost_treatment",
             "value_status",
             "handover_status",
+            "continuity_status",
             "information_classification",
             "enforce_project_execution_commitment"
           )) {
@@ -554,6 +555,7 @@ jobs:
           foreach ($token in @(
             "QA e aceitação",
             "Valor e transferência",
+            "Continuidade / recuperação",
             "baseline validada pelo cliente",
             "Regra de fecho:"
           )) {
