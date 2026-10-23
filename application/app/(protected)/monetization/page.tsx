@@ -322,7 +322,25 @@ export default async function CommercialPage({
               <option value="forecast">Previsão</option>
               <option value="pending">Pendente</option>
             </Select>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select label="Tratamento do custo" name="cost_treatment" defaultValue="pcc_internal">
+                <option value="pcc_internal">Custo interno PCC</option>
+                <option value="client_direct">Custo directo do cliente</option>
+                <option value="reimbursable_external">Custo externo reembolsável</option>
+                <option value="additional_scope">Trabalho adicional / fora do âmbito</option>
+              </Select>
+              <Select label="Frequência" name="cost_frequency" defaultValue="one_off">
+                <option value="one_off">Único</option>
+                <option value="monthly">Mensal</option>
+                <option value="annual">Anual</option>
+                <option value="usage">Por utilização</option>
+              </Select>
+            </div>
+            <Field label="Fornecedor externo, quando aplicável" name="external_provider" />
             <Field label="Referência de evidência" name="evidence_reference" />
+            <p className="text-xs leading-5 text-[var(--cc-secondary)]">
+              Domínios, hosting, licenças, publicidade, fornecedores e trabalhos paralelos não são absorvidos implicitamente pelo preço base do PCC.
+            </p>
             <button className={primaryButtonClass} type="submit">Registar movimento</button>
           </form>
         </Card>
@@ -411,6 +429,7 @@ export default async function CommercialPage({
                       <p className="text-sm font-medium text-[var(--cc-foreground)]">{entry.description}</p>
                       <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                         {projectById.get(entry.project_id)?.title ?? "Projecto"} · {formatDate(entry.occurred_on)} · {displayLabel(entry.status)}
+                        {entry.entry_type === "cost" ? ` · ${displayLabel(entry.cost_treatment ?? "pcc_internal")} · ${displayLabel(entry.cost_frequency ?? "one_off")}` : ""}
                       </p>
                     </div>
                     <p className="text-sm font-semibold text-[var(--cc-foreground)]">
