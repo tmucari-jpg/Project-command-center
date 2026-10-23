@@ -202,7 +202,7 @@ export async function syncOfflineQueue() {
   return { synced: successful.length, pending };
 }
 
-const OFFLINE_ROUTE_CACHE = "project-command-center-v6";
+const OFFLINE_ROUTE_CACHE = "project-command-center-v7";
 const OFFLINE_ROUTES = [
   "/dashboard",
   "/projects",
@@ -239,4 +239,13 @@ export async function clearOfflineData() {
     request.onerror = () => resolve();
     request.onblocked = () => resolve();
   });
+
+  if (typeof window !== "undefined" && "caches" in window) {
+    const keys = await caches.keys().catch(() => []);
+    await Promise.all(
+      keys
+        .filter((key) => key.startsWith("project-command-center"))
+        .map((key) => caches.delete(key)),
+    );
+  }
 }

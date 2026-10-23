@@ -47,7 +47,7 @@ export async function GET() {
     supabase.from("project_strategy_execution_plans").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(250),
     supabase.from("project_commercial_profiles").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(250),
     supabase.from("financial_entries").select("*").eq("user_id", user.id).order("occurred_on", { ascending: false }).limit(1000),
-    supabase.from("commercial_leads").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1000),
+    supabase.from("commercial_leads").select("id,user_id,project_id,name,organisation,source,stage,value,currency,next_action,next_action_at,risk,information_missing,created_at,updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1000),
   ]);
 
   const results = [

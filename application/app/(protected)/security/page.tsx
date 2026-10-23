@@ -131,6 +131,9 @@ export default async function SecurityPage() {
         <p className="text-sm leading-6 text-slate-600">
           O Vault aqui guarda apenas metadata e referências. Passwords, API keys, tokens e private keys não devem ser guardados em plaintext no Command Center.
         </p>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          Segurança offline: o PCC remove a base local e as páginas protegidas em cache quando a sessão é terminada. Se existirem alterações por sincronizar, o utilizador é avisado antes da limpeza.
+        </p>
       </Card>
     </>
   );

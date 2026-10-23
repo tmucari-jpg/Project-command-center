@@ -440,6 +440,7 @@ export default async function DeliverablesPage({
                                   Criar nova versão
                                 </Link>
                               </div>
+                              </div>
                             )}
                           </article>
                         );
