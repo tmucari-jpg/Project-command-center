@@ -239,4 +239,8 @@ export async function clearOfflineData() {
     request.onerror = () => resolve();
     request.onblocked = () => resolve();
   });
+
+  if (typeof window !== "undefined" && "caches" in window) {
+    await caches.delete(OFFLINE_ROUTE_CACHE).catch(() => false);
+  }
 }
