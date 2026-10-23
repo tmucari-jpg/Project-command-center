@@ -17,6 +17,9 @@ foreach ($token in @(
   "project_closure_assessments",
   "qa_status",
   "cost_classification",
+  "enforce_change_baseline_consistency",
+  "project_closure_handover_notes_check",
+  "backup_restore_continuity",
   "'sales'",
   "'marketing'",
   "'monetization'",
@@ -34,6 +37,7 @@ foreach ($token in @(
   "Todos os entregáveis precisam de aceitação do cliente",
   '["client_direct", "reimbursable_external", "additional_scope"]',
   "upsertProjectClosureAssessment",
+  "entregáveis digitais executáveis exigem handover",
   "project_change_requests"
 )) {
   if (-not $mutations.Contains($token)) {

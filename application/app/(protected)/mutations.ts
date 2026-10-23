@@ -2322,7 +2322,7 @@ export async function finalizeProjectClosure(formData: FormData) {
       { data: baseline, error: baselineError },
       { data: closure, error: closureError },
     ] = await Promise.all([
-      supabase.from("deliverables").select("id,status,completion_criteria,locked_at").eq("project_id", project.id).eq("user_id", user.id),
+      supabase.from("deliverables").select("id,status,completion_criteria,locked_at,artifact_type").eq("project_id", project.id).eq("user_id", user.id),
       supabase.from("blockers").select("id").eq("project_id", project.id).eq("user_id", user.id).in("status", ["open", "investigating", "waiting"]),
       supabase.from("evidence").select("deliverable_id").eq("project_id", project.id).eq("user_id", user.id).not("deliverable_id", "is", null),
       supabase.from("deliverable_acceptance_events").select("deliverable_id,status,created_at").eq("project_id", project.id).eq("user_id", user.id).order("created_at", { ascending: false }),
@@ -2355,8 +2355,17 @@ export async function finalizeProjectClosure(formData: FormData) {
     if (!closure.financials_updated) fail(path, "Actualize o financeiro antes do fecho.");
     if (!closure.data_retention_reviewed) fail(path, "Reveja arquivo e retenção de dados antes do fecho.");
     if (!closure.value_status || closure.value_status === "not_assessed") fail(path, "Registe o estado do valor alcançado antes do fecho.");
+    const hasTransferableDigitalAsset = (deliverables ?? []).some((item) =>
+      ["website", "application", "dashboard", "api"].includes(item.artifact_type),
+    );
+    if (hasTransferableDigitalAsset && !closure.handover_required) {
+      fail(path, "G5 bloqueado: entregáveis digitais executáveis exigem handover e transferência segura.");
+    }
     if (closure.handover_required && (!closure.handover_complete || !closure.access_transfer_complete || !closure.temporary_access_revoked)) {
       fail(path, "Conclua handover, transferência de acessos e revogação de acessos temporários.");
+    }
+    if (closure.handover_required && (!closure.security_transfer_notes?.trim() || !closure.continuity_notes?.trim())) {
+      fail(path, "Documente a transferência segura e a continuidade/recuperação antes do fecho.");
     }
   }
 

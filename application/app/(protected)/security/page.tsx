@@ -4,6 +4,14 @@ import { Card, EmptyState } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 
+const SECURITY_CONTROL_LABELS: Record<string, string> = {
+  auth_leaked_password_protection: "Protecção contra passwords comprometidas",
+  offline_secure_logout: "Limpeza segura no logout/offline",
+  backup_restore_continuity: "Backup, recuperação e continuidade",
+  project_access_review: "Revisão de acessos por projecto",
+  vault_reference_only: "Secrets fora de plaintext",
+};
+
 export default async function SecurityPage() {
   const { supabase, user } = await requireAdmin();
 
@@ -91,8 +99,8 @@ export default async function SecurityPage() {
                 {controls.map((control) => (
                   <div key={control.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3">
                     <div>
-                      <p className="text-sm font-medium text-slate-950">{control.control_key}</p>
-                      <p className="mt-1 text-xs text-slate-500">{control.last_checked_at ? formatDateTime(control.last_checked_at) : "Ainda não verificado"}</p>
+                      <p className="text-sm font-medium text-slate-950">{SECURITY_CONTROL_LABELS[control.control_key] ?? control.control_key}</p>
+                      <p className="mt-1 text-xs text-slate-500">{control.notes || (control.last_checked_at ? `Verificado em ${formatDateTime(control.last_checked_at)}` : "Ainda não verificado")}</p>
                     </div>
                     <span className={`rounded-full px-2 py-1 text-xs font-semibold ${control.enabled ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
                       {control.enabled ? "activo" : "inactivo"}

@@ -575,21 +575,31 @@ export const deliverableAcceptanceSchema = z
     { message: "Registe a referência que comprova a aceitação do cliente." },
   );
 
-export const projectClosureAssessmentSchema = z.object({
-  project_id: z.string().uuid(),
-  value_status: z.enum(["not_assessed", "proven", "observing", "not_proven"]),
-  value_summary: z.string().trim().min(2).max(8000),
-  client_acceptance_complete: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
-  changes_closed: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
-  financials_updated: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
-  handover_required: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
-  handover_complete: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
-  access_transfer_complete: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
-  temporary_access_revoked: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
-  data_retention_reviewed: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
-  security_transfer_notes: optionalText(8000),
-  continuity_notes: optionalText(8000),
-});
+export const projectClosureAssessmentSchema = z
+  .object({
+    project_id: z.string().uuid(),
+    value_status: z.enum(["not_assessed", "proven", "observing", "not_proven"]),
+    value_summary: z.string().trim().min(2).max(8000),
+    client_acceptance_complete: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    changes_closed: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    financials_updated: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    handover_required: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    handover_complete: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    access_transfer_complete: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    temporary_access_revoked: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    data_retention_reviewed: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    security_transfer_notes: optionalText(8000),
+    continuity_notes: optionalText(8000),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.handover_required) return;
+    if (!data.security_transfer_notes?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Descreva a transferência segura de activos, acessos e responsabilidades." });
+    }
+    if (!data.continuity_notes?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Registe como o cliente assegura continuidade, recuperação e manutenção após o handover." });
+    }
+  });
 
 export const projectGovernanceRiskSchema = z
   .object({

@@ -193,3 +193,106 @@ alter table public.project_commitment_baselines
 alter table public.project_commitment_baselines
   add constraint project_commitment_min_margin_check
   check (minimum_margin_pct >= 0 and minimum_margin_pct <= 100);
+
+-- Cross-record consistency: a Change Request must reference the exact baseline of the same project/workspace.
+create or replace function private.enforce_change_baseline_consistency()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  if not exists (
+    select 1 from public.project_commitment_baselines b
+    where b.id = new.baseline_id
+      and b.project_id = new.project_id
+      and b.user_id = new.user_id
+      and b.version = new.baseline_version
+  ) then
+    raise exception 'Change request baseline must match project, workspace and version' using errcode='23503';
+  end if;
+  return new;
+end; $$;
+drop trigger if exists project_change_baseline_consistency on public.project_change_requests;
+create trigger project_change_baseline_consistency
+before insert or update on public.project_change_requests
+for each row execute function private.enforce_change_baseline_consistency();
+
+-- Related financial costs cannot point to a deliverable from another project/workspace.
+create or replace function private.enforce_financial_deliverable_consistency()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  if new.related_deliverable_id is not null and not exists (
+    select 1 from public.deliverables d
+    where d.id = new.related_deliverable_id
+      and d.project_id = new.project_id
+      and d.user_id = new.user_id
+  ) then
+    raise exception 'Financial entry deliverable must belong to the same project/workspace' using errcode='23503';
+  end if;
+  return new;
+end; $$;
+drop trigger if exists financial_deliverable_consistency on public.financial_entries;
+create trigger financial_deliverable_consistency
+before insert or update of project_id,user_id,related_deliverable_id on public.financial_entries
+for each row execute function private.enforce_financial_deliverable_consistency();
+
+-- Core content of a Change Request is immutable once created; only its decision state can progress.
+create or replace function private.protect_change_request_history()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if tg_op='DELETE' then raise exception 'Pedido de alteração é histórico e não pode ser apagado.' using errcode='23514'; end if;
+  if old.status in ('rejected','implemented') then raise exception 'Pedido de alteração encerrado é imutável.' using errcode='23514'; end if;
+  if (to_jsonb(new) - 'status' - 'decision_rationale' - 'decided_at' - 'updated_at')
+     <> (to_jsonb(old) - 'status' - 'decision_rationale' - 'decided_at' - 'updated_at') then
+    raise exception 'O conteúdo do pedido de alteração é imutável; registe um novo pedido.' using errcode='23514';
+  end if;
+  if old.status='requested' and new.status not in ('requested','approved','rejected') then raise exception 'Transição inválida do pedido de alteração.' using errcode='23514'; end if;
+  if old.status='approved' and new.status not in ('approved','implemented') then raise exception 'Transição inválida do pedido de alteração aprovado.' using errcode='23514'; end if;
+  return new;
+end; $$;
+drop trigger if exists protect_change_request_history on public.project_change_requests;
+create trigger protect_change_request_history before update or delete on public.project_change_requests
+for each row execute function private.protect_change_request_history();
+
+-- Closure assessment becomes immutable once the project is formally completed.
+create or replace function private.protect_completed_closure_assessment()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if exists (select 1 from public.projects p where p.id = old.project_id and p.status = 'completed') then
+    raise exception 'Avaliação de fecho de projecto concluído é arquivo histórico imutável.' using errcode='23514';
+  end if;
+  if tg_op='DELETE' then return old; end if;
+  return new;
+end; $$;
+drop trigger if exists protect_completed_closure_assessment on public.project_closure_assessments;
+create trigger protect_completed_closure_assessment
+before update or delete on public.project_closure_assessments
+for each row execute function private.protect_completed_closure_assessment();
+
+alter table public.project_closure_assessments
+  drop constraint if exists project_closure_handover_notes_check;
+alter table public.project_closure_assessments
+  add constraint project_closure_handover_notes_check
+  check (
+    not handover_required
+    or (nullif(btrim(security_transfer_notes),'') is not null and nullif(btrim(continuity_notes),'') is not null)
+  );
+
+-- Security control catalogue: explicit controls are visible instead of an empty security dashboard.
+insert into public.security_controls (user_id, control_key, enabled, notes, last_checked_at)
+select p.id, v.control_key, v.enabled, v.notes, case when v.enabled then now() else null end
+from public.profiles p
+cross join (values
+  ('offline_secure_logout', true, 'Base local e caches PCC são removidos no logout; alterações não sincronizadas geram aviso.'),
+  ('vault_reference_only', true, 'Vault guarda apenas metadata/referências; secrets não devem ser persistidos em plaintext no PCC.'),
+  ('auth_leaked_password_protection', false, 'Requer activação/verificação no Supabase Auth antes do READY de produção.'),
+  ('backup_restore_continuity', false, 'Requer evidência de política e teste de recuperação antes de ser marcado como activo.'),
+  ('project_access_review', false, 'RBAC existe; revisão operacional por projecto deve ser validada antes de escala multiutilizador.')
+) as v(control_key,enabled,notes)
+on conflict (user_id,control_key) do update set
+  notes = excluded.notes,
+  enabled = case
+    when excluded.control_key in ('offline_secure_logout','vault_reference_only') then true
+    else public.security_controls.enabled
+  end,
+  last_checked_at = case
+    when excluded.control_key in ('offline_secure_logout','vault_reference_only') then now()
+    else public.security_controls.last_checked_at
+  end;
