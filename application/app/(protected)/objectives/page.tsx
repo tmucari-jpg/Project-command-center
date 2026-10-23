@@ -42,7 +42,7 @@ export default async function ObjectivesPage({
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
       <div className="space-y-6">
-        <ManualEntry defaultOpen={Boolean(preparedDraft)}>
+        <ManualEntry defaultOpen={Boolean(preparedDraft)} label="Definir Objectivo Central">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Definir Objectivo Central</h2>
           <form action={createObjective} className="mt-5 space-y-4">
             {preparedDraft && (
