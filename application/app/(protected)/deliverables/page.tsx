@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { createDeliverable, finalizeProjectClosure } from "@/app/(protected)/mutations";
+import {
+  createDeliverable,
+  finalizeProjectClosure,
+  recordDeliverableAcceptance,
+  recordDeliverableQa,
+} from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { ManualEntry } from "@/components/manual-entry";
@@ -12,16 +17,16 @@ import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
 import { prepareDeliverableDraft } from "@/lib/project-autonomy";
 
-function objectiveTitle(relation: { title?: string | null } | { title?: string | null }[] | null | undefined) {
-  return Array.isArray(relation) ? relation[0]?.title : relation?.title;
-}
-
 const WORKSTREAM_LABELS: Record<string, string> = {
   general: "Geral",
   commercial: "Comercial",
+  sales: "Vendas",
+  marketing: "Marketing",
+  monetization: "Monetização",
   financial: "Financeiro",
   operational: "Operacional",
   governance: "Governação",
+  security: "Segurança",
   technical: "Técnico",
   other: "Outro",
 };
@@ -51,6 +56,7 @@ export default async function DeliverablesPage({
     { data: evidence },
     { data: blockers },
     { data: decisions },
+    { data: acceptances },
   ] = await Promise.all([
     supabase
       .from("deliverables")
@@ -78,6 +84,11 @@ export default async function DeliverablesPage({
       .select("id,project_id,title,decision,rationale,decided_at")
       .eq("user_id", user.id)
       .order("decided_at", { ascending: false }),
+    supabase
+      .from("deliverable_acceptance_events")
+      .select("id,deliverable_id,project_id,status,actor_name,notes,evidence_reference,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
@@ -97,6 +108,18 @@ export default async function DeliverablesPage({
       }
     : prepareDeliverableDraft(effectiveProject);
   const ownerById = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name || "Utilizador"]));
+  const latestAcceptanceByDeliverable = new Map<string, {
+    status: string;
+    actor_name: string | null;
+    notes: string | null;
+    evidence_reference: string | null;
+    created_at: string;
+  }>();
+  for (const event of acceptances ?? []) {
+    if (!latestAcceptanceByDeliverable.has(event.deliverable_id)) {
+      latestAcceptanceByDeliverable.set(event.deliverable_id, event);
+    }
+  }
 
   const projectGroups = (projects ?? []).map((project) => {
     const projectDeliverables = (deliverables ?? []).filter((item) => item.project_id === project.id);
@@ -106,10 +129,15 @@ export default async function DeliverablesPage({
     const withEvidence = projectDeliverables.filter((item) =>
       projectEvidence.some((proof) => proof.deliverable_id === item.id),
     );
+    const accepted = projectDeliverables.filter((item) => {
+      const acceptance = latestAcceptanceByDeliverable.get(item.id);
+      return acceptance && ["accepted", "accepted_with_reservations"].includes(acceptance.status);
+    });
     const readyToClose =
       projectDeliverables.length > 0 &&
       completed.length === projectDeliverables.length &&
       withEvidence.length === projectDeliverables.length &&
+      accepted.length === projectDeliverables.length &&
       projectBlockers.length === 0;
     return {
       project,
@@ -118,6 +146,7 @@ export default async function DeliverablesPage({
       blockers: projectBlockers,
       completed: completed.length,
       withEvidence: withEvidence.length,
+      accepted: accepted.length,
       readyToClose,
       latestDecision: (decisions ?? []).find((item) => item.project_id === project.id),
     };
@@ -130,6 +159,7 @@ export default async function DeliverablesPage({
   const totalDeliverables = visibleGroups.reduce((sum, group) => sum + group.deliverables.length, 0);
   const totalCompleted = visibleGroups.reduce((sum, group) => sum + group.completed, 0);
   const totalEvidenceReady = visibleGroups.reduce((sum, group) => sum + group.withEvidence, 0);
+  const totalAccepted = visibleGroups.reduce((sum, group) => sum + group.accepted, 0);
   const readyProjects = visibleGroups.filter((group) => group.readyToClose).length;
 
   return (
@@ -154,17 +184,18 @@ export default async function DeliverablesPage({
               <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{totalEvidenceReady}/{totalDeliverables}</p>
             </div>
             <div className="rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Aceites</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{totalAccepted}/{totalDeliverables}</p>
+            </div>
+            <div className="rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Prontos para fechar</p>
               <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{readyProjects}</p>
             </div>
-            <div className="rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Regra</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--cc-foreground)]">Entregar → comprovar → decidir → fechar</p>
-            </div>
           </div>
+          <p className="mt-3 text-xs leading-5 text-[var(--cc-secondary)]">Regra de fecho: entregar → QA → comprovar → obter aceitação → transferir com segurança → decidir → fechar.</p>
         </Card>
 
-        <ManualEntry defaultOpen={Boolean(preparedDraft)}>
+        <ManualEntry defaultOpen={Boolean(preparedDraft)} label="Adicionar entregável">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Definir entregável</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
             Um entregável é um resultado utilizável: ficheiro final, website publicado, aplicação, dashboard, apresentação, modelo ou outro artefacto real.
@@ -188,9 +219,13 @@ export default async function DeliverablesPage({
             <Select label="Vertente do entregável" name="workstream" defaultValue={previousVersion?.workstream ?? "general"}>
               <option value="general">Geral</option>
               <option value="commercial">Comercial</option>
+              <option value="sales">Vendas</option>
+              <option value="marketing">Marketing</option>
+              <option value="monetization">Monetização</option>
               <option value="financial">Financeiro</option>
               <option value="operational">Operacional</option>
               <option value="governance">Governação</option>
+              <option value="security">Segurança</option>
               <option value="technical">Técnico</option>
               <option value="other">Outro</option>
             </Select>
@@ -262,17 +297,17 @@ export default async function DeliverablesPage({
                             {group.completed}/{group.deliverables.length} entregues · {group.withEvidence}/{group.deliverables.length} com evidência
                             {group.blockers.length ? ` · ${group.blockers.length} bloqueio(s)` : ""}
                           </p>
-                          <p className="mt-2 text-sm text-[var(--cc-foreground)]">
-                            <span className="font-medium">Objectivo Central:</span> {objectiveTitle(group.project.objectives) ?? group.project.expected_result ?? "Por definir"}
-                          </p>
                         </div>
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          group.readyToClose
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)]"
-                        }`}>
-                          {group.readyToClose ? "Pronto para decisão final" : "Fecho pendente"}
-                        </span>
+                        <div className="flex min-w-[150px] flex-col items-end gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            group.readyToClose
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-[var(--cc-surface-muted)] text-[var(--cc-secondary)]"
+                          }`}>
+                            {group.readyToClose ? "Pronto para decisão final" : "Fecho pendente"}
+                          </span>
+                          <span className="text-xs font-semibold text-[var(--cc-accent)]">Ver detalhes</span>
+                        </div>
                       </div>
                     </summary>
 
@@ -282,6 +317,7 @@ export default async function DeliverablesPage({
                       ) : group.deliverables.map((item) => {
                         const proofs = group.evidence.filter((proof) => proof.deliverable_id === item.id);
                         const locked = item.status === "completed";
+                        const acceptance = latestAcceptanceByDeliverable.get(item.id);
                         return (
                           <article key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
                             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -354,13 +390,45 @@ export default async function DeliverablesPage({
                             </div>
 
                             {!locked ? (
-                              <div className="mt-4 border-t border-[var(--cc-border)] pt-4">
+                              <div className="mt-4 space-y-4 border-t border-[var(--cc-border)] pt-4">
+                                <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">QA antes da entrega</p>
+                                  <p className="mt-1 text-sm text-[var(--cc-foreground)]">Estado: {item.qa_status === "passed" ? "Aprovado" : item.qa_status === "failed" ? "Reprovado" : "Por validar"}</p>
+                                  <form action={recordDeliverableQa} className="mt-3 grid gap-3 sm:grid-cols-2">
+                                    <input type="hidden" name="deliverable_id" value={item.id} />
+                                    <input type="hidden" name="project_id" value={group.project.id} />
+                                    <Select label="Resultado do QA" name="qa_status" defaultValue={item.qa_status === "failed" ? "failed" : "passed"}>
+                                      <option value="passed">Aprovado</option>
+                                      <option value="failed">Reprovado</option>
+                                    </Select>
+                                    <Field label="Nota de QA" name="qa_notes" defaultValue={item.qa_notes ?? undefined} />
+                                    <button className={secondaryButtonClass} type="submit">Registar QA</button>
+                                  </form>
+                                </div>
                                 <StatusProgressForm entity="deliverables" id={item.id} status={item.status} progress={item.progress} />
-                                <p className="mt-2 text-xs text-[var(--cc-secondary)]">
-                                  Para marcar como concluído/entregue, o progresso deve estar em 100% e deve existir pelo menos uma evidência associada.
-                                </p>
+                                <p className="text-xs text-[var(--cc-secondary)]">Para marcar como entregue: progresso 100%, critérios definidos, QA aprovado e evidência associada.</p>
                               </div>
                             ) : (
+                              <div className="mt-4 space-y-3 border-t border-[var(--cc-border)] pt-4">
+                                <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Aceitação do cliente</p>
+                                  <p className="mt-1 text-sm text-[var(--cc-foreground)]">Estado actual: {acceptance ? displayLabel(acceptance.status) : "Por validar"}</p>
+                                  {acceptance?.actor_name && <p className="mt-1 text-xs text-[var(--cc-secondary)]">Registado por {acceptance.actor_name}{acceptance.notes ? " · " + acceptance.notes : ""}</p>}
+                                  <form action={recordDeliverableAcceptance} className="mt-3 grid gap-3 sm:grid-cols-2">
+                                    <input type="hidden" name="deliverable_id" value={item.id} />
+                                    <input type="hidden" name="project_id" value={group.project.id} />
+                                    <Select label="Decisão" name="status" defaultValue="accepted">
+                                      <option value="in_review">Em validação</option>
+                                      <option value="accepted">Aceite</option>
+                                      <option value="accepted_with_reservations">Aceite com reservas</option>
+                                      <option value="changes_requested">Solicita correcção</option>
+                                    </Select>
+                                    <Field label="Quem validou" name="actor_name" required />
+                                    <Field label="Referência da aprovação" name="evidence_reference" />
+                                    <Field label="Comentário" name="notes" />
+                                    <button className={secondaryButtonClass} type="submit">Registar aceitação</button>
+                                  </form>
+                                </div>
                               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--cc-border)] pt-4">
                                 <p className="text-xs text-[var(--cc-secondary)]">
                                   Registo oficial bloqueado. Cópias descarregadas podem ser editadas externamente, mas nunca alteram esta versão oficial.

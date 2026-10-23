@@ -39,4 +39,9 @@ export const EVIDENCE_TYPES = [
   "number",
   "result",
   "external_reference",
+  "production",
+  "test",
+  "delivery",
+  "acceptance",
+  "value",
 ] as const;

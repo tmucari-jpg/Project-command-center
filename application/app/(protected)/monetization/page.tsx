@@ -17,12 +17,12 @@ import { displayLabel } from "@/lib/display-label";
 import { monetizationReadiness } from "@/lib/monetization";
 
 const PIPELINE_STAGES = [
-  ["lead", "Lead"],
-  ["contacted", "Contactado"],
-  ["qualified", "Qualificado"],
+  ["contact", "Contacto"],
+  ["interest", "Interesse"],
+  ["diagnosis", "Diagnóstico"],
+  ["demo", "Demonstração"],
   ["proposal", "Proposta"],
-  ["negotiation", "Negociação"],
-  ["won", "Ganho"],
+  ["won", "Cliente"],
   ["lost", "Perdido"],
 ] as const;
 
@@ -45,7 +45,7 @@ export default async function CommercialPage({
     supabase.from("project_commercial_profiles").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }),
     supabase.from("commercial_leads").select("*").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(100),
     supabase.from("financial_entries").select("*").eq("user_id", user.id).order("occurred_on", { ascending: false }).limit(100),
-    supabase.from("deliverables").select("*").eq("user_id", user.id).eq("workstream", "commercial").order("created_at", { ascending: false }).limit(150),
+    supabase.from("deliverables").select("*").eq("user_id", user.id).in("workstream", ["commercial", "sales", "marketing", "monetization"]).order("created_at", { ascending: false }).limit(150),
   ]);
 
   const error =
@@ -263,8 +263,13 @@ export default async function CommercialPage({
             O resultado é processado aqui, mas fica arquivado no projecto e disponível em Entregáveis para consulta, download, evidência e fecho.
           </p>
           <form action={createDeliverable} className="mt-5 space-y-4">
-            <input type="hidden" name="workstream" value="commercial" />
             <input type="hidden" name="return_path" value="/monetization" />
+            <Select label="Vertente" name="workstream" defaultValue="sales">
+              <option value="sales">Vendas</option>
+              <option value="marketing">Marketing</option>
+              <option value="monetization">Monetização</option>
+              <option value="commercial">Comercial transversal</option>
+            </Select>
             <input type="hidden" name="status" value="pending" />
             <input type="hidden" name="progress" value="0" />
             <Select label="Projecto" name="project_id" required defaultValue="">
@@ -321,6 +326,27 @@ export default async function CommercialPage({
               <option value="forecast">Previsão</option>
               <option value="pending">Pendente</option>
             </Select>
+            <Select label="Classificação do custo" name="cost_classification" defaultValue="">
+              <option value="">Não se aplica / receita</option>
+              <option value="internal_pcc">Custo interno PCC</option>
+              <option value="client_direct">Custo directo do cliente</option>
+              <option value="reimbursable_external">Custo externo reembolsável</option>
+              <option value="additional_scope">Trabalho / âmbito adicional</option>
+            </Select>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Fornecedor, quando aplicável" name="supplier_name" />
+              <Select label="Recorrência" name="recurrence" defaultValue="">
+                <option value="">Não definida</option>
+                <option value="one_off">Único</option>
+                <option value="monthly">Mensal</option>
+                <option value="annual">Anual</option>
+                <option value="usage">Por utilização</option>
+              </Select>
+            </div>
+            <label className="flex items-start gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3 text-sm text-[var(--cc-foreground)]">
+              <input type="checkbox" name="client_approved" className="mt-1" />
+              <span>Cliente aprovou este custo externo/adicional quando a aprovação é necessária.</span>
+            </label>
             <Field label="Referência de evidência" name="evidence_reference" />
             <button className={primaryButtonClass} type="submit">Registar movimento</button>
           </form>
@@ -409,7 +435,7 @@ export default async function CommercialPage({
                     <div>
                       <p className="text-sm font-medium text-[var(--cc-foreground)]">{entry.description}</p>
                       <p className="mt-1 text-xs text-[var(--cc-secondary)]">
-                        {projectById.get(entry.project_id)?.title ?? "Projecto"} · {formatDate(entry.occurred_on)} · {displayLabel(entry.status)}
+                        {projectById.get(entry.project_id)?.title ?? "Projecto"} · {formatDate(entry.occurred_on)} · {displayLabel(entry.status)}{entry.cost_classification ? " · " + displayLabel(entry.cost_classification) : ""}{entry.supplier_name ? " · " + entry.supplier_name : ""}
                       </p>
                     </div>
                     <p className="text-sm font-semibold text-[var(--cc-foreground)]">

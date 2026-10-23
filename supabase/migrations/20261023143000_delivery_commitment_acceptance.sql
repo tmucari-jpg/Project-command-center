@@ -123,3 +123,28 @@ comment on table public.project_commitment_baselines is 'Baseline de compromisso
 comment on table public.project_change_requests is 'Controlo de alterações materiais de âmbito, prazo, custo, capacidade e segurança.';
 comment on table public.deliverable_acceptance_events is 'Histórico append-only de revisão e aceitação dos entregáveis.';
 comment on table public.project_closure_assessments is 'Preparação do G5: valor, handover, acessos, retenção e continuidade.';
+
+create or replace function private.protect_approved_commitment_baseline()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if tg_op='DELETE' and old.status in ('approved','superseded') then
+    raise exception 'Baseline aprovada/superseded é arquivo de compromisso e não pode ser apagada.' using errcode='23514';
+  end if;
+  if tg_op='UPDATE' and old.status='approved' then
+    if new.status='superseded' and (to_jsonb(new)-'status'-'updated_at')=(to_jsonb(old)-'status'-'updated_at') then return new; end if;
+    raise exception 'Baseline aprovada é imutável. Crie nova versão através do controlo de alterações.' using errcode='23514';
+  end if;
+  if tg_op='UPDATE' and old.status='superseded' then raise exception 'Baseline histórica imutável.' using errcode='23514'; end if;
+  if tg_op='DELETE' then return old; end if;
+  return new;
+end; $$;
+drop trigger if exists protect_approved_commitment_baseline on public.project_commitment_baselines;
+create trigger protect_approved_commitment_baseline before update or delete on public.project_commitment_baselines for each row execute function private.protect_approved_commitment_baseline();
+
+create or replace function private.protect_acceptance_event_archive()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  raise exception 'Eventos de aceitação são append-only e não podem ser alterados ou apagados.' using errcode='23514';
+end; $$;
+drop trigger if exists protect_acceptance_event_archive on public.deliverable_acceptance_events;
+create trigger protect_acceptance_event_archive before update or delete on public.deliverable_acceptance_events for each row execute function private.protect_acceptance_event_archive();

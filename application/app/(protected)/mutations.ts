@@ -2330,10 +2330,11 @@ export async function createFinancialEntry(formData: FormData) {
 
   if (
     parsed.data.entry_type === "cost" &&
+    parsed.data.status === "actual" &&
     ["client_direct", "reimbursable_external", "additional_scope"].includes(parsed.data.cost_classification ?? "") &&
     !parsed.data.client_approved
   ) {
-    fail(path, "Custos externos, directos do cliente ou de âmbito adicional exigem aprovação do cliente.");
+    fail(path, "Antes de realizar o custo externo/adicional, registe a aprovação do cliente.");
   }
 
   const { error } = await supabase.from("financial_entries").insert({

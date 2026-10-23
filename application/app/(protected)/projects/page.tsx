@@ -205,7 +205,6 @@ export default async function ProjectsPage({
                       openBlockers: blockerCount,
                       overdueActions: overdueCount,
                     });
-                    const objective = relationTitle(project.objectives);
                     const nextAction = nextActionByProject.get(project.id) ?? project.next_action;
 
                     return (
@@ -239,10 +238,6 @@ export default async function ProjectsPage({
                         </summary>
                         <div className="grid gap-3 border-t border-[var(--cc-border)] p-4 sm:grid-cols-2">
                           <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Objectivo Central</p>
-                            <p className="mt-1 text-sm text-[var(--cc-foreground)]">{objective ?? project.expected_result ?? "Por definir"}</p>
-                          </div>
-                          <div>
                             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Prazo</p>
                             <p className="mt-1 text-sm text-[var(--cc-foreground)]">{project.due_date ? formatDate(project.due_date) : "Sem prazo"}</p>
                           </div>
@@ -250,7 +245,7 @@ export default async function ProjectsPage({
                             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Progresso</p>
                             <p className="mt-1 text-sm text-[var(--cc-foreground)]">{Number(project.progress ?? 0)}%</p>
                           </div>
-                          <div className="flex items-end justify-end">
+                          <div className="flex items-end justify-end sm:col-span-2">
                             <Link className={secondaryButtonClass} href={`/projects/${project.id}`}>Abrir projecto</Link>
                           </div>
                         </div>
