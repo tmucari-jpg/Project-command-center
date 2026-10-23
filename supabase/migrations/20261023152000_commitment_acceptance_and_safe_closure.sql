@@ -182,7 +182,7 @@ begin
         using errcode = '23514';
     end if;
     if nullif(btrim(new.client_validation_reference), '') is null then
-      raise exception 'Registe a referência da validação explícita do cliente.'
+      raise exception 'Registe a referência da validação explícita do cliente ou responsável interno.'
         using errcode = '23514';
     end if;
     new.client_approved_at := coalesce(new.client_approved_at, now());
@@ -366,7 +366,7 @@ begin
          and b.status = 'client_approved'
      )
   then
-    raise exception 'O projecto só pode entrar em execução após G3 interno e validação explícita do cliente.'
+    raise exception 'O projecto só pode entrar em execução após G3 interno e validação explícita do cliente ou responsável interno.'
       using errcode = '23514';
   end if;
 
