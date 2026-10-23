@@ -2502,6 +2502,22 @@ export async function updateStatusProgress(formData: FormData) {
 
   const { supabase, user } = await requireUser();
 
+  if (entity === "projects" && status === "active") {
+    const { data: approvedBaseline, error: baselineError } = await supabase
+      .from("project_commitment_baselines")
+      .select("id")
+      .eq("project_id", idResult.data)
+      .eq("user_id", user.id)
+      .eq("status", "client_approved")
+      .limit(1)
+      .maybeSingle();
+
+    if (baselineError) fail(path, baselineError.message);
+    if (!approvedBaseline) {
+      fail(path, "O projecto só pode entrar em execução depois do G3 e da validação explícita do cliente.");
+    }
+  }
+
   if (entity === "deliverables") {
     const { data: deliverable, error: deliverableError } = await supabase
       .from("deliverables")
