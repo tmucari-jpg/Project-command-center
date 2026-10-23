@@ -428,6 +428,7 @@ export const projectCommitmentClientValidationSchema = z.object({
   project_id: z.string().uuid(),
   commitment_id: z.string().uuid(),
   client_validated_by: z.string().trim().min(2).max(180),
+  client_validation_reference: optionalText(1000),
   client_validation_notes: optionalText(8000),
 });
 
