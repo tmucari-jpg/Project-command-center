@@ -416,6 +416,11 @@ export const projectCommitmentSchema = z.object({
   dependencies: optionalText(8000),
   external_costs: optionalText(8000),
   security_requirements: optionalText(8000),
+  capacity_confirmed: z.preprocess((value) => value === "on" || value === "true", z.literal(true)),
+  deliverability_confirmed: z.preprocess((value) => value === "on" || value === "true", z.literal(true)),
+  financial_confirmed: z.preprocess((value) => value === "on" || value === "true", z.literal(true)),
+  security_confirmed: z.preprocess((value) => value === "on" || value === "true", z.literal(true)),
+  dependencies_confirmed: z.preprocess((value) => value === "on" || value === "true", z.literal(true)),
   pcc_validation_notes: optionalText(8000),
 });
 
