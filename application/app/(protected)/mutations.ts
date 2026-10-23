@@ -1890,7 +1890,11 @@ export async function saveCommitmentBaseline(formData: FormData) {
 
   await supabase
     .from("projects")
-    .update({ governance_gate: "g3_planning", governance_gate_status: "in_progress" })
+    .update({
+      governance_gate: "g3_planning",
+      governance_gate_status: "in_progress",
+      information_classification: parsed.data.information_classification,
+    })
     .eq("id", parsed.data.project_id)
     .eq("user_id", user.id);
 
