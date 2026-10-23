@@ -71,24 +71,40 @@ export async function GET() {
   const failed = results.find((result) => result.error);
   if (failed?.error) return NextResponse.json({ error: failed.error.message }, { status: 500 });
 
+  const allProjects = projectsResult.data ?? [];
+  const offlineProjects = allProjects.filter(
+    (project) => !["confidential", "restricted"].includes(project.information_classification ?? "internal"),
+  );
+  const allowedProjectIds = new Set(offlineProjects.map((project) => project.id));
+  const blockedProjects = allProjects.filter((project) => !allowedProjectIds.has(project.id));
+  const blockedObjectiveIds = new Set(blockedProjects.map((project) => project.objective_id).filter(Boolean));
+  const allowedObjectiveIds = new Set(offlineProjects.map((project) => project.objective_id).filter(Boolean));
+
+  const safeProjectRows = <T extends { project_id?: string | null }>(rows: T[] | null) =>
+    (rows ?? []).filter((row) => !row.project_id || allowedProjectIds.has(row.project_id));
+
+  const offlineObjectives = (objectivesResult.data ?? []).filter(
+    (objective) => !blockedObjectiveIds.has(objective.id) || allowedObjectiveIds.has(objective.id),
+  );
+
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
     isAdmin,
-    projects: projectsResult.data ?? [],
-    objectives: objectivesResult.data ?? [],
-    deliverables: deliverablesResult.data ?? [],
-    actions: actionsResult.data ?? [],
-    blockers: blockersResult.data ?? [],
-    metrics: metricsResult.data ?? [],
-    evidence: evidenceResult.data ?? [],
-    ideas: ideasResult.data ?? [],
-    factoryCases: factoryCasesResult.data ?? [],
-    dependencies: dependenciesResult.data ?? [],
-    risks: risksResult.data ?? [],
-    decisions: decisionsResult.data ?? [],
-    strategyPlans: isAdmin ? strategyPlansResult.data ?? [] : [],
-    commercialProfiles: isAdmin ? commercialProfilesResult.data ?? [] : [],
-    financialEntries: isAdmin ? financialEntriesResult.data ?? [] : [],
-    commercialLeads: isAdmin ? commercialLeadsResult.data ?? [] : [],
+    projects: offlineProjects,
+    objectives: offlineObjectives,
+    deliverables: safeProjectRows(deliverablesResult.data),
+    actions: safeProjectRows(actionsResult.data),
+    blockers: safeProjectRows(blockersResult.data),
+    metrics: safeProjectRows(metricsResult.data),
+    evidence: safeProjectRows(evidenceResult.data),
+    ideas: safeProjectRows(ideasResult.data),
+    factoryCases: safeProjectRows(factoryCasesResult.data),
+    dependencies: safeProjectRows(dependenciesResult.data),
+    risks: safeProjectRows(risksResult.data),
+    decisions: safeProjectRows(decisionsResult.data),
+    strategyPlans: isAdmin ? safeProjectRows(strategyPlansResult.data) : [],
+    commercialProfiles: isAdmin ? safeProjectRows(commercialProfilesResult.data) : [],
+    financialEntries: isAdmin ? safeProjectRows(financialEntriesResult.data) : [],
+    commercialLeads: isAdmin ? safeProjectRows(commercialLeadsResult.data) : [],
   });
 }
