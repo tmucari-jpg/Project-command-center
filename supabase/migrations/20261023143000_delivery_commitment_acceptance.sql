@@ -152,6 +152,7 @@ create trigger protect_acceptance_event_archive before update or delete on publi
 -- Expand governance dependency ownership and align global-admin RLS.
 alter table public.project_governance_dependencies drop constraint if exists project_governance_dependencies_owner_role_check;
 alter table public.project_governance_dependencies add constraint project_governance_dependencies_owner_role_check check (owner_role in ('pcc','project_owner','client'));
+alter table public.project_governance_dependencies drop constraint if exists project_governance_dependencies_check1;
 
 drop policy if exists "Users can view own governance risks" on public.project_governance_risks;
 create policy "Users can view own governance risks" on public.project_governance_risks for select to authenticated
