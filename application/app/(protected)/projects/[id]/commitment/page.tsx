@@ -81,6 +81,11 @@ export default async function ProjectCommitmentPage({ params }: { params: Promis
               <Field label="Capacidade disponível (horas)" name="capacity_available_hours" type="number" step="any" min={0} defaultValue={editable?.capacity_available_hours ?? undefined} />
               <Field label="Período da capacidade" name="capacity_period" defaultValue={editable?.capacity_period ?? ""} placeholder="Ex.: 60 dias / mês" />
             </div>
+            <label className="flex items-start gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3 text-sm">
+              <input type="checkbox" name="capacity_exception_approved" defaultChecked={Boolean(editable?.capacity_exception_approved)} className="mt-1" />
+              <span>Existe uma excepção formal aprovada para capacidade disponível inferior à necessária.</span>
+            </label>
+            <TextArea label="Fundamento da excepção de capacidade" name="capacity_exception_rationale" defaultValue={editable?.capacity_exception_rationale ?? ""} />
             <TextArea label="Validação financeira / margem" name="financial_validation" required defaultValue={editable?.financial_validation ?? ""} />
             <div className="grid gap-4 sm:grid-cols-4">
               <Field label="Preço" name="price" type="number" step="any" min={0} defaultValue={editable?.price ?? undefined} />
@@ -90,9 +95,9 @@ export default async function ProjectCommitmentPage({ params }: { params: Promis
             </div>
             <label className="flex items-start gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3 text-sm">
               <input type="checkbox" name="margin_exception_approved" defaultChecked={Boolean(editable?.margin_exception_approved)} className="mt-1" />
-              <span>Existe uma excepção formal aprovada para capacidade insuficiente e/ou margem abaixo do mínimo.</span>
+              <span>Existe uma excepção formal aprovada para margem abaixo do mínimo.</span>
             </label>
-            <TextArea label="Fundamento da excepção, quando aplicável" name="margin_exception_rationale" defaultValue={editable?.margin_exception_rationale ?? ""} />
+            <TextArea label="Fundamento da excepção de margem" name="margin_exception_rationale" defaultValue={editable?.margin_exception_rationale ?? ""} />
             <TextArea label="Validação de segurança" name="security_validation" required defaultValue={editable?.security_validation ?? ""} />
             <TextArea label="Custos externos e trabalhos paralelos" name="external_costs_note" required defaultValue={editable?.external_costs_note ?? "Domínios, hosting, licenças, publicidade, fornecedores e trabalhos paralelos são orçamentados separadamente, salvo aprovação expressa em contrário."} />
             <TextArea label="Marcos de validação com o cliente" name="validation_milestones" defaultValue={editable?.validation_milestones ?? ""} placeholder="Defina validações antes de trabalho material ou difícil de reverter." />

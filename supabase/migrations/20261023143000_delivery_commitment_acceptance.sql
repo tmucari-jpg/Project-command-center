@@ -39,6 +39,7 @@ create table if not exists public.project_commitment_baselines (
   capacity_validation text not null, financial_validation text not null, security_validation text not null, external_costs_note text not null,
   validation_milestones text, payment_terms text, asset_ownership_terms text, intellectual_property_terms text, post_delivery_terms text,
   capacity_required_hours numeric, capacity_available_hours numeric, capacity_period text,
+  capacity_exception_approved boolean not null default false, capacity_exception_rationale text,
   estimated_pcc_cost numeric, minimum_margin_pct numeric not null default 20,
   margin_exception_approved boolean not null default false, margin_exception_rationale text,
   price numeric, currency text, due_date date, pcc_validated_at timestamptz, client_validated_at timestamptz,

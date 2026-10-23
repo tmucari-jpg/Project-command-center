@@ -462,6 +462,8 @@ export const projectCommitmentSchema = z
     capacity_required_hours: optionalNumber,
     capacity_available_hours: optionalNumber,
     capacity_period: optionalText(180),
+    capacity_exception_approved: z.preprocess((value) => value === "on" || value === "true", z.boolean()),
+    capacity_exception_rationale: optionalText(4000),
     estimated_pcc_cost: optionalNumber,
     minimum_margin_pct: z.preprocess(
       (value) => (value === "" || value === null || value === undefined ? 20 : value),
@@ -482,9 +484,9 @@ export const projectCommitmentSchema = z
       data.capacity_required_hours != null &&
       data.capacity_available_hours != null &&
       data.capacity_required_hours > data.capacity_available_hours &&
-      !data.margin_exception_approved
+      !data.capacity_exception_approved
     ) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A capacidade disponível é inferior à necessária. Registe uma excepção fundamentada antes de avançar." });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "A capacidade disponível é inferior à necessária. Registe uma excepção de capacidade fundamentada antes de avançar." });
     }
     if (data.intent === "submit_client") {
       for (const [value, message] of [
@@ -505,8 +507,11 @@ export const projectCommitmentSchema = z
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: `A margem estimada (${marginPct.toFixed(1)}%) está abaixo do mínimo de ${data.minimum_margin_pct}%.` });
         }
       }
+      if (data.capacity_exception_approved && !data.capacity_exception_rationale?.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Fundamente a excepção de capacidade." });
+      }
       if (data.margin_exception_approved && !data.margin_exception_rationale?.trim()) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Fundamente a excepção de capacidade/margem." });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Fundamente a excepção de margem." });
       }
     }
   });

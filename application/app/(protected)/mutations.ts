@@ -2005,6 +2005,8 @@ export async function saveProjectCommitment(formData: FormData) {
     capacity_required_hours: parsed.data.capacity_required_hours ?? null,
     capacity_available_hours: parsed.data.capacity_available_hours ?? null,
     capacity_period: parsed.data.capacity_period ?? null,
+    capacity_exception_approved: parsed.data.capacity_exception_approved,
+    capacity_exception_rationale: parsed.data.capacity_exception_rationale ?? null,
     estimated_pcc_cost: parsed.data.estimated_pcc_cost ?? null,
     minimum_margin_pct: parsed.data.minimum_margin_pct,
     margin_exception_approved: parsed.data.margin_exception_approved,
