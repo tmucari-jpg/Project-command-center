@@ -280,3 +280,17 @@ where d.project_id = p.id
     'Relatório de validação de mercado e pricing v1',
     'V08 · Modelo de consultoria e condições dos pacotes'
   );
+
+
+-- Align the PCC launch operational deliverable with the validated separation
+-- between Sales (conversion) and Operations (execution/delivery).
+update public.deliverables d
+set
+  title = 'Plano Operacional de Lançamento e Execução',
+  description = 'Coordena a sequência operacional do lançamento, actividades, responsáveis, prazos, dependências, recursos, riscos, checkpoints, evidências, desvios e ligação às vertentes de Marketing e Vendas, sem duplicar o pipeline comercial.',
+  completion_criteria = 'Plano operacional utilizável com sequência de lançamento, actividades, responsáveis, prazos, dependências, riscos, checkpoints, próximos passos e critérios de conclusão claramente definidos, permitindo acompanhar a execução real sem duplicar funções de Marketing ou Vendas.'
+from public.projects p
+where d.project_id = p.id
+  and p.title = 'Marketing, Vendas e Lançamento do PCC'
+  and d.title = 'Lançamento · Funil, prospects, pilotos e primeiros clientes'
+  and d.workstream = 'operational';
