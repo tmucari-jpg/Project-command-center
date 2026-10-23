@@ -248,7 +248,7 @@ jobs:
           foreach ($token in @(
             "finalizeProjectClosure",
             "Entregável entregue está bloqueado",
-            "Todos os entregáveis precisam de evidência",
+            "Todos os entregáveis vigentes precisam de evidência",
             "Entregáveis & Fecho"
           )) {
             if (-not $mutations.Contains($token) -and -not $deliverables.Contains($token)) {
