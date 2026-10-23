@@ -2080,9 +2080,36 @@ export async function decideProjectChangeRequest(formData: FormData) {
   if (error) fail(path, error.message);
 
   if (decision.data === "approved") {
+    const { data: currentBaseline, error: baselineError } = await supabase
+      .from("project_commitment_baselines")
+      .select("version,expected_result,scope,exclusions,deliverables_summary,pcc_responsibilities,client_responsibilities,external_costs_terms,acceptance_terms,security_conditions,capacity_summary,cost_summary")
+      .eq("project_id", projectId.data)
+      .eq("user_id", user.id)
+      .eq("status", "client_approved")
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (baselineError) fail(path, baselineError.message);
+    if (!currentBaseline) fail(path, "Não existe baseline aprovada para rever.");
+
+    const { version, ...baselineContent } = currentBaseline;
+    const { error: cloneError } = await supabase.from("project_commitment_baselines").insert({
+      ...baselineContent,
+      project_id: projectId.data,
+      user_id: user.id,
+      version: Number(version) + 1,
+      status: "draft",
+    });
+    if (cloneError) fail(path, cloneError.message);
+
     await supabase
       .from("projects")
-      .update({ governance_gate: "g3_planning", governance_gate_status: "in_progress" })
+      .update({
+        governance_gate: "g3_planning",
+        governance_gate_status: "in_progress",
+        status: "on_hold",
+      })
       .eq("id", projectId.data)
       .eq("user_id", user.id);
   }
