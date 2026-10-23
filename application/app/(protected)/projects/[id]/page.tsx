@@ -240,6 +240,16 @@ export default async function ProjectHubPage({
           <div className="border-t border-[var(--cc-border)] p-4">
             <form action={saveCommitmentBaseline} className="space-y-4">
               <input type="hidden" name="project_id" value={project.id} />
+              <Select
+                label="Classificação da informação"
+                name="information_classification"
+                defaultValue={latestBaseline?.information_classification ?? project.information_classification ?? "internal"}
+              >
+                <option value="public">Pública</option>
+                <option value="internal">Interna</option>
+                <option value="confidential">Confidencial · sem snapshot offline</option>
+                <option value="restricted">Restrita · sem snapshot offline</option>
+              </Select>
               <TextArea label="Resultado esperado" name="expected_result" required defaultValue={latestBaseline?.expected_result ?? project.expected_result ?? ""} />
               <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? ""} placeholder="O que o PCC fará neste projecto." />
               <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? ""} placeholder="Resultados concretos que o cliente receberá." />
