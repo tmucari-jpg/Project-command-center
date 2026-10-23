@@ -61,7 +61,7 @@ export default async function EvidencePage({
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
       <div className="space-y-6">
-        <ManualEntry>
+        <ManualEntry label="Nova evidência">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Nova evidência</h2>
           <form action={createEvidence} className="mt-5 space-y-4">
             <Select label="Tipo" name="evidence_type" defaultValue="comment">

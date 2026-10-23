@@ -79,7 +79,7 @@ export async function GET() {
       .eq("project_id", project.id)
       .maybeSingle(),
     supabase.from("financial_entries")
-      .select("description,amount,currency,status")
+      .select("description,amount,currency,status,cost_treatment,cost_frequency,external_provider")
       .eq("user_id", userId)
       .eq("project_id", project.id)
       .eq("entry_type", "cost")
@@ -132,7 +132,9 @@ export async function GET() {
   ).join("");
 
   const costs = (costResult.data ?? []).map((item) =>
-    "<tr><td>" + esc(item.description) + "</td><td>" + esc(item.amount) + " " + esc(item.currency) + "</td><td>" + esc(item.status) + "</td></tr>"
+    "<tr><td>" + esc(item.description) + "</td><td>" + esc(item.amount) + " " + esc(item.currency) + "</td><td>" +
+    esc(item.cost_treatment ?? "pcc_internal") + "</td><td>" + esc(item.cost_frequency ?? "one_off") + "</td><td>" +
+    esc(item.external_provider ?? "—") + "</td><td>" + esc(item.status) + "</td></tr>"
   ).join("");
 
   const html = "<!doctype html><html><head><meta charset='utf-8'><title>PCC Master Comercial</title>" +
@@ -144,8 +146,11 @@ export async function GET() {
     "<h2>Objectivos</h2>" + list(objectives.length ? objectives : ["Avaliar", "Decidir", "Estruturar", "Acompanhar", "Comprovar valor"]) +
     "<h2>Pontos de entrada</h2>" + entryBlocks +
     "<h2>Pacotes e preços</h2><table><thead><tr><th>Pacote</th><th>Preço</th><th>Âmbito</th><th>Benefício</th></tr></thead><tbody>" + packageRows + "</tbody></table>" +
-    "<h2>Custos internos</h2><table><thead><tr><th>Custo</th><th>Valor</th><th>Estado</th></tr></thead><tbody>" + costs + "</tbody></table>" +
+    "<h2>Custos e condições de execução</h2>" +
+    "<div class='note'><strong>Regra:</strong> o preço base do PCC remunera a consultoria e os entregáveis expressamente contratados. Domínio, hosting, licenças, publicidade, fornecedores e trabalhos paralelos são identificados e aprovados separadamente, salvo inclusão explícita na proposta.</div>" +
+    "<table><thead><tr><th>Custo</th><th>Valor</th><th>Tratamento</th><th>Frequência</th><th>Fornecedor</th><th>Estado</th></tr></thead><tbody>" + costs + "</tbody></table>" +
     "<h2>Marketing e vendas</h2><p><strong>Canais:</strong> " + esc(channels.join(" · ")) + "</p><p><strong>Funil:</strong> " + esc(funnel.join(" → ")) + "</p>" +
+    "<h2>Compromisso de entrega</h2><div class='box'><strong>Não vender o que não conseguimos entregar.</strong><p>Antes da execução material, o PCC valida capacidade, custos, segurança, riscos e dependências; o cliente valida explicitamente o resultado esperado, âmbito, entregáveis, exclusões e critérios de aceitação. A versão aprovada torna-se a Baseline de Compromisso e alterações materiais passam por controlo de alterações.</p></div>" +
     "<h2>Base de entregáveis</h2>" + deliverableBlocks +
     "<h2>Entregáveis registados no projecto</h2><table><thead><tr><th>Entregável</th><th>Vertente</th><th>Estado</th><th>Progresso</th><th>Formato</th></tr></thead><tbody>" + registeredDeliverables + "</tbody></table>" +
     "<p class='muted'>Gerado em " + esc(new Date().toISOString()) + ". A decisão humana, as evidências reais e as versões oficiais registadas no PCC prevalecem.</p>" +

@@ -373,7 +373,7 @@ export const commercialLeadSchema = z.object({
   organisation: optionalText(180),
   contact_reference: optionalText(500),
   source: optionalText(500),
-  stage: z.enum(["lead", "contacted", "qualified", "proposal", "negotiation", "won", "lost"]),
+  stage: z.enum(["contact", "interest", "diagnosis", "demonstration", "proposal", "client", "handoff", "lost"]),
   value: optionalNumber,
   currency: optionalText(8),
   next_action: optionalText(1000),
@@ -392,6 +392,47 @@ export const financialEntrySchema = z.object({
   occurred_on: optionalDate,
   status: z.enum(["actual", "forecast", "pending"]),
   evidence_reference: optionalText(1000),
+  cost_treatment: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? "pcc_internal" : value),
+    z.enum(["pcc_internal", "client_direct", "reimbursable_external", "additional_scope"]),
+  ),
+  cost_frequency: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? "one_off" : value),
+    z.enum(["one_off", "monthly", "annual", "usage"]),
+  ),
+  external_provider: optionalText(180),
+});
+
+
+export const commitmentBaselineSchema = z.object({
+  project_id: z.string().uuid(),
+  information_classification: z.preprocess(
+    (value) => (value === "" || value === null || value === undefined ? "internal" : value),
+    z.enum(["public", "internal", "confidential", "restricted"]),
+  ),
+  expected_result: z.string().trim().min(3).max(8000),
+  scope: z.string().trim().min(3).max(12000),
+  exclusions: optionalText(8000),
+  deliverables_summary: z.string().trim().min(3).max(12000),
+  pcc_responsibilities: optionalText(8000),
+  client_responsibilities: optionalText(8000),
+  external_costs_terms: optionalText(8000),
+  acceptance_terms: z.string().trim().min(3).max(8000),
+  security_conditions: optionalText(8000),
+  capacity_summary: optionalText(8000),
+  cost_summary: optionalText(8000),
+});
+
+export const changeRequestSchema = z.object({
+  project_id: z.string().uuid(),
+  baseline_id: optionalUuid,
+  title: z.string().trim().min(2).max(180),
+  description: z.string().trim().min(3).max(8000),
+  impact_scope: optionalText(6000),
+  impact_timeline: optionalText(4000),
+  impact_cost: optionalText(4000),
+  impact_capacity: optionalText(4000),
+  impact_security: optionalText(4000),
 });
 
 export const subscriptionFunnelMetricSchema = z.object({

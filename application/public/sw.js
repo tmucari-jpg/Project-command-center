@@ -39,14 +39,10 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => cacheSuccessful(event.request, response))
-        .catch(async () => {
-          const cached = await caches.match(event.request, { ignoreSearch: true });
-          if (cached) return cached;
-          const offline = await caches.match("/offline.html");
-          return offline || Response.error();
-        }),
+      fetch(event.request).catch(async () => {
+        const offline = await caches.match("/offline.html");
+        return offline || Response.error();
+      }),
     );
     return;
   }

@@ -2,9 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, CalendarCheck2, CheckSquare2, CircleDollarSign, GitBranch, Home, PackageCheck, ShieldCheck, TriangleAlert, UserRoundCheck } from "lucide-react";
 import {
+  approveCommitmentInternally,
   completeProjectReview,
+  createProjectChangeRequest,
   createProjectMemory,
+  decideProjectChangeRequest,
   prepareProjectOperationalStructure,
+  saveCommitmentBaseline,
+  validateCommitmentByClient,
   resolveGovernanceDependency,
   updateProjectGovernance,
   updateProjectNextAction,
@@ -52,6 +57,8 @@ export default async function ProjectHubPage({
     { data: leads },
     { data: financialEntries },
     { data: commercialProfile },
+    { data: commitmentBaselines },
+    { data: changeRequests },
   ] = await Promise.all([
     supabase
       .from("actions")
@@ -138,6 +145,18 @@ export default async function ProjectHubPage({
       .eq("user_id", user.id)
       .eq("project_id", id)
       .maybeSingle(),
+    supabase
+      .from("project_commitment_baselines")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("version", { ascending: false }),
+    supabase
+      .from("project_change_requests")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
@@ -176,6 +195,9 @@ export default async function ProjectHubPage({
     projectCurrency: project.currency,
     commercialCurrency: commercialProfile?.currency,
   });
+  const latestBaseline = commitmentBaselines?.[0];
+  const approvedBaseline = (commitmentBaselines ?? []).find((item) => item.status === "client_approved");
+  const pendingChanges = (changeRequests ?? []).filter((item) => item.decision === "pending");
   const autofillStateLabel: Record<string, string> = {
     calculated: "Calculado",
     inferred: "Inferido",
@@ -198,6 +220,135 @@ export default async function ProjectHubPage({
         eyebrow="Projecto"
         title={project.title}
       />
+
+      <Card className="mb-6 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">G3 · Compromisso de Entrega</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--cc-secondary)]">
+              O trabalho material só começa depois de o PCC validar capacidade, custos e segurança e o cliente confirmar explicitamente
+              o resultado esperado, o âmbito, os entregáveis, as exclusões e os critérios de aceitação. Em projectos internos, esta validação cabe ao responsável interno.
+            </p>
+          </div>
+          <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
+            {approvedBaseline ? `Baseline v${approvedBaseline.version} aprovada` : latestBaseline ? `Baseline v${latestBaseline.version} · ${displayLabel(latestBaseline.status)}` : "Baseline por definir"}
+          </span>
+        </div>
+
+        <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+          <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">Ver detalhes do compromisso</summary>
+          <div className="border-t border-[var(--cc-border)] p-4">
+            <form action={saveCommitmentBaseline} className="space-y-4">
+              <input type="hidden" name="project_id" value={project.id} />
+              <Select
+                label="Classificação da informação"
+                name="information_classification"
+                defaultValue={latestBaseline?.information_classification ?? project.information_classification ?? "internal"}
+              >
+                <option value="public">Pública</option>
+                <option value="internal">Interna</option>
+                <option value="confidential">Confidencial · sem snapshot offline</option>
+                <option value="restricted">Restrita · sem snapshot offline</option>
+              </Select>
+              <TextArea label="Resultado esperado" name="expected_result" required defaultValue={latestBaseline?.expected_result ?? project.expected_result ?? ""} />
+              <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? ""} placeholder="O que o PCC fará neste projecto." />
+              <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? ""} placeholder="Resultados concretos que o cliente receberá." />
+              <TextArea label="Exclusões" name="exclusions" defaultValue={latestBaseline?.exclusions ?? ""} placeholder="O que não está incluído." />
+              <div className="grid gap-4 lg:grid-cols-2">
+                <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? ""} />
+                <TextArea label="Responsabilidades do cliente" name="client_responsibilities" defaultValue={latestBaseline?.client_responsibilities ?? ""} />
+              </div>
+              <TextArea
+                label="Custos externos e trabalhos adicionais"
+                name="external_costs_terms"
+                defaultValue={latestBaseline?.external_costs_terms ?? ""}
+                placeholder="Domínio, hosting, licenças, publicidade, fornecedores, website/trabalho paralelo e outros custos não incluídos no preço base."
+              />
+              <TextArea label="Critérios e processo de aceitação" name="acceptance_terms" required defaultValue={latestBaseline?.acceptance_terms ?? ""} />
+              <div className="grid gap-4 lg:grid-cols-3">
+                <TextArea label="Capacidade para entregar" name="capacity_summary" defaultValue={latestBaseline?.capacity_summary ?? ""} />
+                <TextArea label="Custos e margem" name="cost_summary" defaultValue={latestBaseline?.cost_summary ?? ""} />
+                <TextArea label="Condições de segurança" name="security_conditions" defaultValue={latestBaseline?.security_conditions ?? ""} />
+              </div>
+              <button className={primaryButtonClass} type="submit">
+                {latestBaseline && ["draft", "internal_approved"].includes(latestBaseline.status) ? "Actualizar definição" : "Criar nova baseline"}
+              </button>
+            </form>
+
+            {latestBaseline?.status === "draft" && (
+              <form action={approveCommitmentInternally} className="mt-4">
+                <input type="hidden" name="baseline_id" value={latestBaseline.id} />
+                <input type="hidden" name="project_id" value={project.id} />
+                <button className={secondaryButtonClass} type="submit">Validar capacidade e compromisso no PCC</button>
+              </form>
+            )}
+
+            {latestBaseline?.status === "internal_approved" && (
+              <form action={validateCommitmentByClient} className="mt-4 space-y-3 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
+                <input type="hidden" name="baseline_id" value={latestBaseline.id} />
+                <input type="hidden" name="project_id" value={project.id} />
+                <Field
+                  label="Referência da validação explícita do cliente / responsável interno"
+                  name="client_validation_reference"
+                  required
+                  placeholder="Ex.: email de aprovação, reunião de 23/10/2026, documento assinado."
+                />
+                <button className={primaryButtonClass} type="submit">Registar validação e autorizar execução</button>
+              </form>
+            )}
+          </div>
+        </details>
+
+        <details className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+          <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">
+            Alterações de âmbito {pendingChanges.length ? `· ${pendingChanges.length} pendente(s)` : ""}
+          </summary>
+          <div className="space-y-4 border-t border-[var(--cc-border)] p-4">
+            <form action={createProjectChangeRequest} className="space-y-4">
+              <input type="hidden" name="project_id" value={project.id} />
+              {approvedBaseline && <input type="hidden" name="baseline_id" value={approvedBaseline.id} />}
+              <Field label="Alteração solicitada" name="title" required />
+              <TextArea label="Descrição" name="description" required />
+              <div className="grid gap-4 lg:grid-cols-2">
+                <TextArea label="Impacto no âmbito" name="impact_scope" />
+                <TextArea label="Impacto no prazo" name="impact_timeline" />
+                <TextArea label="Impacto no custo" name="impact_cost" />
+                <TextArea label="Impacto na capacidade" name="impact_capacity" />
+              </div>
+              <TextArea label="Impacto na segurança" name="impact_security" />
+              <button className={secondaryButtonClass} type="submit">Registar pedido de alteração</button>
+            </form>
+
+            {(changeRequests ?? []).length > 0 && (
+              <div className="space-y-3">
+                {(changeRequests ?? []).map((item) => (
+                  <div key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--cc-foreground)]">{item.title}</p>
+                        <p className="mt-1 text-xs text-[var(--cc-secondary)]">{displayLabel(item.decision)}</p>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm text-[var(--cc-secondary)]">{item.description}</p>
+                    {item.decision === "pending" && (
+                      <form action={decideProjectChangeRequest} className="mt-3 space-y-3">
+                        <input type="hidden" name="request_id" value={item.id} />
+                        <input type="hidden" name="project_id" value={project.id} />
+                        <TextArea label="Fundamento da decisão" name="decision_rationale" required />
+                        <div className="flex flex-wrap gap-2">
+                          <button className={secondaryButtonClass} name="decision" value="approved" type="submit">Aprovar alteração</button>
+                          <button className={secondaryButtonClass} name="decision" value="deferred" type="submit">Adiar</button>
+                          <button className={secondaryButtonClass} name="decision" value="rejected" type="submit">Rejeitar</button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </details>
+      </Card>
 
       <div className="mb-4">
         <form action={prepareProjectOperationalStructure}>

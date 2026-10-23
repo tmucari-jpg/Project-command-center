@@ -93,7 +93,7 @@ export default async function MetricsPage({
       <FlashMessage error={params.error ?? error?.message} created={params.created} />
 
       <div className="space-y-6">
-        <ManualEntry defaultOpen={Boolean(effectiveProjectId && !metricsByProject.get(effectiveProjectId)?.length)}>
+        <ManualEntry defaultOpen={Boolean(effectiveProjectId && !metricsByProject.get(effectiveProjectId)?.length)} label="Definir métricas">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Definir métricas por projecto</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
             O PCC prepara uma proposta a partir do Objectivo Central. Reveja unidade, valor base, meta e fonte antes de validar.

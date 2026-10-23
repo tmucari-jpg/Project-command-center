@@ -17,12 +17,13 @@ import { displayLabel } from "@/lib/display-label";
 import { monetizationReadiness } from "@/lib/monetization";
 
 const PIPELINE_STAGES = [
-  ["lead", "Lead"],
-  ["contacted", "Contactado"],
-  ["qualified", "Qualificado"],
+  ["contact", "Contacto"],
+  ["interest", "Interesse"],
+  ["diagnosis", "Diagnóstico"],
+  ["demonstration", "Demonstração"],
   ["proposal", "Proposta"],
-  ["negotiation", "Negociação"],
-  ["won", "Ganho"],
+  ["client", "Cliente"],
+  ["handoff", "Handoff"],
   ["lost", "Perdido"],
 ] as const;
 
@@ -65,7 +66,7 @@ export default async function CommercialPage({
   const commercialProjects = (projects ?? []).filter((project) => commercialProjectIds.has(project.id));
   const projectOptions = commercialProjects.length ? commercialProjects : (projects ?? []);
   const backlog = commercialProjects.filter((project) => profileByProject.get(project.id)?.validation_status !== "validated");
-  const activeLeads = (leads ?? []).filter((lead) => !["won", "lost"].includes(lead.stage));
+  const activeLeads = (leads ?? []).filter((lead) => !["handoff", "lost"].includes(lead.stage));
   const openCommercialDeliverables = (commercialDeliverables ?? []).filter(
     (item) => !["completed", "cancelled"].includes(item.status),
   );
@@ -113,7 +114,7 @@ export default async function CommercialPage({
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Pipeline activo</p>
           <p className="mt-2 text-3xl font-semibold text-[var(--cc-foreground)]">{activeLeads.length}</p>
-          <p className="mt-2 text-xs text-[var(--cc-secondary)]">Leads ainda em contacto, qualificação, proposta ou negociação.</p>
+          <p className="mt-2 text-xs text-[var(--cc-secondary)]">Oportunidades ainda entre contacto, interesse, diagnóstico, demonstração, proposta ou cliente.</p>
         </Card>
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Entregáveis comerciais</p>
@@ -321,7 +322,25 @@ export default async function CommercialPage({
               <option value="forecast">Previsão</option>
               <option value="pending">Pendente</option>
             </Select>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select label="Tratamento do custo" name="cost_treatment" defaultValue="pcc_internal">
+                <option value="pcc_internal">Custo interno PCC</option>
+                <option value="client_direct">Custo directo do cliente</option>
+                <option value="reimbursable_external">Custo externo reembolsável</option>
+                <option value="additional_scope">Trabalho adicional / fora do âmbito</option>
+              </Select>
+              <Select label="Frequência" name="cost_frequency" defaultValue="one_off">
+                <option value="one_off">Único</option>
+                <option value="monthly">Mensal</option>
+                <option value="annual">Anual</option>
+                <option value="usage">Por utilização</option>
+              </Select>
+            </div>
+            <Field label="Fornecedor externo, quando aplicável" name="external_provider" />
             <Field label="Referência de evidência" name="evidence_reference" />
+            <p className="text-xs leading-5 text-[var(--cc-secondary)]">
+              Domínios, hosting, licenças, publicidade, fornecedores e trabalhos paralelos não são absorvidos implicitamente pelo preço base do PCC.
+            </p>
             <button className={primaryButtonClass} type="submit">Registar movimento</button>
           </form>
         </Card>
@@ -410,6 +429,7 @@ export default async function CommercialPage({
                       <p className="text-sm font-medium text-[var(--cc-foreground)]">{entry.description}</p>
                       <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                         {projectById.get(entry.project_id)?.title ?? "Projecto"} · {formatDate(entry.occurred_on)} · {displayLabel(entry.status)}
+                        {entry.entry_type === "cost" ? ` · ${displayLabel(entry.cost_treatment ?? "pcc_internal")} · ${displayLabel(entry.cost_frequency ?? "one_off")}` : ""}
                       </p>
                     </div>
                     <p className="text-sm font-semibold text-[var(--cc-foreground)]">

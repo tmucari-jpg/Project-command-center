@@ -301,6 +301,9 @@ jobs:
           $manifest = Get-Content "./app/manifest.ts" -Raw
           $layout = Get-Content "./app/layout.tsx" -Raw
           $vercel = Get-Content "./vercel.json" -Raw
+          $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
+          $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
+          $serviceWorker = Get-Content "./public/sw.js" -Raw
 
           foreach ($token in @(
             '"objectives"',
@@ -436,9 +439,16 @@ jobs:
             }
           }
 
-          foreach ($token in @("strategyPlans", "commercialProfiles", "financialEntries", "commercialLeads", "/commercial-master", "/monetization")) {
+          foreach ($token in @("strategyPlans", "commercialProfiles", "financialEntries", "commercialLeads")) {
             if (-not $offlineClient.Contains($token) -and -not $offlineApp.Contains($token)) {
-              Write-Error "Offline commercial workspace is missing: $token"
+              Write-Error "Offline commercial snapshot support is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("/commercial-master", "/monetization")) {
+            if ($offlineClient.Contains($token)) {
+              Write-Error "Protected commercial pages must not be cached as offline HTML: $token"
               exit 1
             }
           }
@@ -480,6 +490,117 @@ jobs:
 
           if (-not $vercel.Contains('"audit/commercial-master-20261022": false')) {
             Write-Error "Commercial audit branch must not trigger a Vercel preview deployment."
+            exit 1
+          }
+
+      - name: Validate commitment, acceptance and safe closure
+        shell: pwsh
+        run: |
+          $migration = Get-Content "../supabase/migrations/20261023152000_commitment_acceptance_and_safe_closure.sql" -Raw
+          $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+          $project = Get-Content -LiteralPath "./app/(protected)/projects/[id]/page.tsx" -Raw
+          $deliverables = Get-Content "./app/(protected)/deliverables/page.tsx" -Raw
+          $objectives = Get-Content "./app/(protected)/objectives/page.tsx" -Raw
+          $commercial = Get-Content "./app/(protected)/monetization/page.tsx" -Raw
+          $vercel = Get-Content "./vercel.json" -Raw
+          $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
+          $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
+          $serviceWorker = Get-Content "./public/sw.js" -Raw
+
+          foreach ($token in @(
+            "project_commitment_baselines",
+            "project_change_requests",
+            "client_validation_reference",
+            "qa_status",
+            "acceptance_status",
+            "cost_treatment",
+            "value_status",
+            "handover_status",
+            "continuity_status",
+            "information_classification",
+            "enforce_project_execution_commitment"
+          )) {
+            if (-not $migration.Contains($token)) {
+              Write-Error "Missing PCC commitment/safe-closure database guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "saveCommitmentBaseline",
+            "approveCommitmentInternally",
+            "validateCommitmentByClient",
+            "createProjectChangeRequest",
+            "recordDeliverableQA",
+            "recordDeliverableAcceptance",
+            "updateProjectOutcomeStatus"
+          )) {
+            if (-not $mutations.Contains($token)) {
+              Write-Error "Missing PCC commitment workflow action: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "G3 · Compromisso de Entrega",
+            "Registar validação e autorizar execução",
+            "Alterações de âmbito"
+          )) {
+            if (-not $project.Contains($token)) {
+              Write-Error "Project detail is missing protected commitment UI: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "QA e aceitação",
+            "Valor e transferência",
+            "Continuidade / recuperação",
+            "baseline validada pelo cliente",
+            "Regra de fecho:"
+          )) {
+            if (-not $deliverables.Contains($token)) {
+              Write-Error "Deliverables closure UI is missing protected rule: $token"
+              exit 1
+            }
+          }
+
+          if ($objectives.Contains("Cada projecto aprovado deve ter")) {
+            Write-Error "Legacy objective explanatory card returned."
+            exit 1
+          }
+
+          foreach ($token in @("Contacto", "Interesse", "Diagnóstico", "Demonstração", "Proposta", "Cliente", "Handoff")) {
+            if (-not $commercial.Contains($token)) {
+              Write-Error "Validated commercial pipeline is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "confidential",
+            "restricted",
+            "allowedProjectIds",
+            "safeProjectRows"
+          )) {
+            if (-not $offlineBootstrap.Contains($token)) {
+              Write-Error "Sensitive-project offline filter is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $serviceWorker.Contains('if (event.request.mode === "navigate")') -or -not $serviceWorker.Contains("fetch(event.request).catch(async () => {")) {
+            Write-Error "Protected navigations must fall back to the offline shell without persisting authenticated HTML."
+            exit 1
+          }
+
+          if (-not $offlineClient.Contains("caches.delete(OFFLINE_ROUTE_CACHE)")) {
+            Write-Error "Logout/offline cleanup must remove the protected route cache."
+            exit 1
+          }
+
+          if (-not $vercel.Contains('"audit/pcc-final-consolidation-20261023": false')) {
+            Write-Error "Final consolidation branch must not trigger a Vercel preview deployment."
             exit 1
           }
 
