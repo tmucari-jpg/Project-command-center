@@ -17,13 +17,13 @@ import { displayLabel } from "@/lib/display-label";
 import { monetizationReadiness } from "@/lib/monetization";
 
 const PIPELINE_STAGES = [
-  ["lead", "Lead"],
-  ["contacted", "Contactado"],
-  ["qualified", "Qualificado"],
+  ["contact", "Contacto"],
+  ["interest", "Interesse"],
+  ["diagnosis", "Diagnóstico"],
+  ["demo", "Demonstração"],
   ["proposal", "Proposta"],
-  ["negotiation", "Negociação"],
-  ["won", "Ganho"],
-  ["lost", "Perdido"],
+  ["client", "Cliente"],
+  ["lost", "Perdido / não avançar"],
 ] as const;
 
 export default async function CommercialPage({
@@ -65,7 +65,7 @@ export default async function CommercialPage({
   const commercialProjects = (projects ?? []).filter((project) => commercialProjectIds.has(project.id));
   const projectOptions = commercialProjects.length ? commercialProjects : (projects ?? []);
   const backlog = commercialProjects.filter((project) => profileByProject.get(project.id)?.validation_status !== "validated");
-  const activeLeads = (leads ?? []).filter((lead) => !["won", "lost"].includes(lead.stage));
+  const activeLeads = (leads ?? []).filter((lead) => !["client", "lost"].includes(lead.stage));
   const openCommercialDeliverables = (commercialDeliverables ?? []).filter(
     (item) => !["completed", "cancelled"].includes(item.status),
   );
@@ -113,7 +113,7 @@ export default async function CommercialPage({
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Pipeline activo</p>
           <p className="mt-2 text-3xl font-semibold text-[var(--cc-foreground)]">{activeLeads.length}</p>
-          <p className="mt-2 text-xs text-[var(--cc-secondary)]">Leads ainda em contacto, qualificação, proposta ou negociação.</p>
+          <p className="mt-2 text-xs text-[var(--cc-secondary)]">Oportunidades ainda entre contacto, interesse, diagnóstico, demonstração e proposta.</p>
         </Card>
         <Card className="p-5">
           <p className="text-sm text-[var(--cc-secondary)]">Entregáveis comerciais</p>
@@ -239,7 +239,7 @@ export default async function CommercialPage({
             <Field label="Organização" name="organisation" />
             <Field label="Referência de contacto" name="contact_reference" placeholder="Email, telefone ou referência conhecida" />
             <Field label="Origem" name="source" />
-            <Select label="Etapa do pipeline" name="stage" defaultValue="lead">
+            <Select label="Etapa do pipeline" name="stage" defaultValue="contact">
               {PIPELINE_STAGES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </Select>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -321,6 +321,19 @@ export default async function CommercialPage({
               <option value="forecast">Previsão</option>
               <option value="pending">Pendente</option>
             </Select>
+            <Select label="Enquadramento do custo/receita" name="cost_scope" defaultValue="pcc_internal">
+              <option value="pcc_internal">Serviço / custo interno PCC</option>
+              <option value="client_direct">Custo directo do cliente</option>
+              <option value="reimbursable_external">Custo externo reembolsável</option>
+              <option value="additional_scope">Trabalho adicional fora do âmbito</option>
+            </Select>
+            <Select label="Recorrência" name="recurrence" defaultValue="one_off">
+              <option value="one_off">Único</option>
+              <option value="monthly">Mensal</option>
+              <option value="annual">Anual</option>
+              <option value="usage">Por utilização</option>
+            </Select>
+            <Field label="Fornecedor, quando aplicável" name="supplier" />
             <Field label="Referência de evidência" name="evidence_reference" />
             <button className={primaryButtonClass} type="submit">Registar movimento</button>
           </form>
@@ -427,6 +440,7 @@ export default async function CommercialPage({
         <p className="text-sm leading-6 text-[var(--cc-secondary)]">
           O PCC não inventa leads, preços, probabilidades, receitas ou custos. A inteligência apoia análise e produção,
           mas os registos comerciais e a decisão permanecem baseados em informação real e validação humana.
+          Domínios, hosting, licenças, publicidade, fornecedores e trabalhos paralelos são registados separadamente do serviço PCC, salvo inclusão expressa no compromisso aprovado.
         </p>
       </Card>
     </>
