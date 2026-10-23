@@ -396,17 +396,40 @@ export default async function ProjectHubPage({
         </details>
 
         {pendingCommitment && (
-          <form action={validateProjectCommitmentWithClient} className="mt-4 space-y-4 rounded-[var(--cc-radius-md)] border border-[color-mix(in_srgb,var(--cc-gold)_45%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_6%,var(--cc-surface))] p-4">
-            <input type="hidden" name="project_id" value={project.id} />
-            <input type="hidden" name="commitment_id" value={pendingCommitment.id} />
-            <p className="text-sm font-semibold text-[var(--cc-foreground)]">Validação do cliente — Baseline v{pendingCommitment.baseline_version}</p>
-            <p className="text-sm leading-6 text-[var(--cc-secondary)]">
-              Confirme apenas depois de apresentar ao cliente o resultado esperado, âmbito, entregáveis, critérios, responsabilidades, exclusões, custos externos, dependências e condições de segurança.
-            </p>
-            <Field label="Validado por" name="client_validated_by" required placeholder="Nome do cliente / responsável" />
-            <TextArea label="Notas da validação" name="client_validation_notes" />
-            <button className={primaryButtonClass} type="submit">Registar validação do cliente e autorizar execução</button>
-          </form>
+          <div className="mt-4 rounded-[var(--cc-radius-md)] border border-[color-mix(in_srgb,var(--cc-gold)_45%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-gold)_6%,var(--cc-surface))] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-gold)]">Resumo para validação do cliente</p>
+            <p className="mt-2 text-sm font-semibold text-[var(--cc-foreground)]">Baseline v{pendingCommitment.baseline_version}</p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {[
+                ["Resultado esperado", pendingCommitment.expected_result],
+                ["Âmbito incluído", pendingCommitment.scope_included],
+                ["Entregáveis", pendingCommitment.deliverables_summary],
+                ["Critérios de aceitação", pendingCommitment.acceptance_summary],
+                ["Exclusões", pendingCommitment.scope_excluded || "Sem exclusões adicionais registadas."],
+                ["Responsabilidades do PCC", pendingCommitment.pcc_responsibilities || "Não especificadas."],
+                ["Responsabilidades do cliente", pendingCommitment.client_responsibilities || "Não especificadas."],
+                ["Dependências", pendingCommitment.dependencies || "Sem dependências adicionais registadas."],
+                ["Custos externos / trabalho adicional", pendingCommitment.external_costs || "Sem custos externos registados."],
+                ["Condições de segurança", pendingCommitment.security_requirements || "Sem condições adicionais registadas."],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">{label}</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-foreground)]">{value}</p>
+                </div>
+              ))}
+            </div>
+            <form action={validateProjectCommitmentWithClient} className="mt-4 space-y-4 border-t border-[var(--cc-border)] pt-4">
+              <input type="hidden" name="project_id" value={project.id} />
+              <input type="hidden" name="commitment_id" value={pendingCommitment.id} />
+              <p className="text-sm leading-6 text-[var(--cc-secondary)]">
+                Registe a aprovação apenas depois de o cliente validar este resumo. Só então o projecto pode seguir para execução material.
+              </p>
+              <Field label="Validado por" name="client_validated_by" required placeholder="Nome do cliente / responsável" />
+              <Field label="Referência da aprovação" name="client_validation_reference" placeholder="Ex.: email, proposta assinada, reunião de 23/10/2026" />
+              <TextArea label="Notas da validação" name="client_validation_notes" />
+              <button className={primaryButtonClass} type="submit">Registar validação do cliente e autorizar execução</button>
+            </form>
+          </div>
         )}
       </Card>
 
