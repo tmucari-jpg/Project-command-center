@@ -18,10 +18,6 @@ import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
 import { prepareDeliverableDraft } from "@/lib/project-autonomy";
 
-function objectiveTitle(relation: { title?: string | null } | { title?: string | null }[] | null | undefined) {
-  return Array.isArray(relation) ? relation[0]?.title : relation?.title;
-}
-
 const WORKSTREAM_LABELS: Record<string, string> = {
   general: "Geral",
   commercial: "Comercial",
