@@ -203,33 +203,10 @@ export async function syncOfflineQueue() {
 }
 
 const OFFLINE_ROUTE_CACHE = "project-command-center-v6";
-const OFFLINE_ROUTES = [
-  "/dashboard",
-  "/projects",
-  "/actions",
-  "/objectives",
-  "/metrics",
-  "/deliverables",
-  "/evidence",
-  "/project-factory",
-  "/weekly-review",
-];
-
-const OFFLINE_ADMIN_ROUTES = ["/admin", "/commercial-master", "/monetization"];
-
 export async function refreshOfflineRouteCache() {
-  if (typeof window === "undefined" || !("caches" in window) || !navigator.onLine) return false;
-  const cache = await caches.open(OFFLINE_ROUTE_CACHE);
-  const snapshot = await getOfflineSnapshot().catch(() => undefined);
-  const routes = snapshot?.isAdmin ? [...OFFLINE_ROUTES, ...OFFLINE_ADMIN_ROUTES] : OFFLINE_ROUTES;
-  const results = await Promise.allSettled(
-    routes.map(async (route) => {
-      const response = await fetch(route, { credentials: "include", cache: "no-store" });
-      if (!response.ok) return;
-      await cache.put(new Request(route), response.clone());
-    }),
-  );
-  return results.some((result) => result.status === "fulfilled");
+  // Protected server-rendered pages are intentionally not persisted.
+  // Offline mode is driven by the filtered IndexedDB snapshot and static offline shell.
+  return typeof window !== "undefined" && "caches" in window;
 }
 
 export async function clearOfflineData() {
