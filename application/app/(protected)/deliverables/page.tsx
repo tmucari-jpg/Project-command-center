@@ -161,7 +161,8 @@ export default async function DeliverablesPage({
       closureState.value_status !== "not_assessed" &&
       closureState.financial_status === "updated" &&
       closureState.handover_status !== "pending" &&
-      closureState.security_transfer_status !== "pending";
+      closureState.security_transfer_status !== "pending" &&
+      closureState.continuity_status !== "pending";
     const readyToClose =
       currentDeliverables.length > 0 &&
       completed.length === currentDeliverables.length &&
@@ -533,9 +534,15 @@ export default async function DeliverablesPage({
                             <option value="pending">Pendente</option>
                             <option value="completed">Concluída</option>
                           </Select>
+                          <Select label="Continuidade / recuperação" name="continuity_status" defaultValue={group.closureState?.continuity_status ?? "not_applicable"}>
+                            <option value="not_applicable">Não aplicável</option>
+                            <option value="pending">Pendente</option>
+                            <option value="confirmed">Confirmada</option>
+                          </Select>
                           <TextArea label="Evidência de valor" name="value_evidence" defaultValue={group.closureState?.value_evidence ?? ""} />
                           <TextArea label="Notas de handover" name="handover_notes" defaultValue={group.closureState?.handover_notes ?? ""} />
                           <TextArea label="Notas de segurança / acessos" name="security_transfer_notes" defaultValue={group.closureState?.security_transfer_notes ?? ""} />
+                          <TextArea label="Continuidade / backup / recuperação" name="continuity_notes" defaultValue={group.closureState?.continuity_notes ?? ""} />
                           <TextArea label="Lições aprendidas" name="lessons_learned" defaultValue={group.closureState?.lessons_learned ?? ""} />
                           <div className="md:col-span-2">
                             <TextArea label="Acompanhamento posterior, quando necessário" name="next_follow_up" defaultValue={group.closureState?.next_follow_up ?? ""} />
