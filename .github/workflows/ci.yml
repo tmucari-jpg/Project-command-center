@@ -470,6 +470,10 @@ jobs:
           $clientDiagnosticPanel = Get-Content "./components/client-diagnostic-panel.tsx" -Raw
           $clientDiagnosticGenerator = Get-Content "./components/client-diagnostic-link-generator.tsx" -Raw
           $clientDiagnosticTracker = Get-Content "./components/client-diagnostic-tracker.tsx" -Raw
+          $projectQuestionnaireActions = Get-Content "./components/project-questionnaire-actions.tsx" -Raw
+          $preIntakeDiagnosticRoute = Get-Content "./app/api/client-diagnostic/preintake/route.ts" -Raw
+          $diagnosticTemplateExport = Get-Content "./app/api/exports/client-diagnostic-template/route.ts" -Raw
+          $adaptiveProjectIntake = Get-Content "./components/adaptive-project-intake.tsx" -Raw
           $clientDiagnosticMigration = Get-Content "../supabase/migrations/20261024193000_client_diagnostic_questionnaire.sql" -Raw
           $clientDiagnosticExternalMigration = Get-Content "../supabase/migrations/20261024203000_client_diagnostic_external_sources.sql" -Raw
 
@@ -589,6 +593,55 @@ jobs:
             }
           }
 
+          foreach ($token in @(
+            "Gerar questionário",
+            "Baixar questionário",
+            "Gerar link seguro",
+            "Abrir acompanhamento do caso"
+          )) {
+            if (-not $projectQuestionnaireActions.Contains($token)) {
+              Write-Error "New-project questionnaire action is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "questionnaire_preintake_",
+            "client_diagnostic_requests",
+            "7 * 24 * 60 * 60 * 1000",
+            "executive-v3"
+          )) {
+            if (-not $preIntakeDiagnosticRoute.Contains($token)) {
+              Write-Error "Pre-intake diagnostic route is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "PCC_Questionario_Diagnostico_",
+            "application/msword",
+            "/brand/pcc-logo.png",
+            "Avalie. Decida. Execute.",
+            "Da Estratégia à Execução"
+          )) {
+            if (-not $diagnosticTemplateExport.Contains($token)) {
+              Write-Error "Diagnostic template export is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "ProjectQuestionnaireActions",
+            "Perfil de investimento",
+            "rounded-2xl",
+            "xl:grid-cols-3"
+          )) {
+            if (-not $adaptiveProjectIntake.Contains($token)) {
+              Write-Error "Adaptive project intake visual/action guard is missing: $token"
+              exit 1
+            }
+          }
+
           foreach ($token in @("conic-gradient", "PressureBar", "PressureLegend")) {
             if (-not $charts.Contains($token)) {
               Write-Error "Operational chart system is missing: $token"
@@ -622,7 +675,8 @@ jobs:
             '"audit/investment-intake-multiselect-diagnostic-20261024": false',
             '"audit/client-diagnostic-questionnaire-20261024": false',
             '"audit/client-diagnostic-short-v2-20261024": false',
-            '"audit/client-diagnostic-executive-v3-20261024": false'
+            '"audit/client-diagnostic-executive-v3-20261024": false',
+            '"audit/new-project-questionnaire-actions-ui-20261024": false'
           )) {
             if (-not $vercel.Contains($branchGuard)) {
               Write-Error "Audit branch must not trigger a Vercel preview deployment: $branchGuard"
