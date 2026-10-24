@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { markAllNotificationsRead, openNotification } from "@/app/(protected)/mutations";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
@@ -36,9 +37,17 @@ export default async function NotificationsPage({
 
   if (unreadOnly) query = query.is("read_at", null);
 
-  const { data: notifications } = await query;
+  const [{ data: notifications }, unreadResult] = await Promise.all([
+    query,
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("read_at", null),
+  ]);
+
   const rows = notifications ?? [];
-  const unreadCount = rows.filter((item) => !item.read_at).length;
+  const unreadCount = unreadResult.count ?? 0;
 
   return (
     <>
@@ -48,18 +57,18 @@ export default async function NotificationsPage({
         <Card className="p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
-              <a
+              <Link
                 className={unreadOnly ? primaryButtonClass : secondaryButtonClass}
                 href="/notifications"
               >
                 Não lidas
-              </a>
-              <a
+              </Link>
+              <Link
                 className={!unreadOnly ? primaryButtonClass : secondaryButtonClass}
                 href="/notifications?view=all"
               >
                 Todas
-              </a>
+              </Link>
             </div>
 
             {unreadCount > 0 && (
