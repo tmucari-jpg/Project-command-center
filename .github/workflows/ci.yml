@@ -477,6 +477,13 @@ jobs:
           $adaptiveProjectIntake = Get-Content "./components/adaptive-project-intake.tsx" -Raw
           $clientDiagnosticMigration = Get-Content "../supabase/migrations/20261024193000_client_diagnostic_questionnaire.sql" -Raw
           $clientDiagnosticExternalMigration = Get-Content "../supabase/migrations/20261024203000_client_diagnostic_external_sources.sql" -Raw
+          $clientDiagnosticResponseFlowMigration = Get-Content "../supabase/migrations/20261024214500_client_diagnostic_response_flow.sql" -Raw
+          $notificationCenter = Get-Content "./app/(protected)/notifications/page.tsx" -Raw
+          $notificationAlerts = Get-Content "./components/client-diagnostic-alerts.tsx" -Raw
+          $caseDiagnosticAlert = Get-Content "./components/client-diagnostic-case-alert.tsx" -Raw
+          $appShell = Get-Content "./components/app-shell.tsx" -Raw
+          $protectedLayout = Get-Content "./app/(protected)/layout.tsx" -Raw
+          $notificationSidebar = Get-Content "./components/sidebar.tsx" -Raw
 
           foreach ($token in @(
             "/brand/pcc-logo-transparent.svg",
@@ -489,7 +496,7 @@ jobs:
             "investment_discovery",
             "AdaptiveContext",
             "AdaptiveFocus",
-            "Enviar e preparar o diagnóstico"
+            "Enviar respostas"
           )) {
             if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
               Write-Error "Executive adaptive client questionnaire is missing: $token"
@@ -500,6 +507,28 @@ jobs:
           if (-not $clientDiagnosticPublic.Contains("ClientDiagnosticQuestionnaire")) {
             Write-Error "Public client diagnostic route must render the executive questionnaire."
             exit 1
+          }
+
+          foreach ($token in @(
+            "grid h-8 w-8 shrink-0 place-items-center rounded-full",
+            "mb-4 flex items-center gap-3"
+          )) {
+            if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
+              Write-Error "Questionnaire numbered-section visual standard is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($forbidden in @(
+            "<legend",
+            "Enviar e preparar o diagnóstico",
+            "Seleccione primeiro o motivo do contacto. As perguntas seguintes serão adaptadas à sua escolha.",
+            "Não precisa de ter tudo definido."
+          )) {
+            if ($clientDiagnosticQuestionnaire.Contains($forbidden)) {
+              Write-Error "Questionnaire visual/copy regression detected: $forbidden"
+              exit 1
+            }
           }
 
           foreach ($token in @(
@@ -525,7 +554,8 @@ jobs:
           foreach ($forbidden in @(
             "O PCC adapta o questionário",
             "Pode enviar o link, baixar o modelo ou utilizá-lo como guia numa conversa",
-            "A resposta fica ligada ao caso e preparada para o diagnóstico"
+            "A resposta fica ligada ao caso e preparada para o diagnóstico",
+            "o PCC usa uma mensagem padrão se deixar em branco"
           )) {
             if ($projectQuestionnaireActions.Contains($forbidden)) {
               Write-Error "Redundant explanatory copy returned to questionnaire action: $forbidden"
@@ -563,6 +593,9 @@ jobs:
             "incorporateClientDiagnosticResponse",
             "importClientDiagnosticLink",
             "uploadClientDiagnosticFile",
+            "openNotification",
+            "markNotificationRead",
+            "markAllNotificationsRead",
             "INFORMAÇÃO DECLARADA PELO CLIENTE",
             "executive-v3"
           )) {
@@ -598,6 +631,88 @@ jobs:
           )) {
             if (-not $clientDiagnosticExternalMigration.Contains($token)) {
               Write-Error "Client diagnostic external source guard is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "triage_missing_information",
+            "triage_points_to_confirm",
+            "triaged_at",
+            "'analyzing'",
+            "client_diagnostic_response",
+            "Nova resposta de diagnóstico",
+            "public.notifications"
+          )) {
+            if (-not $clientDiagnosticResponseFlowMigration.Contains($token)) {
+              Write-Error "Automatic diagnostic response flow is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Centro de Notificações",
+            "Não lidas",
+            "Todas",
+            "Marcar todas como lidas",
+            "openNotification"
+          )) {
+            if (-not $notificationCenter.Contains($token)) {
+              Write-Error "Notification center is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Novas respostas de diagnóstico",
+            "Abrir resposta"
+          )) {
+            if (-not $notificationAlerts.Contains($token)) {
+              Write-Error "Project Factory diagnostic alert is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Marcar como lida",
+            "markNotificationRead"
+          )) {
+            if (-not $caseDiagnosticAlert.Contains($token)) {
+              Write-Error "Case diagnostic alert is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            'href="/notifications"',
+            "notificationCount",
+            "Bell"
+          )) {
+            if (-not $appShell.Contains($token) -and -not $notificationSidebar.Contains($token)) {
+              Write-Error "Notification navigation/count is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            'from("notifications")',
+            'count: "exact"',
+            'is("read_at", null)'
+          )) {
+            if (-not $protectedLayout.Contains($token)) {
+              Write-Error "Unread notification count is missing from protected shell: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "ClientDiagnosticCaseAlert",
+            "triage_missing_information",
+            "triage_points_to_confirm",
+            "triaged_at"
+          )) {
+            if (-not $factoryCasePage.Contains($token)) {
+              Write-Error "Factory case response-treatment surface is missing: $token"
               exit 1
             }
           }
@@ -733,7 +848,8 @@ jobs:
             '"audit/client-diagnostic-executive-v3-20261024": false',
             '"audit/new-project-questionnaire-actions-ui-20261024": false',
             '"audit/questionnaire-first-dynamic-intake-20261024": false',
-            '"audit/public-direct-client-diagnostic-20261024": false'
+            '"audit/public-direct-client-diagnostic-20261024": false',
+            '"audit/questionnaire-visual-rules-20261024": false'
           )) {
             if (-not $vercel.Contains($branchGuard)) {
               Write-Error "Audit branch must not trigger a Vercel preview deployment: $branchGuard"
