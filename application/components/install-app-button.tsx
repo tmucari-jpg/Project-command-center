@@ -65,11 +65,12 @@ export function InstallAppButton() {
       <button
         type="button"
         onClick={install}
+        aria-label="Instalar Project Command Center no dispositivo"
         className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--cc-accent)] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[var(--cc-accent-strong)]"
       >
         <Download size={16} />
         <span className="hidden sm:inline">Instalar PCC</span>
-        <span className="sm:hidden">Instalar</span>
+        <span className="sm:hidden">Instalar PCC</span>
       </button>
 
       {showHelp && (

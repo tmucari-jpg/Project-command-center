@@ -45,7 +45,9 @@ export function AppShell({
                 </Link>
                 <OfflineSyncManager />
                 <LanguageSwitcher compact />
-                <InstallAppButton />
+                <div className="fixed bottom-24 right-4 z-[70] lg:static lg:z-auto">
+                  <InstallAppButton />
+                </div>
                 {process.env.NODE_ENV !== "development" && <SecureLogoutButton />}
               </div>
             </div>

@@ -4,6 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Project Command Center",
     short_name: "PCC",
+    id: "/",
     description: "Centro de governança, decisão, execução, entregáveis e métricas de projectos.",
     start_url: "/dashboard",
     scope: "/",

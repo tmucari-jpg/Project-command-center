@@ -6,6 +6,7 @@ import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { clearOfflineData } from "@/lib/offline-client";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { InstallAppButton } from "@/components/install-app-button";
 import {
   forgotPasswordAction,
   loginAction,
@@ -80,13 +81,16 @@ export function AuthForm({ mode, clearOfflineOnLoad = false }: { mode: Mode; cle
       <div className="mb-8 pt-8">
         <div className="mb-7 flex justify-center">
           <Image
-            src="/brand/pcc-logo.png"
+            src="/brand/pcc-logo-transparent.svg"
             alt="Project Command Center"
             width={550}
             height={182}
             className="h-auto w-full max-w-[320px]"
             priority
           />
+        </div>
+        <div className="mb-5 flex justify-center">
+          <InstallAppButton />
         </div>
         <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[var(--cc-foreground)]">{title}</h1>
       </div>
