@@ -4,6 +4,7 @@ import { finalizeFactoryDecision, saveCompetitiveIntelligence, saveFactoryReport
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { InvestmentDiscoveryPanel } from "@/components/investment-discovery-panel";
+import { ClientDiagnosticPanel } from "@/components/client-diagnostic-panel";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -44,7 +45,7 @@ export default async function FactoryCasePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string; completed?: string; validated?: string; report?: string; decision?: string; brief?: string; investment_decision?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; completed?: string; validated?: string; report?: string; decision?: string; brief?: string; investment_decision?: string; client_diagnostic?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
@@ -111,6 +112,37 @@ export default async function FactoryCasePage({
         />
       </>
     );
+  }
+
+  const { data: clientDiagnosticRequest } = await supabase
+    .from("client_diagnostic_requests")
+    .select("id,client_name,client_organization,public_context,status,expires_at,opened_at,submitted_at,reviewed_at,incorporated_at")
+    .eq("factory_case_id", factoryCase.id)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let clientDiagnosticResponse = null;
+  let clientDiagnosticReview = null;
+
+  if (clientDiagnosticRequest) {
+    const [{ data: response }, { data: review }] = await Promise.all([
+      supabase
+        .from("client_diagnostic_responses")
+        .select("respondent_name,respondent_role,respondent_email,answers,submitted_at")
+        .eq("request_id", clientDiagnosticRequest.id)
+        .maybeSingle(),
+      supabase
+        .from("client_diagnostic_reviews")
+        .select("review_status,review_notes,missing_information,points_to_confirm")
+        .eq("request_id", clientDiagnosticRequest.id)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+    clientDiagnosticResponse = response;
+    clientDiagnosticReview = review;
   }
 
   const isCommercial = factoryCase.project_type === "commercial";
@@ -208,21 +240,34 @@ export default async function FactoryCasePage({
 
       <FlashMessage
         error={query.error}
-        created={query.saved ?? query.completed ?? query.validated ?? query.report ?? query.decision}
+        created={query.client_diagnostic ?? query.saved ?? query.completed ?? query.validated ?? query.report ?? query.decision}
         message={
-          query.decision
-            ? "Decisão final registada."
-            : query.report
-              ? "Síntese consolidada. O caso avançou para Decisão."
-              : query.validated
-                ? "Avaliação de viabilidade concluída."
-                : query.completed
-                  ? "Inteligência Competitiva concluída. O caso avançou para Validação."
-                  : "Inteligência Competitiva guardada como rascunho."
+          query.client_diagnostic === "incorporated"
+            ? "Informação do cliente incorporada no diagnóstico."
+            : query.client_diagnostic === "reviewed"
+              ? "Revisão do diagnóstico do cliente guardada."
+              : query.client_diagnostic === "revoked"
+                ? "Link do questionário revogado."
+                : query.decision
+                  ? "Decisão final registada."
+                  : query.report
+                    ? "Síntese consolidada. O caso avançou para Decisão."
+                    : query.validated
+                      ? "Avaliação de viabilidade concluída."
+                      : query.completed
+                        ? "Inteligência Competitiva concluída. O caso avançou para Validação."
+                        : "Inteligência Competitiva guardada como rascunho."
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
+      <ClientDiagnosticPanel
+        factoryCaseId={factoryCase.id}
+        request={clientDiagnosticRequest}
+        response={clientDiagnosticResponse}
+        review={clientDiagnosticReview}
+      />
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
         <Card className="p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Contexto do projecto</h2>
           <dl className="mt-4 space-y-4 text-sm">
