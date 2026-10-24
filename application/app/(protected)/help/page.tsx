@@ -61,7 +61,7 @@ export default async function HelpPage() {
         <Card className="p-5 lg:col-span-2">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Referências comerciais e de governação</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            O Master Mind é a fonte de verdade da arquitectura, regras e modelo operacional. O Guia Comercial é a referência validada para posicionamento, entregáveis, pacotes e uso comercial.
+            O Master Mind é a fonte de verdade da arquitectura, regras e modelo operacional. O Guia Comercial é a referência validada para posicionamento, entregáveis, pacotes e uso comercial. Estes dois padrões podem ser usados como entregáveis de qualquer projecto quando a necessidade o justificar ou quando forem solicitados, preservando a identidade visual e documental oficial do PCC.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/commercial-master" className={secondaryButtonClass}>Abrir Guia Comercial</Link>

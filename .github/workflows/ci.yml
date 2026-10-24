@@ -868,6 +868,7 @@ jobs:
           $deliverables = Get-Content "./app/(protected)/deliverables/page.tsx" -Raw
           $workstreamMigration = Get-Content "../supabase/migrations/20261022154500_deliverable_workstreams.sql" -Raw
           $masterExport = Get-Content "./app/api/exports/commercial-master/route.ts" -Raw
+          $documentStandards = Get-Content "./lib/project-document-standards.ts" -Raw
           $offlineBootstrap = Get-Content "./app/api/offline/bootstrap/route.ts" -Raw
           $offlineClient = Get-Content "./lib/offline-client.ts" -Raw
           $offlineApp = Get-Content "./public/offline-app.js" -Raw
@@ -960,9 +961,16 @@ jobs:
             }
           }
 
-          foreach ($token in @("PCC_Master_Comercial.doc", "application/msword", "Marketing, Vendas e Lançamento do PCC")) {
+          foreach ($token in @("PCC_Snapshot_Operacional_Comercial.doc", "application/msword", "Marketing, Vendas e Lançamento do PCC")) {
             if (-not $masterExport.Contains($token)) {
-              Write-Error "Master Comercial downloadable deliverable is missing: $token"
+              Write-Error "Commercial operational snapshot is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("master_mind", "commercial_guide", "Master Mind", "Guia Comercial", "identidade visual", "controlo de versão")) {
+            if (-not $documentStandards.Contains($token) -and -not $deliverables.Contains($token)) {
+              Write-Error "PCC document standard is missing: $token"
               exit 1
             }
           }

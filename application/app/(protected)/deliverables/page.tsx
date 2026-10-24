@@ -17,6 +17,7 @@ import { requireUser } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDate } from "@/lib/format";
 import { prepareDeliverableDraft } from "@/lib/project-autonomy";
+import { getPccDocumentStandard, preparePccDocumentDraft } from "@/lib/project-document-standards";
 
 const WORKSTREAM_LABELS: Record<string, string> = {
   general: "Geral",
@@ -40,7 +41,7 @@ function deliverableState(status: string, progress: number | string | null) {
 export default async function DeliverablesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string; project_id?: string; closed?: string; supersedes?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; project_id?: string; closed?: string; supersedes?: string; template?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireUser();
@@ -110,6 +111,7 @@ export default async function DeliverablesPage({
   const previousVersion = (deliverables ?? []).find(
     (item) => item.id === params.supersedes && item.project_id === effectiveProjectId && item.status === "completed",
   );
+  const selectedDocumentStandard = getPccDocumentStandard(params.template);
   const preparedDraft = previousVersion
     ? {
         title: previousVersion.title,
@@ -117,8 +119,12 @@ export default async function DeliverablesPage({
         priority: previousVersion.priority,
         due_date: undefined,
         completion_criteria: previousVersion.completion_criteria ?? undefined,
+        workstream: previousVersion.workstream ?? "general",
+        artifact_type: previousVersion.artifact_type ?? "other",
       }
-    : prepareDeliverableDraft(effectiveProject);
+    : selectedDocumentStandard && effectiveProject
+      ? preparePccDocumentDraft(selectedDocumentStandard.key, effectiveProject)
+      : prepareDeliverableDraft(effectiveProject);
   const ownerById = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name || "Utilizador"]));
 
   const projectGroups = (projects ?? []).map((project) => {
@@ -225,6 +231,27 @@ export default async function DeliverablesPage({
           </p>
         </Card>
 
+        <Card className="p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[var(--cc-gold)]">Padrão documental PCC</p>
+          <h2 className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">Master Mind e Guia Comercial são modelos oficiais reutilizáveis</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+            Estes documentos não são obrigatórios em todos os projectos. Devem integrar os entregáveis quando a natureza do projecto o justificar ou quando forem solicitados. Ambos seguem a identidade visual, a estrutura, o rigor de evidência e o controlo de versão validados no PCC.
+          </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <p className="font-semibold text-[var(--cc-accent)]">Master Mind</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--cc-secondary)]">Fonte de verdade consolidada do projecto: contexto, decisões, governação, estrutura, execução, riscos, métricas, evidência e aprendizagem.</p>
+              {effectiveProjectId ? <Link className={secondaryButtonClass + " mt-3"} href={`/deliverables?project_id=${effectiveProjectId}&template=master_mind`}>Preparar Master Mind</Link> : null}
+            </div>
+            <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <p className="font-semibold text-[var(--cc-accent)]">Guia Comercial</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--cc-secondary)]">Referência para posicionamento, proposta de valor, preço, marketing, vendas, lançamento, cliente e métricas comerciais.</p>
+              {effectiveProjectId ? <Link className={secondaryButtonClass + " mt-3"} href={`/deliverables?project_id=${effectiveProjectId}&template=commercial_guide`}>Preparar Guia Comercial</Link> : null}
+            </div>
+          </div>
+          {!effectiveProjectId && <p className="mt-3 text-xs text-[var(--cc-secondary)]">Abra Entregáveis a partir de um projecto para preparar um destes documentos com o contexto desse projecto.</p>}
+        </Card>
+
         <ManualEntry defaultOpen={Boolean(preparedDraft)} label="Definir entregável">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Definir entregável</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
@@ -246,7 +273,7 @@ export default async function DeliverablesPage({
               ))}
             </Select>
             <Field label="Resultado / entregável" name="title" required defaultValue={preparedDraft?.title} placeholder="Ex.: Website institucional publicado" />
-            <Select label="Vertente do entregável" name="workstream" defaultValue={previousVersion?.workstream ?? "general"}>
+            <Select label="Vertente do entregável" name="workstream" defaultValue={preparedDraft && "workstream" in preparedDraft ? preparedDraft.workstream : previousVersion?.workstream ?? "general"}>
               <option value="general">Geral</option>
               <option value="commercial">Comercial</option>
               <option value="financial">Financeiro</option>
@@ -266,7 +293,7 @@ export default async function DeliverablesPage({
             <input type="hidden" name="progress" value="0" />
             <TextArea label="Critérios de aceitação" name="completion_criteria" defaultValue={preparedDraft?.completion_criteria} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Formato do resultado" name="artifact_type" defaultValue={previousVersion?.artifact_type ?? "other"}>
+              <Select label="Formato do resultado" name="artifact_type" defaultValue={preparedDraft && "artifact_type" in preparedDraft ? preparedDraft.artifact_type : previousVersion?.artifact_type ?? "other"}>
                 <option value="document">Documento Word / texto</option>
                 <option value="spreadsheet">Excel / folha de cálculo</option>
                 <option value="presentation">PowerPoint / apresentação</option>
