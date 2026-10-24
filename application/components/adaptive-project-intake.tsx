@@ -25,9 +25,21 @@ const intentLabels: Record<Intent, string> = {
 };
 
 function contextRows(formData: FormData) {
-  return Array.from(formData.entries())
-    .filter(([key, value]) => key.startsWith("context_") && String(value).trim())
-    .map(([key, value]) => `${key.replace("context_", "").replaceAll("_", " ")}: ${String(value).trim()}`);
+  const grouped = new Map<string, string[]>();
+
+  for (const [key, value] of formData.entries()) {
+    const text = String(value).trim();
+    if (!key.startsWith("context_") || !text) continue;
+
+    const current = grouped.get(key) ?? [];
+    if (!current.includes(text)) current.push(text);
+    grouped.set(key, current);
+  }
+
+  return Array.from(grouped.entries()).map(
+    ([key, values]) =>
+      `${key.replace("context_", "").replaceAll("_", " ")}: ${values.join("; ")}`,
+  );
 }
 
 function cleanJson(text: string) {
@@ -214,10 +226,27 @@ export function AdaptiveProjectIntake() {
           <Extra label="Horizonte de investimento" name="context_horizon" />
           <Extra label="Geografia / mercados onde pode operar" name="context_geography" />
           <Extra label="Sectores de interesse, se existirem" name="context_sectors" />
-          <Extra label="Capacidades, experiência ou activos que já possui" name="context_capabilities" area />
+
+          <MultiSelectField
+            label="Capacidades, experiência ou activos que já possui"
+            name="context_capabilities"
+            options={capabilityOptions}
+          />
+
           <Extra label="Nível de envolvimento pretendido no negócio" name="context_involvement" />
-          <Extra label="Objectivo de retorno / resultado pretendido" name="context_return_objective" />
-          <Extra label="Tolerância ao risco" name="context_risk" />
+
+          <MultiSelectField
+            label="Objectivo de retorno / resultado pretendido"
+            name="context_return_objective"
+            options={returnObjectiveOptions}
+          />
+
+          <MultiSelectField
+            label="Tolerância ao risco"
+            name="context_risk"
+            helper="Seleccione os tipos de risco que estaria disposto a aceitar."
+            options={riskToleranceOptions}
+          />
         </div>
       )}
 
@@ -299,6 +328,96 @@ export function AdaptiveProjectIntake() {
             : "Iniciar avaliação G1/G2"}
       </button>
     </form>
+  );
+}
+
+const capabilityOptions = [
+  "Gestão e liderança",
+  "Vendas e desenvolvimento comercial",
+  "Marketing, marca e conteúdos",
+  "Finanças, contabilidade ou investimento",
+  "Tecnologia, produto digital ou dados",
+  "Operações, logística ou supply chain",
+  "Experiência específica num sector",
+  "Rede de contactos ou acesso a clientes",
+  "Parceiros ou fornecedores já identificados",
+  "Equipa disponível",
+  "Instalações, imóveis ou terreno",
+  "Equipamentos, viaturas ou outros activos físicos",
+  "Marca, comunidade ou audiência",
+  "Licenças, autorizações ou concessões",
+  "Propriedade intelectual ou know-how próprio",
+];
+
+const returnObjectiveOptions = [
+  "Rendimento recorrente / cash flow",
+  "Crescimento do capital no médio ou longo prazo",
+  "Retorno rápido / payback curto",
+  "Construir um negócio escalável",
+  "Diversificar investimentos",
+  "Criar um activo para venda futura",
+  "Criar sinergia com negócios ou activos existentes",
+  "Construir uma empresa de longo prazo",
+  "Gerar impacto social ou ambiental",
+];
+
+const riskToleranceOptions = [
+  "Aceito perda parcial do capital na fase inicial",
+  "Aceito receitas instáveis enquanto o negócio é validado",
+  "Aceito um prazo mais longo até ao retorno",
+  "Aceito entrar num mercado ainda por validar",
+  "Aceito uma operação intensiva em equipa e gestão",
+  "Aceito dependência relevante de tecnologia ou produto novo",
+  "Aceito exposição a licenças, regulação ou aprovações",
+  "Aceito dependência inicial de poucos clientes ou parceiros",
+  "Aceito exposição cambial ou operação em mais de um mercado",
+  "Prefiro limitar a perda de capital e privilegiar previsibilidade",
+];
+
+function MultiSelectField({
+  label,
+  name,
+  options,
+  helper,
+}: {
+  label: string;
+  name: string;
+  options: string[];
+  helper?: string;
+}) {
+  return (
+    <fieldset className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4 md:col-span-2">
+      <legend className="px-1 text-sm font-semibold text-[var(--cc-foreground)]">
+        {label}
+      </legend>
+      {helper && (
+        <p className="mb-3 text-xs leading-5 text-[var(--cc-secondary)]">{helper}</p>
+      )}
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {options.map((option) => (
+          <label
+            key={option}
+            className="flex cursor-pointer items-start gap-2 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm text-[var(--cc-foreground)]"
+          >
+            <input
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--cc-accent)]"
+              type="checkbox"
+              name={name}
+              value={option}
+            />
+            <span>{option}</span>
+          </label>
+        ))}
+      </div>
+      <label className="mt-3 block text-sm font-medium text-[var(--cc-foreground)]">
+        Outro / especificar
+        <input
+          className={fieldClass}
+          name={name}
+          placeholder="Acrescente algo que não esteja nas opções."
+        />
+      </label>
+    </fieldset>
   );
 }
 
