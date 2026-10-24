@@ -370,6 +370,85 @@ jobs:
             exit 1
           }
 
+          $investmentPanel = Get-Content "./components/investment-discovery-panel.tsx" -Raw
+          $investmentModel = Get-Content "./lib/investment-discovery.ts" -Raw
+          $factoryCasePage = Get-Content "./app/(protected)/project-factory/[id]/page.tsx" -Raw
+          $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+          $investmentExport = Get-Content "./app/api/exports/investment-brief/[id]/route.ts" -Raw
+          $investmentMigration = Get-Content "../supabase/migrations/20261024140500_investment_discovery_briefs.sql" -Raw
+
+          foreach ($token in @(
+            "Gerar propostas para decisão",
+            "context_involvement",
+            "context_return_objective"
+          )) {
+            if (-not $adaptiveIntake.Contains($token)) {
+              Write-Error "Investment discovery intake is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Resumo para decisão",
+            "Oportunidades de investimento",
+            "Seleccionar e seguir para validação",
+            "/api/exports/investment-brief/"
+          )) {
+            if (-not $investmentPanel.Contains($token)) {
+              Write-Error "Investment decision brief is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "parseInvestmentDiscoveryBrief",
+            "investmentDiscoveryInstructions",
+            "recommended_option_id",
+            "validation_strategy",
+            "entry_strategy"
+          )) {
+            if (-not $investmentModel.Contains($token)) {
+              Write-Error "Investment discovery model is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "buildInvestmentDiscoveryBrief",
+            "selectInvestmentDiscoveryOption",
+            'source: "investment_selected"',
+            'stage: "competitive_intelligence"'
+          )) {
+            if (-not $mutations.Contains($token)) {
+              Write-Error "Investment single-line decision flow is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $factoryCasePage.Contains("InvestmentDiscoveryPanel")) {
+            Write-Error "Factory case must render the investment decision brief before normal validation."
+            exit 1
+          }
+
+          foreach ($token in @("PCC_Resumo_Decisao_Investimento.doc", "application/msword")) {
+            if (-not $investmentExport.Contains($token)) {
+              Write-Error "Investment decision document export is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "investment_discovery_briefs",
+            "selected_option_id",
+            "recommended_option_id",
+            "enable row level security"
+          )) {
+            if (-not $investmentMigration.Contains($token)) {
+              Write-Error "Investment discovery migration is missing: $token"
+              exit 1
+            }
+          }
+
           foreach ($token in @("conic-gradient", "PressureBar", "PressureLegend")) {
             if (-not $charts.Contains($token)) {
               Write-Error "Operational chart system is missing: $token"
@@ -398,7 +477,8 @@ jobs:
 
           foreach ($branchGuard in @(
             '"audit/consolidated-diagnostic-20261022": false',
-            '"audit/adaptive-factory-ai-router-20261024": false'
+            '"audit/adaptive-factory-ai-router-20261024": false',
+            '"audit/investment-discovery-decision-20261024": false'
           )) {
             if (-not $vercel.Contains($branchGuard)) {
               Write-Error "Audit branch must not trigger a Vercel preview deployment: $branchGuard"
