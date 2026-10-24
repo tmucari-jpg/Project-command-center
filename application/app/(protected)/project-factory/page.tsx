@@ -72,7 +72,7 @@ export default async function ProjectFactoryPage({
                   Defina como quer começar
                 </h2>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--cc-secondary)]">
-                  Preencha directamente no PCC ou gere um questionário para recolher primeiro a informação essencial.
+                  Escolha o ponto de partida. O PCC recomenda recolher primeiro a informação através do questionário adaptado; o preenchimento manual fica disponível como alternativa.
                 </p>
               </div>
               <div className="rounded-full border border-[#e2d3ae] bg-white px-3 py-1.5 text-xs font-semibold text-[#8b6a25]">
