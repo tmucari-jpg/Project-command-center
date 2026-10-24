@@ -552,7 +552,46 @@ jobs:
 
           foreach ($token in @(
             'createPublicClient',
-            '^[A-Za-z0-9_-]{43,200}          foreach ($token in @("conic-gradient", "PressureBar", "PressureLegend")) {
+            'A-Za-z0-9_-',
+            '43,200'
+          )) {
+            if (-not $clientDiagnosticAction.Contains($token) -and -not $clientDiagnosticPublic.Contains($token)) {
+              Write-Error "Public diagnostic token/session guard is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $serviceWorker.Contains('url.pathname.startsWith("/client-diagnostic/")')) {
+            Write-Error "Client diagnostic pages must never enter the offline/PWA cache."
+            exit 1
+          }
+
+          foreach ($token in @(
+            '"source": "/client-diagnostic/(.*)"',
+            '"Cache-Control"',
+            '"no-store, max-age=0"',
+            '"X-Robots-Tag"',
+            '"noindex, nofollow, noarchive"',
+            '"Referrer-Policy"',
+            '"no-referrer"',
+            '"X-Frame-Options"',
+            '"DENY"',
+            '"frame-ancestors ''none''"',
+            '"form-action ''self''"'
+          )) {
+            if (-not $vercel.Contains($token)) {
+              Write-Error "External diagnostic security header is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $clientDiagnosticMigration.Contains("grant execute on function public.client_diagnostic_lookup(text) to anon;") -or
+              -not $clientDiagnosticMigration.Contains("grant execute on function public.client_diagnostic_submit(text,text,text,text,jsonb) to anon;")) {
+            Write-Error "Public diagnostic RPCs must be granted only to anon."
+            exit 1
+          }
+
+          foreach ($token in @("conic-gradient", "PressureBar", "PressureLegend")) {
             if (-not $charts.Contains($token)) {
               Write-Error "Operational chart system is missing: $token"
               exit 1
