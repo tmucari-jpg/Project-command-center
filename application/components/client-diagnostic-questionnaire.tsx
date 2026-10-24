@@ -54,7 +54,7 @@ export function ClientDiagnosticQuestionnaire({
           <div className="border-b border-[#e0e8e3] bg-[#f8f6f0] px-5 py-5 sm:px-7">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <Image
-                src="/brand/pcc-logo.png"
+                src="/brand/pcc-logo-transparent.svg"
                 alt="Project Command Center"
                 width={230}
                 height={82}
@@ -127,7 +127,7 @@ export function ClientDiagnosticQuestionnaire({
             />
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Field label="Nome" name="respondent_name" required />
-              <Field label="Email / contacto" name="respondent_email" />
+              <Field label="Email (opcional)" name="respondent_email" type="email" />
               {["organization", "institution"].includes(respondentType) && (
                 <>
                   <Field label="Organização" name="organization" />
