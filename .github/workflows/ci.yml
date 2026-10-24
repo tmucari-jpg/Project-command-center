@@ -337,7 +337,7 @@ jobs:
           $assistRoute = Get-Content "./app/api/ai/assist/route.ts" -Raw
           $assistRouter = Get-Content "./lib/ai-assist-router.ts" -Raw
 
-          foreach ($token in @("AdaptiveProjectIntake", "Defina o ponto de partida")) {
+          foreach ($token in @("AdaptiveProjectIntake", "Defina como quer começar")) {
             if (-not $factory.Contains($token)) {
               Write-Error "Adaptive project intake is missing: $token"
               exit 1
