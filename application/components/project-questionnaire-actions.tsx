@@ -160,7 +160,7 @@ export function ProjectQuestionnaireActions({
                 className={"mt-1 " + fieldClass}
                 value={publicContext}
                 onChange={(event) => setPublicContext(event.target.value)}
-                placeholder="Opcional — o PCC usa uma mensagem padrão se deixar em branco."
+                placeholder="Opcional"
               />
             </label>
           </div>
