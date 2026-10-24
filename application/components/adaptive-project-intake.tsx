@@ -264,10 +264,6 @@ export function AdaptiveProjectIntake() {
       <input type="hidden" name="constraints" defaultValue="" />
       <input type="hidden" name="source" defaultValue="adaptive_idea" />
 
-      <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4 text-sm leading-6 text-[var(--cc-secondary)]">
-        O PCC usa estas respostas para estruturar G1 (triagem) e preparar G2 (viabilidade). Se faltar informação, o caso continua aberto para completar a avaliação; nenhum pressuposto é tratado como facto.
-      </div>
-
       <button className={primaryButtonClass} type="submit" disabled={preparing}>
         {preparing ? "A preparar avaliação..." : "Iniciar avaliação G1/G2"}
       </button>
