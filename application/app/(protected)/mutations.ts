@@ -121,7 +121,7 @@ export async function createClientDiagnosticRequest(
       user_id: user.id,
       factory_case_id: factoryCase.id,
       token_hash: tokenHash,
-      questionnaire_version: "basic-v1",
+      questionnaire_version: "basic-v2",
       client_name: clientName.data || null,
       client_organization: clientOrganization.data || null,
       public_context: publicContext.data || null,
