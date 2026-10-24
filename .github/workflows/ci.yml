@@ -370,6 +370,22 @@ jobs:
             exit 1
           }
 
+          foreach ($token in @(
+            "4. Geografia / mercados onde pode operar",
+            "5. Sectores de interesse, se existirem",
+            "7. Nível de envolvimento pretendido no negócio",
+            "geographyOptions",
+            "sectorOptions",
+            "involvementOptions",
+            "Outro sector / detalhes",
+            "Outro mercado / detalhes"
+          )) {
+            if (-not $adaptiveIntake.Contains($token)) {
+              Write-Error "Adaptive investment multi-select diagnostic is missing: $token"
+              exit 1
+            }
+          }
+
           $investmentPanel = Get-Content "./components/investment-discovery-panel.tsx" -Raw
           $investmentModel = Get-Content "./lib/investment-discovery.ts" -Raw
           $factoryCasePage = Get-Content -LiteralPath "./app/(protected)/project-factory/[id]/page.tsx" -Raw
@@ -478,7 +494,8 @@ jobs:
           foreach ($branchGuard in @(
             '"audit/consolidated-diagnostic-20261022": false',
             '"audit/adaptive-factory-ai-router-20261024": false',
-            '"audit/investment-discovery-decision-20261024": false'
+            '"audit/investment-discovery-decision-20261024": false',
+            '"audit/investment-intake-multiselect-diagnostic-20261024": false'
           )) {
             if (-not $vercel.Contains($branchGuard)) {
               Write-Error "Audit branch must not trigger a Vercel preview deployment: $branchGuard"
