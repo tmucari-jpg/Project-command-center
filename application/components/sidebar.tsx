@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Bell,
   CheckSquare2,
   Factory,
   FolderKanban,
@@ -42,7 +43,19 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavLink({ pathname, href, label, Icon }: { pathname: string; href: string; label: string; Icon: typeof Gauge }) {
+function NavLink({
+  pathname,
+  href,
+  label,
+  Icon,
+  badge,
+}: {
+  pathname: string;
+  href: string;
+  label: string;
+  Icon: typeof Gauge;
+  badge?: number;
+}) {
   const active = isActive(pathname, href);
   return (
     <Link
@@ -52,11 +65,16 @@ function NavLink({ pathname, href, label, Icon }: { pathname: string; href: stri
     >
       <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
       <span>{label}</span>
+      {badge && badge > 0 ? (
+        <span className="ml-auto min-w-5 rounded-full bg-[#c99439] px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
     </Link>
   );
 }
 
-export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
+export function Sidebar({ isAdmin, notificationCount }: { isAdmin: boolean; notificationCount: number }) {
   const pathname = usePathname();
 
   return (
@@ -75,6 +93,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
             <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">Resumo</p>
             <div className="space-y-1">
               <NavLink pathname={pathname} href="/dashboard" label="Painel" Icon={Gauge} />
+              <NavLink pathname={pathname} href="/notifications" label="Notificações" Icon={Bell} badge={notificationCount} />
             </div>
           </div>
 
@@ -98,10 +117,11 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-export function MobileNav() {
+export function MobileNav({ notificationCount }: { notificationCount: number }) {
   const pathname = usePathname();
   const mobileItems = [
     { href: "/dashboard", label: "Painel", icon: Gauge },
+    { href: "/notifications", label: notificationCount > 0 ? `Alertas ${notificationCount > 99 ? "99+" : notificationCount}` : "Alertas", icon: Bell },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
     { href: "/actions", label: "Executar", icon: CheckSquare2 },
