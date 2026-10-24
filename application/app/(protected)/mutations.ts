@@ -85,9 +85,8 @@ export async function createClientDiagnosticRequest(
   const clientName = z.string().trim().max(200).safeParse(String(formData.get("client_name") ?? ""));
   const clientOrganization = z.string().trim().max(300).safeParse(String(formData.get("client_organization") ?? ""));
   const publicContext = z.string().trim().max(2000).safeParse(String(formData.get("public_context") ?? ""));
-  const expiryDays = z.coerce.number().int().min(1).max(30).safeParse(formData.get("expiry_days") ?? 14);
 
-  if (!factoryCaseId.success || !clientName.success || !clientOrganization.success || !publicContext.success || !expiryDays.success) {
+  if (!factoryCaseId.success || !clientName.success || !clientOrganization.success || !publicContext.success) {
     return { ok: false, error: "Revise os dados do pedido de diagnóstico." };
   }
 
@@ -104,7 +103,7 @@ export async function createClientDiagnosticRequest(
   }
 
   const { token, tokenHash } = createClientDiagnosticToken();
-  const expiresAt = new Date(Date.now() + expiryDays.data * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const { error: revokeError } = await supabase
     .from("client_diagnostic_requests")
@@ -121,7 +120,7 @@ export async function createClientDiagnosticRequest(
       user_id: user.id,
       factory_case_id: factoryCase.id,
       token_hash: tokenHash,
-      questionnaire_version: "basic-v2",
+      questionnaire_version: "executive-v3",
       client_name: clientName.data || null,
       client_organization: clientOrganization.data || null,
       public_context: publicContext.data || null,
@@ -142,6 +141,152 @@ export async function createClientDiagnosticRequest(
     url: clientDiagnosticPublicUrl(token),
     requestId: request.id,
   };
+}
+
+export async function importClientDiagnosticLink(formData: FormData) {
+  const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
+  const requestId = z.string().uuid().optional().safeParse(
+    String(formData.get("request_id") ?? "").trim() || undefined,
+  );
+  const sourceUrl = z.string().trim().url().max(2048).safeParse(String(formData.get("source_url") ?? ""));
+  const note = z.string().trim().max(2000).safeParse(String(formData.get("note") ?? ""));
+
+  if (!factoryCaseId.success || !requestId.success || !sourceUrl.success || !note.success) {
+    fail("/project-factory", "Link do questionário inválido.");
+  }
+
+  const path = `/project-factory/${factoryCaseId.data}`;
+  const { supabase, user } = await requireUser();
+
+  const { data: factoryCase, error: caseError } = await supabase
+    .from("project_factory_cases")
+    .select("id")
+    .eq("id", factoryCaseId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (caseError || !factoryCase) fail(path, caseError?.message ?? "Caso não encontrado.");
+
+  if (requestId.data) {
+    const { data: request, error: requestError } = await supabase
+      .from("client_diagnostic_requests")
+      .select("id")
+      .eq("id", requestId.data)
+      .eq("factory_case_id", factoryCase.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (requestError || !request) fail(path, requestError?.message ?? "Solicitação associada não encontrada.");
+  }
+
+  const { error } = await supabase.from("client_diagnostic_external_sources").insert({
+    user_id: user.id,
+    factory_case_id: factoryCase.id,
+    request_id: requestId.data ?? null,
+    source_type: "link",
+    source_url: sourceUrl.data,
+    note: note.data || null,
+  });
+
+  if (error) fail(path, error.message);
+
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  redirect(`${path}?client_diagnostic=external_added`);
+}
+
+export async function uploadClientDiagnosticFile(formData: FormData) {
+  const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
+  const requestId = z.string().uuid().optional().safeParse(
+    String(formData.get("request_id") ?? "").trim() || undefined,
+  );
+  const note = z.string().trim().max(2000).safeParse(String(formData.get("note") ?? ""));
+  const file = formData.get("questionnaire_file");
+
+  if (!factoryCaseId.success || !requestId.success || !note.success || !(file instanceof File)) {
+    fail("/project-factory", "Ficheiro do questionário inválido.");
+  }
+
+  const allowedTypes = new Set([
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+    "image/png",
+    "image/jpeg",
+  ]);
+
+  if (!file.size || file.size > 10 * 1024 * 1024) {
+    fail(`/project-factory/${factoryCaseId.data}`, "O ficheiro deve ter até 10 MB.");
+  }
+  if (!allowedTypes.has(file.type)) {
+    fail(`/project-factory/${factoryCaseId.data}`, "Formato não suportado. Use PDF, DOC, DOCX, TXT, PNG ou JPG.");
+  }
+
+  const path = `/project-factory/${factoryCaseId.data}`;
+  const { supabase, user } = await requireUser();
+
+  const { data: factoryCase, error: caseError } = await supabase
+    .from("project_factory_cases")
+    .select("id")
+    .eq("id", factoryCaseId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (caseError || !factoryCase) fail(path, caseError?.message ?? "Caso não encontrado.");
+
+  if (requestId.data) {
+    const { data: request, error: requestError } = await supabase
+      .from("client_diagnostic_requests")
+      .select("id")
+      .eq("id", requestId.data)
+      .eq("factory_case_id", factoryCase.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (requestError || !request) fail(path, requestError?.message ?? "Solicitação associada não encontrada.");
+  }
+
+  const safeName = file.name
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 120) || "questionario";
+  const storagePath = `${user.id}/${factoryCase.id}/${Date.now()}-${safeName}`;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+
+  const { error: uploadError } = await supabase.storage
+    .from("client-diagnostic-imports")
+    .upload(storagePath, bytes, {
+      contentType: file.type,
+      cacheControl: "0",
+      upsert: false,
+    });
+
+  if (uploadError) fail(path, uploadError.message);
+
+  const { error: insertError } = await supabase
+    .from("client_diagnostic_external_sources")
+    .insert({
+      user_id: user.id,
+      factory_case_id: factoryCase.id,
+      request_id: requestId.data ?? null,
+      source_type: "file",
+      storage_path: storagePath,
+      file_name: file.name,
+      mime_type: file.type,
+      file_size: file.size,
+      note: note.data || null,
+    });
+
+  if (insertError) {
+    await supabase.storage.from("client-diagnostic-imports").remove([storagePath]);
+    fail(path, insertError.message);
+  }
+
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  redirect(`${path}?client_diagnostic=external_added`);
 }
 
 export async function revokeClientDiagnosticRequest(formData: FormData) {
@@ -306,7 +451,7 @@ export async function incorporateClientDiagnosticResponse(formData: FormData) {
 
   const affectedPeople = String(answers.affected_people ?? "").trim();
   const desiredResult = String(answers.desired_result ?? "").trim();
-  const clientConstraints = String(answers.constraints ?? "").trim();
+  const clientConstraints = String(answers.conditions ?? answers.constraints ?? "").trim();
 
   const nextDescription = [factoryCase.description?.trim(), declaredBlock].filter(Boolean).join("\n\n");
   const nextConstraints = [factoryCase.constraints?.trim(), clientConstraints].filter(Boolean).join("\n");
