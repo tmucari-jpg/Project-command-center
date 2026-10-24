@@ -150,15 +150,11 @@ export function ClientDiagnosticQuestionnaire({
             />
           </Block>
 
-          {nature ? (
+          {nature && (
             <>
               <AdaptiveContext nature={nature} />
               <AdaptiveFocus nature={nature} />
             </>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-[#c7d6d0] bg-[#f8f6f0] p-5 text-sm leading-6 text-[#5f6c68]">
-              Seleccione primeiro o motivo do contacto. As perguntas seguintes serão adaptadas à sua escolha.
-            </div>
           )}
 
           <Block number={5} title="Que resultado gostaria de alcançar?">
@@ -237,12 +233,8 @@ export function ClientDiagnosticQuestionnaire({
             />
           </Block>
 
-          <div className="rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm">
-            <p className="text-sm leading-6 text-[#667085]">
-              Não precisa de ter tudo definido. Quando algo ainda não estiver claro, escolha a opção
-              mais próxima da sua realidade ou use o campo de detalhes.
-            </p>
-            <button className={primaryButtonClass + " mt-4"} type="submit">
+          <div className="flex justify-end pt-1">
+            <button className={primaryButtonClass} type="submit">
               Enviar e preparar o diagnóstico
             </button>
           </div>
@@ -393,12 +385,20 @@ function AdaptiveFocus({ nature }: { nature: Nature }) {
 
 function Block({ number, title, children }: { number: number; title: string; children: ReactNode }) {
   return (
-    <fieldset className="rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm sm:p-6">
-      <legend className="px-1 text-sm font-semibold text-[#073f36]">
-        {number}. {title}
-      </legend>
-      <div className="mt-2">{children}</div>
-    </fieldset>
+    <section className="rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-4 flex items-center gap-3">
+        <span
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#d9c38f] bg-[#f8f6f0] text-sm font-semibold leading-none text-[#073f36]"
+          aria-hidden="true"
+        >
+          {number}
+        </span>
+        <h2 className="min-w-0 text-sm font-semibold leading-5 text-[#073f36] sm:text-[15px]">
+          {title}
+        </h2>
+      </div>
+      <div>{children}</div>
+    </section>
   );
 }
 
