@@ -228,8 +228,24 @@ export function AdaptiveProjectIntake() {
         <div className="grid gap-4 md:grid-cols-2">
           <Extra label="2. Capital ou recursos disponíveis" name="context_budget" />
           <Extra label="3. Horizonte de investimento" name="context_horizon" />
-          <Extra label="4. Geografia / mercados onde pode operar" name="context_geography" />
-          <Extra label="5. Sectores de interesse, se existirem" name="context_sectors" />
+
+          <MultiSelectField
+            label="4. Geografia / mercados onde pode operar"
+            name="context_geography"
+            options={geographyOptions}
+            helper="Seleccione todos os mercados em que estaria disposto a operar."
+            detailLabel="Outro mercado / detalhes"
+            detailPlaceholder="Ex.: cidade específica, país, corredor logístico, mercado online ou restrição geográfica."
+          />
+
+          <MultiSelectField
+            label="5. Sectores de interesse, se existirem"
+            name="context_sectors"
+            options={sectorOptions}
+            helper="Pode seleccionar vários sectores. Se não tiver preferência, deixe em branco ou indique isso nos detalhes."
+            detailLabel="Outro sector / detalhes"
+            detailPlaceholder="Acrescente um sector específico, nicho ou combinação que não esteja nas opções."
+          />
 
           <MultiSelectField
             label="6. Capacidades, experiência ou activos que já possui"
@@ -237,7 +253,14 @@ export function AdaptiveProjectIntake() {
             options={capabilityOptions}
           />
 
-          <Extra label="7. Nível de envolvimento pretendido no negócio" name="context_involvement" />
+          <MultiSelectField
+            label="7. Nível de envolvimento pretendido no negócio"
+            name="context_involvement"
+            options={involvementOptions}
+            helper="Seleccione todas as formas de envolvimento que estaria disposto a assumir."
+            detailLabel="Outro modelo de envolvimento / detalhes"
+            detailPlaceholder="Ex.: disponibilidade semanal, papel pretendido, necessidade de sócio operador ou gestão profissional."
+          />
 
           <MultiSelectField
             label="8. Objectivo de retorno / resultado pretendido"
@@ -359,6 +382,48 @@ const constraintOptions = [
   "Decisões já tomadas que não devem ser alteradas",
   "Limite de exposição financeira / capital em risco",
   "Operação deve começar pequena e ser validada antes de escalar",
+];
+
+const geographyOptions = [
+  "Moçambique",
+  "África Austral / SADC",
+  "Outros mercados africanos",
+  "Portugal",
+  "União Europeia",
+  "Médio Oriente / Golfo",
+  "Ásia",
+  "Américas",
+  "Mercado global / operação online",
+];
+
+const sectorOptions = [
+  "Agricultura, agro-indústria e alimentos",
+  "Retalho, distribuição e e-commerce",
+  "Beleza, cosmética e cuidados pessoais",
+  "Saúde, bem-estar e serviços clínicos",
+  "Educação, formação e capacitação",
+  "Serviços financeiros, seguros e fintech",
+  "Imobiliário, construção e gestão de propriedades",
+  "Transportes, logística, mobilidade e frotas",
+  "Turismo, hotelaria, restauração e lazer",
+  "Segurança e serviços operacionais",
+  "Energia, água e utilities",
+  "Indústria e transformação",
+  "Tecnologia, software, dados e IA",
+  "Serviços profissionais e soluções B2B",
+  "Media, entretenimento, conteúdo e economia criativa",
+  "Sustentabilidade, ambiente e economia circular",
+];
+
+const involvementOptions = [
+  "Investidor passivo",
+  "Acompanhamento estratégico / conselho",
+  "Desenvolvimento comercial e parcerias",
+  "Participação activa na gestão",
+  "Operar com um sócio / parceiro executivo",
+  "Contratar gestão profissional",
+  "Participação temporária até estabilizar o negócio",
+  "Modelo flexível conforme a oportunidade",
 ];
 
 const capabilityOptions = [
