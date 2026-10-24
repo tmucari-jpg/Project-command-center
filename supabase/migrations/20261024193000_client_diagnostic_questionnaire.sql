@@ -235,8 +235,8 @@ $$;
 
 revoke all on function public.client_diagnostic_lookup(text) from public;
 revoke all on function public.client_diagnostic_submit(text,text,text,text,jsonb) from public;
-grant execute on function public.client_diagnostic_lookup(text) to anon, authenticated;
-grant execute on function public.client_diagnostic_submit(text,text,text,text,jsonb) to anon, authenticated;
+grant execute on function public.client_diagnostic_lookup(text) to anon;
+grant execute on function public.client_diagnostic_submit(text,text,text,text,jsonb) to anon;
 
 drop trigger if exists update_client_diagnostic_requests_updated_at on public.client_diagnostic_requests;
 create trigger update_client_diagnostic_requests_updated_at
