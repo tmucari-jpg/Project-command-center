@@ -642,6 +642,29 @@ jobs:
             }
           }
 
+          foreach ($token in @(
+            "manualOpen",
+            "Preencher manualmente no PCC",
+            "Ocultar preenchimento manual",
+            "Preenchimento manual"
+          )) {
+            if (-not $adaptiveProjectIntake.Contains($token)) {
+              Write-Error "Questionnaire-first manual fallback is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Caminho recomendado",
+            "Gerar questionário adaptado",
+            "Baixar questionário"
+          )) {
+            if (-not $projectQuestionnaireActions.Contains($token)) {
+              Write-Error "Questionnaire-first primary action is missing: $token"
+              exit 1
+            }
+          }
+
           foreach ($token in @("conic-gradient", "PressureBar", "PressureLegend")) {
             if (-not $charts.Contains($token)) {
               Write-Error "Operational chart system is missing: $token"
@@ -676,7 +699,8 @@ jobs:
             '"audit/client-diagnostic-questionnaire-20261024": false',
             '"audit/client-diagnostic-short-v2-20261024": false',
             '"audit/client-diagnostic-executive-v3-20261024": false',
-            '"audit/new-project-questionnaire-actions-ui-20261024": false'
+            '"audit/new-project-questionnaire-actions-ui-20261024": false',
+            '"audit/questionnaire-first-dynamic-intake-20261024": false'
           )) {
             if (-not $vercel.Contains($branchGuard)) {
               Write-Error "Audit branch must not trigger a Vercel preview deployment: $branchGuard"
