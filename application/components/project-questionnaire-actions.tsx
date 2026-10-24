@@ -103,13 +103,8 @@ export function ProjectQuestionnaireActions({
             </span>
           </div>
           <h3 className="mt-2 text-base font-semibold text-[#073f36]">
-            Recolha primeiro a informação essencial
+            {intentLabel}
           </h3>
-          <p className="mt-1 text-sm leading-6 text-[#667085]">
-            O PCC adapta o questionário a
-            <span className="font-medium text-[#142825]"> {intentLabel.toLowerCase()}</span>.
-            Pode enviar o link, baixar o modelo ou utilizá-lo como guia numa conversa. A resposta fica ligada ao caso e preparada para o diagnóstico.
-          </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
