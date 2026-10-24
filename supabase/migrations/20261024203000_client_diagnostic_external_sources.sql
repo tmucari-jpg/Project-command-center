@@ -58,12 +58,25 @@ using ((user_id = (select auth.uid())) or (select private.is_global_admin()));
 create policy "Users can add own client diagnostic external sources"
 on public.client_diagnostic_external_sources for insert to authenticated
 with check (
-  ((user_id = (select auth.uid())) or (select private.is_global_admin()))
+  (
+    (client_diagnostic_external_sources.user_id = (select auth.uid()))
+    or (select private.is_global_admin())
+  )
   and exists (
     select 1
     from public.project_factory_cases f
-    where f.id = factory_case_id
-      and f.user_id = user_id
+    where f.id = client_diagnostic_external_sources.factory_case_id
+      and f.user_id = client_diagnostic_external_sources.user_id
+  )
+  and (
+    client_diagnostic_external_sources.request_id is null
+    or exists (
+      select 1
+      from public.client_diagnostic_requests r
+      where r.id = client_diagnostic_external_sources.request_id
+        and r.factory_case_id = client_diagnostic_external_sources.factory_case_id
+        and r.user_id = client_diagnostic_external_sources.user_id
+    )
   )
 );
 
