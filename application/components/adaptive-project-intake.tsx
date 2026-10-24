@@ -50,11 +50,13 @@ function cleanJson(text: string) {
 export function AdaptiveProjectIntake() {
   const [intent, setIntent] = useState<Intent>("idea");
   const [projectType, setProjectType] = useState<"commercial" | "non_commercial">("commercial");
+  const [manualOpen, setManualOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const bypassEnrichment = useRef(false);
 
   function chooseIntent(value: Intent) {
     setIntent(value);
+    setManualOpen(false);
     if (value === "internal_improvement") setProjectType("non_commercial");
     if (["client_request", "investment", "digital_solution"].includes(value)) setProjectType("commercial");
   }
@@ -171,7 +173,39 @@ export function AdaptiveProjectIntake() {
         <div className="mt-4">
           <ProjectQuestionnaireActions key={intent} intent={intent} intentLabel={intentLabels[intent]} />
         </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--cc-border)] pt-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--cc-secondary)]">
+              Alternativa
+            </p>
+            <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+              Se já tiver a informação consigo, pode preencher o diagnóstico directamente no PCC.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setManualOpen((value) => !value)}
+            className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--cc-foreground)] transition hover:border-[#9eb8ae] hover:bg-[var(--cc-surface-strong)]"
+          >
+            {manualOpen ? "Ocultar preenchimento manual" : "Preencher manualmente no PCC"}
+          </button>
+        </div>
       </section>
+
+      {manualOpen && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#c99439] bg-white text-sm font-semibold text-[#073f36]">2</span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#146453]">
+                Preenchimento manual
+              </p>
+              <h3 className="mt-0.5 text-base font-semibold text-[var(--cc-foreground)]">
+                Complete apenas a informação que já conhece
+              </h3>
+            </div>
+          </div>
 
       {intent === "investment" ? (
         <>
@@ -370,13 +404,15 @@ export function AdaptiveProjectIntake() {
 
       <div className="flex justify-end border-t border-[var(--cc-border)] pt-5">
         <button className={primaryButtonClass} type="submit" disabled={preparing}>
-        {preparing
-          ? "A preparar..."
-          : intent === "investment"
-            ? "Gerar propostas para decisão"
-            : "Iniciar avaliação G1/G2"}
+          {preparing
+            ? "A preparar..."
+            : intent === "investment"
+              ? "Gerar propostas para decisão"
+              : "Iniciar avaliação G1/G2"}
         </button>
       </div>
+        </div>
+      )}
     </form>
   );
 }
