@@ -22,13 +22,13 @@ export const CLIENT_DIAGNOSTIC_ANSWER_LABELS: Record<string, string> = {
   impact: "Impacto actual",
   desired_result: "Resultado pretendido",
   affected_people: "Pessoas / utilizadores afectados",
+  deadline_urgency: "Prioridade / prazo",
+  budget_range: "Orçamento / investimento disponível",
+  constraints: "Condições / restrições",
+  success_criteria: "Critérios de sucesso",
   previous_attempts: "O que já foi tentado",
-  deadline_urgency: "Prazo / urgência",
-  budget_range: "Orçamento / intervalo disponível",
   decision_process: "Quem decide / valida",
   available_inputs: "Informação / activos disponíveis",
-  constraints: "Restrições / condições",
-  success_criteria: "Critérios de sucesso",
   additional_comments: "Comentários adicionais",
 };
 
