@@ -59,16 +59,26 @@ export default async function ProjectFactoryPage({
         message={params.created ? "Novo projecto recebido. A avaliação foi iniciada." : undefined}
       />
 
-      <div className="max-w-5xl">
+      <div className="max-w-6xl">
         <ClientDiagnosticTracker rows={diagnosticRows} />
-        <Card className="p-5 sm:p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-[var(--cc-foreground)]">
-              Defina o ponto de partida
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--cc-secondary)]">
-              O PCC adapta as perguntas ao tipo de situação e recolhe o contexto necessário para iniciar G1 e preparar G2. Não precisa escolher ferramentas nem modos de trabalho.
-            </p>
+        <Card className="overflow-hidden p-0">
+          <div className="border-b border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-5 py-5 sm:px-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#146453]">
+                  Ponto de partida
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-[var(--cc-foreground)]">
+                  Defina como quer começar
+                </h2>
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--cc-secondary)]">
+                  Preencha directamente no PCC ou gere um questionário para recolher primeiro a informação essencial.
+                </p>
+              </div>
+              <div className="rounded-full border border-[#e2d3ae] bg-white px-3 py-1.5 text-xs font-semibold text-[#8b6a25]">
+                Diagnóstico adaptativo
+              </div>
+            </div>
           </div>
 
           <AdaptiveProjectIntake />
