@@ -1,5 +1,6 @@
 import { AdaptiveProjectIntake } from "@/components/adaptive-project-intake";
 import { FlashMessage } from "@/components/flash-message";
+import { ClientDiagnosticAlerts, type ClientDiagnosticAlertRow } from "@/components/client-diagnostic-alerts";
 import { ClientDiagnosticTracker, type ClientDiagnosticTrackingRow } from "@/components/client-diagnostic-tracker";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui";
@@ -13,11 +14,24 @@ export default async function ProjectFactoryPage({
   const params = await searchParams;
   const { supabase, user } = await requireUser();
 
-  const { data: requests } = await supabase
-    .from("client_diagnostic_requests")
-    .select("factory_case_id,client_name,client_organization,status,expires_at,created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  const [{ data: requests }, { data: unreadAlerts }] = await Promise.all([
+    supabase
+      .from("client_diagnostic_requests")
+      .select("factory_case_id,client_name,client_organization,status,expires_at,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("notifications")
+      .select("id,title,message,related_entity_id,created_at")
+      .eq("user_id", user.id)
+      .eq("type", "client_diagnostic_response")
+      .eq("related_entity_type", "project_factory_case")
+      .is("read_at", null)
+      .order("created_at", { ascending: false })
+      .limit(10),
+  ]);
+
+  const diagnosticAlerts = (unreadAlerts ?? []) as ClientDiagnosticAlertRow[];
 
   const requestCounts = new Map<string, number>();
   const latestByCase = new Map<string, NonNullable<typeof requests>[number]>();
@@ -60,6 +74,7 @@ export default async function ProjectFactoryPage({
       />
 
       <div className="max-w-6xl">
+        <ClientDiagnosticAlerts alerts={diagnosticAlerts} />
         <ClientDiagnosticTracker rows={diagnosticRows} />
         <Card className="overflow-hidden p-0">
           <div className="border-b border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-5 py-5 sm:px-6">
