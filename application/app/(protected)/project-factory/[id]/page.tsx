@@ -4,6 +4,7 @@ import { finalizeFactoryDecision, saveCompetitiveIntelligence, saveFactoryReport
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
 import { InvestmentDiscoveryPanel } from "@/components/investment-discovery-panel";
+import { ClientDiagnosticCaseAlert, type CaseDiagnosticAlert } from "@/components/client-diagnostic-case-alert";
 import { ClientDiagnosticPanel } from "@/components/client-diagnostic-panel";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
@@ -114,14 +115,29 @@ export default async function FactoryCasePage({
     );
   }
 
-  const { data: clientDiagnosticRequest } = await supabase
-    .from("client_diagnostic_requests")
-    .select("id,client_name,client_organization,public_context,status,expires_at,opened_at,submitted_at,reviewed_at,incorporated_at")
-    .eq("factory_case_id", factoryCase.id)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [{ data: clientDiagnosticRequest }, { data: unreadDiagnosticAlert }] = await Promise.all([
+    supabase
+      .from("client_diagnostic_requests")
+      .select("id,client_name,client_organization,public_context,status,expires_at,opened_at,submitted_at,reviewed_at,incorporated_at,triage_missing_information,triage_points_to_confirm,triaged_at")
+      .eq("factory_case_id", factoryCase.id)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("notifications")
+      .select("id,title,message,created_at")
+      .eq("user_id", user.id)
+      .eq("type", "client_diagnostic_response")
+      .eq("related_entity_type", "project_factory_case")
+      .eq("related_entity_id", factoryCase.id)
+      .is("read_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const caseDiagnosticAlert = (unreadDiagnosticAlert ?? null) as CaseDiagnosticAlert | null;
 
   let clientDiagnosticResponse = null;
   let clientDiagnosticReview = null;
@@ -281,6 +297,11 @@ export default async function FactoryCasePage({
                         ? "Inteligência Competitiva concluída. O caso avançou para Validação."
                         : "Inteligência Competitiva guardada como rascunho."
         }
+      />
+
+      <ClientDiagnosticCaseAlert
+        alert={caseDiagnosticAlert}
+        factoryCaseId={factoryCase.id}
       />
 
       <ClientDiagnosticPanel
