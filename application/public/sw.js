@@ -36,6 +36,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname.startsWith("/client-diagnostic/")) return;
 
   if (event.request.mode === "navigate") {
     event.respondWith(
