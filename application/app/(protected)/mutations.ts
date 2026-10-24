@@ -52,6 +52,14 @@ import {
   parseInvestmentDiscoveryBrief,
   type InvestmentOpportunity,
 } from "@/lib/investment-discovery";
+import {
+  createClientDiagnosticToken,
+  clientDiagnosticPublicUrl,
+} from "@/lib/client-diagnostic-token";
+import {
+  CLIENT_DIAGNOSTIC_ANSWER_LABELS,
+  diagnosticAnswerEntries,
+} from "@/lib/client-diagnostic";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -60,6 +68,275 @@ function values(formData: FormData) {
 function fail(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
   throw new Error("Unreachable after redirect");
+}
+
+export type ClientDiagnosticLinkState = {
+  ok: boolean;
+  url?: string;
+  error?: string;
+  requestId?: string;
+};
+
+export async function createClientDiagnosticRequest(
+  _previousState: ClientDiagnosticLinkState,
+  formData: FormData,
+): Promise<ClientDiagnosticLinkState> {
+  const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
+  const clientName = z.string().trim().max(200).safeParse(String(formData.get("client_name") ?? ""));
+  const clientOrganization = z.string().trim().max(300).safeParse(String(formData.get("client_organization") ?? ""));
+  const publicContext = z.string().trim().max(2000).safeParse(String(formData.get("public_context") ?? ""));
+  const expiryDays = z.coerce.number().int().min(1).max(30).safeParse(formData.get("expiry_days") ?? 14);
+
+  if (!factoryCaseId.success || !clientName.success || !clientOrganization.success || !publicContext.success || !expiryDays.success) {
+    return { ok: false, error: "Revise os dados do pedido de diagnóstico." };
+  }
+
+  const { supabase, user } = await requireUser();
+  const { data: factoryCase, error: caseError } = await supabase
+    .from("project_factory_cases")
+    .select("id")
+    .eq("id", factoryCaseId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (caseError || !factoryCase) {
+    return { ok: false, error: caseError?.message ?? "Caso não encontrado." };
+  }
+
+  const { token, tokenHash } = createClientDiagnosticToken();
+  const expiresAt = new Date(Date.now() + expiryDays.data * 24 * 60 * 60 * 1000).toISOString();
+
+  const { error: revokeError } = await supabase
+    .from("client_diagnostic_requests")
+    .update({ status: "revoked" })
+    .eq("factory_case_id", factoryCase.id)
+    .eq("user_id", user.id)
+    .in("status", ["active", "opened"]);
+
+  if (revokeError) return { ok: false, error: revokeError.message };
+
+  const { data: request, error } = await supabase
+    .from("client_diagnostic_requests")
+    .insert({
+      user_id: user.id,
+      factory_case_id: factoryCase.id,
+      token_hash: tokenHash,
+      questionnaire_version: "basic-v1",
+      client_name: clientName.data || null,
+      client_organization: clientOrganization.data || null,
+      public_context: publicContext.data || null,
+      status: "active",
+      expires_at: expiresAt,
+    })
+    .select("id")
+    .single();
+
+  if (error || !request) {
+    return { ok: false, error: error?.message ?? "Não foi possível gerar o questionário." };
+  }
+
+  revalidatePath(`/project-factory/${factoryCase.id}`);
+
+  return {
+    ok: true,
+    url: clientDiagnosticPublicUrl(token),
+    requestId: request.id,
+  };
+}
+
+export async function revokeClientDiagnosticRequest(formData: FormData) {
+  const requestId = z.string().uuid().safeParse(formData.get("request_id"));
+  const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
+  if (!requestId.success || !factoryCaseId.success) fail("/project-factory", "Pedido de diagnóstico inválido.");
+
+  const path = `/project-factory/${factoryCaseId.data}`;
+  const { supabase, user } = await requireUser();
+
+  const { error } = await supabase
+    .from("client_diagnostic_requests")
+    .update({ status: "revoked" })
+    .eq("id", requestId.data)
+    .eq("factory_case_id", factoryCaseId.data)
+    .eq("user_id", user.id)
+    .in("status", ["active", "opened"]);
+
+  if (error) fail(path, error.message);
+  revalidatePath(path);
+  redirect(`${path}?client_diagnostic=revoked`);
+}
+
+export async function reviewClientDiagnosticResponse(formData: FormData) {
+  const requestId = z.string().uuid().safeParse(formData.get("request_id"));
+  const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
+  const reviewStatus = z.enum(["accepted", "partially_accepted", "clarification_needed"]).safeParse(formData.get("review_status"));
+  const reviewNotes = z.string().trim().max(5000).safeParse(String(formData.get("review_notes") ?? ""));
+  const missingInformation = z.string().trim().max(5000).safeParse(String(formData.get("missing_information") ?? ""));
+  const pointsToConfirm = z.string().trim().max(5000).safeParse(String(formData.get("points_to_confirm") ?? ""));
+
+  if (
+    !requestId.success ||
+    !factoryCaseId.success ||
+    !reviewStatus.success ||
+    !reviewNotes.success ||
+    !missingInformation.success ||
+    !pointsToConfirm.success
+  ) {
+    fail("/project-factory", "Revisão do diagnóstico inválida.");
+  }
+
+  const path = `/project-factory/${factoryCaseId.data}`;
+  const { supabase, user } = await requireUser();
+
+  const { data: request, error: requestError } = await supabase
+    .from("client_diagnostic_requests")
+    .select("id,status")
+    .eq("id", requestId.data)
+    .eq("factory_case_id", factoryCaseId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (requestError || !request) fail(path, requestError?.message ?? "Pedido de diagnóstico não encontrado.");
+  if (!["submitted", "reviewed", "clarification_needed"].includes(request.status)) {
+    fail(path, "Ainda não existe uma resposta disponível para revisão.");
+  }
+
+  const { data: response, error: responseError } = await supabase
+    .from("client_diagnostic_responses")
+    .select("id")
+    .eq("request_id", request.id)
+    .maybeSingle();
+
+  if (responseError || !response) fail(path, responseError?.message ?? "Resposta do cliente não encontrada.");
+
+  const { error: reviewError } = await supabase
+    .from("client_diagnostic_reviews")
+    .upsert(
+      {
+        request_id: request.id,
+        user_id: user.id,
+        review_status: reviewStatus.data,
+        review_notes: reviewNotes.data || null,
+        missing_information: missingInformation.data || null,
+        points_to_confirm: pointsToConfirm.data || null,
+      },
+      { onConflict: "request_id" },
+    );
+
+  if (reviewError) fail(path, reviewError.message);
+
+  const { error: statusError } = await supabase
+    .from("client_diagnostic_requests")
+    .update({
+      status: reviewStatus.data === "clarification_needed" ? "clarification_needed" : "reviewed",
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", request.id)
+    .eq("user_id", user.id);
+
+  if (statusError) fail(path, statusError.message);
+
+  revalidatePath(path);
+  redirect(`${path}?client_diagnostic=reviewed`);
+}
+
+export async function incorporateClientDiagnosticResponse(formData: FormData) {
+  const requestId = z.string().uuid().safeParse(formData.get("request_id"));
+  const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
+  if (!requestId.success || !factoryCaseId.success) fail("/project-factory", "Pedido de diagnóstico inválido.");
+
+  const path = `/project-factory/${factoryCaseId.data}`;
+  const { supabase, user } = await requireUser();
+
+  const [
+    { data: request, error: requestError },
+    { data: response, error: responseError },
+    { data: review, error: reviewError },
+    { data: factoryCase, error: caseError },
+  ] = await Promise.all([
+    supabase
+      .from("client_diagnostic_requests")
+      .select("id,status,submitted_at")
+      .eq("id", requestId.data)
+      .eq("factory_case_id", factoryCaseId.data)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("client_diagnostic_responses")
+      .select("respondent_name,respondent_role,respondent_email,answers,submitted_at")
+      .eq("request_id", requestId.data)
+      .maybeSingle(),
+    supabase
+      .from("client_diagnostic_reviews")
+      .select("review_status")
+      .eq("request_id", requestId.data)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("project_factory_cases")
+      .select("id,description,target_user,expected_value,constraints")
+      .eq("id", factoryCaseId.data)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
+
+  if (requestError || !request) fail(path, requestError?.message ?? "Pedido de diagnóstico não encontrado.");
+  if (responseError || !response) fail(path, responseError?.message ?? "Resposta do cliente não encontrada.");
+  if (reviewError || !review) fail(path, reviewError?.message ?? "Reveja a resposta antes de a incorporar.");
+  if (caseError || !factoryCase) fail(path, caseError?.message ?? "Caso não encontrado.");
+  if (!["accepted", "partially_accepted"].includes(review.review_status)) {
+    fail(path, "A resposta precisa de ser aceite, total ou parcialmente, antes de ser incorporada.");
+  }
+  if (request.status === "incorporated") {
+    fail(path, "Esta resposta já foi incorporada no diagnóstico.");
+  }
+
+  const entries = diagnosticAnswerEntries(response.answers);
+  const declaredBlock = [
+    "INFORMAÇÃO DECLARADA PELO CLIENTE",
+    `Respondente: ${response.respondent_name}${response.respondent_role ? ` · ${response.respondent_role}` : ""}`,
+    `Recebido em: ${response.submitted_at ?? request.submitted_at ?? new Date().toISOString()}`,
+    "",
+    ...entries.map(([key, value]) => `${CLIENT_DIAGNOSTIC_ANSWER_LABELS[key] ?? key}: ${value}`),
+  ].join("\n");
+
+  const answers =
+    response.answers && typeof response.answers === "object" && !Array.isArray(response.answers)
+      ? (response.answers as Record<string, unknown>)
+      : {};
+
+  const affectedPeople = String(answers.affected_people ?? "").trim();
+  const desiredResult = String(answers.desired_result ?? "").trim();
+  const clientConstraints = String(answers.constraints ?? "").trim();
+
+  const nextDescription = [factoryCase.description?.trim(), declaredBlock].filter(Boolean).join("\n\n");
+  const nextConstraints = [factoryCase.constraints?.trim(), clientConstraints].filter(Boolean).join("\n");
+
+  const { error: updateError } = await supabase
+    .from("project_factory_cases")
+    .update({
+      description: nextDescription,
+      target_user: factoryCase.target_user?.trim() || affectedPeople || null,
+      expected_value: factoryCase.expected_value?.trim() || desiredResult || null,
+      constraints: nextConstraints || null,
+    })
+    .eq("id", factoryCase.id)
+    .eq("user_id", user.id);
+
+  if (updateError) fail(path, updateError.message);
+
+  const { error: requestUpdateError } = await supabase
+    .from("client_diagnostic_requests")
+    .update({
+      status: "incorporated",
+      incorporated_at: new Date().toISOString(),
+    })
+    .eq("id", request.id)
+    .eq("user_id", user.id);
+
+  if (requestUpdateError) fail(path, requestUpdateError.message);
+
+  revalidatePath(path);
+  redirect(`${path}?client_diagnostic=incorporated`);
 }
 
 async function ensureOwned(
