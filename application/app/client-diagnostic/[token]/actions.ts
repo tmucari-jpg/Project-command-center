@@ -7,19 +7,18 @@ import { createPublicClient } from "@/lib/supabase/public";
 
 const responseSchema = z.object({
   token: z.string().trim().regex(/^[A-Za-z0-9_-]{43,200}$/),
+  respondent_type: z.string().trim().min(2).max(80),
   respondent_name: z.string().trim().min(2).max(200),
   respondent_role: z.string().trim().max(200).optional().default(""),
   respondent_email: z.string().trim().max(320).optional().default(""),
   organization: z.string().trim().max(300).optional().default(""),
-  problem_need: z.string().trim().min(3).max(5000),
-  current_situation: z.string().trim().min(3).max(5000),
-  impact: z.string().trim().min(3).max(5000),
-  desired_result: z.string().trim().min(3).max(5000),
-  affected_people: z.string().trim().max(3000).optional().default(""),
+  request_nature: z.string().trim().min(2).max(100),
+  context: z.string().trim().min(3).max(6000),
+  focus: z.string().trim().max(6000).optional().default(""),
+  desired_result: z.string().trim().max(6000).optional().default(""),
+  conditions: z.string().trim().max(6000).optional().default(""),
   deadline_urgency: z.string().trim().max(2000).optional().default(""),
-  budget_range: z.string().trim().max(2000).optional().default(""),
-  constraints: z.string().trim().max(5000).optional().default(""),
-  success_criteria: z.string().trim().min(3).max(5000),
+  success_criteria: z.string().trim().max(6000).optional().default(""),
 });
 
 function joined(formData: FormData, name: string) {
@@ -43,23 +42,22 @@ export async function submitClientDiagnostic(formData: FormData) {
 
   const parsed = responseSchema.safeParse({
     token,
+    respondent_type: String(formData.get("respondent_type") ?? "").trim(),
     respondent_name: String(formData.get("respondent_name") ?? "").trim(),
     respondent_role: String(formData.get("respondent_role") ?? "").trim(),
     respondent_email: String(formData.get("respondent_email") ?? "").trim(),
     organization: String(formData.get("organization") ?? "").trim(),
-    problem_need: String(formData.get("problem_need") ?? "").trim(),
-    current_situation: String(formData.get("current_situation") ?? "").trim(),
-    impact: joined(formData, "impact"),
+    request_nature: String(formData.get("request_nature") ?? "").trim(),
+    context: joined(formData, "context"),
+    focus: joined(formData, "focus"),
     desired_result: joined(formData, "desired_result"),
-    affected_people: joined(formData, "affected_people"),
+    conditions: joined(formData, "conditions"),
     deadline_urgency: singleWithDetails(formData, "deadline_urgency"),
-    budget_range: singleWithDetails(formData, "budget_range"),
-    constraints: joined(formData, "constraints"),
     success_criteria: joined(formData, "success_criteria"),
   });
 
   if (!parsed.success) {
-    redirect(`${back}?error=${encodeURIComponent("Preencha as perguntas essenciais antes de enviar.")}`);
+    redirect(`${back}?error=${encodeURIComponent("Preencha os campos essenciais antes de enviar.")}`);
   }
 
   const { token: rawToken, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
