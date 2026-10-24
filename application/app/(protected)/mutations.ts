@@ -16,6 +16,7 @@ import {
   factoryValidationSchema,
   factoryReportSchema,
   factoryDecisionSchema,
+  investmentDiscoveryDecisionSchema,
   ideaSchema,
   metricSchema,
   objectiveSchema,
@@ -45,6 +46,12 @@ import { validateAIProviderHealth } from "@/lib/ai-provider-health";
 import { hasBlockingGovernanceRisk } from "@/lib/governance-risk";
 import { resolveNextReviewDate } from "@/lib/review-cadence";
 import { defaultMonetizationStatus, defaultReturnType } from "@/lib/value-return";
+import { generateAssistWithFallback } from "@/lib/ai-assist-router";
+import {
+  investmentDiscoveryInstructions,
+  parseInvestmentDiscoveryBrief,
+  type InvestmentOpportunity,
+} from "@/lib/investment-discovery";
 
 function values(formData: FormData) {
   return Object.fromEntries(formData.entries());
@@ -1602,28 +1609,195 @@ export async function saveFactoryValidation(formData: FormData) {
   redirect(`${path}?validated=1`);
 }
 
-export async function createFactoryIntake(formData: FormData) {
-  const path = "/project-factory";
-  const parsed = factoryIntakeSchema.safeParse(values(formData));
-  if (!parsed.success) fail(path, zodMessage(parsed.error));
+async function buildInvestmentDiscoveryBrief(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  factoryCase: {
+    id: string;
+    title: string;
+    description: string | null;
+    problem: string;
+    constraints: string | null;
+  },
+) {
+  const input = JSON.stringify({
+    objective: "Encontrar oportunidades de negócio para decisão antes de seleccionar uma para validação.",
+    title: factoryCase.title,
+    profile: factoryCase.description,
+    constraints: factoryCase.constraints,
+  });
 
-  const { supabase, user, authUser } = await requireUser();
-  const now = new Date().toISOString();
+  const result = await generateAssistWithFallback(
+    supabase,
+    userId,
+    input,
+    investmentDiscoveryInstructions(),
+  );
+
+  const brief = parseInvestmentDiscoveryBrief(result.text);
+  if (!brief) {
+    throw new Error("O PCC não conseguiu estruturar propostas de investimento válidas.");
+  }
+
+  const { error } = await supabase
+    .from("investment_discovery_briefs")
+    .upsert(
+      {
+        user_id: userId,
+        factory_case_id: factoryCase.id,
+        executive_summary: brief.executive_summary,
+        opportunities: brief.opportunities,
+        recommended_option_id: brief.recommended_option_id,
+        recommendation: brief.recommendation,
+        decision_criteria: brief.decision_criteria,
+        selected_option_id: null,
+        status: "ready",
+      },
+      { onConflict: "factory_case_id" },
+    );
+
+  if (error) throw new Error(error.message);
+  return brief;
+}
+
+export async function generateInvestmentDiscoveryBrief(formData: FormData) {
+  const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
+  if (!factoryCaseId.success) fail("/project-factory", "Caso de investimento inválido.");
+
+  const path = `/project-factory/${factoryCaseId.data}`;
+  const { supabase, user } = await requireUser();
+
   const { data: factoryCase, error } = await supabase
     .from("project_factory_cases")
-    .insert({
-      ...parsed.data,
-      user_id: user.id,
-      stage: "viability",
-      competitive_intelligence_required: parsed.data.project_type === "commercial",
+    .select("id,title,description,problem,constraints,source")
+    .eq("id", factoryCaseId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error || !factoryCase) fail(path, error?.message ?? "Caso de investimento não encontrado.");
+  if (factoryCase.source !== "adaptive_investment") {
+    fail(path, "Este caso já não está na fase de descoberta de investimento.");
+  }
+
+  try {
+    await buildInvestmentDiscoveryBrief(supabase, user.id, factoryCase);
+  } catch (generationError) {
+    fail(
+      path,
+      generationError instanceof Error
+        ? generationError.message
+        : "Não foi possível preparar as propostas para decisão.",
+    );
+  }
+
+  const { error: stageError } = await supabase
+    .from("project_factory_cases")
+    .update({ stage: "investment_decision" })
+    .eq("id", factoryCase.id)
+    .eq("user_id", user.id);
+
+  if (stageError) fail(path, stageError.message);
+
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  redirect(`${path}?brief=1`);
+}
+
+export async function selectInvestmentDiscoveryOption(formData: FormData) {
+  const parsed = investmentDiscoveryDecisionSchema.safeParse(values(formData));
+  if (!parsed.success) fail("/project-factory", zodMessage(parsed.error));
+
+  const path = `/project-factory/${parsed.data.factory_case_id}`;
+  const { supabase, user, authUser } = await requireUser();
+
+  const [{ data: factoryCase, error: caseError }, { data: brief, error: briefError }] = await Promise.all([
+    supabase
+      .from("project_factory_cases")
+      .select("id,title,description,problem,constraints,source")
+      .eq("id", parsed.data.factory_case_id)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("investment_discovery_briefs")
+      .select("id,executive_summary,opportunities,recommended_option_id,recommendation,decision_criteria,status")
+      .eq("factory_case_id", parsed.data.factory_case_id)
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
+
+  if (caseError || !factoryCase) fail(path, caseError?.message ?? "Caso de investimento não encontrado.");
+  if (briefError || !brief) fail(path, briefError?.message ?? "Resumo para decisão não encontrado.");
+  if (factoryCase.source !== "adaptive_investment") {
+    fail(path, "A oportunidade de investimento já foi seleccionada.");
+  }
+
+  const opportunities = Array.isArray(brief.opportunities)
+    ? brief.opportunities as unknown as InvestmentOpportunity[]
+    : [];
+  const selected = opportunities.find((option) => option.id === parsed.data.option_id);
+  if (!selected) fail(path, "Seleccione uma oportunidade válida.");
+
+  const rationale =
+    parsed.data.decision_rationale?.trim() ||
+    (selected.id === brief.recommended_option_id
+      ? brief.recommendation
+      : `Opção seleccionada para validação: ${selected.title}.`);
+
+  const now = new Date().toISOString();
+  const riskText = selected.key_risks?.length
+    ? `Riscos iniciais a validar: ${selected.key_risks.join("; ")}`
+    : "";
+  const description = [
+    selected.concept,
+    selected.business_model ? `Modelo de negócio: ${selected.business_model}` : "",
+    selected.why_fit ? `Adequação ao perfil: ${selected.why_fit}` : "",
+    selected.entry_strategy ? `Estratégia de entrada: ${selected.entry_strategy}` : "",
+    selected.validation_strategy ? `Estratégia de validação: ${selected.validation_strategy}` : "",
+  ].filter(Boolean).join("\n\n");
+
+  const { error: decisionError } = await supabase.from("decisions").insert({
+    user_id: user.id,
+    project_id: null,
+    title: `Escolha de oportunidade de investimento — ${selected.title}`,
+    context: brief.executive_summary,
+    options_considered: opportunities.map((option) => option.title).join("\n"),
+    decision: selected.title,
+    rationale,
+    outcome: "selected_for_validation",
+    decided_at: now,
+  });
+  if (decisionError) fail(path, decisionError.message);
+
+  const { error: briefUpdateError } = await supabase
+    .from("investment_discovery_briefs")
+    .update({
+      selected_option_id: selected.id,
+      status: "decided",
+    })
+    .eq("factory_case_id", factoryCase.id)
+    .eq("user_id", user.id);
+  if (briefUpdateError) fail(path, briefUpdateError.message);
+
+  const { error: caseUpdateError } = await supabase
+    .from("project_factory_cases")
+    .update({
+      title: selected.title,
+      problem: selected.problem_or_need || selected.concept,
+      description,
+      target_user: selected.target_market || null,
+      expected_value: selected.expected_value || null,
+      constraints: [factoryCase.constraints, riskText].filter(Boolean).join("\n"),
+      source: "investment_selected",
+      stage: "competitive_intelligence",
+      competitive_intelligence_required: true,
       governance_gate: "g2_viability",
       governance_gate_status: "in_progress",
       g1_completed_at: now,
+      g2_completed_at: null,
     })
-    .select("id")
-    .single();
-
-  if (error || !factoryCase) fail(path, error?.message ?? "Não foi possível iniciar a avaliação.");
+    .eq("id", factoryCase.id)
+    .eq("user_id", user.id);
+  if (caseUpdateError) fail(path, caseUpdateError.message);
 
   const { error: gateEventError } = await supabase.from("project_gate_events").insert([
     {
@@ -1631,9 +1805,85 @@ export async function createFactoryIntake(formData: FormData) {
       factory_case_id: factoryCase.id,
       gate: "g1_triage",
       event_type: "approved",
-      rationale: parsed.data.source === "investment_discovery"
-        ? "Oportunidade seleccionada pelo utilizador a partir de um brief de investimento. Segue para validação formal sem assumir viabilidade."
-        : "Triagem concluída automaticamente a partir das cinco respostas obrigatórias do One-Pager.",
+      rationale: `Oportunidade seleccionada na decisão de investimento: ${selected.title}.`,
+      created_by: authUser.id,
+    },
+    {
+      user_id: user.id,
+      factory_case_id: factoryCase.id,
+      gate: "g2_viability",
+      event_type: "entered",
+      created_by: authUser.id,
+    },
+  ]);
+  if (gateEventError) fail(path, gateEventError.message);
+
+  revalidatePath(path);
+  revalidatePath("/project-factory");
+  revalidatePath("/decisions");
+  redirect(`${path}?investment_decision=1`);
+}
+
+export async function createFactoryIntake(formData: FormData) {
+  const path = "/project-factory";
+  const parsed = factoryIntakeSchema.safeParse(values(formData));
+  if (!parsed.success) fail(path, zodMessage(parsed.error));
+
+  const { supabase, user, authUser } = await requireUser();
+  const now = new Date().toISOString();
+  const isInvestmentDiscovery = parsed.data.source === "adaptive_investment";
+
+  const { data: factoryCase, error } = await supabase
+    .from("project_factory_cases")
+    .insert({
+      ...parsed.data,
+      user_id: user.id,
+      stage: isInvestmentDiscovery ? "investment_discovery" : "viability",
+      competitive_intelligence_required: isInvestmentDiscovery
+        ? false
+        : parsed.data.project_type === "commercial",
+      governance_gate: isInvestmentDiscovery ? "g1_triage" : "g2_viability",
+      governance_gate_status: "in_progress",
+      g1_completed_at: isInvestmentDiscovery ? null : now,
+    })
+    .select("id,title,description,problem,constraints")
+    .single();
+
+  if (error || !factoryCase) fail(path, error?.message ?? "Não foi possível iniciar a avaliação.");
+
+  if (isInvestmentDiscovery) {
+    try {
+      await buildInvestmentDiscoveryBrief(supabase, user.id, factoryCase);
+    } catch (generationError) {
+      revalidatePath(path);
+      redirect(
+        `/project-factory/${factoryCase.id}?error=${encodeURIComponent(
+          generationError instanceof Error
+            ? generationError.message
+            : "Não foi possível preparar as propostas para decisão.",
+        )}`,
+      );
+    }
+
+    const { error: stageError } = await supabase
+      .from("project_factory_cases")
+      .update({ stage: "investment_decision" })
+      .eq("id", factoryCase.id)
+      .eq("user_id", user.id);
+
+    if (stageError) fail(`/project-factory/${factoryCase.id}`, stageError.message);
+
+    revalidatePath(path);
+    redirect(`/project-factory/${factoryCase.id}?brief=1`);
+  }
+
+  const { error: gateEventError } = await supabase.from("project_gate_events").insert([
+    {
+      user_id: user.id,
+      factory_case_id: factoryCase.id,
+      gate: "g1_triage",
+      event_type: "approved",
+      rationale: "Triagem concluída automaticamente a partir do intake do projecto.",
       created_by: authUser.id,
     },
     {
