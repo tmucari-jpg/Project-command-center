@@ -242,6 +242,12 @@ export const factoryDecisionSchema = z.object({
   decision_rationale: z.string().trim().min(3).max(8000),
 });
 
+export const investmentDiscoveryDecisionSchema = z.object({
+  factory_case_id: z.string().uuid(),
+  option_id: z.string().trim().min(2).max(120),
+  decision_rationale: optionalText(4000),
+});
+
 export const orchestratorRouteSchema = z.object({
   factory_case_id: optionalUuid,
   project_id: optionalUuid,
