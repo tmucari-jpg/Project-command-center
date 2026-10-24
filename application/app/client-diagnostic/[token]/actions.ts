@@ -16,27 +16,50 @@ const responseSchema = z.object({
   impact: z.string().trim().min(3).max(5000),
   desired_result: z.string().trim().min(3).max(5000),
   affected_people: z.string().trim().max(3000).optional().default(""),
-  previous_attempts: z.string().trim().max(5000).optional().default(""),
   deadline_urgency: z.string().trim().max(2000).optional().default(""),
   budget_range: z.string().trim().max(2000).optional().default(""),
-  decision_process: z.string().trim().max(3000).optional().default(""),
-  available_inputs: z.string().trim().max(5000).optional().default(""),
   constraints: z.string().trim().max(5000).optional().default(""),
   success_criteria: z.string().trim().min(3).max(5000),
-  additional_comments: z.string().trim().max(5000).optional().default(""),
 });
 
-function formValues(formData: FormData) {
-  return Object.fromEntries(formData.entries());
+function joined(formData: FormData, name: string) {
+  return formData
+    .getAll(name)
+    .map((value) => String(value).trim())
+    .filter(Boolean)
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .join("; ");
+}
+
+function singleWithDetails(formData: FormData, name: string) {
+  const selected = String(formData.get(name) ?? "").trim();
+  const details = String(formData.get(`${name}_details`) ?? "").trim();
+  return [selected, details].filter(Boolean).join("; ");
 }
 
 export async function submitClientDiagnostic(formData: FormData) {
-  const parsed = responseSchema.safeParse(formValues(formData));
   const token = String(formData.get("token") ?? "").trim();
   const back = `/client-diagnostic/${encodeURIComponent(token)}`;
 
+  const parsed = responseSchema.safeParse({
+    token,
+    respondent_name: String(formData.get("respondent_name") ?? "").trim(),
+    respondent_role: String(formData.get("respondent_role") ?? "").trim(),
+    respondent_email: String(formData.get("respondent_email") ?? "").trim(),
+    organization: String(formData.get("organization") ?? "").trim(),
+    problem_need: String(formData.get("problem_need") ?? "").trim(),
+    current_situation: String(formData.get("current_situation") ?? "").trim(),
+    impact: joined(formData, "impact"),
+    desired_result: joined(formData, "desired_result"),
+    affected_people: joined(formData, "affected_people"),
+    deadline_urgency: singleWithDetails(formData, "deadline_urgency"),
+    budget_range: singleWithDetails(formData, "budget_range"),
+    constraints: joined(formData, "constraints"),
+    success_criteria: joined(formData, "success_criteria"),
+  });
+
   if (!parsed.success) {
-    redirect(`${back}?error=${encodeURIComponent("Preencha os campos obrigatórios antes de enviar.")}`);
+    redirect(`${back}?error=${encodeURIComponent("Preencha as perguntas essenciais antes de enviar.")}`);
   }
 
   const { token: rawToken, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
