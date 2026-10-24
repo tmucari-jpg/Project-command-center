@@ -41,7 +41,7 @@ export default async function ClientDiagnosticPage({
     return <PublicMessage title="Questionário indisponível" body="O link não é válido ou deixou de estar disponível." />;
   }
 
-  if (query.submitted || ["submitted", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
+  if (query.submitted || ["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
     return (
       <PublicMessage
         title="Resposta recebida"
