@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Intent =
   | "idea"
@@ -36,12 +36,6 @@ export function ProjectQuestionnaireActions({
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setGenerated(null);
-    setError("");
-    setCopied(false);
-  }, [intent]);
 
   async function generate() {
     if (!caseTitle.trim()) {
