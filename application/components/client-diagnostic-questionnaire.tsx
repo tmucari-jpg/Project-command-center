@@ -235,7 +235,7 @@ export function ClientDiagnosticQuestionnaire({
 
           <div className="flex justify-end pt-1">
             <button className={primaryButtonClass} type="submit">
-              Enviar e preparar o diagnóstico
+              Enviar respostas
             </button>
           </div>
         </form>
