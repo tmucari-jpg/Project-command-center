@@ -511,7 +511,7 @@ jobs:
           }
 
           foreach ($token in @(
-            "Gerar link para enviar",
+            "Validade do questionário: 7 dias",
             "Copiar link",
             "createClientDiagnosticRequest"
           )) {
@@ -525,7 +525,10 @@ jobs:
             "createClientDiagnosticRequest",
             "reviewClientDiagnosticResponse",
             "incorporateClientDiagnosticResponse",
-            "INFORMAÇÃO DECLARADA PELO CLIENTE"
+            "importClientDiagnosticLink",
+            "uploadClientDiagnosticFile",
+            "INFORMAÇÃO DECLARADA PELO CLIENTE",
+            "executive-v3"
           )) {
             if (-not $mutations.Contains($token)) {
               Write-Error "Client diagnostic workflow action is missing: $token"
