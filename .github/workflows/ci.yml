@@ -466,9 +466,12 @@ jobs:
           }
 
           $clientDiagnosticPublic = Get-Content -LiteralPath "./app/client-diagnostic/[token]/page.tsx" -Raw
+          $clientDiagnosticQuestionnaire = Get-Content "./components/client-diagnostic-questionnaire.tsx" -Raw
           $clientDiagnosticPanel = Get-Content "./components/client-diagnostic-panel.tsx" -Raw
           $clientDiagnosticGenerator = Get-Content "./components/client-diagnostic-link-generator.tsx" -Raw
+          $clientDiagnosticTracker = Get-Content "./components/client-diagnostic-tracker.tsx" -Raw
           $clientDiagnosticMigration = Get-Content "../supabase/migrations/20261024193000_client_diagnostic_questionnaire.sql" -Raw
+          $clientDiagnosticExternalMigration = Get-Content "../supabase/migrations/20261024203000_client_diagnostic_external_sources.sql" -Raw
 
           foreach ($token in @(
             "Questionário de Diagnóstico",
