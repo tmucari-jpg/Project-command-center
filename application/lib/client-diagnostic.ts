@@ -16,16 +16,21 @@ export const CLIENT_DIAGNOSTIC_REVIEW_LABELS: Record<string, string> = {
 };
 
 export const CLIENT_DIAGNOSTIC_ANSWER_LABELS: Record<string, string> = {
+  respondent_type: "Perfil do respondente",
   organization: "Organização",
+  request_nature: "Natureza da solicitação",
+  context: "Contexto essencial",
+  focus: "Foco / impacto principal",
+  desired_result: "Resultado pretendido",
+  conditions: "Condições / restrições",
+  deadline_urgency: "Prioridade / prazo",
+  success_criteria: "Critérios de valor / sucesso",
   problem_need: "Problema / necessidade",
   current_situation: "Situação actual",
   impact: "Impacto actual",
-  desired_result: "Resultado pretendido",
   affected_people: "Pessoas / utilizadores afectados",
-  deadline_urgency: "Prioridade / prazo",
   budget_range: "Orçamento / investimento disponível",
   constraints: "Condições / restrições",
-  success_criteria: "Critérios de sucesso",
   previous_attempts: "O que já foi tentado",
   decision_process: "Quem decide / valida",
   available_inputs: "Informação / activos disponíveis",
@@ -33,11 +38,8 @@ export const CLIENT_DIAGNOSTIC_ANSWER_LABELS: Record<string, string> = {
 };
 
 export const CLIENT_DIAGNOSTIC_REQUIRED_KEYS = [
-  "problem_need",
-  "current_situation",
-  "impact",
-  "desired_result",
-  "success_criteria",
+  "request_nature",
+  "context",
 ] as const;
 
 export function diagnosticAnswerEntries(answers: unknown) {
