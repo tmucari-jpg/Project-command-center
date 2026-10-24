@@ -465,6 +465,77 @@ jobs:
             }
           }
 
+          $clientDiagnosticPublic = Get-Content -LiteralPath "./app/client-diagnostic/[token]/page.tsx" -Raw
+          $clientDiagnosticPanel = Get-Content "./components/client-diagnostic-panel.tsx" -Raw
+          $clientDiagnosticGenerator = Get-Content "./components/client-diagnostic-link-generator.tsx" -Raw
+          $clientDiagnosticMigration = Get-Content "../supabase/migrations/20261024193000_client_diagnostic_questionnaire.sql" -Raw
+
+          foreach ($token in @(
+            "Questionário de Diagnóstico",
+            "submitClientDiagnostic",
+            "Enviar respostas",
+            "Qual é o principal problema",
+            "Como saberá que o projecto foi bem-sucedido"
+          )) {
+            if (-not $clientDiagnosticPublic.Contains($token)) {
+              Write-Error "Public client diagnostic questionnaire is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Informação declarada pelo cliente",
+            "Incorporar no diagnóstico",
+            "Pedir esclarecimento",
+            "Informação ainda em falta",
+            "Pontos a confirmar"
+          )) {
+            if (-not $clientDiagnosticPanel.Contains($token)) {
+              Write-Error "Internal client diagnostic review is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Gerar link para enviar",
+            "Copiar link",
+            "createClientDiagnosticRequest"
+          )) {
+            if (-not $clientDiagnosticGenerator.Contains($token)) {
+              Write-Error "Client diagnostic secure link generator is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "createClientDiagnosticRequest",
+            "reviewClientDiagnosticResponse",
+            "incorporateClientDiagnosticResponse",
+            "INFORMAÇÃO DECLARADA PELO CLIENTE"
+          )) {
+            if (-not $mutations.Contains($token)) {
+              Write-Error "Client diagnostic workflow action is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "client_diagnostic_requests",
+            "client_diagnostic_responses",
+            "client_diagnostic_reviews",
+            "token_hash",
+            "security definer",
+            "revoke all on function public.client_diagnostic_lookup",
+            "grant execute on function public.client_diagnostic_lookup",
+            "enable row level security",
+            "revoke all on table public.client_diagnostic_requests from anon"
+          )) {
+            if (-not $clientDiagnosticMigration.Contains($token)) {
+              Write-Error "Client diagnostic security/data guard is missing: $token"
+              exit 1
+            }
+          }
+
           foreach ($token in @("conic-gradient", "PressureBar", "PressureLegend")) {
             if (-not $charts.Contains($token)) {
               Write-Error "Operational chart system is missing: $token"
@@ -495,7 +566,8 @@ jobs:
             '"audit/consolidated-diagnostic-20261022": false',
             '"audit/adaptive-factory-ai-router-20261024": false',
             '"audit/investment-discovery-decision-20261024": false',
-            '"audit/investment-intake-multiselect-diagnostic-20261024": false'
+            '"audit/investment-intake-multiselect-diagnostic-20261024": false',
+            '"audit/client-diagnostic-questionnaire-20261024": false'
           )) {
             if (-not $vercel.Contains($branchGuard)) {
               Write-Error "Audit branch must not trigger a Vercel preview deployment: $branchGuard"
