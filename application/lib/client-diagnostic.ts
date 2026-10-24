@@ -2,6 +2,7 @@ export const CLIENT_DIAGNOSTIC_STATUS_LABELS: Record<string, string> = {
   active: "Pronto para enviar",
   opened: "Aberto pelo cliente",
   submitted: "Respondido",
+  analyzing: "A analisar",
   clarification_needed: "Precisa de esclarecimento",
   reviewed: "Revisto",
   incorporated: "Incorporado no diagnóstico",
