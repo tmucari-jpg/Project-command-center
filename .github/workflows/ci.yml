@@ -479,7 +479,7 @@ jobs:
           $clientDiagnosticExternalMigration = Get-Content "../supabase/migrations/20261024203000_client_diagnostic_external_sources.sql" -Raw
 
           foreach ($token in @(
-            "/brand/pcc-logo.png",
+            "/brand/pcc-logo-transparent.svg",
             "Avalie. Decida. Execute.",
             "Da Estratégia à Execução",
             "Diagnóstico inicial",
