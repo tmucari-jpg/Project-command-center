@@ -27,6 +27,9 @@ type RequestRow = {
   submitted_at: string | null;
   reviewed_at: string | null;
   incorporated_at: string | null;
+  triage_missing_information: string[] | null;
+  triage_points_to_confirm: string[] | null;
+  triaged_at: string | null;
 };
 
 type ResponseRow = {
@@ -68,10 +71,16 @@ export function ClientDiagnosticPanel({
   externalSources?: ExternalSourceRow[];
 }) {
   const entries = diagnosticAnswerEntries(response?.answers);
-  const missing = diagnosticMissingInformation(response?.answers);
-  const confirm = diagnosticPointsToConfirm(response?.answers);
+  const missing =
+    request?.triage_missing_information?.length
+      ? request.triage_missing_information
+      : diagnosticMissingInformation(response?.answers);
+  const confirm =
+    request?.triage_points_to_confirm?.length
+      ? request.triage_points_to_confirm
+      : diagnosticPointsToConfirm(response?.answers);
   const canRevoke = request && ["active", "opened"].includes(request.status);
-  const canReview = request && response && ["submitted", "reviewed", "clarification_needed"].includes(request.status);
+  const canReview = request && response && ["submitted", "analyzing", "reviewed", "clarification_needed"].includes(request.status);
   const canIncorporate =
     request &&
     response &&
@@ -108,6 +117,8 @@ export function ClientDiagnosticPanel({
             {request.client_name && <Meta label="Contacto" value={request.client_name} />}
             <Meta label="Validade" value={new Date(request.expires_at).toLocaleDateString("pt-PT")} />
             {request.opened_at && <Meta label="Aberto em" value={new Date(request.opened_at).toLocaleString("pt-PT")} />}
+            {request.submitted_at && <Meta label="Respondido em" value={new Date(request.submitted_at).toLocaleString("pt-PT")} />}
+            {request.triaged_at && <Meta label="Triagem" value="Concluída" />}
           </div>
 
           {canRevoke && (
