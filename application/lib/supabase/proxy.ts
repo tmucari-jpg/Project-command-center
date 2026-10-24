@@ -10,6 +10,7 @@ const PUBLIC_PATHS = [
   "/manifest.webmanifest",
   "/sw.js",
   "/offline.html",
+  "/client-diagnostic",
 ];
 
 function isPublicPath(pathname: string) {
