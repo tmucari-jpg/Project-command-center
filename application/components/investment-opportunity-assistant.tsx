@@ -211,9 +211,44 @@ export function InvestmentOpportunityAssistant() {
           <button type="button" className={primaryButtonClass} disabled={busy} onClick={generate}>
             {busy ? "A preparar hipóteses..." : "Procurar oportunidades para avaliar"}
           </button>
+          <button type="button" className={secondaryButtonClass} onClick={() => setManualMode((current) => !current)}>
+            {manualMode ? "Fechar criação manual" : "Continuar sem IA"}
+          </button>
           <span className="text-xs text-[var(--cc-secondary)]">O perfil é guardado localmente enquanto trabalha.</span>
         </div>
         {message && <p className="mt-4 text-sm text-[var(--cc-secondary)]">{message}</p>}
+
+        {manualMode && (
+          <form action={createFactoryIntake} className="mt-5 space-y-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+            <div>
+              <p className="font-semibold text-[var(--cc-foreground)]">Criar oportunidade sem IA</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--cc-secondary)]">
+                Defina apenas o ponto de partida. O PCC inicia a avaliação G1/G2 normalmente; a IA não é requisito para criar o projecto.
+              </p>
+            </div>
+            <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+              Projecto ou oportunidade
+              <input className={fieldClass} name="title" required placeholder="Ex.: Serviço de gestão de frotas para PMEs" />
+            </label>
+            <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+              Problema ou oportunidade a avaliar
+              <textarea className={fieldClass + " min-h-24"} name="problem" required placeholder="Descreva a necessidade que justifica a avaliação." />
+            </label>
+            <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+              Resultado esperado
+              <textarea className={fieldClass + " min-h-20"} name="expected_value" placeholder="Que resultado pretende obter se a oportunidade for viável?" />
+            </label>
+            <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+              Público / beneficiário
+              <input className={fieldClass} name="target_user" placeholder="Ex.: PMEs, clientes, equipa interna" />
+            </label>
+            <input type="hidden" name="project_type" value="commercial" />
+            <input type="hidden" name="description" value={`Oportunidade definida manualmente a partir de um brief de investimento.\n\nPerfil usado:\n${profile}`} />
+            <input type="hidden" name="constraints" value={brief.constraints} />
+            <input type="hidden" name="source" value="investment_discovery" />
+            <button className={primaryButtonClass} type="submit">Iniciar avaliação deste projecto</button>
+          </form>
+        )}
       </div>
 
       {opportunities.length > 0 && (
