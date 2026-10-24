@@ -474,19 +474,27 @@ jobs:
           $clientDiagnosticExternalMigration = Get-Content "../supabase/migrations/20261024203000_client_diagnostic_external_sources.sql" -Raw
 
           foreach ($token in @(
-            "Questionário de Diagnóstico",
-            "submitClientDiagnostic",
-            "Enviar respostas",
-            "Qual é o principal problema",
-            "Como saberá que o projecto foi bem-sucedido",
-            "Que impacto esta situação tem hoje?",
-            "Que condições ou restrições devem ser respeitadas?",
-            "Seleccione pelo menos uma opção ou escreva um detalhe."
+            "/brand/pcc-logo.png",
+            "Avalie. Decida. Execute.",
+            "Da Estratégia à Execução",
+            "Diagnóstico inicial",
+            "Validade",
+            "7 dias",
+            "O que o trouxe até nós?",
+            "investment_discovery",
+            "AdaptiveContext",
+            "AdaptiveFocus",
+            "Enviar e preparar o diagnóstico"
           )) {
-            if (-not $clientDiagnosticPublic.Contains($token)) {
-              Write-Error "Public client diagnostic questionnaire is missing: $token"
+            if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
+              Write-Error "Executive adaptive client questionnaire is missing: $token"
               exit 1
             }
+          }
+
+          if (-not $clientDiagnosticPublic.Contains("ClientDiagnosticQuestionnaire")) {
+            Write-Error "Public client diagnostic route must render the executive questionnaire."
+            exit 1
           }
 
           foreach ($token in @(
