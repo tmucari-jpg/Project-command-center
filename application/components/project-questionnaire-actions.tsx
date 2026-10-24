@@ -91,19 +91,24 @@ export function ProjectQuestionnaireActions({
   }
 
   return (
-    <section className="rounded-2xl border border-[#d8e3de] bg-[#f8f6f0] p-4 sm:p-5">
+    <section className="rounded-2xl border border-[#c9dbd4] bg-[#f8f6f0] p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#146453]">
-            Questionário de diagnóstico
-          </p>
-          <h3 className="mt-1 text-base font-semibold text-[#073f36]">
-            Recolher informação antes de preencher o diagnóstico
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#146453]">
+              Questionário de diagnóstico
+            </p>
+            <span className="rounded-full border border-[#e2d3ae] bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#8b6a25]">
+              Caminho recomendado
+            </span>
+          </div>
+          <h3 className="mt-2 text-base font-semibold text-[#073f36]">
+            Recolha primeiro a informação essencial
           </h3>
           <p className="mt-1 text-sm leading-6 text-[#667085]">
-            Para situações em que o cliente ou interlocutor não está presente. O questionário é adaptado a
-            <span className="font-medium text-[#142825]"> {intentLabel.toLowerCase()}</span>, tem validade de 7 dias
-            e fica associado ao caso para acompanhamento.
+            O PCC adapta o questionário a
+            <span className="font-medium text-[#142825]"> {intentLabel.toLowerCase()}</span>.
+            Pode enviar o link, baixar o modelo ou utilizá-lo como guia numa conversa. A resposta fica ligada ao caso e preparada para o diagnóstico.
           </p>
         </div>
 
@@ -113,7 +118,7 @@ export function ProjectQuestionnaireActions({
             type="button"
             onClick={() => setExpanded((value) => !value)}
           >
-            {expanded ? "Fechar" : "Gerar questionário"}
+            {expanded ? "Fechar" : "Gerar questionário adaptado"}
           </button>
           <a
             className="rounded-[var(--cc-radius-md)] border border-[#c99439] bg-white px-4 py-2.5 text-sm font-semibold text-[#073f36] transition hover:bg-[#fffaf0]"
