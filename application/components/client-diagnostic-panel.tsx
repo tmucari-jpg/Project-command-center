@@ -1,7 +1,9 @@
 import {
   incorporateClientDiagnosticResponse,
+  importClientDiagnosticLink,
   reviewClientDiagnosticResponse,
   revokeClientDiagnosticRequest,
+  uploadClientDiagnosticFile,
 } from "@/app/(protected)/mutations";
 import { ClientDiagnosticLinkGenerator } from "@/components/client-diagnostic-link-generator";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
@@ -42,16 +44,28 @@ type ReviewRow = {
   points_to_confirm: string | null;
 };
 
+type ExternalSourceRow = {
+  id: string;
+  source_type: "file" | "link";
+  source_url: string | null;
+  file_name: string | null;
+  note: string | null;
+  created_at: string;
+  signed_url?: string | null;
+};
+
 export function ClientDiagnosticPanel({
   factoryCaseId,
   request,
   response,
   review,
+  externalSources = [],
 }: {
   factoryCaseId: string;
   request: RequestRow | null;
   response: ResponseRow | null;
   review: ReviewRow | null;
+  externalSources?: ExternalSourceRow[];
 }) {
   const entries = diagnosticAnswerEntries(response?.answers);
   const missing = diagnosticMissingInformation(response?.answers);
@@ -224,8 +238,134 @@ export function ClientDiagnosticPanel({
               O questionário ainda não foi respondido.
             </p>
           )}
+
+          <div className="border-t border-[var(--cc-border)] pt-5">
+            <h3 className="text-base font-semibold text-[var(--cc-foreground)]">
+              Nova solicitação
+            </h3>
+            <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+              Pode emitir um novo questionário de 7 dias. Se existir um link anterior ainda activo, será revogado.
+            </p>
+            <div className="mt-4">
+              <ClientDiagnosticLinkGenerator
+                factoryCaseId={factoryCaseId}
+                defaultClientName={request.client_name ?? ""}
+                defaultOrganization={request.client_organization ?? ""}
+                defaultContext={request.public_context ?? ""}
+                buttonLabel="Gerar nova solicitação"
+              />
+            </div>
+          </div>
         </div>
       )}
+
+      <div className="mt-6 border-t border-[var(--cc-border)] pt-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-secondary)]">
+            Resposta recebida por outro canal
+          </p>
+          <h3 className="mt-1 text-lg font-semibold text-[var(--cc-foreground)]">
+            Importar questionário
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+            Se o cliente respondeu fora do link PCC, anexe o ficheiro recebido ou registe o link da resposta.
+            A fonte fica associada ao caso para revisão e rastreabilidade.
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <form
+            action={uploadClientDiagnosticFile}
+            className="space-y-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4"
+          >
+            <input type="hidden" name="factory_case_id" value={factoryCaseId} />
+            {request && <input type="hidden" name="request_id" value={request.id} />}
+            <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+              Anexar questionário respondido
+              <input
+                className="mt-2 block w-full text-sm text-[var(--cc-secondary)]"
+                type="file"
+                name="questionnaire_file"
+                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+                required
+              />
+            </label>
+            <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+              Nota
+              <input
+                className="mt-1 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm"
+                name="note"
+                placeholder="Ex.: Recebido por email."
+              />
+            </label>
+            <button className={secondaryButtonClass} type="submit">Guardar ficheiro</button>
+          </form>
+
+          <form
+            action={importClientDiagnosticLink}
+            className="space-y-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4"
+          >
+            <input type="hidden" name="factory_case_id" value={factoryCaseId} />
+            {request && <input type="hidden" name="request_id" value={request.id} />}
+            <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+              Colar link da resposta
+              <input
+                className="mt-1 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm"
+                name="source_url"
+                type="url"
+                placeholder="https://..."
+                required
+              />
+            </label>
+            <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+              Nota
+              <input
+                className="mt-1 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm"
+                name="note"
+                placeholder="Ex.: Formulário preenchido pelo cliente."
+              />
+            </label>
+            <button className={secondaryButtonClass} type="submit">Guardar link</button>
+          </form>
+        </div>
+
+        {externalSources.length > 0 && (
+          <div className="mt-5">
+            <p className="text-sm font-semibold text-[var(--cc-foreground)]">Fontes externas registadas</p>
+            <div className="mt-2 space-y-2">
+              {externalSources.map((source) => {
+                const href = source.source_type === "link" ? source.source_url : source.signed_url;
+                return (
+                  <div
+                    key={source.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-3 text-sm"
+                  >
+                    <div>
+                      <p className="font-semibold text-[var(--cc-foreground)]">
+                        {source.source_type === "file" ? source.file_name ?? "Ficheiro" : "Link externo"}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--cc-secondary)]">
+                        {new Date(source.created_at).toLocaleString("pt-PT")}
+                        {source.note ? ` · ${source.note}` : ""}
+                      </p>
+                    </div>
+                    {href && (
+                      <a
+                        className={secondaryButtonClass}
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Abrir
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }
