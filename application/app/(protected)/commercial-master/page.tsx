@@ -26,8 +26,8 @@ export default async function CommercialMasterPage() {
     .limit(1)
     .maybeSingle();
 
-  if (projectError) return <><PageHeader eyebrow="Comercial" title="Master Comercial PCC" /><Card className="p-5 text-sm text-[var(--cc-danger)]">{projectError.message}</Card></>;
-  if (!project) return <><PageHeader eyebrow="Comercial" title="Master Comercial PCC" /><Card className="p-5"><EmptyState>O projecto comercial do PCC ainda não está registado.</EmptyState></Card></>;
+  if (projectError) return <><PageHeader eyebrow="Comercial" title="Guia Comercial PCC" /><Card className="p-5 text-sm text-[var(--cc-danger)]">{projectError.message}</Card></>;
+  if (!project) return <><PageHeader eyebrow="Comercial" title="Guia Comercial PCC" /><Card className="p-5"><EmptyState>O projecto comercial do PCC ainda não está registado.</EmptyState></Card></>;
 
   const [
     { data: plan, error: planError },
@@ -63,10 +63,10 @@ export default async function CommercialMasterPage() {
     <>
       <PageHeader
         eyebrow="Pré-visualização do entregável comercial"
-        title="Master Comercial do PCC"
+        title="Guia Comercial do PCC"
         action={
           <div className="flex flex-wrap gap-2">
-            <a className={secondaryButtonClass} href="/api/exports/commercial-master">Baixar Word editável</a>
+            <a className={secondaryButtonClass} href="/api/exports/commercial-master">Exportar snapshot operacional (.doc)</a>
             <Link className={secondaryButtonClass} href="/monetization">Voltar ao Comercial</Link>
           </div>
         }
@@ -76,7 +76,7 @@ export default async function CommercialMasterPage() {
       <Card className="mb-6 p-5">
         <p className="text-sm leading-6 text-[var(--cc-secondary)]">
           <strong className="text-[var(--cc-foreground)]">Entregável do projecto:</strong> Marketing, Vendas e Lançamento do PCC.
-          Esta página é a pré-visualização da versão de trabalho; o documento é descarregado e arquivado através de Entregáveis.
+          Esta página apresenta a versão operacional viva. O Guia Comercial validado preserva a identidade oficial e prevalece como referência comercial; a exportação .doc é apenas um snapshot de trabalho. Os resultados finais continuam a ser arquivados através de Entregáveis.
         </p>
       </Card>
 

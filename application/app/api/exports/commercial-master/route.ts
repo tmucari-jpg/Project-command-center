@@ -137,11 +137,11 @@ export async function GET() {
     esc(item.external_provider ?? "—") + "</td><td>" + esc(item.status) + "</td></tr>"
   ).join("");
 
-  const html = "<!doctype html><html><head><meta charset='utf-8'><title>PCC Master Comercial</title>" +
-    "<style>body{font-family:Aptos,Arial,sans-serif;color:#18332f;margin:42px;background:#fffdf6}h1,h2{color:#073f36}h1{font-size:28px}h2{font-size:18px;border-bottom:1px solid #d7c59b;padding-bottom:6px;margin-top:28px}.brand{width:250px}.muted{color:#66746f}.box{border:1px solid #e5dcc7;background:#f8f1df;padding:12px;margin:8px 0;border-radius:8px}table{border-collapse:collapse;width:100%;margin-top:10px}th,td{border:1px solid #ded5c2;padding:8px;text-align:left;vertical-align:top}th{background:#f3ead5;color:#073f36}li{margin:4px 0}.note{border-left:4px solid #c99439;padding:10px;background:#fff8e9}</style></head><body>" +
-    "<img class='brand' src='https://project-command-center-seven-xi.vercel.app/brand/pcc-logo.png' alt='PCC'>" +
-    "<h1>Master Comercial do PCC</h1>" +
-    "<p class='muted'>Entregável comercial do projecto Marketing, Vendas e Lançamento do PCC · versão de trabalho gerada pelo PCC.</p>" +
+  const html = "<!doctype html><html><head><meta charset='utf-8'><title>PCC Snapshot Operacional Comercial</title>" +
+    "<style>body{font-family:Aptos,Arial,sans-serif;color:#18332f;margin:42px;background:#fffdf6}h1,h2{color:#073f36}h1{font-size:28px}h2{font-size:18px;border-bottom:1px solid #d7c59b;padding-bottom:6px;margin-top:28px}.wordmark{font-size:28px;font-weight:800;letter-spacing:.08em;color:#073f36}.muted{color:#66746f}.box{border:1px solid #e5dcc7;background:#f8f1df;padding:12px;margin:8px 0;border-radius:8px}table{border-collapse:collapse;width:100%;margin-top:10px}th,td{border:1px solid #ded5c2;padding:8px;text-align:left;vertical-align:top}th{background:#f3ead5;color:#073f36}li{margin:4px 0}.note{border-left:4px solid #c99439;padding:10px;background:#fff8e9}</style></head><body>" +
+    "<div class='wordmark'>PCC</div>" +
+    "<h1>Snapshot Operacional Comercial do PCC</h1>" +
+    "<p class='muted'>Snapshot operacional do projecto Marketing, Vendas e Lançamento do PCC. Não substitui o Guia Comercial validado nem a sua identidade visual oficial.</p>" +
     "<div class='note'><strong>Posicionamento:</strong> " + esc(strategy.positioning) + " " + esc(strategy.technology_role) + "</div>" +
     "<h2>Objectivos</h2>" + list(objectives.length ? objectives : ["Avaliar", "Decidir", "Estruturar", "Acompanhar", "Comprovar valor"]) +
     "<h2>Pontos de entrada</h2>" + entryBlocks +
@@ -159,7 +159,7 @@ export async function GET() {
   return new NextResponse(html, {
     headers: {
       "content-type": "application/msword; charset=utf-8",
-      "content-disposition": 'attachment; filename="PCC_Master_Comercial.doc"',
+      "content-disposition": 'attachment; filename="PCC_Snapshot_Operacional_Comercial.doc"',
       "cache-control": "no-store",
     },
   });

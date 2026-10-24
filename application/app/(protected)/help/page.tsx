@@ -59,6 +59,17 @@ export default async function HelpPage() {
         </Card>
 
         <Card className="p-5 lg:col-span-2">
+          <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Referências comerciais e de governação</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+            O Master Mind é a fonte de verdade da arquitectura, regras e modelo operacional. O Guia Comercial é a referência validada para posicionamento, entregáveis, pacotes e uso comercial.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/commercial-master" className={secondaryButtonClass}>Abrir Guia Comercial</Link>
+            <Link href="/monetization" className={secondaryButtonClass}>Abrir Comercial</Link>
+          </div>
+        </Card>
+
+        <Card className="p-5 lg:col-span-2">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Preenchimento automático</h2>
           <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
             O PCC pode preparar automaticamente os campos que consegue inferir a partir do contexto já registado.

@@ -77,7 +77,7 @@ export default async function CommercialPage({
       <PageHeader
         eyebrow="Administração · capacidade transversal"
         title="Comercial"
-        action={<Link className={secondaryButtonClass} href="/commercial-master">Pré-visualizar Master Comercial do PCC</Link>}
+        action={<Link className={secondaryButtonClass} href="/commercial-master">Abrir Guia Comercial do PCC</Link>}
       />
 
       <FlashMessage
