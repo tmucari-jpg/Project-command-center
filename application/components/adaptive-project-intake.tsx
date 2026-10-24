@@ -70,6 +70,12 @@ export function AdaptiveProjectIntake() {
 
     setPreparing(true);
 
+    if (intent === "investment") {
+      bypassEnrichment.current = true;
+      form.requestSubmit();
+      return;
+    }
+
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 8_000);
 
