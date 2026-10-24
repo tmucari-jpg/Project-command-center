@@ -23,9 +23,11 @@ export function InstallAppButton() {
       window.matchMedia("(display-mode: standalone)").matches ||
       Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
 
-    setIsIOS(ios);
-    setIsMobile(mobile);
-    setIsStandalone(standalone);
+    queueMicrotask(() => {
+      setIsIOS(ios);
+      setIsMobile(mobile);
+      setIsStandalone(standalone);
+    });
 
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
