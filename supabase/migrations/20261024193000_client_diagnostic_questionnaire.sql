@@ -137,19 +137,19 @@ begin
     return;
   end if;
 
-  update public.client_diagnostic_requests
+  update public.client_diagnostic_requests as r
   set status = 'expired', updated_at = now()
-  where token_hash = p_token_hash
-    and status in ('active','opened')
-    and expires_at <= now();
+  where r.token_hash = p_token_hash
+    and r.status in ('active','opened')
+    and r.expires_at <= now();
 
-  update public.client_diagnostic_requests
+  update public.client_diagnostic_requests as r
   set status = 'opened',
-      opened_at = coalesce(opened_at, now()),
+      opened_at = coalesce(r.opened_at, now()),
       updated_at = now()
-  where token_hash = p_token_hash
-    and status = 'active'
-    and expires_at > now();
+  where r.token_hash = p_token_hash
+    and r.status = 'active'
+    and r.expires_at > now();
 
   return query
   select
