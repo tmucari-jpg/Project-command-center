@@ -467,6 +467,7 @@ jobs:
 
           $clientDiagnosticPublic = Get-Content -LiteralPath "./app/client-diagnostic/[token]/page.tsx" -Raw
           $clientDiagnosticQuestionnaire = Get-Content "./components/client-diagnostic-questionnaire.tsx" -Raw
+          $supabaseProxy = Get-Content "./lib/supabase/proxy.ts" -Raw
           $clientDiagnosticPanel = Get-Content "./components/client-diagnostic-panel.tsx" -Raw
           $clientDiagnosticGenerator = Get-Content "./components/client-diagnostic-link-generator.tsx" -Raw
           $clientDiagnosticTracker = Get-Content "./components/client-diagnostic-tracker.tsx" -Raw
@@ -499,6 +500,37 @@ jobs:
           if (-not $clientDiagnosticPublic.Contains("ClientDiagnosticQuestionnaire")) {
             Write-Error "Public client diagnostic route must render the executive questionnaire."
             exit 1
+          }
+
+          foreach ($token in @(
+            '"/client-diagnostic"',
+            "isPublicPath"
+          )) {
+            if (-not $supabaseProxy.Contains($token)) {
+              Write-Error "Direct public questionnaire access guard is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "/brand/pcc-logo-transparent.svg",
+            "Email (opcional)"
+          )) {
+            if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
+              Write-Error "Client questionnaire branding/access field guard is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($forbidden in @(
+            "O PCC adapta o questionário",
+            "Pode enviar o link, baixar o modelo ou utilizá-lo como guia numa conversa",
+            "A resposta fica ligada ao caso e preparada para o diagnóstico"
+          )) {
+            if ($projectQuestionnaireActions.Contains($forbidden)) {
+              Write-Error "Redundant explanatory copy returned to questionnaire action: $forbidden"
+              exit 1
+            }
           }
 
           foreach ($token in @(
@@ -700,7 +732,8 @@ jobs:
             '"audit/client-diagnostic-short-v2-20261024": false',
             '"audit/client-diagnostic-executive-v3-20261024": false',
             '"audit/new-project-questionnaire-actions-ui-20261024": false',
-            '"audit/questionnaire-first-dynamic-intake-20261024": false'
+            '"audit/questionnaire-first-dynamic-intake-20261024": false',
+            '"audit/public-direct-client-diagnostic-20261024": false'
           )) {
             if (-not $vercel.Contains($branchGuard)) {
               Write-Error "Audit branch must not trigger a Vercel preview deployment: $branchGuard"
