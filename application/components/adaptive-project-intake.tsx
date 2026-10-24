@@ -169,7 +169,7 @@ export function AdaptiveProjectIntake() {
         </select>
 
         <div className="mt-4">
-          <ProjectQuestionnaireActions intent={intent} intentLabel={intentLabels[intent]} />
+          <ProjectQuestionnaireActions key={intent} intent={intent} intentLabel={intentLabels[intent]} />
         </div>
       </section>
 
