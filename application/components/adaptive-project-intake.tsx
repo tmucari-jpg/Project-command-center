@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { createFactoryIntake } from "@/app/(protected)/mutations";
+import { ProjectQuestionnaireActions } from "@/components/project-questionnaire-actions";
 import { primaryButtonClass } from "@/components/ui";
 
 type Intent =
@@ -143,13 +144,21 @@ export function AdaptiveProjectIntake() {
   }
 
   return (
-    <form action={createFactoryIntake} onSubmit={submit} className="space-y-5">
-      <div>
-        <label className="text-sm font-semibold text-[var(--cc-foreground)]">
-          1. O que pretende fazer?
-        </label>
+    <form action={createFactoryIntake} onSubmit={submit} className="space-y-6 p-5 sm:p-6">
+      <section className="rounded-2xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4 sm:p-5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#073f36] text-sm font-semibold text-white">1</span>
+          <div>
+            <label className="text-sm font-semibold text-[var(--cc-foreground)]">
+              O que pretende fazer?
+            </label>
+            <p className="mt-0.5 text-xs text-[var(--cc-secondary)]">
+              Esta escolha define as perguntas seguintes e o modelo de questionário.
+            </p>
+          </div>
+        </div>
         <select
-          className={fieldClass}
+          className={fieldClass + " mt-4"}
           value={intent}
           onChange={(event) => chooseIntent(event.target.value as Intent)}
           name="intent"
@@ -158,7 +167,11 @@ export function AdaptiveProjectIntake() {
             <option key={value} value={value}>{label}</option>
           ))}
         </select>
-      </div>
+
+        <div className="mt-4">
+          <ProjectQuestionnaireActions intent={intent} intentLabel={intentLabels[intent]} />
+        </div>
+      </section>
 
       {intent === "investment" ? (
         <>
@@ -225,9 +238,17 @@ export function AdaptiveProjectIntake() {
       )}
 
       {intent === "investment" && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Extra label="2. Capital ou recursos disponíveis" name="context_budget" />
-          <Extra label="3. Horizonte de investimento" name="context_horizon" />
+        <div className="space-y-4">
+          <section className="rounded-2xl border border-[var(--cc-border)] bg-white p-4 sm:p-5">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#146453]">Perfil de investimento</p>
+              <h3 className="mt-1 text-base font-semibold text-[var(--cc-foreground)]">Recursos e horizonte</h3>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Extra label="2. Capital ou recursos disponíveis" name="context_budget" />
+              <Extra label="3. Horizonte de investimento" name="context_horizon" />
+            </div>
+          </section>
 
           <MultiSelectField
             label="4. Geografia / mercados onde pode operar"
@@ -347,13 +368,15 @@ export function AdaptiveProjectIntake() {
       <input type="hidden" name="constraints" defaultValue="" />
       <input type="hidden" name="source" defaultValue="adaptive_idea" />
 
-      <button className={primaryButtonClass} type="submit" disabled={preparing}>
+      <div className="flex justify-end border-t border-[var(--cc-border)] pt-5">
+        <button className={primaryButtonClass} type="submit" disabled={preparing}>
         {preparing
           ? "A preparar..."
           : intent === "investment"
             ? "Gerar propostas para decisão"
             : "Iniciar avaliação G1/G2"}
-      </button>
+        </button>
+      </div>
     </form>
   );
 }
@@ -485,21 +508,21 @@ function MultiSelectField({
   detailPlaceholder?: string;
 }) {
   return (
-    <fieldset className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4 md:col-span-2">
+    <fieldset className="rounded-2xl border border-[var(--cc-border)] bg-white p-4 sm:p-5 md:col-span-2">
       <legend className="px-1 text-sm font-semibold text-[var(--cc-foreground)]">
         {label}
       </legend>
       {helper && (
-        <p className="mb-3 text-xs leading-5 text-[var(--cc-secondary)]">{helper}</p>
+        <p className="mb-3 max-w-3xl text-xs leading-5 text-[var(--cc-secondary)]">{helper}</p>
       )}
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {options.map((option) => (
           <label
             key={option}
-            className="flex cursor-pointer items-start gap-2 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm text-[var(--cc-foreground)]"
+            className="flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-3 py-2 text-[13px] leading-5 text-[var(--cc-foreground)] transition hover:border-[#9eb8ae] hover:bg-white"
           >
             <input
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--cc-accent)]"
+              className="h-4 w-4 shrink-0 accent-[var(--cc-accent)]"
               type="checkbox"
               name={name}
               value={option}
@@ -508,10 +531,10 @@ function MultiSelectField({
           </label>
         ))}
       </div>
-      <label className="mt-3 block text-sm font-medium text-[var(--cc-foreground)]">
+      <label className="mt-3 block text-xs font-medium text-[var(--cc-secondary)]">
         {detailLabel}
-        <textarea
-          className={fieldClass + " min-h-20"}
+        <input
+          className={fieldClass}
           name={name}
           placeholder={detailPlaceholder}
         />
