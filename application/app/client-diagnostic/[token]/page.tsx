@@ -73,8 +73,11 @@ export default async function ClientDiagnosticPage({
           <h1 className="mt-2 text-2xl font-semibold text-[#073f36] sm:text-3xl">
             Questionário de Diagnóstico
           </h1>
+          <p className="mt-3 text-sm leading-6 text-[#667085]">
+            Um questionário breve para recolher a informação essencial antes de iniciar o diagnóstico.
+          </p>
           {request.client_organization && (
-            <p className="mt-2 text-sm font-semibold text-[#142825]">{request.client_organization}</p>
+            <p className="mt-3 text-sm font-semibold text-[#142825]">{request.client_organization}</p>
           )}
           {request.client_name && (
             <p className="mt-1 text-sm text-[#667085]">Contacto: {request.client_name}</p>
@@ -93,65 +96,138 @@ export default async function ClientDiagnosticPage({
         <form action={submitClientDiagnostic} className="space-y-5 rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm sm:p-7">
           <input type="hidden" name="token" value={token} />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="1. Nome de quem responde" name="respondent_name" required />
-            <Field label="2. Função / cargo" name="respondent_role" />
-            <Field label="3. Email" name="respondent_email" type="email" />
-            <Field label="4. Organização" name="organization" />
-          </div>
+          <QuestionBlock number={1} title="Quem está a responder?">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Nome" name="respondent_name" required />
+              <Field label="Função / cargo" name="respondent_role" />
+              <Field label="Organização" name="organization" />
+              <Field label="Email" name="respondent_email" type="email" />
+            </div>
+          </QuestionBlock>
 
-          <Area
-            label="5. Qual é o principal problema, necessidade ou oportunidade que motivou este pedido?"
-            name="problem_need"
-            required
-          />
-          <Area
-            label="6. Como esta situação funciona hoje?"
-            name="current_situation"
-            required
-          />
-          <Area
-            label="7. Qual é o impacto actual desta situação?"
+          <QuestionBlock number={2} title="Qual é o principal problema, necessidade ou oportunidade?">
+            <Area name="problem_need" required placeholder="Explique em poucas linhas o que motivou este pedido." />
+          </QuestionBlock>
+
+          <QuestionBlock number={3} title="Como esta situação funciona hoje?">
+            <Area name="current_situation" required placeholder="Descreva de forma simples o processo ou situação actual." />
+          </QuestionBlock>
+
+          <MultiQuestion
+            number={4}
+            title="Que impacto esta situação tem hoje?"
             name="impact"
+            options={[
+              "Perda de tempo / atrasos",
+              "Custos elevados",
+              "Perda de vendas / receita",
+              "Erros ou retrabalho",
+              "Insatisfação de clientes",
+              "Falta de controlo / visibilidade",
+              "Risco operacional ou reputacional",
+              "Limita crescimento / capacidade",
+            ]}
+            detailsPlaceholder="Se necessário, explique o impacto mais importante."
             required
           />
-          <Area
-            label="8. Que resultado pretende alcançar?"
+
+          <MultiQuestion
+            number={5}
+            title="Que resultado pretende alcançar?"
             name="desired_result"
+            options={[
+              "Aumentar vendas / receita",
+              "Reduzir custos",
+              "Poupar tempo",
+              "Melhorar qualidade / reduzir erros",
+              "Melhorar experiência do cliente",
+              "Ganhar controlo / informação",
+              "Lançar ou melhorar um produto / serviço",
+              "Aumentar capacidade / escalar",
+            ]}
+            detailsPlaceholder="Acrescente o resultado específico que considera mais importante."
             required
           />
-          <Area
-            label="9. Quem será afectado, beneficiado ou utilizará a solução?"
+
+          <MultiQuestion
+            number={6}
+            title="Quem é afectado, beneficiado ou utilizará a solução?"
             name="affected_people"
-          />
-          <Area
-            label="10. O que já foi tentado até agora?"
-            name="previous_attempts"
+            options={[
+              "Clientes",
+              "Equipa comercial",
+              "Operações",
+              "Gestão / direcção",
+              "Finanças / administração",
+              "Fornecedores / parceiros",
+              "Colaboradores em geral",
+              "Utilizadores externos",
+            ]}
+            detailsPlaceholder="Indique outro grupo ou detalhe relevante."
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Area label="11. Existe prazo ou urgência?" name="deadline_urgency" compact />
-            <Area label="12. Existe orçamento ou intervalo disponível?" name="budget_range" compact />
-          </div>
+          <SingleQuestion
+            number={7}
+            title="Qual é a prioridade ou prazo?"
+            name="deadline_urgency"
+            options={[
+              "Urgente — precisa de acção imediata",
+              "Até 30 dias",
+              "1 a 3 meses",
+              "3 a 6 meses",
+              "Sem prazo definido",
+            ]}
+            detailsPlaceholder="Se existir uma data concreta, indique aqui."
+          />
 
-          <Area
-            label="13. Quem decide, aprova ou valida este projecto?"
-            name="decision_process"
+          <SingleQuestion
+            number={8}
+            title="Existe orçamento ou investimento disponível?"
+            name="budget_range"
+            options={[
+              "Sim — orçamento já definido",
+              "Existe um intervalo aproximado",
+              "Depende da solução proposta",
+              "Ainda não foi definido",
+              "Prefiro discutir numa fase seguinte",
+            ]}
+            detailsPlaceholder="Se quiser, indique o valor ou intervalo."
           />
-          <Area
-            label="14. Que informação, documentos, sistemas ou activos já estão disponíveis?"
-            name="available_inputs"
-          />
-          <Area
-            label="15. Existem restrições ou condições que devem ser respeitadas?"
+
+          <MultiQuestion
+            number={9}
+            title="Que condições ou restrições devem ser respeitadas?"
             name="constraints"
+            options={[
+              "Limite de orçamento",
+              "Prazo obrigatório",
+              "Tecnologia / sistema existente",
+              "Segurança / confidencialidade",
+              "Requisitos legais / regulatórios",
+              "Equipa ou recursos limitados",
+              "Aprovação de direcção / cliente",
+              "Fornecedor / parceiro obrigatório",
+            ]}
+            detailsPlaceholder="Acrescente uma condição específica, se existir."
           />
-          <Area
-            label="16. Como saberá que o projecto foi bem-sucedido?"
+
+          <MultiQuestion
+            number={10}
+            title="Como saberá que o projecto foi bem-sucedido?"
             name="success_criteria"
+            options={[
+              "Mais vendas / receita",
+              "Menor custo",
+              "Menor tempo de execução",
+              "Menos erros / retrabalho",
+              "Melhor satisfação do cliente",
+              "Maior produtividade / capacidade",
+              "Maior controlo / visibilidade",
+              "Entrega concluída dentro do prazo",
+            ]}
+            detailsPlaceholder="Acrescente uma meta, indicador ou resultado específico."
             required
           />
-          <Area label="17. Há mais alguma informação importante?" name="additional_comments" />
 
           <button className={primaryButtonClass} type="submit">
             Enviar respostas
@@ -159,6 +235,25 @@ export default async function ClientDiagnosticPage({
         </form>
       </div>
     </main>
+  );
+}
+
+function QuestionBlock({
+  number,
+  title,
+  children,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="rounded-xl border border-[#dce5df] bg-[#fbfcfa] p-4 sm:p-5">
+      <legend className="px-1 text-sm font-semibold text-[#073f36]">
+        {number}. {title}
+      </legend>
+      <div className="mt-2">{children}</div>
+    </fieldset>
   );
 }
 
@@ -182,26 +277,95 @@ function Field({
 }
 
 function Area({
-  label,
   name,
   required = false,
-  compact = false,
+  placeholder,
 }: {
-  label: string;
   name: string;
   required?: boolean;
-  compact?: boolean;
+  placeholder: string;
 }) {
   return (
-    <label className="block text-sm font-medium text-[#142825]">
-      {label}
+    <textarea
+      className={fieldClass + " min-h-24"}
+      name={name}
+      required={required}
+      placeholder={placeholder}
+    />
+  );
+}
+
+function MultiQuestion({
+  number,
+  title,
+  name,
+  options,
+  detailsPlaceholder,
+  required = false,
+}: {
+  number: number;
+  title: string;
+  name: string;
+  options: string[];
+  detailsPlaceholder: string;
+  required?: boolean;
+}) {
+  return (
+    <QuestionBlock number={number} title={title}>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {options.map((option) => (
+          <label
+            key={option}
+            className="flex cursor-pointer items-start gap-2 rounded-lg border border-[#dce5df] bg-white px-3 py-2.5 text-sm"
+          >
+            <input className="mt-0.5 h-4 w-4 accent-[#073f36]" type="checkbox" name={name} value={option} />
+            <span>{option}</span>
+          </label>
+        ))}
+      </div>
       <textarea
-        className={fieldClass + (compact ? " min-h-24" : " min-h-28")}
+        className={fieldClass + " min-h-20"}
         name={name}
-        required={required}
-        placeholder="Se ainda não estiver definido, pode escrever “a confirmar”."
+        placeholder={detailsPlaceholder}
+        aria-label={`${title} — detalhes adicionais`}
       />
-    </label>
+      {required && (
+        <p className="mt-2 text-xs text-[#667085]">
+          Seleccione pelo menos uma opção ou escreva um detalhe.
+        </p>
+      )}
+    </QuestionBlock>
+  );
+}
+
+function SingleQuestion({
+  number,
+  title,
+  name,
+  options,
+  detailsPlaceholder,
+}: {
+  number: number;
+  title: string;
+  name: string;
+  options: string[];
+  detailsPlaceholder: string;
+}) {
+  return (
+    <QuestionBlock number={number} title={title}>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {options.map((option) => (
+          <label
+            key={option}
+            className="flex cursor-pointer items-start gap-2 rounded-lg border border-[#dce5df] bg-white px-3 py-2.5 text-sm"
+          >
+            <input className="mt-0.5 h-4 w-4 accent-[#073f36]" type="radio" name={name} value={option} />
+            <span>{option}</span>
+          </label>
+        ))}
+      </div>
+      <input className={fieldClass} name={`${name}_details`} placeholder={detailsPlaceholder} />
+    </QuestionBlock>
   );
 }
 
