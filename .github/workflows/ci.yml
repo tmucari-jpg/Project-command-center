@@ -333,11 +333,41 @@ jobs:
             }
           }
 
-          foreach ($token in @("Já tenho uma ideia para avaliar", "Quero investir, mas ainda não tenho uma ideia", "InvestmentOpportunityAssistant")) {
+          $adaptiveIntake = Get-Content "./components/adaptive-project-intake.tsx" -Raw
+          $assistRoute = Get-Content "./app/api/ai/assist/route.ts" -Raw
+          $assistRouter = Get-Content "./lib/ai-assist-router.ts" -Raw
+
+          foreach ($token in @("AdaptiveProjectIntake", "Defina o ponto de partida")) {
             if (-not $factory.Contains($token)) {
-              Write-Error "New project dual-entry flow is missing: $token"
+              Write-Error "Adaptive project intake is missing: $token"
               exit 1
             }
+          }
+
+          foreach ($token in @("O que pretende fazer?", "client_request", "investment", "internal_improvement", "digital_solution", "Iniciar avaliação G1/G2")) {
+            if (-not $adaptiveIntake.Contains($token)) {
+              Write-Error "Adaptive project questions are missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("generateAssistWithFallback", 'fallback: "deterministic"')) {
+            if (-not $assistRoute.Contains($token)) {
+              Write-Error "Central AI assist route is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("ai_provider_profiles", '.eq("mode", "cloud")', "validateAIProviderHealth", "QWEN_API_KEY", "OPENAI_API_KEY")) {
+            if (-not $assistRouter.Contains($token)) {
+              Write-Error "AI provider router is missing: $token"
+              exit 1
+            }
+          }
+
+          if ($adaptiveIntake.Contains("127.0.0.1") -or $assistRoute.Contains("127.0.0.1") -or $assistRouter.Contains("127.0.0.1")) {
+            Write-Error "Mobile project intake must not depend on localhost AI."
+            exit 1
           }
 
           foreach ($token in @("conic-gradient", "PressureBar", "PressureLegend")) {
@@ -366,9 +396,14 @@ jobs:
             exit 1
           }
 
-          if (-not $vercel.Contains('"audit/consolidated-diagnostic-20261022": false')) {
-            Write-Error "Audit branch must not trigger a Vercel preview deployment."
-            exit 1
+          foreach ($branchGuard in @(
+            '"audit/consolidated-diagnostic-20261022": false',
+            '"audit/adaptive-factory-ai-router-20261024": false'
+          )) {
+            if (-not $vercel.Contains($branchGuard)) {
+              Write-Error "Audit branch must not trigger a Vercel preview deployment: $branchGuard"
+              exit 1
+            }
           }
 
       - name: Validate commercial master, consulting model and offline coverage
