@@ -138,43 +138,58 @@ export function AdaptiveProjectIntake() {
         </select>
       </div>
 
-      <label className="block text-sm font-medium text-[var(--cc-foreground)]">
-        2. Como chama este projecto, oportunidade ou problema?
-        <input
-          className={fieldClass}
-          name="title"
-          required
-          placeholder="Ex.: Automatizar propostas comerciais para clientes empresariais"
-        />
-      </label>
+      {intent === "investment" ? (
+        <>
+          <input type="hidden" name="title" value="Exploração de oportunidades de investimento" />
+          <input
+            type="hidden"
+            name="problem"
+            value="Identificar e comparar oportunidades de negócio compatíveis com o perfil de investimento antes de seleccionar uma para validação."
+          />
+          <input type="hidden" name="expected_value" value="Seleccionar uma oportunidade prioritária para validação." />
+          <input type="hidden" name="target_user" value="" />
+        </>
+      ) : (
+        <>
+          <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+            2. Como chama este projecto, oportunidade ou problema?
+            <input
+              className={fieldClass}
+              name="title"
+              required
+              placeholder="Ex.: Automatizar propostas comerciais para clientes empresariais"
+            />
+          </label>
 
-      <label className="block text-sm font-medium text-[var(--cc-foreground)]">
-        3. O que está a acontecer hoje e porque é importante actuar?
-        <textarea
-          className={fieldClass + " min-h-28"}
-          name="problem"
-          required
-          placeholder="Descreva o problema, necessidade ou oportunidade com o máximo de contexto factual que tiver."
-        />
-      </label>
+          <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+            3. O que está a acontecer hoje e porque é importante actuar?
+            <textarea
+              className={fieldClass + " min-h-28"}
+              name="problem"
+              required
+              placeholder="Descreva o problema, necessidade ou oportunidade com o máximo de contexto factual que tiver."
+            />
+          </label>
 
-      <label className="block text-sm font-medium text-[var(--cc-foreground)]">
-        4. Que resultado pretende alcançar?
-        <textarea
-          className={fieldClass + " min-h-24"}
-          name="expected_value"
-          placeholder="Ex.: reduzir tempo, aumentar vendas, lançar um serviço, melhorar controlo ou resolver uma dor específica."
-        />
-      </label>
+          <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+            4. Que resultado pretende alcançar?
+            <textarea
+              className={fieldClass + " min-h-24"}
+              name="expected_value"
+              placeholder="Ex.: reduzir tempo, aumentar vendas, lançar um serviço, melhorar controlo ou resolver uma dor específica."
+            />
+          </label>
 
-      <label className="block text-sm font-medium text-[var(--cc-foreground)]">
-        5. Quem será afectado, beneficiado ou utilizador principal?
-        <textarea
-          className={fieldClass + " min-h-20"}
-          name="target_user"
-          placeholder="Clientes, equipa, parceiros, mercado, utilizadores internos..."
-        />
-      </label>
+          <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+            5. Quem será afectado, beneficiado ou utilizador principal?
+            <textarea
+              className={fieldClass + " min-h-20"}
+              name="target_user"
+              placeholder="Clientes, equipa, parceiros, mercado, utilizadores internos..."
+            />
+          </label>
+        </>
+      )}
 
       {intent === "client_request" && (
         <div className="grid gap-4 md:grid-cols-2">
@@ -190,10 +205,12 @@ export function AdaptiveProjectIntake() {
       {intent === "investment" && (
         <div className="grid gap-4 md:grid-cols-2">
           <Extra label="Capital ou recursos disponíveis" name="context_budget" />
-          <Extra label="Horizonte esperado" name="context_horizon" />
-          <Extra label="Mercado / geografia" name="context_geography" />
-          <Extra label="Sectores de interesse" name="context_sectors" />
-          <Extra label="Capacidades ou activos que já possui" name="context_capabilities" area />
+          <Extra label="Horizonte de investimento" name="context_horizon" />
+          <Extra label="Geografia / mercados onde pode operar" name="context_geography" />
+          <Extra label="Sectores de interesse, se existirem" name="context_sectors" />
+          <Extra label="Capacidades, experiência ou activos que já possui" name="context_capabilities" area />
+          <Extra label="Nível de envolvimento pretendido no negócio" name="context_involvement" />
+          <Extra label="Objectivo de retorno / resultado pretendido" name="context_return_objective" />
           <Extra label="Tolerância ao risco" name="context_risk" />
         </div>
       )}
@@ -247,25 +264,33 @@ export function AdaptiveProjectIntake() {
         />
       </label>
 
-      <label className="block text-sm font-medium text-[var(--cc-foreground)]">
-        7. Natureza do projecto
-        <select
-          className={fieldClass}
-          name="project_type"
-          value={projectType}
-          onChange={(event) => setProjectType(event.target.value as "commercial" | "non_commercial")}
-        >
-          <option value="commercial">Comercial / mercado</option>
-          <option value="non_commercial">Interno / não comercial</option>
-        </select>
-      </label>
+      {intent === "investment" ? (
+        <input type="hidden" name="project_type" value="commercial" />
+      ) : (
+        <label className="block text-sm font-medium text-[var(--cc-foreground)]">
+          7. Natureza do projecto
+          <select
+            className={fieldClass}
+            name="project_type"
+            value={projectType}
+            onChange={(event) => setProjectType(event.target.value as "commercial" | "non_commercial")}
+          >
+            <option value="commercial">Comercial / mercado</option>
+            <option value="non_commercial">Interno / não comercial</option>
+          </select>
+        </label>
+      )}
 
       <input type="hidden" name="description" defaultValue="" />
       <input type="hidden" name="constraints" defaultValue="" />
       <input type="hidden" name="source" defaultValue="adaptive_idea" />
 
       <button className={primaryButtonClass} type="submit" disabled={preparing}>
-        {preparing ? "A preparar avaliação..." : "Iniciar avaliação G1/G2"}
+        {preparing
+          ? "A preparar..."
+          : intent === "investment"
+            ? "Gerar propostas para decisão"
+            : "Iniciar avaliação G1/G2"}
       </button>
     </form>
   );
