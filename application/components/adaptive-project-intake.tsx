@@ -77,7 +77,11 @@ export function AdaptiveProjectIntake() {
     descriptionInput.value = baseDescription;
     sourceInput.value = `adaptive_${intent}`;
 
-    const directConstraints = String(formData.get("context_constraints") ?? "").trim();
+    const directConstraints = formData
+      .getAll("context_constraints")
+      .map((value) => String(value).trim())
+      .filter(Boolean)
+      .join("; ");
     constraintsInput.value = directConstraints;
 
     setPreparing(true);
@@ -211,38 +215,38 @@ export function AdaptiveProjectIntake() {
 
       {intent === "client_request" && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Extra label="Quem é o cliente / organização?" name="context_client" />
-          <Extra label="Qual foi o pedido exacto?" name="context_client_request" />
-          <Extra label="Existe orçamento ou intervalo de investimento?" name="context_budget" />
-          <Extra label="Existe prazo ou data de entrega?" name="context_deadline" />
-          <Extra label="Quem decide / valida do lado do cliente?" name="context_decision_maker" />
-          <Extra label="Que informação ou activos o cliente já forneceu?" name="context_available_inputs" />
+          <Extra label="6. Quem é o cliente / organização?" name="context_client" />
+          <Extra label="7. Qual foi o pedido exacto?" name="context_client_request" />
+          <Extra label="8. Existe orçamento ou intervalo de investimento?" name="context_budget" />
+          <Extra label="9. Existe prazo ou data de entrega?" name="context_deadline" />
+          <Extra label="10. Quem decide / valida do lado do cliente?" name="context_decision_maker" />
+          <Extra label="11. Que informação ou activos o cliente já forneceu?" name="context_available_inputs" />
         </div>
       )}
 
       {intent === "investment" && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Extra label="Capital ou recursos disponíveis" name="context_budget" />
-          <Extra label="Horizonte de investimento" name="context_horizon" />
-          <Extra label="Geografia / mercados onde pode operar" name="context_geography" />
-          <Extra label="Sectores de interesse, se existirem" name="context_sectors" />
+          <Extra label="2. Capital ou recursos disponíveis" name="context_budget" />
+          <Extra label="3. Horizonte de investimento" name="context_horizon" />
+          <Extra label="4. Geografia / mercados onde pode operar" name="context_geography" />
+          <Extra label="5. Sectores de interesse, se existirem" name="context_sectors" />
 
           <MultiSelectField
-            label="Capacidades, experiência ou activos que já possui"
+            label="6. Capacidades, experiência ou activos que já possui"
             name="context_capabilities"
             options={capabilityOptions}
           />
 
-          <Extra label="Nível de envolvimento pretendido no negócio" name="context_involvement" />
+          <Extra label="7. Nível de envolvimento pretendido no negócio" name="context_involvement" />
 
           <MultiSelectField
-            label="Objectivo de retorno / resultado pretendido"
+            label="8. Objectivo de retorno / resultado pretendido"
             name="context_return_objective"
             options={returnObjectiveOptions}
           />
 
           <MultiSelectField
-            label="Tolerância ao risco"
+            label="9. Tolerância ao risco"
             name="context_risk"
             helper="Seleccione os tipos de risco que estaria disposto a aceitar."
             options={riskToleranceOptions}
@@ -252,58 +256,58 @@ export function AdaptiveProjectIntake() {
 
       {intent === "internal_improvement" && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Extra label="Como funciona o processo hoje?" name="context_current_process" area />
-          <Extra label="Onde está a maior dor, atraso ou desperdício?" name="context_pain" area />
-          <Extra label="Que equipa está envolvida?" name="context_team" />
-          <Extra label="Que sistemas ou ferramentas já são usados?" name="context_systems" />
-          <Extra label="Que dependências existem?" name="context_dependencies" area />
-          <Extra label="Como saberá que a melhoria funcionou?" name="context_success_measure" />
+          <Extra label="6. Como funciona o processo hoje?" name="context_current_process" area />
+          <Extra label="7. Onde está a maior dor, atraso ou desperdício?" name="context_pain" area />
+          <Extra label="8. Que equipa está envolvida?" name="context_team" />
+          <Extra label="9. Que sistemas ou ferramentas já são usados?" name="context_systems" />
+          <Extra label="10. Que dependências existem?" name="context_dependencies" area />
+          <Extra label="11. Como saberá que a melhoria funcionou?" name="context_success_measure" />
         </div>
       )}
 
       {intent === "digital_solution" && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Extra label="Quem são os utilizadores principais?" name="context_users" />
-          <Extra label="Quais são as funcionalidades essenciais?" name="context_features" area />
-          <Extra label="Que dados serão usados?" name="context_data" area />
-          <Extra label="Que integrações são necessárias?" name="context_integrations" area />
-          <Extra label="Existem requisitos de segurança / acesso?" name="context_security" area />
-          <Extra label="Existe prazo ou marco de lançamento?" name="context_deadline" />
+          <Extra label="6. Quem são os utilizadores principais?" name="context_users" />
+          <Extra label="7. Quais são as funcionalidades essenciais?" name="context_features" area />
+          <Extra label="8. Que dados serão usados?" name="context_data" area />
+          <Extra label="9. Que integrações são necessárias?" name="context_integrations" area />
+          <Extra label="10. Existem requisitos de segurança / acesso?" name="context_security" area />
+          <Extra label="11. Existe prazo ou marco de lançamento?" name="context_deadline" />
         </div>
       )}
 
       {intent === "idea" && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Extra label="Em que fase está a ideia?" name="context_stage" />
-          <Extra label="Que recursos já existem?" name="context_resources" area />
-          <Extra label="Existe prazo ou urgência?" name="context_deadline" />
-          <Extra label="Que pressupostos ainda precisam de validação?" name="context_assumptions" area />
+          <Extra label="6. Em que fase está a ideia?" name="context_stage" />
+          <Extra label="7. Que recursos já existem?" name="context_resources" area />
+          <Extra label="8. Existe prazo ou urgência?" name="context_deadline" />
+          <Extra label="9. Que pressupostos ainda precisam de validação?" name="context_assumptions" area />
         </div>
       )}
 
       {intent === "problem" && (
         <div className="grid gap-4 md:grid-cols-2">
-          <Extra label="Onde e quando o problema acontece?" name="context_problem_context" area />
-          <Extra label="Qual é o impacto actual?" name="context_impact" area />
-          <Extra label="O que já foi tentado?" name="context_attempts" area />
-          <Extra label="Que pessoas / sistemas estão envolvidos?" name="context_dependencies" area />
+          <Extra label="6. Onde e quando o problema acontece?" name="context_problem_context" area />
+          <Extra label="7. Qual é o impacto actual?" name="context_impact" area />
+          <Extra label="8. O que já foi tentado?" name="context_attempts" area />
+          <Extra label="9. Que pessoas / sistemas estão envolvidos?" name="context_dependencies" area />
         </div>
       )}
 
-      <label className="block text-sm font-medium text-[var(--cc-foreground)]">
-        6. Restrições, limites ou condições que o PCC deve respeitar
-        <textarea
-          className={fieldClass + " min-h-24"}
-          name="context_constraints"
-          placeholder="Orçamento, prazo, equipa, tecnologia, regras, licenças, segurança, decisões já tomadas..."
-        />
-      </label>
+      <MultiSelectField
+        label={`${constraintsQuestionNumber(intent)}. Restrições, limites ou condições que o PCC deve respeitar`}
+        name="context_constraints"
+        options={constraintOptions}
+        helper="Seleccione as condições aplicáveis e acrescente detalhes quando necessário."
+        detailLabel="Detalhes adicionais"
+        detailPlaceholder="Ex.: orçamento máximo, prazo exacto, regra específica, tecnologia obrigatória, licença necessária..."
+      />
 
       {intent === "investment" ? (
         <input type="hidden" name="project_type" value="commercial" />
       ) : (
         <label className="block text-sm font-medium text-[var(--cc-foreground)]">
-          7. Natureza do projecto
+          {natureQuestionNumber(intent)}. Natureza do projecto
           <select
             className={fieldClass}
             name="project_type"
@@ -330,6 +334,32 @@ export function AdaptiveProjectIntake() {
     </form>
   );
 }
+
+function constraintsQuestionNumber(intent: Intent) {
+  if (intent === "investment") return 10;
+  if (["client_request", "internal_improvement", "digital_solution"].includes(intent)) return 12;
+  return 10;
+}
+
+function natureQuestionNumber(intent: Intent) {
+  if (["client_request", "internal_improvement", "digital_solution"].includes(intent)) return 13;
+  return 11;
+}
+
+const constraintOptions = [
+  "Orçamento máximo definido",
+  "Prazo ou data limite",
+  "Equipa / capacidade disponível limitada",
+  "Tecnologia ou plataforma obrigatória",
+  "Integrações ou sistemas existentes a respeitar",
+  "Licenças, autorizações ou requisitos regulatórios",
+  "Requisitos de segurança, privacidade ou acesso",
+  "Geografia / mercado onde deve operar",
+  "Fornecedor, parceiro ou recurso obrigatório",
+  "Decisões já tomadas que não devem ser alteradas",
+  "Limite de exposição financeira / capital em risco",
+  "Operação deve começar pequena e ser validada antes de escalar",
+];
 
 const capabilityOptions = [
   "Gestão e liderança",
@@ -379,11 +409,15 @@ function MultiSelectField({
   name,
   options,
   helper,
+  detailLabel = "Outro / especificar",
+  detailPlaceholder = "Acrescente algo que não esteja nas opções.",
 }: {
   label: string;
   name: string;
   options: string[];
   helper?: string;
+  detailLabel?: string;
+  detailPlaceholder?: string;
 }) {
   return (
     <fieldset className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4 md:col-span-2">
@@ -410,11 +444,11 @@ function MultiSelectField({
         ))}
       </div>
       <label className="mt-3 block text-sm font-medium text-[var(--cc-foreground)]">
-        Outro / especificar
-        <input
-          className={fieldClass}
+        {detailLabel}
+        <textarea
+          className={fieldClass + " min-h-20"}
           name={name}
-          placeholder="Acrescente algo que não esteja nas opções."
+          placeholder={detailPlaceholder}
         />
       </label>
     </fieldset>
