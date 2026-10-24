@@ -148,7 +148,9 @@ export async function importClientDiagnosticLink(formData: FormData) {
   const requestId = z.string().uuid().optional().safeParse(
     String(formData.get("request_id") ?? "").trim() || undefined,
   );
-  const sourceUrl = z.string().trim().url().max(2048).safeParse(String(formData.get("source_url") ?? ""));
+  const sourceUrl = z.string().trim().url().max(2048)
+    .refine((value) => /^https?:\/\//i.test(value), "Use um link http ou https.")
+    .safeParse(String(formData.get("source_url") ?? ""));
   const note = z.string().trim().max(2000).safeParse(String(formData.get("note") ?? ""));
 
   if (!factoryCaseId.success || !requestId.success || !sourceUrl.success || !note.success) {
