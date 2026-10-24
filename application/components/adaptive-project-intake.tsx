@@ -154,9 +154,7 @@ export function AdaptiveProjectIntake() {
             <label className="text-sm font-semibold text-[var(--cc-foreground)]">
               O que pretende fazer?
             </label>
-            <p className="mt-0.5 text-xs text-[var(--cc-secondary)]">
-              Esta escolha define as perguntas seguintes e o modelo de questionário.
-            </p>
+
           </div>
         </div>
         <select
@@ -179,9 +177,7 @@ export function AdaptiveProjectIntake() {
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--cc-secondary)]">
               Alternativa
             </p>
-            <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-              Se já tiver a informação consigo, pode preencher o diagnóstico directamente no PCC.
-            </p>
+
           </div>
           <button
             type="button"
