@@ -61,7 +61,8 @@
       "audit/client-diagnostic-short-v2-20261024": false,
       "audit/client-diagnostic-executive-v3-20261024": false,
       "audit/new-project-questionnaire-actions-ui-20261024": false,
-      "audit/questionnaire-first-dynamic-intake-20261024": false
+      "audit/questionnaire-first-dynamic-intake-20261024": false,
+      "audit/public-direct-client-diagnostic-20261024": false
     }
   }
 }
