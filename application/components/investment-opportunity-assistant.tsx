@@ -87,6 +87,7 @@ export function InvestmentOpportunityAssistant() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [manualMode, setManualMode] = useState(false);
   const storageReady = useRef(false);
 
   useEffect(() => {
@@ -154,9 +155,11 @@ export function InvestmentOpportunityAssistant() {
       const parsed = parseOpportunities(text);
       if (!parsed.length) throw new Error("Resposta sem oportunidades válidas");
       setOpportunities(parsed);
+      setManualMode(false);
       setMessage("Hipóteses preparadas. Escolha uma apenas para iniciar a avaliação formal; nenhuma está validada ainda.");
     } catch {
-      setMessage("O perfil ficou guardado neste dispositivo, mas o PCC não cria oportunidades sem uma IA disponível. Volte a gerar quando houver ligação ou runtime local validado.");
+      setManualMode(true);
+      setMessage("A IA está indisponível neste momento. O perfil ficou guardado e pode continuar já, sem IA, definindo manualmente a oportunidade que pretende avaliar.");
     } finally {
       setBusy(false);
     }
