@@ -372,9 +372,9 @@ jobs:
 
           $investmentPanel = Get-Content "./components/investment-discovery-panel.tsx" -Raw
           $investmentModel = Get-Content "./lib/investment-discovery.ts" -Raw
-          $factoryCasePage = Get-Content "./app/(protected)/project-factory/[id]/page.tsx" -Raw
+          $factoryCasePage = Get-Content -LiteralPath "./app/(protected)/project-factory/[id]/page.tsx" -Raw
           $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
-          $investmentExport = Get-Content "./app/api/exports/investment-brief/[id]/route.ts" -Raw
+          $investmentExport = Get-Content -LiteralPath "./app/api/exports/investment-brief/[id]/route.ts" -Raw
           $investmentMigration = Get-Content "../supabase/migrations/20261024140500_investment_discovery_briefs.sql" -Raw
 
           foreach ($token in @(
