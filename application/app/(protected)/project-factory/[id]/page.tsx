@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { finalizeFactoryDecision, saveCompetitiveIntelligence, saveFactoryReport, saveFactoryValidation } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
+import { InvestmentDiscoveryPanel } from "@/components/investment-discovery-panel";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -16,6 +17,8 @@ const STAGE_LABELS: Record<string, string> = {
   validation: "Avaliação de viabilidade",
   execution_arena: "Teste",
   factory_report: "Síntese para decisão",
+  investment_discovery: "Descoberta de oportunidades",
+  investment_decision: "Decisão de investimento",
   decision: "Decisão",
   converted_to_project: "Aprovado — em planeamento",
   on_hold: "Em espera",
@@ -41,13 +44,19 @@ export default async function FactoryCasePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; saved?: string; completed?: string; validated?: string; report?: string; decision?: string }>;
+  searchParams: Promise<{ error?: string; saved?: string; completed?: string; validated?: string; report?: string; decision?: string; brief?: string; investment_decision?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
   const { supabase, user } = await requireUser();
 
-  const [{ data: factoryCase }, { data: report }, { data: validation }, { data: factoryReport }] = await Promise.all([
+  const [
+    { data: factoryCase },
+    { data: report },
+    { data: validation },
+    { data: factoryReport },
+    { data: investmentBrief },
+  ] = await Promise.all([
     supabase
       .from("project_factory_cases")
       .select("*")
@@ -72,9 +81,37 @@ export default async function FactoryCasePage({
       .eq("factory_case_id", id)
       .eq("user_id", user.id)
       .maybeSingle(),
+    supabase
+      .from("investment_discovery_briefs")
+      .select("executive_summary,opportunities,recommended_option_id,recommendation,decision_criteria,selected_option_id,status")
+      .eq("factory_case_id", id)
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
 
   if (!factoryCase) notFound();
+
+  if (factoryCase.source === "adaptive_investment") {
+    return (
+      <>
+        <div className="mb-4">
+          <Link className={secondaryButtonClass} href="/project-factory">Voltar à Fábrica de Projectos</Link>
+        </div>
+
+        <PageHeader eyebrow="Investimento" title="Descoberta de oportunidades" />
+        <FlashMessage
+          error={query.error}
+          created={query.brief ?? query.investment_decision}
+          message={query.brief ? "Resumo preparado para decisão." : undefined}
+        />
+
+        <InvestmentDiscoveryPanel
+          factoryCaseId={factoryCase.id}
+          brief={investmentBrief}
+        />
+      </>
+    );
+  }
 
   const isCommercial = factoryCase.project_type === "commercial";
   const monetizationStatus = (validation?.monetization_status ?? defaultMonetizationStatus(factoryCase.project_type)) as keyof typeof MONETIZATION_LABELS;
