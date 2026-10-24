@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { submitClientDiagnostic } from "@/app/client-diagnostic/[token]/actions";
 import { primaryButtonClass } from "@/components/ui";
@@ -49,17 +50,39 @@ export function ClientDiagnosticQuestionnaire({
   return (
     <main className="min-h-screen bg-[#f8f6f0] px-4 py-8 text-[#142825] sm:py-12">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-6 rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm sm:p-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#c99439]">PCC</p>
-          <h1 className="mt-2 text-2xl font-semibold text-[#073f36] sm:text-3xl">
-            Diagnóstico inicial
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-[#4f625d]">
-            Antes de recomendarmos uma solução, queremos compreender o essencial sobre o que procura,
-            o contexto em que se encontra e o resultado que pretende alcançar. As suas respostas
-            permitem-nos preparar um diagnóstico mais focado e tornar a próxima conversa mais
-            objectiva e útil.
-          </p>
+        <header className="mb-6 overflow-hidden rounded-2xl border border-[#e0e8e3] bg-white shadow-sm">
+          <div className="border-b border-[#e0e8e3] bg-[#f8f6f0] px-5 py-5 sm:px-7">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <Image
+                src="/brand/pcc-logo.png"
+                alt="Project Command Center"
+                width={230}
+                height={82}
+                className="h-auto w-[190px] sm:w-[220px]"
+                priority
+              />
+              <div className="text-right">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c99439]">
+                  Avalie. Decida. Execute.
+                </p>
+                <p className="mt-1 text-xs text-[#5f6c68]">Da Estratégia à Execução</p>
+              </div>
+            </div>
+          </div>
+          <div className="px-5 py-5 sm:px-7 sm:py-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#146453]">
+              Questionário Executivo
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold text-[#073f36] sm:text-3xl">
+              Diagnóstico inicial
+            </h1>
+            <div className="mt-3 h-0.5 w-14 bg-[#c99439]" />
+            <p className="mt-4 text-sm leading-6 text-[#4f625d]">
+              Antes de recomendarmos uma solução, queremos compreender o essencial sobre o que procura,
+              o contexto em que se encontra e o resultado que pretende alcançar. As suas respostas
+              permitem-nos preparar um diagnóstico mais focado e tornar a próxima conversa mais
+              objectiva e útil.
+            </p>
           <div className="mt-4 grid gap-3 rounded-xl bg-[#f5f1e6] p-4 text-sm sm:grid-cols-2">
             <div>
               <p className="font-semibold text-[#073f36]">Objectivo</p>
@@ -79,9 +102,10 @@ export function ClientDiagnosticQuestionnaire({
             <p className="mt-4 text-sm font-semibold text-[#142825]">{clientOrganization}</p>
           )}
           {clientName && <p className="mt-1 text-sm text-[#667085]">Contacto: {clientName}</p>}
-          {publicContext && (
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#667085]">{publicContext}</p>
-          )}
+            {publicContext && (
+              <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#667085]">{publicContext}</p>
+            )}
+          </div>
         </header>
 
         <form action={submitClientDiagnostic} className="space-y-5">
@@ -215,6 +239,13 @@ export function ClientDiagnosticQuestionnaire({
             </button>
           </div>
         </form>
+
+        <footer className="mt-6 border-t border-[#e0e8e3] py-5 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#073f36]">
+            PCC — Avalie. Decida. Execute.
+          </p>
+          <p className="mt-1 text-xs text-[#667085]">Da Estratégia à Execução</p>
+        </footer>
       </div>
     </main>
   );
