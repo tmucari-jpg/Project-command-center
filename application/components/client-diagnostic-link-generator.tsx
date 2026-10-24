@@ -15,11 +15,13 @@ export function ClientDiagnosticLinkGenerator({
   defaultClientName = "",
   defaultOrganization = "",
   defaultContext = "",
+  buttonLabel = "Gerar questionário",
 }: {
   factoryCaseId: string;
   defaultClientName?: string;
   defaultOrganization?: string;
   defaultContext?: string;
+  buttonLabel?: string;
 }) {
   const [state, action, pending] = useActionState(createClientDiagnosticRequest, initialState);
   const [copied, setCopied] = useState(false);
@@ -62,24 +64,18 @@ export function ClientDiagnosticLinkGenerator({
             className="mt-1 min-h-20 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm"
             name="public_context"
             defaultValue={defaultContext}
-            placeholder="Ex.: Para prepararmos o diagnóstico inicial, agradecemos o preenchimento deste breve questionário."
+            placeholder="Ex.: Para prepararmos um diagnóstico mais focado e uma próxima conversa mais objectiva, agradecemos o preenchimento deste breve questionário."
           />
         </label>
-        <label className="block text-sm font-medium text-[var(--cc-foreground)]">
-          Validade do link
-          <select
-            className="mt-1 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm"
-            name="expiry_days"
-            defaultValue="14"
-          >
-            <option value="7">7 dias</option>
-            <option value="14">14 dias</option>
-            <option value="30">30 dias</option>
-          </select>
-        </label>
+        <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-3 text-sm">
+          <p className="font-semibold text-[var(--cc-foreground)]">Validade do questionário: 7 dias</p>
+          <p className="mt-1 text-xs leading-5 text-[var(--cc-secondary)]">
+            Se expirar ou for necessário recolher nova informação, pode emitir uma nova solicitação.
+          </p>
+        </div>
         <div className="flex items-end">
           <button className={primaryButtonClass} type="submit" disabled={pending}>
-            {pending ? "A gerar..." : "Gerar link para enviar"}
+            {pending ? "A gerar..." : buttonLabel}
           </button>
         </div>
       </form>
