@@ -312,6 +312,42 @@ export async function revokeClientDiagnosticRequest(formData: FormData) {
   redirect(`${path}?client_diagnostic=revoked`);
 }
 
+export async function openClientDiagnosticNotification(formData: FormData) {
+  const notificationId = z.string().uuid().safeParse(formData.get("notification_id"));
+  const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
+
+  if (!notificationId.success || !factoryCaseId.success) {
+    fail("/project-factory", "Alerta de diagnóstico inválido.");
+  }
+
+  const { supabase, user } = await requireUser();
+
+  const { data: factoryCase, error: caseError } = await supabase
+    .from("project_factory_cases")
+    .select("id")
+    .eq("id", factoryCaseId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (caseError || !factoryCase) {
+    fail("/project-factory", caseError?.message ?? "Caso não encontrado.");
+  }
+
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("id", notificationId.data)
+    .eq("user_id", user.id)
+    .eq("type", "client_diagnostic_response")
+    .eq("related_entity_type", "project_factory_case")
+    .eq("related_entity_id", factoryCase.id);
+
+  if (error) fail("/project-factory", error.message);
+
+  revalidatePath("/project-factory");
+  redirect(`/project-factory/${factoryCase.id}`);
+}
+
 export async function reviewClientDiagnosticResponse(formData: FormData) {
   const requestId = z.string().uuid().safeParse(formData.get("request_id"));
   const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
@@ -343,7 +379,7 @@ export async function reviewClientDiagnosticResponse(formData: FormData) {
     .maybeSingle();
 
   if (requestError || !request) fail(path, requestError?.message ?? "Pedido de diagnóstico não encontrado.");
-  if (!["submitted", "reviewed", "clarification_needed"].includes(request.status)) {
+  if (!["submitted", "analyzing", "reviewed", "clarification_needed"].includes(request.status)) {
     fail(path, "Ainda não existe uma resposta disponível para revisão.");
   }
 
