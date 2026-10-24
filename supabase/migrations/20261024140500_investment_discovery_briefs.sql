@@ -19,6 +19,9 @@ create table if not exists public.investment_discovery_briefs (
 create index if not exists idx_investment_discovery_briefs_case
   on public.investment_discovery_briefs(factory_case_id, status);
 
+create index if not exists idx_investment_discovery_briefs_user_id
+  on public.investment_discovery_briefs(user_id);
+
 alter table public.investment_discovery_briefs enable row level security;
 
 revoke all on table public.investment_discovery_briefs from anon;
