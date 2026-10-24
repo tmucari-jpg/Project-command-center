@@ -126,6 +126,27 @@ export default async function FactoryCasePage({
   let clientDiagnosticResponse = null;
   let clientDiagnosticReview = null;
 
+  const { data: rawExternalSources } = await supabase
+    .from("client_diagnostic_external_sources")
+    .select("id,source_type,source_url,storage_path,file_name,note,created_at")
+    .eq("factory_case_id", factoryCase.id)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const clientDiagnosticExternalSources = await Promise.all(
+    (rawExternalSources ?? []).map(async (source) => {
+      if (source.source_type !== "file" || !source.storage_path) {
+        return { ...source, signed_url: null };
+      }
+
+      const { data } = await supabase.storage
+        .from("client-diagnostic-imports")
+        .createSignedUrl(source.storage_path, 600);
+
+      return { ...source, signed_url: data?.signedUrl ?? null };
+    }),
+  );
+
   if (clientDiagnosticRequest) {
     const [{ data: response }, { data: review }] = await Promise.all([
       supabase
@@ -244,7 +265,9 @@ export default async function FactoryCasePage({
         message={
           query.client_diagnostic === "incorporated"
             ? "Informação do cliente incorporada no diagnóstico."
-            : query.client_diagnostic === "reviewed"
+            : query.client_diagnostic === "external_added"
+              ? "Resposta externa associada ao caso."
+              : query.client_diagnostic === "reviewed"
               ? "Revisão do diagnóstico do cliente guardada."
               : query.client_diagnostic === "revoked"
                 ? "Link do questionário revogado."
@@ -265,6 +288,7 @@ export default async function FactoryCasePage({
         request={clientDiagnosticRequest}
         response={clientDiagnosticResponse}
         review={clientDiagnosticReview}
+        externalSources={clientDiagnosticExternalSources}
       />
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
