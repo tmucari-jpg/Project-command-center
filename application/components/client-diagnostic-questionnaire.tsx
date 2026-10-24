@@ -44,8 +44,8 @@ export function ClientDiagnosticQuestionnaire({
   publicContext?: string | null;
   expiresAt: string;
 }) {
-  const [respondentType, setRespondentType] = useState("individual");
-  const [nature, setNature] = useState<Nature>("problem");
+  const [respondentType, setRespondentType] = useState("");
+  const [nature, setNature] = useState<Nature | "">("");
 
   return (
     <main className="min-h-screen bg-[#f8f6f0] px-4 py-8 text-[#142825] sm:py-12">
@@ -150,8 +150,16 @@ export function ClientDiagnosticQuestionnaire({
             />
           </Block>
 
-          <AdaptiveContext nature={nature} />
-          <AdaptiveFocus nature={nature} />
+          {nature ? (
+            <>
+              <AdaptiveContext nature={nature} />
+              <AdaptiveFocus nature={nature} />
+            </>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[#c7d6d0] bg-[#f8f6f0] p-5 text-sm leading-6 text-[#5f6c68]">
+              Seleccione primeiro o motivo do contacto. As perguntas seguintes serão adaptadas à sua escolha.
+            </div>
+          )}
 
           <Block number={5} title="Que resultado gostaria de alcançar?">
             <Multi
@@ -440,7 +448,7 @@ function ChoiceGrid({
             value={optionValue}
             checked={value !== undefined ? value === optionValue : undefined}
             onChange={() => onChange?.(optionValue)}
-            required={name === "request_nature"}
+            required={name === "request_nature" || name === "respondent_type"}
           />
           <span>{label}</span>
         </label>
