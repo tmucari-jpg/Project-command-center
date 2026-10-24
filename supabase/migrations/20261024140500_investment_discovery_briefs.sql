@@ -21,6 +21,9 @@ create index if not exists idx_investment_discovery_briefs_case
 
 alter table public.investment_discovery_briefs enable row level security;
 
+revoke all on table public.investment_discovery_briefs from anon;
+grant select, insert, update on table public.investment_discovery_briefs to authenticated;
+
 create policy "Users can view own investment discovery briefs"
 on public.investment_discovery_briefs for select to authenticated
 using ((user_id = (select auth.uid())) or (select private.is_global_admin()));
