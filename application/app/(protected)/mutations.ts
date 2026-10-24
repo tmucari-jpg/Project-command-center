@@ -312,6 +312,89 @@ export async function revokeClientDiagnosticRequest(formData: FormData) {
   redirect(`${path}?client_diagnostic=revoked`);
 }
 
+export async function openNotification(formData: FormData) {
+  const notificationId = z.string().uuid().safeParse(formData.get("notification_id"));
+  if (!notificationId.success) fail("/notifications", "Notificação inválida.");
+
+  const { supabase, user } = await requireUser();
+
+  const { data: notification, error } = await supabase
+    .from("notifications")
+    .select("id,related_entity_type,related_entity_id")
+    .eq("id", notificationId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error || !notification) {
+    fail("/notifications", error?.message ?? "Notificação não encontrada.");
+  }
+
+  const { error: updateError } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("id", notification.id)
+    .eq("user_id", user.id);
+
+  if (updateError) fail("/notifications", updateError.message);
+
+  revalidatePath("/notifications");
+  revalidatePath("/project-factory");
+
+  const entityId = notification.related_entity_id;
+  if (entityId && notification.related_entity_type === "project_factory_case") {
+    redirect(`/project-factory/${entityId}`);
+  }
+  if (entityId && notification.related_entity_type === "project") {
+    redirect(`/projects/${entityId}`);
+  }
+  if (entityId && notification.related_entity_type === "objective") {
+    redirect(`/objectives/${entityId}`);
+  }
+
+  redirect("/notifications");
+}
+
+export async function markNotificationRead(formData: FormData) {
+  const notificationId = z.string().uuid().safeParse(formData.get("notification_id"));
+  const returnPath = String(formData.get("return_path") ?? "/notifications");
+
+  if (!notificationId.success) fail("/notifications", "Notificação inválida.");
+
+  const safeReturnPath =
+    /^\/(notifications|project-factory(?:\/[0-9a-f-]{36})?)$/.test(returnPath)
+      ? returnPath
+      : "/notifications";
+
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("id", notificationId.data)
+    .eq("user_id", user.id);
+
+  if (error) fail(safeReturnPath, error.message);
+
+  revalidatePath("/notifications");
+  revalidatePath("/project-factory");
+  revalidatePath(safeReturnPath);
+  redirect(safeReturnPath);
+}
+
+export async function markAllNotificationsRead() {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("read_at", null);
+
+  if (error) fail("/notifications", error.message);
+
+  revalidatePath("/notifications");
+  revalidatePath("/project-factory");
+  redirect("/notifications");
+}
+
 export async function openClientDiagnosticNotification(formData: FormData) {
   const notificationId = z.string().uuid().safeParse(formData.get("notification_id"));
   const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
