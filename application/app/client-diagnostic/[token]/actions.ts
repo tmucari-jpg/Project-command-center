@@ -3,10 +3,10 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { hashClientDiagnosticToken } from "@/lib/client-diagnostic-token";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 
 const responseSchema = z.object({
-  token: z.string().trim().min(20).max(200),
+  token: z.string().trim().regex(/^[A-Za-z0-9_-]{43,200}$/),
   respondent_name: z.string().trim().min(2).max(200),
   respondent_role: z.string().trim().max(200).optional().default(""),
   respondent_email: z.string().trim().max(320).optional().default(""),
@@ -40,7 +40,7 @@ export async function submitClientDiagnostic(formData: FormData) {
   }
 
   const { token: rawToken, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const tokenHash = hashClientDiagnosticToken(rawToken);
 
   const { data, error } = await supabase.rpc("client_diagnostic_submit", {
