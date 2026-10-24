@@ -58,7 +58,8 @@
       "audit/investment-capabilities-options-20261024": false,
       "audit/investment-intake-multiselect-diagnostic-20261024": false,
       "audit/client-diagnostic-questionnaire-20261024": false,
-      "audit/client-diagnostic-short-v2-20261024": false
+      "audit/client-diagnostic-short-v2-20261024": false,
+      "audit/client-diagnostic-executive-v3-20261024": false
     }
   }
 }
