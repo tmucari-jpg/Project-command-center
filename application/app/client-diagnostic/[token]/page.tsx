@@ -1,11 +1,22 @@
 import { createHash } from "node:crypto";
 import { submitClientDiagnostic } from "@/app/client-diagnostic/[token]/actions";
 import { primaryButtonClass } from "@/components/ui";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 
 function hashToken(token: string) {
   return createHash("sha256").update(token, "utf8").digest("hex");
 }
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    nocache: true,
+  },
+};
 
 const fieldClass =
   "mt-1 w-full rounded-xl border border-[#dce5df] bg-white px-3 py-2.5 text-sm text-[#142825] outline-none focus:border-[#146453]";
@@ -19,7 +30,12 @@ export default async function ClientDiagnosticPage({
 }) {
   const { token } = await params;
   const query = await searchParams;
-  const supabase = await createClient();
+
+  if (!/^[A-Za-z0-9_-]{43,200}$/.test(token)) {
+    return <PublicMessage title="Questionário indisponível" body="O link não é válido ou deixou de estar disponível." />;
+  }
+
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase.rpc("client_diagnostic_lookup", {
     p_token_hash: hashToken(token),
