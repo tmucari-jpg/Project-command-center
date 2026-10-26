@@ -209,6 +209,7 @@ begin
   ) s on true
   where l.id = v_link_id
     and l.status <> 'revoked'
+    and l.expires_at > now()
   limit 1;
 end;
 $$;
