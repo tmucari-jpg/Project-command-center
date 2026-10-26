@@ -16,6 +16,7 @@ import {
 } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
+import { ProjectClientStatusLink } from "@/components/project-client-status-link";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -287,6 +288,15 @@ export default async function ProjectHubPage({
           <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>Ver entregáveis</Link>
           <Link className={secondaryButtonClass} href={`/metrics?project_id=${project.id}`}>Ver KPI / resultados</Link>
         </div>
+
+        <details className="mt-5 border-t border-[var(--cc-border)] pt-4">
+          <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
+            Partilhar Status & Next Actions com o cliente
+          </summary>
+          <div className="mt-4">
+            <ProjectClientStatusLink projectId={project.id} />
+          </div>
+        </details>
       </Card>
 
       <Card className="mb-6 p-5">
