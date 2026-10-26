@@ -51,12 +51,20 @@ export function InstallAppButton() {
   if (!isMobile && !installPrompt) return null;
 
   async function install() {
+    const isAndroid = /Android/i.test(window.navigator.userAgent);
+
+    if (isAndroid) {
+      window.location.href = "/api/mobile/android-apk";
+      return;
+    }
+
     if (installPrompt) {
       await installPrompt.prompt();
       await installPrompt.userChoice;
       setInstallPrompt(null);
       return;
     }
+
     setShowHelp(true);
   }
 
@@ -81,7 +89,7 @@ export function InstallAppButton() {
               <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
                 {isIOS
                   ? "No Safari, toque em Partilhar e escolha “Adicionar ao Ecrã Principal”. Depois toque em “Adicionar”."
-                  : "No navegador, abra o menu e escolha “Instalar app” ou “Adicionar ao ecrã principal”. Confirme a instalação para criar no ecrã o ícone oficial do PCC. A PWA é a aplicação móvel já existente; APK/AAB são canais adicionais de distribuição."}
+                  : "No Android, o botão Instalar PCC descarrega directamente o APK oficial de teste para instalação no dispositivo. A opção PWA fica separada do APK."}
               </p>
             </div>
             <button
