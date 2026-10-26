@@ -15,13 +15,18 @@ export async function GET() {
     );
   }
 
+  const headers = new Headers({
+    "Content-Type": "application/vnd.android.package-archive",
+    "Content-Disposition": 'attachment; filename="PCC-Android.apk"',
+    "Cache-Control": "no-store, no-transform",
+    "X-Content-Type-Options": "nosniff",
+  });
+
+  const contentLength = upstream.headers.get("content-length");
+  if (contentLength) headers.set("Content-Length", contentLength);
+
   return new Response(upstream.body, {
     status: 200,
-    headers: {
-      "Content-Type": "application/vnd.android.package-archive",
-      "Content-Disposition": 'attachment; filename="PCC-Android.apk"',
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
+    headers,
   });
 }
