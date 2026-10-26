@@ -1,7 +1,9 @@
 import type { AIProviderHealthResult } from "@/lib/ai-provider-health";
 
 export type AIConfigurationStatus = "unverified" | "valid" | "invalid";
-export type AIAvailabilityReason = "healthy" | "quota" | "rate_limit" | "auth" | "model" | "endpoint" | "network" | "provider" | "unknown";
+export type AIAvailabilityReason =
+  | "healthy" | "quota" | "rate_limit" | "auth" | "model"
+  | "endpoint" | "network" | "provider" | "unknown";
 
 export function classifyAIProviderHealth(result: AIProviderHealthResult): {
   configuration_status: AIConfigurationStatus;
@@ -22,4 +24,11 @@ export function classifyAIProviderHealth(result: AIProviderHealthResult): {
   if (/(endpoint inv√°lido|endpoint.*configur|workspace.*endpoint)/.test(message)) {
     return { configuration_status: "invalid", availability_reason: "endpoint" };
   }
-  if (/(timeout|fetch failed|liga√ß√£o|alcan√ßar)/.t∂ªßq´^
+  if (/(timeout|fetch failed|liga√ß√£o|alcan√ßar)/.test(message)) {
+    return { configuration_status: "valid", availability_reason: "network" };
+  }
+  return {
+    configuration_status: result.status === "unknown" ? "unverified" : "valid",
+    availability_reason: "provider",
+  };
+}

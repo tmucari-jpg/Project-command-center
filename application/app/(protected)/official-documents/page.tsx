@@ -69,6 +69,8 @@ export default async function OfficialDocumentsPage({
               <option value="commercial_guide">Guia Comercial</option>
               <option value="technical_package">Pacote Técnico PCC / pen drive</option>
               <option value="release_diagnostic">Diagnóstico de Release</option>
+              <option value="android_apk">Android APK</option>
+              <option value="android_aab">Android AAB</option>
               <option value="other">Outro ficheiro oficial</option>
             </select>
           </label>
@@ -89,7 +91,7 @@ export default async function OfficialDocumentsPage({
           </label>
 
           <label className="text-sm font-medium text-[var(--cc-foreground)] md:col-span-2">Ficheiro
-            <input className={inputClass} type="file" name="file" accept=".pdf,.doc,.docx,.zip,.txt,.json,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip,text/plain,application/json" required />
+            <input className={inputClass} type="file" name="file" accept=".pdf,.doc,.docx,.zip,.txt,.json,.apk,.aab,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip,text/plain,application/json,application/vnd.android.package-archive,application/octet-stream" required />
           </label>
 
           <div className="md:col-span-2">

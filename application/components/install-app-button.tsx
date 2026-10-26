@@ -39,4 +39,62 @@ export function InstallAppButton() {
       setShowHelp(false);
     };
 
-    window.addEve���q�^
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  if (isStandalone) return null;
+  if (!isMobile && !installPrompt) return null;
+
+  async function install() {
+    if (installPrompt) {
+      await installPrompt.prompt();
+      await installPrompt.userChoice;
+      setInstallPrompt(null);
+      return;
+    }
+    setShowHelp(true);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={install}
+        aria-label="Instalar Project Command Center no dispositivo"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--cc-accent)] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[var(--cc-accent-strong)]"
+      >
+        <Download size={16} />
+        <span className="hidden sm:inline">Instalar PCC</span>
+        <span className="sm:hidden">Instalar PCC</span>
+      </button>
+
+      {showHelp && (
+        <div className="fixed inset-x-4 bottom-24 z-[80] mx-auto max-w-md rounded-[var(--cc-radius-lg)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-4 shadow-[var(--cc-shadow-md)] sm:bottom-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold text-[var(--cc-foreground)]">Instalar Project Command Center</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+                {isIOS
+                  ? "No Safari, toque em Partilhar e escolha “Adicionar ao Ecrã Principal”. Depois toque em “Adicionar”."
+                  : "No navegador, abra o menu e escolha “Instalar app” ou “Adicionar ao ecrã principal”. Confirme a instalação para criar no ecrã o ícone oficial do PCC. A PWA é a aplicação móvel já existente; APK/AAB são canais adicionais de distribuição."}
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Fechar instruções"
+              onClick={() => setShowHelp(false)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--cc-border)] text-[var(--cc-secondary)]"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

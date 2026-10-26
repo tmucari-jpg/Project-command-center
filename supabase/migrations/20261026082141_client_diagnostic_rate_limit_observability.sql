@@ -1,15 +1,9 @@
-create or replace function public.client_diagnostic_rate_limit_summary()
-returns table (
-  action text,
-  tracked_links bigint,
-  attempts bigint,
-  blocked_estimate bigint,
-  last_activity timestamptz
-)
-language sql
-security definer
-set search_path = ''
-as $$
+CREATE OR REPLACE FUNCTION public.client_diagnostic_rate_limit_summary()
+ RETURNS TABLE(action text, tracked_links bigint, attempts bigint, blocked_estimate bigint, last_activity timestamp with time zone)
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
   select
     l.action,
     count(*)::bigint as tracked_links,
@@ -27,7 +21,7 @@ as $$
      or (select private.is_global_admin())
   group by l.action
   order by l.action;
-$$;
+$function$
 
-revoke all on function public.client_diagnostic_rate_limit_summary() from public, anon;
+revoke all on function public.client_diagnostic_rate_limit_summary() from public,anon;
 grant execute on function public.client_diagnostic_rate_limit_summary() to authenticated;

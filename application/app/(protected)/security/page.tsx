@@ -25,4 +25,147 @@ export default async function SecurityPage() {
 
   type RateLimitSummary = {
     action: string;
-    tracked_links: number | string | ���q�^
+    tracked_links: number | string | null;
+    attempts: number | string | null;
+    blocked_estimate: number | string | null;
+    last_activity: string | null;
+  };
+  const rateLimitSummary = (rateLimitRows ?? []) as RateLimitSummary[];
+  const lookupRate = rateLimitSummary.find((item) => item.action === "lookup");
+  const submitRate = rateLimitSummary.find((item) => item.action === "submit");
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Fase 6"
+        title="Segurança e escala"
+      />
+
+      {error && <Card className="mb-6 p-5 text-sm text-red-700">{error}</Card>}
+
+      <Card className="mb-6 p-5">
+        <p className="font-semibold text-[var(--cc-foreground)]">Protecção do diagnóstico público</p>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          Rate limiting activo por link válido: 60 consultas/10 min e 8 tentativas de envio/15 min. Tokens inválidos não criam registos de controlo.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Consultas</p>
+            <p className="mt-1 text-sm text-[var(--cc-foreground)]">
+              {lookupRate ? `${lookupRate.attempts} tentativas · ${lookupRate.blocked_estimate} bloqueadas` : "Sem actividade registada"}
+            </p>
+          </div>
+          <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Submissões</p>
+            <p className="mt-1 text-sm text-[var(--cc-foreground)]">
+              {submitRate ? `${submitRate.attempts} tentativas · ${submitRate.blocked_estimate} bloqueadas` : "Sem actividade registada"}
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="p-4"><p className="text-xs text-slate-500">Roles</p><p className="mt-1 text-2xl font-semibold">{roles?.length ?? 0}</p></Card>
+        <Card className="p-4"><p className="text-xs text-slate-500">Vault items</p><p className="mt-1 text-2xl font-semibold">{vaultItems?.length ?? 0}</p></Card>
+        <Card className="p-4"><p className="text-xs text-slate-500">Security controls</p><p className="mt-1 text-2xl font-semibold">{controls?.length ?? 0}</p></Card>
+        <Card className="p-4"><p className="text-xs text-slate-500">Security events</p><p className="mt-1 text-2xl font-semibold">{events?.length ?? 0}</p></Card>
+      </div>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <Card>
+          <div className="border-b border-slate-200 p-5">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><Users size={18} /> RBAC</h2>
+          </div>
+          <div className="p-5">
+            {!roles?.length ? <EmptyState>Sem roles explícitos registados.</EmptyState> : (
+              <div className="space-y-3">
+                {roles.map((role) => (
+                  <div key={role.id} className="rounded-xl border border-slate-200 p-3">
+                    <p className="text-sm font-medium text-slate-950">{role.role}</p>
+                    <p className="mt-1 text-xs text-slate-500">{role.scope_type}{role.project_id ? " · projecto específico" : ""}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="border-b border-slate-200 p-5">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><KeyRound size={18} /> Vault metadata</h2>
+          </div>
+          <div className="p-5">
+            {!vaultItems?.length ? <EmptyState>Sem referências de Vault registadas.</EmptyState> : (
+              <div className="space-y-3">
+                {vaultItems.map((item) => (
+                  <div key={item.id} className="rounded-xl border border-slate-200 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-slate-950">{item.service}</p>
+                        <p className="mt-1 text-xs text-slate-500">{item.category} · {item.storage_mode}</p>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{item.status}</span>
+                    </div>
+                    {item.username_hint && <p className="mt-2 text-xs text-slate-500">Utilizador: {item.username_hint}</p>}
+                    {item.secret_reference && <p className="mt-1 text-xs text-slate-500">Secret ref: {item.secret_reference}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="border-b border-slate-200 p-5">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><ShieldCheck size={18} /> Security controls</h2>
+          </div>
+          <div className="p-5">
+            {!controls?.length ? <EmptyState>Sem controlos registados.</EmptyState> : (
+              <div className="space-y-3">
+                {controls.map((control) => (
+                  <div key={control.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-950">{control.control_key}</p>
+                      <p className="mt-1 text-xs text-slate-500">{control.last_checked_at ? formatDateTime(control.last_checked_at) : "Ainda não verificado"}</p>
+                    </div>
+                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${control.enabled ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-700"}`}>
+                      {control.enabled ? "activo" : "inactivo"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="border-b border-slate-200 p-5">
+            <h2 className="inline-flex items-center gap-2 font-semibold text-slate-950"><LockKeyhole size={18} /> Eventos recentes</h2>
+          </div>
+          <div className="p-5">
+            {!events?.length ? <EmptyState>Sem eventos de segurança recentes.</EmptyState> : (
+              <div className="space-y-3">
+                {events.map((event) => (
+                  <div key={event.id} className="rounded-xl border border-slate-200 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-slate-950">{event.event_type}</p>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">{event.severity}</span>
+                    </div>
+                    {event.description && <p className="mt-2 text-sm text-slate-600">{event.description}</p>}
+                    <p className="mt-1 text-xs text-slate-500">{formatDateTime(event.created_at)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <Card className="mt-6 p-5">
+        <p className="text-sm leading-6 text-slate-600">
+          O Vault aqui guarda apenas metadata e referências. Passwords, API keys, tokens e private keys não devem ser guardados em plaintext no Command Center.
+        </p>
+      </Card>
+    </>
+  );
+}
