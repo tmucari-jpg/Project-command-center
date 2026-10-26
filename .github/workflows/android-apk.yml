@@ -38,6 +38,14 @@ jobs:
           cp application/public/icons/icon-512.png android-apk/app/src/main/res/drawable/pcc_icon.png
           test -s android-apk/app/src/main/res/drawable/pcc_icon.png
 
+      - name: Guard PCC Android identity and app shell
+        run: |
+          grep -q 'PCC_URL = "https://project-command-center-seven-xi.vercel.app/dashboard"' android-apk/app/src/main/java/com/pcc/projectcommandcenter/MainActivity.java
+          grep -q 'Theme.PCC.Starting' android-apk/app/src/main/AndroidManifest.xml
+          grep -q 'windowSplashScreenAnimatedIcon.*@drawable/pcc_icon' android-apk/app/src/main/res/values/styles.xml
+          grep -q 'versionCode 2' android-apk/app/build.gradle
+          grep -q 'versionName "1.0.1"' android-apk/app/build.gradle
+
       - name: Build installable debug APK
         working-directory: android-apk
         run: |
@@ -49,6 +57,9 @@ jobs:
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging android-apk/app/build/outputs/apk/debug/app-debug.apk | tee /tmp/apk-badging.txt
           grep -q "package: name='com.pcc.projectcommandcenter'" /tmp/apk-badging.txt
           grep -q "application-label:'PCC'" /tmp/apk-badging.txt
+          grep -q "versionCode='2'" /tmp/apk-badging.txt
+          grep -q "versionName='1.0.1'" /tmp/apk-badging.txt
+          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose android-apk/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Publish APK artifact
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
