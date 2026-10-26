@@ -250,13 +250,10 @@ export function ClientDiagnosticPanel({
             </p>
           )}
 
-          <div className="border-t border-[var(--cc-border)] pt-5">
-            <h3 className="text-base font-semibold text-[var(--cc-foreground)]">
-              Nova solicitação
-            </h3>
-            <p className="mt-1 text-sm text-[var(--cc-secondary)]">
-              Pode emitir um novo questionário de 7 dias. Se existir um link anterior ainda activo, será revogado.
-            </p>
+          <details className="border-t border-[var(--cc-border)] pt-5">
+            <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
+              Mais opções do diagnóstico
+            </summary>
             <div className="mt-4">
               <ClientDiagnosticLinkGenerator
                 factoryCaseId={factoryCaseId}
@@ -266,24 +263,14 @@ export function ClientDiagnosticPanel({
                 buttonLabel="Gerar nova solicitação"
               />
             </div>
-          </div>
+          </details>
         </div>
       )}
 
-      <div className="mt-6 border-t border-[var(--cc-border)] pt-6">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-secondary)]">
-            Resposta recebida por outro canal
-          </p>
-          <h3 className="mt-1 text-lg font-semibold text-[var(--cc-foreground)]">
-            Importar questionário
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-            Se o cliente respondeu fora do link PCC, anexe o ficheiro recebido ou registe o link da resposta.
-            A fonte fica associada ao caso para revisão e rastreabilidade.
-          </p>
-        </div>
-
+      <details className="mt-6 border-t border-[var(--cc-border)] pt-5">
+        <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
+          Importações e fontes externas
+        </summary>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <form
             action={uploadClientDiagnosticFile}
@@ -376,7 +363,7 @@ export function ClientDiagnosticPanel({
             </div>
           </div>
         )}
-      </div>
+      </details>
     </Card>
   );
 }

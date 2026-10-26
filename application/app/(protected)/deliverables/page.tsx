@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { createDeliverable, recordDeliverableAcceptance, recordDeliverableQA } from "@/app/(protected)/mutations";
+import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
-import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
+import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
+import { displayLabel } from "@/lib/display-label";
 
 export default async function DeliverablesPage({
   searchParams,
@@ -21,11 +24,10 @@ export default async function DeliverablesPage({
         .order("updated_at", { ascending: false }),
       supabase
         .from("deliverables")
-        .select("id,project_id,title,description,status,progress,created_at,updated_at")
+        .select("id,project_id,title,description,status,progress,due_date,completion_criteria,artifact_type,artifact_url,artifact_reference,artifact_version,qa_status,acceptance_status,accepted_at,created_at,updated_at")
         .eq("user_id", user.id)
-        .eq("workstream", "general")
-        .ilike("title", "Diagnóstico do Cliente%")
-        .order("created_at", { ascending: false }),
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true }),
     ]);
 
   const error = projectError?.message ?? deliverableError?.message;
@@ -35,57 +37,173 @@ export default async function DeliverablesPage({
 
   return (
     <>
-      <PageHeader eyebrow="Biblioteca do Projecto" title="Entregável de Diagnóstico" />
+      <PageHeader eyebrow="Resultados do Projecto" title="Entregáveis" />
 
       {error && <Card className="mb-6 p-5 text-sm text-[var(--cc-danger)]">{error}</Card>}
 
-      <Card className="mb-6 p-5">
-        <h2 className="font-semibold text-[var(--cc-foreground)]">O que fica aqui</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Cada projecto tem um único entregável: o diagnóstico produzido a partir do questionário do cliente e dos inputs efectivamente recolhidos. O conteúdo, título e descrição são gerados automaticamente pelo PCC; não existe criação manual de entregáveis nesta área.
-        </p>
-        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          O fecho do projecto é um processo separado e está em <strong>Fecho do Projecto</strong>. O Repositório Oficial PCC também é separado e guarda apenas documentos e builds oficiais da plataforma.
-        </p>
-      </Card>
-
-      <div className="space-y-4">
+      <div className="space-y-5">
         {visibleProjects.map((project) => {
-          const item = (deliverables ?? []).find((deliverable) => deliverable.project_id === project.id);
-          return (
-            <Card key={project.id} className="p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Projecto</p>
-                  <h2 className="mt-1 text-lg font-semibold text-[var(--cc-foreground)]">{project.title}</h2>
-                </div>
-                <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
-                  {item ? "Diagnóstico disponível" : "A aguardar diagnóstico"}
-                </span>
-              </div>
+          const projectDeliverables = (deliverables ?? []).filter((item) => item.project_id === project.id);
+          const accepted = projectDeliverables.filter((item) => item.acceptance_status === "accepted").length;
+          const evidenced = projectDeliverables.filter((item) => Boolean(item.artifact_url || item.artifact_reference)).length;
 
-              {item ? (
-                <div className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
-                  <p className="font-semibold text-[var(--cc-foreground)]">{item.title}</p>
-                  {item.description && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-secondary)]">{item.description}</p>}
-                  <p className="mt-3 text-xs text-[var(--cc-tertiary)]">
-                    Gerado automaticamente · {formatDate(item.created_at)} · estado {item.status}
+          return (
+            <Card key={project.id} className="p-5 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-secondary)]">Projecto</p>
+                  <h2 className="mt-1 text-xl font-semibold text-[var(--cc-foreground)]">{project.title}</h2>
+                  <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+                    {projectDeliverables.length
+                      ? `${accepted}/${projectDeliverables.length} aceite(s) · ${evidenced} com evidência`
+                      : "Ainda sem entregáveis definidos."}
                   </p>
                 </div>
-              ) : (
-                <EmptyState>
-                  O entregável será criado automaticamente quando o diagnóstico do cliente for incorporado no projecto.
-                </EmptyState>
-              )}
-
-              <div className="mt-4">
                 <Link className={secondaryButtonClass} href={"/projects/" + project.id}>Abrir projecto</Link>
               </div>
+
+              <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+                <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">
+                  Adicionar entregável
+                </summary>
+                <form action={createDeliverable} className="space-y-4 border-t border-[var(--cc-border)] p-4">
+                  <input type="hidden" name="project_id" value={project.id} />
+                  <input type="hidden" name="workstream" value="general" />
+                  <input type="hidden" name="return_path" value="/deliverables" />
+                  <input type="hidden" name="status" value="pending" />
+                  <input type="hidden" name="progress" value="0" />
+                  <input type="hidden" name="priority" value="medium" />
+                  <Field label="Entregável" name="title" required placeholder="Resultado concreto a produzir" />
+                  <TextArea label="Descrição" name="description" />
+                  <TextArea label="Critério de aceitação" name="completion_criteria" required />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Prazo" name="due_date" type="date" />
+                    <Select label="Formato do resultado" name="artifact_type" defaultValue="document">
+                      <option value="document">Documento</option>
+                      <option value="spreadsheet">Folha de cálculo</option>
+                      <option value="presentation">Apresentação</option>
+                      <option value="pdf">PDF</option>
+                      <option value="website">Website</option>
+                      <option value="application">Aplicação</option>
+                      <option value="dashboard">Dashboard</option>
+                      <option value="api">API</option>
+                      <option value="dataset">Dataset</option>
+                      <option value="prototype">Protótipo</option>
+                      <option value="other">Outro</option>
+                    </Select>
+                  </div>
+                  <Field label="URL da evidência, quando já existir" name="artifact_url" type="url" />
+                  <Field label="Referência da evidência / versão" name="artifact_reference" />
+                  <button className={primaryButtonClass} type="submit">Registar entregável</button>
+                </form>
+              </details>
+
+              {projectDeliverables.length ? (
+                <div className="mt-5 space-y-3">
+                  {projectDeliverables.map((item) => (
+                    <article
+                      key={item.id}
+                      className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-[var(--cc-foreground)]">{item.title}</h3>
+                          {item.description && (
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--cc-secondary)]">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+                        <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
+                          {item.acceptance_status === "accepted"
+                            ? "Aceite"
+                            : item.qa_status && item.qa_status !== "pending"
+                              ? displayLabel(item.qa_status)
+                              : displayLabel(item.status)}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-4">
+                        <Info label="Critério de aceitação" value={item.completion_criteria || "Por definir"} />
+                        <Info
+                          label="Evidência"
+                          value={item.artifact_reference || item.artifact_type || (item.artifact_url ? "Link disponível" : "Em falta")}
+                        />
+                        <Info label="Prazo" value={item.due_date ? formatDate(item.due_date) : "Sem prazo"} />
+                        <Info
+                          label="Validação"
+                          value={item.acceptance_status === "accepted"
+                            ? `Aceite${item.accepted_at ? ` · ${formatDate(item.accepted_at)}` : ""}`
+                            : displayLabel(item.acceptance_status || "pending")}
+                        />
+                      </div>
+
+                      {item.artifact_url && (
+                        <div className="mt-4">
+                          <a className={secondaryButtonClass} href={item.artifact_url} target="_blank" rel="noreferrer">
+                            Abrir entregável{item.artifact_version ? ` · v${item.artifact_version}` : ""}
+                          </a>
+                        </div>
+                      )}
+
+                      <details className="mt-4 border-t border-[var(--cc-border)] pt-4">
+                        <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
+                          QA e validação
+                        </summary>
+                        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                          <form action={recordDeliverableQA} className="space-y-3 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
+                            <input type="hidden" name="deliverable_id" value={item.id} />
+                            <input type="hidden" name="project_id" value={project.id} />
+                            <Select label="QA" name="qa_status" defaultValue={item.qa_status || "pending"}>
+                              <option value="pending" disabled>Por rever</option>
+                              <option value="passed">Aprovado</option>
+                              <option value="failed">Reprovado</option>
+                              <option value="not_required">Não aplicável</option>
+                            </Select>
+                            <TextArea label="Notas de QA" name="qa_notes" />
+                            <button className={secondaryButtonClass} type="submit">Guardar QA</button>
+                          </form>
+
+                          <form action={recordDeliverableAcceptance} className="space-y-3 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
+                            <input type="hidden" name="deliverable_id" value={item.id} />
+                            <input type="hidden" name="project_id" value={project.id} />
+                            <Select label="Validação / aceitação" name="acceptance_status" defaultValue={item.acceptance_status || "pending"}>
+                              <option value="pending" disabled>Por validar</option>
+                              <option value="accepted">Aceite</option>
+                              <option value="accepted_with_reservations">Aceite com reservas</option>
+                              <option value="correction_required">Correcção necessária</option>
+                              <option value="not_required">Não aplicável</option>
+                            </Select>
+                            <Field label="Referência da validação" name="acceptance_reference" placeholder="Ex.: email, reunião, documento assinado" />
+                            <TextArea label="Notas" name="acceptance_notes" />
+                            <button className={secondaryButtonClass} type="submit">Registar validação</button>
+                          </form>
+                        </div>
+                      </details>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <EmptyState>
+                    Os entregáveis devem representar resultados concretos do projecto e ter critério de aceitação, evidência e validação quando aplicável.
+                  </EmptyState>
+                </div>
+              )}
             </Card>
           );
         })}
         {!visibleProjects.length && <EmptyState>Sem projectos para apresentar.</EmptyState>}
       </div>
     </>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-[var(--cc-secondary)]">{label}</p>
+      <p className="mt-1 text-[var(--cc-foreground)]">{value}</p>
+    </div>
   );
 }

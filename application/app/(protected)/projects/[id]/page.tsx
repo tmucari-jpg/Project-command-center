@@ -16,6 +16,7 @@ import {
 } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
+import { ProjectClientStatusLink } from "@/components/project-client-status-link";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -69,7 +70,7 @@ export default async function ProjectHubPage({
       .order("due_at", { ascending: true, nullsFirst: false }),
     supabase
       .from("deliverables")
-      .select("id,title,status,progress,due_date")
+      .select("id,title,status,progress,due_date,completion_criteria,artifact_type,artifact_url,artifact_reference,artifact_version,qa_status,acceptance_status,accepted_at")
       .eq("user_id", user.id)
       .eq("project_id", id)
       .order("due_date", { ascending: true, nullsFirst: false }),
@@ -204,6 +205,31 @@ export default async function ProjectHubPage({
     estimated: "Estimado",
     missing: "Em falta",
   };
+  const acceptedDeliverables = (deliverables ?? []).filter((item) => item.acceptance_status === "accepted");
+  const evidencedDeliverables = (deliverables ?? []).filter((item) => Boolean(item.artifact_url || item.artifact_reference));
+  const deliverableProgress = (deliverables ?? []).length
+    ? Math.round((acceptedDeliverables.length / (deliverables ?? []).length) * 100)
+    : 0;
+  const nextAction = (actions ?? []).find((item) => item.is_next_action && !["completed", "cancelled"].includes(item.status));
+  const nextDeliverable = (deliverables ?? []).find((item) => item.acceptance_status !== "accepted");
+  const currentProjectMoment =
+    !(deliverables ?? []).length
+      ? "Diagnóstico e definição"
+      : acceptedDeliverables.length === (deliverables ?? []).length
+        ? "Resultado, validação e fecho"
+        : evidencedDeliverables.length
+          ? "Validação de entregáveis"
+          : "Intervenção e execução";
+  const nextFocus =
+    openBlockers[0]?.title
+      ? `Resolver bloqueio: ${openBlockers[0].title}`
+      : pendingChanges.length
+        ? "Decidir alteração de âmbito pendente"
+        : nextAction?.title
+          ? nextAction.title
+          : nextDeliverable?.title
+            ? `Produzir ou validar: ${nextDeliverable.title}`
+            : project.next_action || "Definir próxima decisão";
 
   return (
     <>
@@ -221,14 +247,62 @@ export default async function ProjectHubPage({
         title={project.title}
       />
 
+      <Card className="mb-6 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-secondary)]">Onde estamos</p>
+            <h2 className="mt-1 text-xl font-semibold text-[var(--cc-foreground)]">{currentProjectMoment}</h2>
+            <p className="mt-2 max-w-3xl text-sm text-[var(--cc-secondary)]">
+              O progresso principal é determinado pelos entregáveis aceites, respectiva evidência e resultado obtido.
+            </p>
+          </div>
+          <span className="rounded-full bg-[var(--cc-surface-muted)] px-3 py-1.5 text-sm font-semibold text-[var(--cc-foreground)]">
+            {deliverableProgress}% por entregáveis
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <p className="text-xs font-semibold text-[var(--cc-secondary)]">Resultado esperado</p>
+            <p className="mt-1 text-sm text-[var(--cc-foreground)]">{project.expected_result || "Por definir"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-[var(--cc-secondary)]">Entregáveis</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--cc-foreground)]">
+              {acceptedDeliverables.length}/{(deliverables ?? []).length} aceites
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-[var(--cc-secondary)]">Evidência de entregáveis</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--cc-foreground)]">
+              {evidencedDeliverables.length}/{(deliverables ?? []).length} com evidência
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-[var(--cc-secondary)]">Próxima decisão / acção</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--cc-foreground)]">{nextFocus}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>Ver entregáveis</Link>
+          <Link className={secondaryButtonClass} href={`/metrics?project_id=${project.id}`}>Ver KPI / resultados</Link>
+        </div>
+
+        <details className="mt-5 border-t border-[var(--cc-border)] pt-4">
+          <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
+            Partilhar Status & Next Actions com o cliente
+          </summary>
+          <div className="mt-4">
+            <ProjectClientStatusLink projectId={project.id} />
+          </div>
+        </details>
+      </Card>
+
       <Card className="mb-6 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">G3 · Compromisso de Entrega</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--cc-secondary)]">
-              O trabalho material só começa depois de o PCC validar capacidade, custos e segurança e o cliente confirmar explicitamente
-              o resultado esperado, o âmbito, os entregáveis, as exclusões e os critérios de aceitação. Em projectos internos, esta validação cabe ao responsável interno.
-            </p>
+            <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Compromisso de Entrega</h2>
           </div>
           <span className="rounded-full bg-[var(--cc-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-foreground)]">
             {approvedBaseline ? `Baseline v${approvedBaseline.version} aprovada` : latestBaseline ? `Baseline v${latestBaseline.version} · ${displayLabel(latestBaseline.status)}` : "Baseline por definir"}

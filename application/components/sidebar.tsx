@@ -4,42 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3,
   Bell,
-  CheckSquare2,
-  CheckCircle2,
   Factory,
   FolderKanban,
   Gauge,
-  PackageCheck,
   Settings,
-  Target,
 } from "lucide-react";
-
-const navigationGroups = [
-  {
-    label: "Começar",
-    items: [
-      { href: "/project-factory", label: "Novo projecto", icon: Factory },
-      { href: "/objectives", label: "Objectivos", icon: Target },
-      { href: "/projects", label: "Projectos", icon: FolderKanban },
-    ],
-  },
-  {
-    label: "Executar",
-    items: [
-      { href: "/actions", label: "Executar", icon: CheckSquare2 },
-    ],
-  },
-  {
-    label: "Validar / concluir",
-    items: [
-      { href: "/metrics", label: "Métricas", icon: BarChart3 },
-      { href: "/deliverables", label: "Biblioteca do Projecto", icon: PackageCheck },
-      { href: "/closure", label: "Fecho do Projecto", icon: CheckCircle2 },
-    ],
-  },
-];
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -90,25 +60,11 @@ export function Sidebar({ isAdmin, notificationCount }: { isAdmin: boolean; noti
           </span>
         </Link>
 
-        <nav className="relative z-10 mt-5 space-y-5" aria-label="Navegação principal">
-          <div>
-            <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">Resumo</p>
-            <div className="space-y-1">
-              <NavLink pathname={pathname} href="/dashboard" label="Painel" Icon={Gauge} />
-              <NavLink pathname={pathname} href="/notifications" label="Notificações" Icon={Bell} badge={notificationCount} />
-            </div>
-          </div>
-
-          {navigationGroups.map((group) => (
-            <div key={group.label}>
-              <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--cc-accent)]/45">{group.label}</p>
-              <div className="space-y-1">
-                {group.items.map(({ href, label, icon }) => (
-                  <NavLink key={href} pathname={pathname} href={href} label={label} Icon={icon} />
-                ))}
-              </div>
-            </div>
-          ))}
+        <nav className="relative z-10 mt-6 space-y-1" aria-label="Navegação principal">
+          <NavLink pathname={pathname} href="/dashboard" label="Início" Icon={Gauge} />
+          <NavLink pathname={pathname} href="/project-factory" label="Novo projecto" Icon={Factory} />
+          <NavLink pathname={pathname} href="/projects" label="Projectos" Icon={FolderKanban} />
+          <NavLink pathname={pathname} href="/notifications" label="Alertas" Icon={Bell} badge={notificationCount} />
         </nav>
 
         <nav className="relative z-10 mt-5 space-y-1 border-t border-[var(--cc-border)] pt-4" aria-label="Administração">
@@ -122,18 +78,15 @@ export function Sidebar({ isAdmin, notificationCount }: { isAdmin: boolean; noti
 export function MobileNav({ notificationCount }: { notificationCount: number }) {
   const pathname = usePathname();
   const mobileItems = [
-    { href: "/dashboard", label: "Painel", icon: Gauge },
-    { href: "/notifications", label: notificationCount > 0 ? `Alertas ${notificationCount > 99 ? "99+" : notificationCount}` : "Alertas", icon: Bell },
+    { href: "/dashboard", label: "Início", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
-    { href: "/actions", label: "Executar", icon: CheckSquare2 },
-    { href: "/metrics", label: "Métricas", icon: BarChart3 },
-    { href: "/deliverables", label: "Fecho", icon: PackageCheck },
+    { href: "/notifications", label: notificationCount > 0 ? `Alertas ${notificationCount > 99 ? "99+" : notificationCount}` : "Alertas", icon: Bell },
   ];
 
   return (
-    <div className="cc-safe-bottom overflow-x-auto border-t border-[var(--cc-border)] bg-[var(--cc-glass)] px-2 py-2 backdrop-blur-2xl lg:hidden">
-      <nav className="flex min-w-max gap-1" aria-label="Navegação principal">
+    <div className="cc-safe-bottom border-t border-[var(--cc-border)] bg-[var(--cc-glass)] px-2 py-2 backdrop-blur-2xl lg:hidden">
+      <nav className="grid grid-cols-4 gap-1" aria-label="Navegação principal">
         {mobileItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
@@ -141,7 +94,7 @@ export function MobileNav({ notificationCount }: { notificationCount: number }) 
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`flex min-h-12 min-w-[72px] flex-col items-center justify-center gap-1 rounded-[14px] px-3 text-[11px] font-medium transition ${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-accent)] shadow-sm" : "text-[var(--cc-secondary)]"}`}
+              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-[14px] px-2 text-[11px] font-medium transition ${active ? "bg-[var(--cc-surface-strong)] text-[var(--cc-accent)] shadow-sm" : "text-[var(--cc-secondary)]"}`}
             >
               <Icon aria-hidden="true" size={18} strokeWidth={1.9} />
               <span>{label}</span>

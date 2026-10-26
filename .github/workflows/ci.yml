@@ -252,12 +252,23 @@ jobs:
           $officialDocuments = Get-Content "../application/app/(protected)/official-documents/page.tsx" -Raw
 
           foreach ($token in @(
-            "Biblioteca do Projecto",
+            "Resultados do Projecto",
+            "Critério de aceitação",
+            "Evidência",
+            "Validação"
+          )) {
+            if (-not $deliverables.Contains($token)) {
+              Write-Error "Missing deliverable-first project rule: $token"
+              exit 1
+            }
+          }
+
+          foreach ($forbidden in @(
             "único entregável",
             "não existe criação manual"
           )) {
-            if (-not $deliverables.Contains($token)) {
-              Write-Error "Missing project library rule: $token"
+            if ($deliverables.Contains($forbidden)) {
+              Write-Error "Legacy single-deliverable rule returned: $forbidden"
               exit 1
             }
           }
@@ -742,13 +753,26 @@ jobs:
           }
 
           foreach ($token in @(
-            "Importar questionário",
+            "Mais opções do diagnóstico",
+            "Importações e fontes externas",
             "Anexar questionário respondido",
             "Colar link da resposta",
-            "Nova solicitação"
+            "ClientDiagnosticLinkGenerator",
+            "uploadClientDiagnosticFile",
+            "importClientDiagnosticLink"
           )) {
             if (-not $clientDiagnosticPanel.Contains($token)) {
-              Write-Error "Client diagnostic operational panel is missing: $token"
+              Write-Error "Client diagnostic operational capability is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($forbidden in @(
+            "Pode emitir um novo questionário de 7 dias.",
+            "Se o cliente respondeu fora do link PCC"
+          )) {
+            if ($clientDiagnosticPanel.Contains($forbidden)) {
+              Write-Error "Redundant diagnostic explanatory copy returned: $forbidden"
               exit 1
             }
           }
@@ -1056,9 +1080,11 @@ jobs:
           }
 
           foreach ($token in @(
-            "G3 · Compromisso de Entrega",
+            "Compromisso de Entrega",
             "Registar validação e autorizar execução",
-            "Alterações de âmbito"
+            "Alterações de âmbito",
+            "O progresso principal é determinado pelos entregáveis aceites",
+            "Próxima decisão / acção"
           )) {
             if (-not $project.Contains($token)) {
               Write-Error "Project detail is missing protected commitment UI: $token"
@@ -1237,6 +1263,104 @@ jobs:
               Write-Error "Missing official-document migration token: $token"
               exit 1
             }
+          }
+
+      - name: Validate client project status portal
+        shell: pwsh
+        run: |
+          $migration = Get-Content "../supabase/migrations/20261026143000_client_project_status_portal.sql" -Raw
+          $project = Get-Content -LiteralPath "./app/(protected)/projects/[id]/page.tsx" -Raw
+          $publicPage = Get-Content -LiteralPath "./app/project-status/[token]/page.tsx" -Raw
+          $publicActions = Get-Content -LiteralPath "./app/project-status/[token]/actions.ts" -Raw
+          $proxy = Get-Content "./lib/supabase/proxy.ts" -Raw
+          $vercel = Get-Content "./vercel.json" -Raw
+          $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+
+          foreach ($token in @(
+            "project_client_status_snapshots",
+            "project_client_status_links",
+            "project_client_status_decisions",
+            "consume_project_client_status_rate_limit",
+            "project_client_status_lookup",
+            "project_client_status_submit",
+            "enable row level security",
+            "revoke all on table public.project_client_status_snapshots from anon"
+          )) {
+            if (-not $migration.Contains($token)) {
+              Write-Error "Client status portal migration is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "publishProjectClientStatus",
+            "projectClientStatusPublicUrl",
+            "project_client_status_snapshots",
+            "project_client_status_links"
+          )) {
+            if (-not $mutations.Contains($token)) {
+              Write-Error "Client status publication flow is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Partilhar Status & Next Actions com o cliente",
+            "ProjectClientStatusLink"
+          )) {
+            if (-not $project.Contains($token)) {
+              Write-Error "Project status publication UI is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Status & Next Actions",
+            "Entregáveis",
+            "KPI / Resultado",
+            "Aprovar próximos passos",
+            "Solicitar alteração",
+            "Pedir esclarecimento",
+            "project_client_status_lookup"
+          )) {
+            if (-not $publicPage.Contains($token)) {
+              Write-Error "Public client status portal is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "project_client_status_submit",
+            "hashProjectClientStatusToken"
+          )) {
+            if (-not $publicActions.Contains($token)) {
+              Write-Error "Client status decision submission is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $proxy.Contains('"/project-status"')) {
+            Write-Error "Project status portal must be an isolated public path."
+            exit 1
+          }
+
+          foreach ($token in @(
+            '"/project-status/(.*)"',
+            '"no-store, max-age=0"',
+            '"noindex, nofollow, noarchive"',
+            '"no-referrer"',
+            '"DENY"',
+            "frame-ancestors 'none'"
+          )) {
+            if (-not $vercel.Contains($token)) {
+              Write-Error "Project status security header is missing: $token"
+              exit 1
+            }
+          }
+
+          if ($publicPage.Contains('from("projects")') -or $publicPage.Contains('from("deliverables")')) {
+            Write-Error "Public client status page must not read internal project tables directly."
+            exit 1
           }
 
       - name: Typecheck
