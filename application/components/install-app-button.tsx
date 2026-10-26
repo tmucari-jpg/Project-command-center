@@ -54,12 +54,8 @@ export function InstallAppButton() {
     const isAndroid = /Android/i.test(window.navigator.userAgent);
 
     if (isAndroid) {
-      const download = document.createElement("a");
-      download.href = "/api/mobile/android-apk";
-      download.download = "PCC-Android.apk";
-      document.body.appendChild(download);
-      download.click();
-      download.remove();
+      setShowHelp(true);
+      window.location.assign("/api/mobile/android-apk?download=1");
       return;
     }
 
@@ -82,8 +78,7 @@ export function InstallAppButton() {
         className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--cc-accent)] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[var(--cc-accent-strong)]"
       >
         <Download size={16} />
-        <span className="hidden sm:inline">Instalar PCC</span>
-        <span className="sm:hidden">Instalar PCC</span>
+        <span>Instalar PCC</span>
       </button>
 
       {showHelp && (
@@ -94,7 +89,7 @@ export function InstallAppButton() {
               <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
                 {isIOS
                   ? "No Safari, toque em Partilhar e escolha “Adicionar ao Ecrã Principal”. Depois toque em “Adicionar”."
-                  : "Use a opção de instalação disponível no navegador para adicionar o PCC ao dispositivo."}
+                  : "O PCC-Android.apk será descarregado como aplicação Android. Abra o ficheiro descarregado e confirme “Instalar” no instalador do Android."}
               </p>
             </div>
             <button
