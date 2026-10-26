@@ -1265,6 +1265,104 @@ jobs:
             }
           }
 
+      - name: Validate client project status portal
+        shell: pwsh
+        run: |
+          $migration = Get-Content "../supabase/migrations/20261026143000_client_project_status_portal.sql" -Raw
+          $project = Get-Content -LiteralPath "./app/(protected)/projects/[id]/page.tsx" -Raw
+          $publicPage = Get-Content -LiteralPath "./app/project-status/[token]/page.tsx" -Raw
+          $publicActions = Get-Content -LiteralPath "./app/project-status/[token]/actions.ts" -Raw
+          $proxy = Get-Content "./lib/supabase/proxy.ts" -Raw
+          $vercel = Get-Content "./vercel.json" -Raw
+          $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+
+          foreach ($token in @(
+            "project_client_status_snapshots",
+            "project_client_status_links",
+            "project_client_status_decisions",
+            "consume_project_client_status_rate_limit",
+            "project_client_status_lookup",
+            "project_client_status_submit",
+            "enable row level security",
+            "revoke all on table public.project_client_status_snapshots from anon"
+          )) {
+            if (-not $migration.Contains($token)) {
+              Write-Error "Client status portal migration is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "publishProjectClientStatus",
+            "projectClientStatusPublicUrl",
+            "project_client_status_snapshots",
+            "project_client_status_links"
+          )) {
+            if (-not $mutations.Contains($token)) {
+              Write-Error "Client status publication flow is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Partilhar Status & Next Actions com o cliente",
+            "ProjectClientStatusLink"
+          )) {
+            if (-not $project.Contains($token)) {
+              Write-Error "Project status publication UI is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "Status & Next Actions",
+            "Entregáveis",
+            "KPI / Resultado",
+            "Aprovar próximos passos",
+            "Solicitar alteração",
+            "Pedir esclarecimento",
+            "project_client_status_lookup"
+          )) {
+            if (-not $publicPage.Contains($token)) {
+              Write-Error "Public client status portal is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "project_client_status_submit",
+            "hashProjectClientStatusToken"
+          )) {
+            if (-not $publicActions.Contains($token)) {
+              Write-Error "Client status decision submission is missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $proxy.Contains('"/project-status"')) {
+            Write-Error "Project status portal must be an isolated public path."
+            exit 1
+          }
+
+          foreach ($token in @(
+            '"/project-status/(.*)"',
+            '"no-store, max-age=0"',
+            '"noindex, nofollow, noarchive"',
+            '"no-referrer"',
+            '"DENY"',
+            "frame-ancestors 'none'"
+          )) {
+            if (-not $vercel.Contains($token)) {
+              Write-Error "Project status security header is missing: $token"
+              exit 1
+            }
+          }
+
+          if ($publicPage.Contains('from("projects")') -or $publicPage.Contains('from("deliverables")')) {
+            Write-Error "Public client status page must not read internal project tables directly."
+            exit 1
+          }
+
       - name: Typecheck
         run: npm run typecheck
 
