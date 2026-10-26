@@ -54,8 +54,8 @@ async function validateOpenAI(profile: AIProviderHealthProfile): Promise<AIProvi
       body: JSON.stringify({
         model,
         messages: [{ role: "user", content: "Responda apenas OK." }],
-        temperature: 0.1,
-        max_tokens: 64,
+        reasoning_effort: "none",
+        max_completion_tokens: 64,
       }),
     });
 

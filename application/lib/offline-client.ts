@@ -91,6 +91,14 @@ export async function setOfflineMeta(key: string, value: unknown) {
   db.close();
 }
 
+export async function getOfflineMeta<T = unknown>(key: string): Promise<T | undefined> {
+  const db = await openDb();
+  const tx = db.transaction(META_STORE, "readonly");
+  const value = await requestResult(tx.objectStore(META_STORE).get(key));
+  db.close();
+  return value as T | undefined;
+}
+
 export async function saveOfflineSnapshot(snapshot: OfflineSnapshot) {
   const db = await openDb();
   const tx = db.transaction(SNAPSHOT_STORE, "readwrite");

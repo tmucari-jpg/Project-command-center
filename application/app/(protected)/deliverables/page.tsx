@@ -58,6 +58,7 @@ export default async function DeliverablesPage({
     { data: governanceRisks },
     { data: governanceDependencies },
     { data: changeRequests },
+    { data: officialDocuments },
   ] = await Promise.all([
     supabase
       .from("deliverables")
@@ -102,6 +103,11 @@ export default async function DeliverablesPage({
       .from("project_change_requests")
       .select("id,project_id,decision")
       .eq("user_id", user.id),
+    supabase
+      .from("pcc_official_documents")
+      .select("id,project_id,deliverable_id,title,format,version_label,status")
+      .eq("user_id", user.id)
+      .eq("status", "current"),
   ]);
 
   const effectiveProjectId = (projects ?? []).some((project) => project.id === selectedProjectId)
@@ -250,6 +256,7 @@ export default async function DeliverablesPage({
             </div>
           </div>
           {!effectiveProjectId && <p className="mt-3 text-xs text-[var(--cc-secondary)]">Abra Entregáveis a partir de um projecto para preparar um destes documentos com o contexto desse projecto.</p>}
+          <div className="mt-4 border-t border-[var(--cc-border)] pt-4"><Link href="/official-documents" className={secondaryButtonClass}>Arquivo oficial e downloads</Link></div>
         </Card>
 
         <ManualEntry defaultOpen={Boolean(preparedDraft)} label="Definir entregável">
@@ -369,6 +376,7 @@ export default async function DeliverablesPage({
                         <p className="text-sm text-[var(--cc-secondary)]">Ainda não existem entregáveis definidos.</p>
                       ) : group.deliverables.map((item) => {
                         const proofs = group.evidence.filter((proof) => proof.deliverable_id === item.id);
+                        const officialFiles = (officialDocuments ?? []).filter((document) => document.deliverable_id === item.id);
                         const locked = item.status === "completed";
                         return (
                           <article key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
@@ -437,6 +445,18 @@ export default async function DeliverablesPage({
                                       {proof.storage_path && !proof.url && <span className="ml-2 text-xs text-[var(--cc-secondary)]">Ficheiro protegido registado</span>}
                                     </div>
                                   ))}
+                                </div>
+                              )}
+                              {officialFiles.length > 0 && (
+                                <div className="mt-3 border-t border-[var(--cc-border)] pt-3">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Documentos oficiais associados</p>
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {officialFiles.map((document) => (
+                                      <Link key={document.id} href={`/api/official-documents/${document.id}/download`} className="text-sm font-semibold text-[var(--cc-accent)] hover:underline">
+                                        {document.title} · {String(document.format).toUpperCase()} · {document.version_label}
+                                      </Link>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </div>

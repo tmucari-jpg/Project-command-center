@@ -1098,6 +1098,63 @@ jobs:
             exit 1
           }
 
+      - name: Validate operational health and official document guards
+        shell: pwsh
+        run: |
+          $health = Get-Content "./lib/ai-provider-health.ts" -Raw
+          $assist = Get-Content "./lib/ai-assist-router.ts" -Raw
+          $botProvider = Get-Content "./lib/bot-ia-provider.ts" -Raw
+          $aiPage = Get-Content "./app/(protected)/ai-providers/page.tsx" -Raw
+          $optimization = Get-Content "./app/(protected)/optimization/page.tsx" -Raw
+          $readiness = Get-Content "./components/operational-readiness-check.tsx" -Raw
+          $officialPage = Get-Content "./app/(protected)/official-documents/page.tsx" -Raw
+          $upload = Get-Content "./app/api/official-documents/upload/route.ts" -Raw
+          $download = Get-Content -LiteralPath "./app/api/official-documents/[id]/download/route.ts" -Raw
+          $migrationHealth = Get-Content "../supabase/migrations/20261026060301_operational_health_and_missing_indexes.sql" -Raw
+          $migrationDocuments = Get-Content "../supabase/migrations/20261026060857_official_documents_and_operational_validation.sql" -Raw
+
+          foreach ($token in @("reasoning_effort", "max_completion_tokens", "last_health_message")) {
+            if (-not $health.Contains($token) -and -not $assist.Contains($token) -and -not $botProvider.Contains($token)) {
+              Write-Error "Missing GPT-6 operational compatibility guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("Validar todos agora", "Diagnóstico:", "operational_validation_runs")) {
+            if (-not $aiPage.Contains($token) -and -not $optimization.Contains($token)) {
+              Write-Error "Missing AI operational evidence UI: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("Service Worker", "Persistência local", "end_to_end_offline_sync_validated")) {
+            if (-not $readiness.Contains($token)) {
+              Write-Error "Missing offline device readiness guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("Documentos Oficiais PCC", "pcc-official-documents", "Uma versão oficial actual deve estar ligada a um entregável")) {
+            if (-not $officialPage.Contains($token) -and -not $upload.Contains($token) -and -not $download.Contains($token)) {
+              Write-Error "Missing protected PCC official document guard: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("last_health_message", "idx_project_change_requests_user_id", "idx_project_commitment_baselines_user_id")) {
+            if (-not $migrationHealth.Contains($token)) {
+              Write-Error "Missing operational-health migration token: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("pcc_official_documents", "operational_validation_runs", "pcc-official-documents")) {
+            if (-not $migrationDocuments.Contains($token)) {
+              Write-Error "Missing official-document migration token: $token"
+              exit 1
+            }
+          }
+
       - name: Typecheck
         run: npm run typecheck
 

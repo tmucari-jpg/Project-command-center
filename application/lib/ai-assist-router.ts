@@ -80,7 +80,9 @@ async function generateText(
         ...(instructions ? [{ role: "system", content: instructions }] : []),
         { role: "user", content: input },
       ],
-      max_tokens: 1800,
+      ...(profile.provider === "openai"
+        ? { reasoning_effort: "none", max_completion_tokens: 1800 }
+        : { max_tokens: 1800 }),
     }),
     cache: "no-store",
     signal: AbortSignal.timeout(20_000),
@@ -131,6 +133,7 @@ export async function generateAssistWithFallback(
       .update({
         enabled: healthy,
         last_health_status: health.status,
+        last_health_message: health.message.slice(0, 1000),
         last_health_at: new Date().toISOString(),
       })
       .eq("id", profile.id)
@@ -162,6 +165,7 @@ export async function generateAssistWithFallback(
         .update({
           enabled: false,
           last_health_status: "degraded",
+          last_health_message: safeError(providerError),
           last_health_at: new Date().toISOString(),
         })
         .eq("id", profile.id)

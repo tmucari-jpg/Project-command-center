@@ -22,6 +22,31 @@ afterEach(() => {
 });
 
 describe("AI provider health guards", () => {
+  it("uses GPT-6-compatible Chat Completions parameters for OpenAI health", async () => {
+    process.env.OPENAI_API_KEY = "test-openai";
+    process.env.OPENAI_MODEL = "gpt-6-luna";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: "OK" } }] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await validateAIProviderHealth({
+      provider: "openai",
+      mode: "cloud",
+      model_hint: "gpt-6-luna",
+    });
+
+    expect(result.status).toBe("healthy");
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(init.body));
+    expect(body.reasoning_effort).toBe("none");
+    expect(body.max_completion_tokens).toBe(64);
+    expect(body.temperature).toBeUndefined();
+    expect(body.max_tokens).toBeUndefined();
+  });
+
   it("does not enable OpenAI without a runtime credential", async () => {
     delete process.env.OPENAI_API_KEY;
     const result = await validateAIProviderHealth({

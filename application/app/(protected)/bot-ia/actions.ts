@@ -47,7 +47,7 @@ async function resolveBotIAProviders(
 ) {
   const { data: providers, error } = await supabase
     .from("ai_provider_profiles")
-    .select("id,provider,label,mode,enabled,priority,cost_class,endpoint_hint,model_hint,last_health_status")
+    .select("id,provider,label,mode,enabled,priority,cost_class,endpoint_hint,model_hint,last_health_status,last_health_message")
     .eq("user_id", userId)
     .order("priority", { ascending: true });
 
@@ -72,6 +72,7 @@ async function resolveBotIAProviders(
       .update({
         enabled,
         last_health_status: health.status,
+        last_health_message: health.message.slice(0, 1000),
         last_health_at: new Date().toISOString(),
       })
       .eq("id", provider.id)
@@ -79,11 +80,27 @@ async function resolveBotIAProviders(
 
     if (updateError) throw new Error(updateError.message);
 
+    await supabase.from("operational_validation_runs").insert({
+      user_id: userId,
+      scope: "ai_provider",
+      status: enabled ? "passed" : "failed",
+      release_sha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+      details: {
+        provider_id: provider.id,
+        provider: provider.provider,
+        label: provider.label,
+        health_status: health.status,
+        message: health.message.slice(0, 1000),
+        latency_ms: health.latency_ms ?? null,
+      },
+    });
+
     if (enabled) {
       healthyProviders.push({
         ...provider,
         enabled: true,
         last_health_status: "healthy" as const,
+        last_health_message: health.message,
       });
     }
   }
@@ -217,12 +234,14 @@ export async function prepareBotIARun(input: {
     } = await generateBotIAPlanWithFallback(
       providerProfiles,
       factualContext,
-      async (failedProvider) => {
+      async (failedProvider, providerError) => {
+        const providerMessage = errorMessage(providerError).slice(0, 1000);
         const { error: degradeError } = await supabase
           .from("ai_provider_profiles")
           .update({
             enabled: false,
             last_health_status: "degraded",
+            last_health_message: providerMessage,
             last_health_at: new Date().toISOString(),
           })
           .eq("id", failedProvider.id)
@@ -284,6 +303,21 @@ export async function prepareBotIARun(input: {
       .single();
 
     if (runError || !run) throw new Error(runError?.message ?? "Falha ao registar execução BotIA.");
+
+    await supabase.from("operational_validation_runs").insert({
+      user_id: user.id,
+      scope: "botia",
+      status: "passed",
+      release_sha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+      details: {
+        run_id: run.id,
+        project_id: project.id,
+        provider: provider.provider,
+        provider_label: provider.label,
+        intent: plan.intent,
+        proposed_operations: plan.operations.length,
+      },
+    });
 
     if (plan.operations.length) {
       const { error: stepError } = await supabase.from("execution_steps").insert(

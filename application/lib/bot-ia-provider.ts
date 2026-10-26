@@ -142,8 +142,9 @@ export async function generateBotIAPlan(
         content: `Contexto factual do PCC:\n${JSON.stringify(context)}`,
       },
     ],
-    temperature: 0.1,
-    max_tokens: 1800,
+    ...(profile.provider === "openai"
+      ? { reasoning_effort: "none", max_completion_tokens: 1800 }
+      : { max_tokens: 1800 }),
   };
 
   let lastStatus = 0;

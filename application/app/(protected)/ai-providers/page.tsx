@@ -1,5 +1,5 @@
 import { HardDrive, RefreshCw, ShieldCheck } from "lucide-react";
-import { registerAIProviderProfile, validateAIProviderProfile } from "@/app/(protected)/mutations";
+import { registerAIProviderProfile, validateAIProviderProfile, validateAllAIProviderProfiles } from "@/app/(protected)/mutations";
 import { Field, Select } from "@/components/form-fields";
 import { primaryButtonClass } from "@/components/ui";
 import { PageHeader } from "@/components/page-header";
@@ -76,6 +76,20 @@ export default async function AIFornecedoresPage({
           <p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{failedOperations.length}</p>
         </Card>
       </div>
+
+      <Card className="mb-6 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl">
+            <h2 className="font-semibold text-[var(--cc-foreground)]">Validação operacional dos providers</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+              Executa uma chamada real ao mesmo endpoint e modelo usados pelo PCC. O resultado, latência e diagnóstico ficam registados como evidência operacional; um teste de código isolado não activa o provider.
+            </p>
+          </div>
+          <form action={validateAllAIProviderProfiles}>
+            <button className={primaryButtonClass} type="submit">Validar todos agora</button>
+          </form>
+        </div>
+      </Card>
 
       <Card className="mb-6 p-5">
         <h2 className="font-semibold text-[var(--cc-foreground)]">Motor de autonomia e melhoria</h2>
@@ -192,6 +206,11 @@ export default async function AIFornecedoresPage({
                   <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                     Última validação: {provider.last_health_at ? formatDateTime(provider.last_health_at) : "ainda não realizada"}
                   </p>
+                  {provider.last_health_message && (
+                    <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
+                      Diagnóstico: {provider.last_health_message}
+                    </p>
+                  )}
                   {Array.isArray(provider.capabilities) && provider.capabilities.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {provider.capabilities

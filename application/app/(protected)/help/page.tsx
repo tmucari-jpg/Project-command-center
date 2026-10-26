@@ -65,6 +65,7 @@ export default async function HelpPage() {
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/commercial-master" className={secondaryButtonClass}>Abrir Guia Comercial</Link>
+            <Link href="/official-documents" className={secondaryButtonClass}>Documentos Oficiais</Link>
             <Link href="/monetization" className={secondaryButtonClass}>Abrir Comercial</Link>
           </div>
         </Card>

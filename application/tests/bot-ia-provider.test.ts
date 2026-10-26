@@ -86,6 +86,11 @@ describe("BotIA provider failover", () => {
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain("/chat/completions");
+    const openAIInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const openAIBody = JSON.parse(String(openAIInit.body));
+    expect(openAIBody.reasoning_effort).toBe("none");
+    expect(openAIBody.max_completion_tokens).toBe(1800);
+    expect(openAIBody.temperature).toBeUndefined();
   });
 
   it("requires an explicit Qwen Workspace endpoint", async () => {

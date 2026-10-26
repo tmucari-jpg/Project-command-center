@@ -633,7 +633,7 @@ export async function validateAIProviderProfile(formData: FormData) {
   const { supabase, user } = await requireAdmin();
   const { data: provider, error } = await supabase
     .from("ai_provider_profiles")
-    .select("id,provider,mode,endpoint_hint,model_hint")
+    .select("id,provider,label,mode,endpoint_hint,model_hint")
     .eq("id", providerId.data)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -646,6 +646,7 @@ export async function validateAIProviderProfile(formData: FormData) {
     .update({
       enabled: result.status === "healthy",
       last_health_status: result.status,
+      last_health_message: result.message.slice(0, 1000),
       last_health_at: new Date().toISOString(),
     })
     .eq("id", provider.id)
@@ -653,8 +654,82 @@ export async function validateAIProviderProfile(formData: FormData) {
 
   if (updateError) fail(path, updateError.message);
 
+  await supabase.from("operational_validation_runs").insert({
+    user_id: user.id,
+    scope: "ai_provider",
+    status: result.status === "healthy" ? "passed" : "failed",
+    release_sha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+    details: {
+      provider_id: provider.id,
+      provider: provider.provider,
+      label: provider.label,
+      health_status: result.status,
+      message: result.message.slice(0, 1000),
+      latency_ms: result.latency_ms ?? null,
+    },
+  });
+
   revalidatePath(path);
+  revalidatePath("/optimization");
   redirect(`${path}?health=${result.status}&health_message=${encodeURIComponent(result.message)}`);
+}
+
+export async function validateAllAIProviderProfiles() {
+  const path = "/ai-providers";
+  const { supabase, user } = await requireAdmin();
+  const { data: providers, error } = await supabase
+    .from("ai_provider_profiles")
+    .select("id,provider,label,mode,endpoint_hint,model_hint")
+    .eq("user_id", user.id)
+    .order("priority", { ascending: true });
+
+  if (error) fail(path, error.message);
+  if (!providers?.length) fail(path, "Nenhum provider registado.");
+
+  const results: Array<{ label: string; status: string; message: string }> = [];
+
+  for (const provider of providers) {
+    const result = await validateAIProviderHealth(provider);
+    const enabled = result.status === "healthy";
+
+    const { error: updateError } = await supabase
+      .from("ai_provider_profiles")
+      .update({
+        enabled,
+        last_health_status: result.status,
+        last_health_message: result.message.slice(0, 1000),
+        last_health_at: new Date().toISOString(),
+      })
+      .eq("id", provider.id)
+      .eq("user_id", user.id);
+
+    if (updateError) fail(path, updateError.message);
+
+    await supabase.from("operational_validation_runs").insert({
+      user_id: user.id,
+      scope: "ai_provider",
+      status: enabled ? "passed" : "failed",
+      release_sha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+      details: {
+        provider_id: provider.id,
+        provider: provider.provider,
+        label: provider.label,
+        health_status: result.status,
+        message: result.message.slice(0, 1000),
+        latency_ms: result.latency_ms ?? null,
+      },
+    });
+
+    results.push({ label: provider.label, status: result.status, message: result.message.slice(0, 220) });
+  }
+
+  const healthy = results.filter((item) => item.status === "healthy").length;
+  const overall = healthy === results.length ? "healthy" : healthy > 0 ? "degraded" : "offline";
+  const summary = results.map((item) => `${item.label}: ${item.status} — ${item.message}`).join(" | ");
+
+  revalidatePath(path);
+  revalidatePath("/optimization");
+  redirect(`${path}?health=${overall}&health_message=${encodeURIComponent(summary)}`);
 }
 
 export async function registerAIProviderProfile(formData: FormData) {
@@ -690,6 +765,7 @@ export async function registerAIProviderProfile(formData: FormData) {
     model_hint: parsed.data.model_hint ?? null,
     enabled: false,
     last_health_status: "unknown",
+    last_health_message: null,
     user_id: user.id,
   });
 
