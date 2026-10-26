@@ -1067,15 +1067,14 @@ jobs:
             }
           }
 
+          $closure = Get-Content "./app/(protected)/closure/page.tsx" -Raw
           foreach ($token in @(
-            "QA e aceitação",
-            "Valor e transferência",
-            "Continuidade / recuperação",
-            "baseline validada pelo cliente",
-            "Regra de fecho:"
+            "Processo independente do entregável",
+            "Cliente não pretende continuar",
+            "Não é necessário existir entregável concluído"
           )) {
-            if (-not $deliverables.Contains($token)) {
-              Write-Error "Deliverables closure UI is missing protected rule: $token"
+            if (-not $closure.Contains($token)) {
+              Write-Error "Independent project closure UI is missing: $token"
               exit 1
             }
           }
@@ -1173,11 +1172,16 @@ jobs:
             }
           }
 
-          foreach ($token in @("Documentos Oficiais PCC", "pcc-official-documents", "Uma versão oficial actual deve estar ligada a um entregável")) {
+          foreach ($token in @("Repositório Oficial PCC", "pcc-official-documents", "não depende de nenhum entregável de projecto")) {
             if (-not $officialPage.Contains($token) -and -not $upload.Contains($token) -and -not $download.Contains($token)) {
-              Write-Error "Missing protected PCC official document guard: $token"
+              Write-Error "Missing independent PCC official repository guard: $token"
               exit 1
             }
+          }
+
+          if ($upload.Contains("Uma versão oficial actual deve estar ligada a um entregável")) {
+            Write-Error "Official repository must not depend on a project deliverable."
+            exit 1
           }
 
           foreach ($token in @("last_health_message", "idx_project_change_requests_user_id", "idx_project_commitment_baselines_user_id")) {

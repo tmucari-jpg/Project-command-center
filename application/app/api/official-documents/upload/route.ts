@@ -12,8 +12,6 @@ const schema = z.object({
   title: z.string().trim().min(2).max(180),
   version_label: z.string().trim().min(1).max(80),
   status: z.enum(["draft", "current"]),
-  project_id: z.preprocess((value) => value === "" ? undefined : value, z.string().uuid().optional()),
-  deliverable_id: z.preprocess((value) => value === "" ? undefined : value, z.string().uuid().optional()),
 });
 
 const mimeToFormat: Record<string, string> = {
@@ -40,16 +38,6 @@ export async function POST(request: Request) {
 
   const format = mimeToFormat[file.type] ?? file.name.toLowerCase().split(".").pop() ?? "other";
   if (!["docx", "pdf", "zip", "txt", "json", "other"].includes(format)) return redirectTo(request, { error: "Formato de ficheiro não permitido." });
-
-  let projectId = parsed.data.project_id ?? null;
-  const deliverableId = parsed.data.deliverable_id ?? null;
-  if (deliverableId) {
-    const { data: deliverable, error: deliverableError } = await supabase.from("deliverables").select("id,project_id").eq("id", deliverableId).eq("user_id", user.id).maybeSingle();
-    if (deliverableError || !deliverable) return redirectTo(request, { error: "Entregável inválido." });
-    if (projectId && deliverable.project_id !== projectId) return redirectTo(request, { error: "O entregável não pertence ao projecto seleccionado." });
-    projectId = deliverable.project_id ?? projectId;
-  }
-  if (parsed.data.status === "current" && !deliverableId) return redirectTo(request, { error: "Uma versão oficial actual deve estar ligada a um entregável." });
 
   if (parsed.data.status === "current") {
     const releaseSha = process.env.VERCEL_GIT_COMMIT_SHA ?? null;
@@ -78,11 +66,6 @@ export async function POST(request: Request) {
     }
   }
 
-  if (projectId) {
-    const { data: project } = await supabase.from("projects").select("id").eq("id", projectId).eq("user_id", user.id).maybeSingle();
-    if (!project) return redirectTo(request, { error: "Projecto inválido." });
-  }
-
   const bytes = Buffer.from(await file.arrayBuffer());
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   const documentId = randomUUID();
@@ -93,7 +76,7 @@ export async function POST(request: Request) {
   if (uploadError) return redirectTo(request, { error: uploadError.message });
 
   const { error: insertError } = await supabase.from("pcc_official_documents").insert({
-    id: documentId, user_id: user.id, project_id: projectId, deliverable_id: deliverableId,
+    id: documentId, user_id: user.id, project_id: null, deliverable_id: null,
     document_key: parsed.data.document_key, title: parsed.data.title, format, version_label: parsed.data.version_label,
     status: parsed.data.status, storage_path: storagePath, file_name: safeName, mime_type: file.type || null,
     file_size: file.size, sha256, released_at: parsed.data.status === "current" ? new Date().toISOString() : null,
