@@ -3,6 +3,8 @@ export const OFFICIAL_DOCUMENT_LABELS: Record<string, string> = {
   commercial_guide: "Guia Comercial",
   technical_package: "Pacote Técnico PCC",
   release_diagnostic: "Diagnóstico de Release",
+  android_apk: "Android APK",
+  android_aab: "Android AAB",
   other: "Outro documento oficial",
 };
 

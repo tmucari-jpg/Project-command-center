@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "ui:standard": "node scripts/validate-ui-standard.mjs"
+    "ui:standard": "node scripts/validate-ui-standard.mjs",
+    "icons:validate": "node scripts/validate-icon-assets.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
