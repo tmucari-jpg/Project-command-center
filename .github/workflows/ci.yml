@@ -975,12 +975,8 @@ jobs:
             }
           }
 
-          foreach ($token in @("Vertente do entregável", "Baixar / abrir")) {
-            if (-not $deliverables.Contains($token)) {
-              Write-Error "Deliverables central archive is missing: $token"
-              exit 1
-            }
-          }
+          # A Biblioteca do Projecto não é um arquivo central de vertentes.
+          # O único entregável visível no projecto é o Diagnóstico do Cliente, gerado automaticamente.
 
           foreach ($token in @("PCC_Snapshot_Operacional_Comercial.doc", "application/msword", "Marketing, Vendas e Lançamento do PCC")) {
             if (-not $masterExport.Contains($token)) {
