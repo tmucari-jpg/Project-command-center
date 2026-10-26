@@ -1,4 +1,4 @@
-const CACHE_NAME = "project-command-center-v7";
+const CACHE_NAME = "project-command-center-v8";
 const STATIC_ASSETS = [
   "/offline.html",
   "/offline-app.js",
