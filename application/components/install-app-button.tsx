@@ -89,7 +89,7 @@ export function InstallAppButton() {
               <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
                 {isIOS
                   ? "No Safari, toque em Partilhar e escolha “Adicionar ao Ecrã Principal”. Depois toque em “Adicionar”."
-                  : "No Android, o botão Instalar PCC descarrega directamente o APK oficial de teste para instalação no dispositivo. A opção PWA fica separada do APK."}
+                  : "Use a opção de instalação disponível no navegador para adicionar o PCC ao dispositivo."}
               </p>
             </div>
             <button
