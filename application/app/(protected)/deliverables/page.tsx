@@ -155,6 +155,7 @@ export default async function DeliverablesPage({
                             <input type="hidden" name="deliverable_id" value={item.id} />
                             <input type="hidden" name="project_id" value={project.id} />
                             <Select label="QA" name="qa_status" defaultValue={item.qa_status || "pending"}>
+                              <option value="pending" disabled>Por rever</option>
                               <option value="passed">Aprovado</option>
                               <option value="failed">Reprovado</option>
                               <option value="not_required">Não aplicável</option>
@@ -167,6 +168,7 @@ export default async function DeliverablesPage({
                             <input type="hidden" name="deliverable_id" value={item.id} />
                             <input type="hidden" name="project_id" value={project.id} />
                             <Select label="Validação / aceitação" name="acceptance_status" defaultValue={item.acceptance_status || "pending"}>
+                              <option value="pending" disabled>Por validar</option>
                               <option value="accepted">Aceite</option>
                               <option value="accepted_with_reservations">Aceite com reservas</option>
                               <option value="correction_required">Correcção necessária</option>
