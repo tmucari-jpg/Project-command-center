@@ -58,6 +58,10 @@ import {
   clientDiagnosticPublicUrl,
 } from "@/lib/client-diagnostic-token";
 import {
+  createProjectClientStatusToken,
+  projectClientStatusPublicUrl,
+} from "@/lib/project-client-status";
+import {
   CLIENT_DIAGNOSTIC_ANSWER_LABELS,
   diagnosticAnswerEntries,
 } from "@/lib/client-diagnostic";
@@ -77,6 +81,141 @@ export type ClientDiagnosticLinkState = {
   error?: string;
   requestId?: string;
 };
+
+export type ProjectClientStatusLinkState = {
+  ok: boolean;
+  url?: string;
+  error?: string;
+  linkId?: string;
+};
+
+export async function publishProjectClientStatus(
+  _previousState: ProjectClientStatusLinkState,
+  formData: FormData,
+): Promise<ProjectClientStatusLinkState> {
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  const publicNote = z.string().trim().max(2000).safeParse(String(formData.get("public_note") ?? ""));
+  if (!projectId.success || !publicNote.success) {
+    return { ok: false, error: "Revise os dados do acompanhamento do cliente." };
+  }
+
+  const { supabase, user } = await requireUser();
+
+  const [{ data: project, error: projectError }, { data: deliverables, error: deliverableError }, { data: metrics, error: metricError }] =
+    await Promise.all([
+      supabase
+        .from("projects")
+        .select("id,title,status,expected_result,next_action")
+        .eq("id", projectId.data)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("deliverables")
+        .select("id,title,status,due_date,completion_criteria,artifact_url,artifact_reference,artifact_version,acceptance_status,accepted_at")
+        .eq("project_id", projectId.data)
+        .eq("user_id", user.id)
+        .neq("status", "cancelled")
+        .order("due_date", { ascending: true, nullsFirst: false }),
+      supabase
+        .from("metrics")
+        .select("id,name,unit,current_value,target_value,measurement_date")
+        .eq("project_id", projectId.data)
+        .eq("user_id", user.id)
+        .order("measurement_date", { ascending: false, nullsFirst: false }),
+    ]);
+
+  if (projectError || !project) {
+    return { ok: false, error: projectError?.message ?? "Projecto não encontrado." };
+  }
+  if (deliverableError || metricError) {
+    return { ok: false, error: deliverableError?.message ?? metricError?.message ?? "Não foi possível preparar o snapshot." };
+  }
+
+  const { data: latestSnapshot } = await supabase
+    .from("project_client_status_snapshots")
+    .select("version")
+    .eq("project_id", project.id)
+    .eq("user_id", user.id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const deliverableSnapshot = (deliverables ?? []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    status: item.status,
+    due_date: item.due_date,
+    completion_criteria: item.completion_criteria,
+    acceptance_status: item.acceptance_status,
+    accepted_at: item.accepted_at,
+    artifact_version: item.artifact_version,
+    artifact_url:
+      ["accepted", "accepted_with_reservations"].includes(item.acceptance_status ?? "") && item.artifact_url
+        ? item.artifact_url
+        : null,
+    artifact_reference:
+      ["accepted", "accepted_with_reservations"].includes(item.acceptance_status ?? "") && item.artifact_reference
+        ? item.artifact_reference
+        : null,
+  }));
+
+  const latestMetricByName = new Map<string, (typeof metrics extends Array<infer T> ? T : never)>();
+  for (const metric of metrics ?? []) {
+    if (!latestMetricByName.has(metric.name)) latestMetricByName.set(metric.name, metric);
+  }
+  const metricSnapshot = Array.from(latestMetricByName.values()).map((metric) => ({
+    name: metric.name,
+    unit: metric.unit,
+    current_value: metric.current_value,
+    target_value: metric.target_value,
+    measurement_date: metric.measurement_date,
+  }));
+
+  const { error: snapshotError } = await supabase.from("project_client_status_snapshots").insert({
+    user_id: user.id,
+    project_id: project.id,
+    version: Number(latestSnapshot?.version ?? 0) + 1,
+    public_note: publicNote.data || null,
+    project_status: project.status,
+    expected_result: project.expected_result,
+    next_action: project.next_action,
+    deliverables: deliverableSnapshot,
+    kpis: metricSnapshot,
+  });
+
+  if (snapshotError) return { ok: false, error: snapshotError.message };
+
+  const { error: revokeError } = await supabase
+    .from("project_client_status_links")
+    .update({ status: "revoked" })
+    .eq("project_id", project.id)
+    .eq("user_id", user.id)
+    .in("status", ["active", "opened"]);
+
+  if (revokeError) return { ok: false, error: revokeError.message };
+
+  const { token, tokenHash } = createProjectClientStatusToken();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: link, error: linkError } = await supabase
+    .from("project_client_status_links")
+    .insert({
+      user_id: user.id,
+      project_id: project.id,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+    })
+    .select("id")
+    .single();
+
+  if (linkError || !link) return { ok: false, error: linkError?.message ?? "Não foi possível gerar o link." };
+
+  revalidatePath(`/projects/${project.id}`);
+  return {
+    ok: true,
+    url: projectClientStatusPublicUrl(token),
+    linkId: link.id,
+  };
+}
 
 export async function createClientDiagnosticRequest(
   _previousState: ClientDiagnosticLinkState,
