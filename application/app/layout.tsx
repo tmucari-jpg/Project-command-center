@@ -11,9 +11,10 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Project Command Center" },
   icons: {
     icon: [
-      { url: "/icons/pcc-app-icon-v2.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/brand/pcc-logo.png", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", type: "image/png" }],
   },
 };
 
