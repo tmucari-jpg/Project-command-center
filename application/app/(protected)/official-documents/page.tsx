@@ -34,7 +34,7 @@ export default async function OfficialDocumentsPage({
       {params.uploaded && (
         <Card className="mb-6 p-5">
           <p className="font-semibold text-[var(--cc-foreground)]">Documento oficial registado.</p>
-          <p className="mt-2 text-sm text-[var(--cc-secondary)]">O ficheiro está no arquivo privado do PCC e ligado ao entregável seleccionado.</p>
+          <p className="mt-2 text-sm text-[var(--cc-secondary)]">O ficheiro está no repositório privado do PCC e ligado ao entregável seleccionado.</p>
         </Card>
       )}
       {(params.error ?? documentsError?.message) && (
@@ -43,7 +43,7 @@ export default async function OfficialDocumentsPage({
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="p-5"><p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Versões actuais</p><p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{current.length}</p></Card>
-        <Card className="p-5"><p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Arquivo total</p><p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{documents?.length ?? 0}</p></Card>
+        <Card className="p-5"><p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Repositório total</p><p className="mt-2 text-2xl font-semibold text-[var(--cc-foreground)]">{documents?.length ?? 0}</p></Card>
         <Card className="p-5"><p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Armazenamento</p><p className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">Privado · versionado</p></Card>
       </div>
 
@@ -82,14 +82,14 @@ export default async function OfficialDocumentsPage({
           <label className="text-sm font-medium text-[var(--cc-foreground)] md:col-span-2">Ficheiro
             <input className={inputClass} type="file" name="file" accept=".pdf,.doc,.docx,.zip,.txt,.json,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip,text/plain,application/json" required />
           </label>
-          <div className="md:col-span-2"><button className={primaryButtonClass} type="submit">Guardar no arquivo oficial</button></div>
+          <div className="md:col-span-2"><button className={primaryButtonClass} type="submit">Guardar no repositório oficial</button></div>
         </form>
       </Card>
 
       <Card className="mt-6">
-        <div className="border-b border-[var(--cc-border)] p-5"><h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><FileArchive size={18} /> Arquivo versionado</h2></div>
+        <div className="border-b border-[var(--cc-border)] p-5"><h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><FileArchive size={18} /> Repositório versionado</h2></div>
         <div className="p-5">
-          {!documents?.length ? <EmptyState>Ainda não existem ficheiros no arquivo oficial. As versões técnicas finais serão carregadas apenas depois da validação operacional em pleno.</EmptyState> : (
+          {!documents?.length ? <EmptyState>Ainda não existem ficheiros no repositório oficial. As versões técnicas finais serão carregadas apenas depois da validação operacional em pleno.</EmptyState> : (
             <div className="space-y-3">{documents.map((item) => (
               <article key={item.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">

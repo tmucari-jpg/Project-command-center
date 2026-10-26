@@ -256,7 +256,7 @@ export default async function DeliverablesPage({
             </div>
           </div>
           {!effectiveProjectId && <p className="mt-3 text-xs text-[var(--cc-secondary)]">Abra Entregáveis a partir de um projecto para preparar um destes documentos com o contexto desse projecto.</p>}
-          <div className="mt-4 border-t border-[var(--cc-border)] pt-4"><Link href="/official-documents" className={secondaryButtonClass}>Arquivo oficial e downloads</Link></div>
+          <div className="mt-4 border-t border-[var(--cc-border)] pt-4"><Link href="/official-documents" className={secondaryButtonClass}>Repositório oficial e downloads</Link></div>
         </Card>
 
         <ManualEntry defaultOpen={Boolean(preparedDraft)} label="Definir entregável">

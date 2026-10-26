@@ -91,7 +91,7 @@ export default async function OptimizationPage() {
         <Card className="p-4">
           <div className="flex items-center gap-2"><Download size={18} /><p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Documentos</p></div>
           <p className="mt-2 text-lg font-semibold text-[var(--cc-foreground)]">{officialDocuments?.length ?? 0} versão(ões) actual(is)</p>
-          <Link href="/official-documents" className="mt-2 inline-block text-xs font-semibold text-[var(--cc-accent)] hover:underline">Abrir arquivo oficial</Link>
+          <Link href="/official-documents" className="mt-2 inline-block text-xs font-semibold text-[var(--cc-accent)] hover:underline">Abrir repositório oficial</Link>
         </Card>
       </div>
 
