@@ -1,0 +1,59 @@
+name: Build PCC Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android-apk/**"
+      - ".github/workflows/android-apk.yml"
+      - "application/public/**"
+      - "application/app/manifest.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install Java and tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk unzip curl
+          java -version
+
+      - name: Install Gradle
+        run: |
+          curl -fsSLo /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          echo "/tmp/gradle-8.9/bin" >> "$GITHUB_PATH"
+
+      - name: Prepare official PCC icon
+        run: |
+          mkdir -p android-apk/app/src/main/res/drawable
+          cp application/public/icons/icon-512.png android-apk/app/src/main/res/drawable/pcc_icon.png
+          test -s android-apk/app/src/main/res/drawable/pcc_icon.png
+
+      - name: Build installable debug APK
+        working-directory: android-apk
+        run: |
+          gradle --no-daemon assembleDebug
+          test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Validate APK
+        run: |
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump badging android-apk/app/build/outputs/apk/debug/app-debug.apk | tee /tmp/apk-badging.txt
+          grep -q "package: name='com.pcc.projectcommandcenter'" /tmp/apk-badging.txt
+          grep -q "application-label:'PCC'" /tmp/apk-badging.txt
+
+      - name: Publish APK artifact
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: PCC-Android-APK
+          path: android-apk/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
