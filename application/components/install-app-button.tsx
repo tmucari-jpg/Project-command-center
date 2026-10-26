@@ -54,7 +54,12 @@ export function InstallAppButton() {
     const isAndroid = /Android/i.test(window.navigator.userAgent);
 
     if (isAndroid) {
-      window.location.href = "/api/mobile/android-apk";
+      const download = document.createElement("a");
+      download.href = "/api/mobile/android-apk";
+      download.download = "PCC-Android.apk";
+      document.body.appendChild(download);
+      download.click();
+      download.remove();
       return;
     }
 
