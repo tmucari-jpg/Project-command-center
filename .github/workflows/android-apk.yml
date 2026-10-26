@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-apk:
@@ -57,3 +57,18 @@ jobs:
           path: android-apk/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish direct-install APK
+        run: |
+          cp android-apk/app/build/outputs/apk/debug/app-debug.apk /tmp/PCC-Android.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin mobile-builds || true
+          git switch --orphan mobile-builds
+          git rm -rf . >/dev/null 2>&1 || true
+          mkdir -p downloads
+          cp /tmp/PCC-Android.apk downloads/PCC-Android.apk
+          printf '%s\n' "PCC Android build from ${GITHUB_SHA}" > downloads/version.txt
+          git add downloads/PCC-Android.apk downloads/version.txt
+          git commit -m "Publish validated PCC Android APK"
+          git push --force origin mobile-builds
