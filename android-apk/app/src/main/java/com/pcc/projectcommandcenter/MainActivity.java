@@ -13,15 +13,19 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.splashscreen.SplashScreen;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String PCC_URL = "https://project-command-center-seven-xi.vercel.app/";
+    private static final String PCC_URL = "https://project-command-center-seven-xi.vercel.app/dashboard";
     private WebView webView;
+    private volatile boolean firstPageReady = false;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
+        splashScreen.setKeepOnScreenCondition(() -> !firstPageReady);
 
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(248, 246, 240));
@@ -48,9 +52,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                firstPageReady = true;
+                super.onPageFinished(view, url);
+            }
+        });
+
         if (savedInstanceState == null) {
             webView.loadUrl(PCC_URL);
+        } else {
+            firstPageReady = true;
         }
     }
 
