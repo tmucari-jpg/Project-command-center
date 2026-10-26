@@ -2,7 +2,7 @@ name: Build PCC Android APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, "audit/operational-full-20261026"]
     paths:
       - "android-apk/**"
       - ".github/workflows/android-apk.yml"
