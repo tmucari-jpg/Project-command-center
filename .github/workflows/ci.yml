@@ -850,14 +850,14 @@ jobs:
             }
           }
 
-          foreach ($token in @("/icons/pcc-app-icon-v2.svg", "/icons/pcc-app-icon-maskable-v2.svg")) {
+          foreach ($token in @("/icons/icon-192.png", "/icons/icon-512.png", "/icons/icon-maskable-512.png")) {
             if (-not $manifest.Contains($token)) {
               Write-Error "PWA manifest icon is missing: $token"
               exit 1
             }
           }
 
-          if (-not $layout.Contains("/brand/pcc-logo.png")) {
+          if (-not $layout.Contains("/icons/apple-touch-icon.png")) {
             Write-Error "Apple touch icon is not configured."
             exit 1
           }
