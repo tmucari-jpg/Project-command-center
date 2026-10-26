@@ -1,0 +1,91 @@
+name: PCC Post-Deploy PowerShell Smoke
+
+on:
+  push:
+    branches: ["audit/operational-full-20261026"]
+    paths:
+      - ".github/workflows/postdeploy-powershell.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Production HTTP, PWA, branding and APK smoke
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $base = "https://project-command-center-seven-xi.vercel.app"
+
+          function Pass([string]$m) { Write-Host "PASS - $m" -ForegroundColor Green }
+          function Fail([string]$m) { Write-Error "FAIL - $m"; exit 1 }
+
+          function Assert-Get([string]$label, [string]$url, [int[]]$expected = @(200)) {
+            try {
+              $r = Invoke-WebRequest -Uri $url -UseBasicParsing -MaximumRedirection 0 -SkipHttpErrorCheck
+              if ($expected -notcontains [int]$r.StatusCode) {
+                Fail "$label returned HTTP $($r.StatusCode); expected $($expected -join ',')"
+              }
+              Pass "$label HTTP $($r.StatusCode)"
+              return $r
+            } catch {
+              Fail "$label request failed: $($_.Exception.Message)"
+            }
+          }
+
+          $home = Assert-Get "Home" "$base/" @(200)
+          if ($home.Content -notmatch "Project Command Center") { Fail "Home is missing PCC identity" }
+          if ($home.Content -notmatch "/brand/pcc-logo-transparent.svg") { Fail "Home does not use official transparent PCC logo" }
+          Pass "Home uses official PCC logo asset"
+
+          $login = Assert-Get "Login" "$base/auth/login" @(200)
+          $manifest = Assert-Get "Manifest" "$base/manifest.webmanifest" @(200)
+          $manifestJson = $manifest.Content | ConvertFrom-Json
+          if ($manifestJson.name -ne "Project Command Center") { Fail "Manifest app name mismatch" }
+          if ($manifestJson.short_name -ne "PCC") { Fail "Manifest short_name mismatch" }
+          if ($manifestJson.display -ne "standalone") { Fail "Manifest display is not standalone" }
+          if ($manifestJson.theme_color -ne "#073f36") { Fail "Manifest PCC theme color mismatch" }
+          Pass "Manifest identity/installability metadata"
+
+          foreach ($asset in @(
+            "/icons/icon-192.png",
+            "/icons/icon-512.png",
+            "/icons/icon-maskable-512.png",
+            "/icons/apple-touch-icon.png",
+            "/brand/pcc-logo-transparent.svg",
+            "/offline.html",
+            "/sw.js"
+          )) {
+            Assert-Get "Asset $asset" "$base$asset" @(200) | Out-Null
+          }
+
+          foreach ($route in @("/dashboard","/projects","/deliverables","/evidence","/commercial-master","/bot-ia")) {
+            $r = Assert-Get "Protected route $route" "$base$route" @(302,303,307,308)
+            $loc = [string]$r.Headers.Location
+            if (-not $loc -or $loc -notmatch "/auth/login") { Fail "$route did not redirect to login; Location=$loc" }
+            Pass "$route protected by authentication"
+          }
+
+          $apkPath = Join-Path $env:RUNNER_TEMP "PCC-Android.apk"
+          $apk = Invoke-WebRequest -Uri "$base/api/mobile/android-apk?download=1" -UseBasicParsing -OutFile $apkPath -PassThru -SkipHttpErrorCheck
+          if ([int]$apk.StatusCode -ne 200) { Fail "APK endpoint returned HTTP $($apk.StatusCode)" }
+
+          $contentType = [string]$apk.Headers["Content-Type"]
+          $disposition = [string]$apk.Headers["Content-Disposition"]
+          if ($contentType -notmatch "application/vnd.android.package-archive") { Fail "APK Content-Type invalid: $contentType" }
+          if ($disposition -notmatch "PCC-Android\.apk") { Fail "APK filename header invalid: $disposition" }
+
+          $file = Get-Item $apkPath
+          if ($file.Length -lt 1000000) { Fail "APK unexpectedly small: $($file.Length) bytes" }
+          $bytes = [System.IO.File]::ReadAllBytes($apkPath)
+          if ($bytes[0] -ne 0x50 -or $bytes[1] -ne 0x4B) { Fail "APK does not have ZIP/APK PK signature" }
+          $hash = (Get-FileHash -Path $apkPath -Algorithm SHA256).Hash
+          Pass "APK direct download: $($file.Length) bytes; SHA256=$hash"
+
+          Write-Host ""
+          Write-Host "PCC POST-DEPLOY POWERSHELL SMOKE: PASS" -ForegroundColor Green
+          Write-Host "Production: $base"
