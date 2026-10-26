@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
   "/offline.html",
   "/offline-app.js",
   "/client-diagnostic",
+  "/project-status",
 ];
 
 function isPublicPath(pathname: string) {
