@@ -753,13 +753,26 @@ jobs:
           }
 
           foreach ($token in @(
-            "Importar questionário",
+            "Mais opções do diagnóstico",
+            "Importações e fontes externas",
             "Anexar questionário respondido",
             "Colar link da resposta",
-            "Nova solicitação"
+            "ClientDiagnosticLinkGenerator",
+            "uploadClientDiagnosticFile",
+            "importClientDiagnosticLink"
           )) {
             if (-not $clientDiagnosticPanel.Contains($token)) {
-              Write-Error "Client diagnostic operational panel is missing: $token"
+              Write-Error "Client diagnostic operational capability is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($forbidden in @(
+            "Pode emitir um novo questionário de 7 dias.",
+            "Se o cliente respondeu fora do link PCC"
+          )) {
+            if ($clientDiagnosticPanel.Contains($forbidden)) {
+              Write-Error "Redundant diagnostic explanatory copy returned: $forbidden"
               exit 1
             }
           }
