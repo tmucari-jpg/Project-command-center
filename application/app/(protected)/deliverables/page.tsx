@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { createDeliverable, recordDeliverableAcceptance, recordDeliverableQA } from "@/app/(protected)/mutations";
+import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
-import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
+import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { displayLabel } from "@/lib/display-label";
@@ -60,6 +62,42 @@ export default async function DeliverablesPage({
                 <Link className={secondaryButtonClass} href={"/projects/" + project.id}>Abrir projecto</Link>
               </div>
 
+              <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
+                <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">
+                  Adicionar entregável
+                </summary>
+                <form action={createDeliverable} className="space-y-4 border-t border-[var(--cc-border)] p-4">
+                  <input type="hidden" name="project_id" value={project.id} />
+                  <input type="hidden" name="workstream" value="general" />
+                  <input type="hidden" name="return_path" value="/deliverables" />
+                  <input type="hidden" name="status" value="pending" />
+                  <input type="hidden" name="progress" value="0" />
+                  <input type="hidden" name="priority" value="medium" />
+                  <Field label="Entregável" name="title" required placeholder="Resultado concreto a produzir" />
+                  <TextArea label="Descrição" name="description" />
+                  <TextArea label="Critério de aceitação" name="completion_criteria" required />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Prazo" name="due_date" type="date" />
+                    <Select label="Formato do resultado" name="artifact_type" defaultValue="document">
+                      <option value="document">Documento</option>
+                      <option value="spreadsheet">Folha de cálculo</option>
+                      <option value="presentation">Apresentação</option>
+                      <option value="pdf">PDF</option>
+                      <option value="website">Website</option>
+                      <option value="application">Aplicação</option>
+                      <option value="dashboard">Dashboard</option>
+                      <option value="api">API</option>
+                      <option value="dataset">Dataset</option>
+                      <option value="prototype">Protótipo</option>
+                      <option value="other">Outro</option>
+                    </Select>
+                  </div>
+                  <Field label="URL da evidência, quando já existir" name="artifact_url" type="url" />
+                  <Field label="Referência da evidência / versão" name="artifact_reference" />
+                  <button className={primaryButtonClass} type="submit">Registar entregável</button>
+                </form>
+              </details>
+
               {projectDeliverables.length ? (
                 <div className="mt-5 space-y-3">
                   {projectDeliverables.map((item) => (
@@ -107,6 +145,39 @@ export default async function DeliverablesPage({
                           </a>
                         </div>
                       )}
+
+                      <details className="mt-4 border-t border-[var(--cc-border)] pt-4">
+                        <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
+                          QA e validação
+                        </summary>
+                        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                          <form action={recordDeliverableQA} className="space-y-3 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
+                            <input type="hidden" name="deliverable_id" value={item.id} />
+                            <input type="hidden" name="project_id" value={project.id} />
+                            <Select label="QA" name="qa_status" defaultValue={item.qa_status || "pending"}>
+                              <option value="passed">Aprovado</option>
+                              <option value="failed">Reprovado</option>
+                              <option value="not_required">Não aplicável</option>
+                            </Select>
+                            <TextArea label="Notas de QA" name="qa_notes" />
+                            <button className={secondaryButtonClass} type="submit">Guardar QA</button>
+                          </form>
+
+                          <form action={recordDeliverableAcceptance} className="space-y-3 rounded-[var(--cc-radius-md)] bg-[var(--cc-surface-muted)] p-4">
+                            <input type="hidden" name="deliverable_id" value={item.id} />
+                            <input type="hidden" name="project_id" value={project.id} />
+                            <Select label="Validação / aceitação" name="acceptance_status" defaultValue={item.acceptance_status || "pending"}>
+                              <option value="accepted">Aceite</option>
+                              <option value="accepted_with_reservations">Aceite com reservas</option>
+                              <option value="correction_required">Correcção necessária</option>
+                              <option value="not_required">Não aplicável</option>
+                            </Select>
+                            <Field label="Referência da validação" name="acceptance_reference" placeholder="Ex.: email, reunião, documento assinado" />
+                            <TextArea label="Notas" name="acceptance_notes" />
+                            <button className={secondaryButtonClass} type="submit">Registar validação</button>
+                          </form>
+                        </div>
+                      </details>
                     </article>
                   ))}
                 </div>
