@@ -252,12 +252,23 @@ jobs:
           $officialDocuments = Get-Content "../application/app/(protected)/official-documents/page.tsx" -Raw
 
           foreach ($token in @(
-            "Biblioteca do Projecto",
+            "Resultados do Projecto",
+            "Critério de aceitação",
+            "Evidência",
+            "Validação"
+          )) {
+            if (-not $deliverables.Contains($token)) {
+              Write-Error "Missing deliverable-first project rule: $token"
+              exit 1
+            }
+          }
+
+          foreach ($forbidden in @(
             "único entregável",
             "não existe criação manual"
           )) {
-            if (-not $deliverables.Contains($token)) {
-              Write-Error "Missing project library rule: $token"
+            if ($deliverables.Contains($forbidden)) {
+              Write-Error "Legacy single-deliverable rule returned: $forbidden"
               exit 1
             }
           }
@@ -1056,9 +1067,11 @@ jobs:
           }
 
           foreach ($token in @(
-            "G3 · Compromisso de Entrega",
+            "Compromisso de Entrega",
             "Registar validação e autorizar execução",
-            "Alterações de âmbito"
+            "Alterações de âmbito",
+            "O progresso principal é determinado pelos entregáveis aceites",
+            "Próxima decisão / acção"
           )) {
             if (-not $project.Contains($token)) {
               Write-Error "Project detail is missing protected commitment UI: $token"
