@@ -6,5 +6,12 @@
         <item name="android:statusBarColor">#073F36</item>
         <item name="android:navigationBarColor">#F8F6F0</item>
         <item name="android:windowBackground">#F8F6F0</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+
+    <style name="Theme.PCC.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#F8F6F0</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/pcc_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.PCC</item>
     </style>
 </resources>
