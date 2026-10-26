@@ -178,13 +178,13 @@ begin
   if v_link_id is null then return; end if;
   if not private.consume_project_client_status_rate_limit(v_link_id, 'lookup', 60, 600) then return; end if;
 
-  update public.project_client_status_links
+  update public.project_client_status_links as l
   set status = 'expired', updated_at = now()
-  where id = v_link_id and status in ('active','opened') and expires_at <= now();
+  where l.id = v_link_id and l.status in ('active','opened') and l.expires_at <= now();
 
-  update public.project_client_status_links
-  set status = 'opened', opened_at = coalesce(opened_at, now()), updated_at = now()
-  where id = v_link_id and status = 'active' and expires_at > now();
+  update public.project_client_status_links as l
+  set status = 'opened', opened_at = coalesce(l.opened_at, now()), updated_at = now()
+  where l.id = v_link_id and l.status = 'active' and l.expires_at > now();
 
   return query
   select
