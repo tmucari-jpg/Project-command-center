@@ -59,10 +59,6 @@ export default async function ProjectStatusPage({
     return <PublicMessage title="Acompanhamento indisponível" body="O link não é válido ou deixou de estar disponível." />;
   }
 
-  if (new Date(snapshot.expires_at).getTime() <= Date.now()) {
-    return <PublicMessage title="Link expirado" body="Solicite à equipa responsável um novo link de acompanhamento." />;
-  }
-
   const deliverables = Array.isArray(snapshot.deliverables)
     ? (snapshot.deliverables as DeliverableSnapshot[])
     : [];
