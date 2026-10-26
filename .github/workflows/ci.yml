@@ -245,16 +245,45 @@ jobs:
             }
           }
 
+          $closure = Get-Content "../application/app/(protected)/closure/page.tsx" -Raw
+          $officialDocuments = Get-Content "../application/app/(protected)/official-documents/page.tsx" -Raw
+
           foreach ($token in @(
-            "finalizeProjectClosure",
-            "Entregável entregue está bloqueado",
-            "Todos os entregáveis precisam de evidência",
-            "Entregáveis & Fecho"
+            "Biblioteca do Projecto",
+            "único entregável",
+            "não existe criação manual"
           )) {
-            if (-not $mutations.Contains($token) -and -not $deliverables.Contains($token)) {
-              Write-Error "Missing consolidated PCC closure guard: $token"
+            if (-not $deliverables.Contains($token)) {
+              Write-Error "Missing project library rule: $token"
               exit 1
             }
+          }
+
+          foreach ($token in @(
+            "Fecho do Projecto",
+            "Cliente não pretende continuar",
+            "independente do entregável"
+          )) {
+            if (-not $closure.Contains($token) -and -not $mutations.Contains($token)) {
+              Write-Error "Missing independent project closure rule: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "syncProjectDiagnosticDeliverable",
+            "Diagnóstico do Cliente",
+            "Gerado automaticamente"
+          )) {
+            if (-not $mutations.Contains($token)) {
+              Write-Error "Missing automatic diagnostic deliverable rule: $token"
+              exit 1
+            }
+          }
+
+          if (-not $officialDocuments.Contains("Repositório Oficial PCC")) {
+            Write-Error "Official PCC download repository is not explicit."
+            exit 1
           }
 
       - name: Validate immutable deliverable archives
@@ -277,16 +306,8 @@ jobs:
             }
           }
 
-          foreach ($token in @(
-            "Registo oficial imutável",
-            "Criar nova versão",
-            "referência imutável"
-          )) {
-            if (-not $deliverables.Contains($token) -and -not $mutations.Contains($token)) {
-              Write-Error "Missing immutable archive application guard: $token"
-              exit 1
-            }
-          }
+          # A imutabilidade continua protegida na base de dados.
+          # O padrão documental é uma definição interna e não aparece como processo operacional.
 
       - name: Validate consolidated PCC diagnostic upgrades
         shell: pwsh

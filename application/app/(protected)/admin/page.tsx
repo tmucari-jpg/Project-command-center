@@ -39,7 +39,7 @@ const groups = [
     title: "Conhecimento & Qualidade",
     description: "Conhecimento, testes e melhoria contínua das capacidades do PCC.",
     tools: [
-      { href: "/factory-library", label: "Biblioteca", description: "Conhecimento e activos reutilizáveis.", icon: BookOpenCheck },
+      { href: "/factory-library", label: "Biblioteca de Activos", description: "Conhecimento e activos reutilizáveis do PCC; não é a biblioteca de entregáveis de um projecto.", icon: BookOpenCheck },
       { href: "/help", label: "Manual", description: "Referência operacional do PCC.", icon: CircleHelp },
       { href: "/execution-arena", label: "Testes", description: "Testes controlados antes de decisões relevantes.", icon: FlaskConical },
       { href: "/intelligence", label: "Inteligência", description: "Sinais e informação de apoio.", icon: Radar },
@@ -51,6 +51,7 @@ const groups = [
     description: "Governação, acessos e controlos técnicos da plataforma.",
     tools: [
       { href: "/security", label: "Segurança", description: "Acessos, controlos e eventos de segurança.", icon: LockKeyhole },
+      { href: "/official-documents", label: "Repositório Oficial PCC", description: "Downloads oficiais da plataforma: documentos, pacote técnico e builds.", icon: BookOpenCheck },
     ],
   },
 ];

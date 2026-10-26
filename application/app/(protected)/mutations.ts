@@ -505,6 +505,97 @@ export async function reviewClientDiagnosticResponse(formData: FormData) {
   redirect(`${path}?client_diagnostic=reviewed`);
 }
 
+
+async function syncProjectDiagnosticDeliverable(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  factoryCaseId: string,
+  projectId: string,
+) {
+  const { data: request, error: requestError } = await supabase
+    .from("client_diagnostic_requests")
+    .select("id,status,submitted_at")
+    .eq("factory_case_id", factoryCaseId)
+    .eq("user_id", userId)
+    .in("status", ["submitted", "reviewed", "incorporated"])
+    .order("submitted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (requestError) throw new Error(requestError.message);
+  if (!request) return;
+
+  const { data: response, error: responseError } = await supabase
+    .from("client_diagnostic_responses")
+    .select("respondent_name,respondent_role,answers,submitted_at")
+    .eq("request_id", request.id)
+    .maybeSingle();
+
+  if (responseError) throw new Error(responseError.message);
+  if (!response) return;
+
+  const entries = diagnosticAnswerEntries(response.answers);
+  const respondentLine =
+    "Respondente: " +
+    response.respondent_name +
+    (response.respondent_role ? " · " + response.respondent_role : "");
+  const receivedLine =
+    "Recebido em: " +
+    (response.submitted_at ?? request.submitted_at ?? new Date().toISOString());
+  const answerLines = entries.map(
+    ([key, value]) => (CLIENT_DIAGNOSTIC_ANSWER_LABELS[key] ?? key) + ": " + value,
+  );
+
+  const description = [
+    "DIAGNÓSTICO DO CLIENTE",
+    respondentLine,
+    receivedLine,
+    "",
+    ...answerLines,
+  ].join("\n");
+
+  const { data: existing, error: existingError } = await supabase
+    .from("deliverables")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("project_id", projectId)
+    .eq("workstream", "general")
+    .ilike("title", "Diagnóstico do Cliente%")
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) throw new Error(existingError.message);
+
+  const payload = {
+    title: "Diagnóstico do Cliente",
+    description,
+    priority: "medium",
+    status: "completed",
+    progress: 100,
+    completion_criteria:
+      "Gerado automaticamente a partir do questionário de diagnóstico e dos inputs efectivamente recolhidos.",
+    workstream: "general",
+  };
+
+  if (existing) {
+    const { error } = await supabase
+      .from("deliverables")
+      .update(payload)
+      .eq("id", existing.id)
+      .eq("user_id", userId);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  const { error } = await supabase.from("deliverables").insert({
+    user_id: userId,
+    project_id: projectId,
+    ...payload,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
 export async function incorporateClientDiagnosticResponse(formData: FormData) {
   const requestId = z.string().uuid().safeParse(formData.get("request_id"));
   const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
@@ -539,7 +630,7 @@ export async function incorporateClientDiagnosticResponse(formData: FormData) {
       .maybeSingle(),
     supabase
       .from("project_factory_cases")
-      .select("id,description,target_user,expected_value,constraints")
+      .select("id,project_id,description,target_user,expected_value,constraints")
       .eq("id", factoryCaseId.data)
       .eq("user_id", user.id)
       .maybeSingle(),
@@ -600,6 +691,24 @@ export async function incorporateClientDiagnosticResponse(formData: FormData) {
     .eq("user_id", user.id);
 
   if (requestUpdateError) fail(path, requestUpdateError.message);
+
+  if (factoryCase.project_id) {
+    try {
+      await syncProjectDiagnosticDeliverable(
+        supabase,
+        user.id,
+        factoryCase.id,
+        factoryCase.project_id,
+      );
+    } catch (syncError) {
+      fail(
+        path,
+        syncError instanceof Error
+          ? syncError.message
+          : "Não foi possível gerar o entregável de diagnóstico.",
+      );
+    }
+  }
 
   revalidatePath(path);
   redirect(`${path}?client_diagnostic=incorporated`);
@@ -2040,6 +2149,22 @@ export async function finalizeFactoryDecision(formData: FormData) {
       fail(path, convertedProjectError?.message ?? "Projecto convertido não encontrado.");
     }
 
+    try {
+      await syncProjectDiagnosticDeliverable(
+        supabase,
+        user.id,
+        parsed.data.factory_case_id,
+        convertedProject.id,
+      );
+    } catch (syncError) {
+      fail(
+        path,
+        syncError instanceof Error
+          ? syncError.message
+          : "Não foi possível gerar o entregável de diagnóstico.",
+      );
+    }
+
     if (convertedProject.expected_result?.trim()) {
       try {
         await ensureProjectOperationalStructure(supabase, user.id, convertedProject);
@@ -3073,155 +3198,72 @@ export async function updateProjectOutcomeStatus(formData: FormData) {
 }
 
 export async function finalizeProjectClosure(formData: FormData) {
-  const path = "/deliverables";
+  const path = "/closure";
   const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   const decision = z.enum(["continue", "close"]).safeParse(formData.get("decision"));
-  const rationale = z.string().trim().max(5000).safeParse(formData.get("rationale") ?? "");
+  const closureReason = z
+    .enum(["completed", "client_declined", "cancelled", "other"])
+    .safeParse(formData.get("closure_reason") ?? "other");
+  const rationale = z
+    .string()
+    .trim()
+    .max(5000)
+    .safeParse(formData.get("rationale") ?? "");
 
-  if (!projectId.success || !decision.success || !rationale.success) {
-    fail(path, "Decisão final inválida.");
+  if (!projectId.success || !decision.success || !closureReason.success || !rationale.success) {
+    fail(path, "Decisão de fecho inválida.");
   }
 
   const { supabase, user } = await requireUser();
   const { data: project, error: projectError } = await supabase
     .from("projects")
-    .select("id,title,status,value_status,handover_status,continuity_status")
+    .select("id,title,status")
     .eq("id", projectId.data)
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (projectError || !project) fail(path, projectError?.message ?? "Projecto inválido.");
-
-  if (decision.data === "close") {
-    const [
-      { data: deliverables, error: deliverablesError },
-      { data: blockers, error: blockersError },
-      { data: evidence, error: evidenceError },
-      { data: governanceRisks, error: governanceRisksError },
-      { data: governanceDependencies, error: governanceDependenciesError },
-      { data: commitmentBaselines, error: commitmentError },
-      { data: pendingChanges, error: changesError },
-    ] = await Promise.all([
-      supabase
-        .from("deliverables")
-        .select("id,status,completion_criteria,locked_at")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id),
-      supabase
-        .from("blockers")
-        .select("id")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id)
-        .in("status", ["open", "investigating", "waiting"]),
-      supabase
-        .from("evidence")
-        .select("deliverable_id")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id)
-        .not("deliverable_id", "is", null),
-      supabase
-        .from("project_governance_risks")
-        .select("severity,status,blocks_progress")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id)
-        .eq("blocks_progress", true)
-        .in("status", ["open", "mitigating"]),
-      supabase
-        .from("project_governance_dependencies")
-        .select("id")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id)
-        .eq("blocks_progress", true)
-        .in("status", ["pending", "resolving"]),
-      supabase
-        .from("project_commitment_baselines")
-        .select("id,version,status")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id)
-        .eq("status", "client_approved")
-        .order("version", { ascending: false })
-        .limit(1),
-      supabase
-        .from("project_change_requests")
-        .select("id")
-        .eq("project_id", project.id)
-        .eq("user_id", user.id)
-        .eq("decision", "pending"),
-    ]);
-
-    const gateError =
-      deliverablesError ??
-      blockersError ??
-      evidenceError ??
-      governanceRisksError ??
-      governanceDependenciesError ??
-      commitmentError ??
-      changesError;
-    if (gateError) fail(path, gateError.message);
-
-    if (!(deliverables ?? []).length) {
-      fail(path, "O projecto não pode fechar sem entregáveis definidos.");
-    }
-
-    const incomplete = (deliverables ?? []).filter((item) => item.status !== "completed");
-    if (incomplete.length) {
-      fail(path, "Existem entregáveis ainda não entregues/validados.");
-    }
-
-    const unlocked = (deliverables ?? []).filter((item) => !item.locked_at);
-    if (unlocked.length) {
-      fail(path, "Existem entregáveis finais que ainda não foram arquivados de forma imutável.");
-    }
-
-    const evidenceIds = new Set((evidence ?? []).map((item) => item.deliverable_id).filter(Boolean));
-    const missingEvidence = (deliverables ?? []).filter((item) => !evidenceIds.has(item.id));
-    if (missingEvidence.length) {
-      fail(path, "Todos os entregáveis precisam de evidência de entrega antes do fecho.");
-    }
-
-    if ((blockers ?? []).length) {
-      fail(path, "Resolva os bloqueios activos antes de fechar o projecto.");
-    }
-    if ((governanceRisks ?? []).length) {
-      fail(path, "Existem riscos de governação bloqueantes por resolver antes do fecho.");
-    }
-    if ((governanceDependencies ?? []).length) {
-      fail(path, "Existem dependências críticas por resolver antes do fecho.");
-    }
-    if (!(commitmentBaselines ?? []).length) {
-      fail(path, "O projecto precisa de uma Baseline de Compromisso validada pelo cliente antes do fecho.");
-    }
-    if ((pendingChanges ?? []).length) {
-      fail(path, "Existem alterações de âmbito pendentes de decisão.");
-    }
-    if (project.value_status === "not_assessed") {
-      fail(path, "Registe se o valor foi comprovado, está em observação ou não foi comprovado antes do fecho.");
-    }
-    if (project.handover_status === "pending") {
-      fail(path, "Conclua a transferência/handover antes do fecho.");
-    }
-    if (project.continuity_status === "pending") {
-      fail(path, "Verifique continuidade/recuperação antes do fecho.");
-    }
+  if (projectError || !project) {
+    fail(path, projectError?.message ?? "Projecto inválido.");
   }
+
+  const isClose = decision.data === "close";
+  const finalStatus =
+    !isClose
+      ? project.status
+      : closureReason.data === "completed"
+        ? "completed"
+        : "cancelled";
+
+  const reasonLabel: Record<string, string> = {
+    completed: "Objectivo concluído",
+    client_declined: "Cliente não pretende continuar",
+    cancelled: "Projecto cancelado por decisão interna",
+    other: "Outro motivo",
+  };
 
   const { error: decisionError } = await supabase.from("decisions").insert({
     user_id: user.id,
     project_id: project.id,
-    title: decision.data === "close" ? `Fecho · ${project.title}` : `Continuidade · ${project.title}`,
-    decision: decision.data === "close" ? "Encerrar projecto" : "Continuar projecto",
+    title: isClose ? "Fecho · " + project.title : "Continuidade · " + project.title,
+    decision: isClose
+      ? "Fechar projecto · " + reasonLabel[closureReason.data]
+      : "Continuar projecto",
     rationale: rationale.data || null,
-    outcome: decision.data === "close" ? "Projecto fechado após validação dos entregáveis e evidências." : "Projecto continua em acompanhamento.",
+    outcome: isClose
+      ? "Projecto encerrado por decisão administrativa independente do estado do entregável. Motivo: " +
+        reasonLabel[closureReason.data] +
+        "."
+      : "Projecto continua em acompanhamento.",
   });
 
   if (decisionError) fail(path, decisionError.message);
 
-  if (decision.data === "close") {
+  if (isClose) {
     const { error: closeError } = await supabase
       .from("projects")
       .update({
-        status: "completed",
-        progress: 100,
+        status: finalStatus,
+        progress: closureReason.data === "completed" ? 100 : 0,
         next_action: null,
       })
       .eq("id", project.id)
@@ -3232,9 +3274,10 @@ export async function finalizeProjectClosure(formData: FormData) {
 
   revalidatePath(path);
   revalidatePath("/projects");
-  revalidatePath(`/projects/${project.id}`);
+  revalidatePath("/deliverables");
+  revalidatePath("/projects/" + project.id);
   revalidatePath("/dashboard");
-  redirect(`${path}?project_id=${project.id}&${decision.data === "close" ? "closed=1" : "created=1"}`);
+  redirect(path + "?closed=1");
 }
 
 export async function upsertCommercialProfile(formData: FormData) {

@@ -52,7 +52,7 @@ export default async function OfficialDocumentsPage({
           <div>
             <h2 className="font-semibold text-[var(--cc-foreground)]">Regra documental protegida</h2>
             <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-              Master Mind, Guia Comercial, diagnóstico de release e pacote técnico só devem ser promovidos a versão actual depois da validação operacional correspondente. Cada versão actual deve estar ligada a um entregável do PCC. O download é servido pelo próprio PCC para computador e celular.
+              Este é o repositório oficial de download do PCC: Master Mind, Guia Comercial, diagnóstico de release, pacote técnico e builds oficiais. Não é a biblioteca de um projecto e não guarda o entregável de diagnóstico do cliente. O download é servido pelo próprio PCC para computador e celular.
             </p>
           </div>
         </div>

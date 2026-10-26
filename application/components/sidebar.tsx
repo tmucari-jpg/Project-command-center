@@ -7,6 +7,7 @@ import {
   BarChart3,
   Bell,
   CheckSquare2,
+  CheckCircle2,
   Factory,
   FolderKanban,
   Gauge,
@@ -34,7 +35,8 @@ const navigationGroups = [
     label: "Validar / concluir",
     items: [
       { href: "/metrics", label: "Métricas", icon: BarChart3 },
-      { href: "/deliverables", label: "Entregáveis & Fecho", icon: PackageCheck },
+      { href: "/deliverables", label: "Biblioteca do Projecto", icon: PackageCheck },
+      { href: "/closure", label: "Fecho do Projecto", icon: CheckCircle2 },
     ],
   },
 ];
