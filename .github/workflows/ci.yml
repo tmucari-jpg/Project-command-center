@@ -1134,6 +1134,24 @@ jobs:
             }
           }
 
+          foreach ($token in @(
+            'scope", "release"',
+            'releaseValidation.status !== "passed"',
+            "A versão oficial só pode ser promovida depois de a release actual estar validada operacionalmente em pleno."
+          )) {
+            if (-not $upload.Contains($token)) {
+              Write-Error "Missing full-operation release gate for official documents: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("download", "/api/official-documents/")) {
+            if (-not $officialPage.Contains($token)) {
+              Write-Error "Missing mobile/desktop download hint in official documents: $token"
+              exit 1
+            }
+          }
+
           foreach ($token in @("Documentos Oficiais PCC", "pcc-official-documents", "Uma versão oficial actual deve estar ligada a um entregável")) {
             if (-not $officialPage.Contains($token) -and -not $upload.Contains($token) -and -not $download.Contains($token)) {
               Write-Error "Missing protected PCC official document guard: $token"

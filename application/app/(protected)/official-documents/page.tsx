@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Download, FileArchive, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, inputClass, primaryButtonClass, secondaryButtonClass, selectClass } from "@/components/ui";
@@ -61,7 +60,7 @@ export default async function OfficialDocumentsPage({
 
       <Card className="mt-6 p-5">
         <h2 className="font-semibold text-[var(--cc-foreground)]">Registar nova versão</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">Use “Rascunho” enquanto a operação não estiver plenamente validada. “Actual” representa a versão oficial liberada.</p>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">Use “Rascunho” enquanto a operação não estiver plenamente validada. “Actual” representa a versão oficial liberada e só é aceite quando a release corrente estiver operacionalmente validada em pleno.</p>
         <form action="/api/official-documents/upload" method="post" encType="multipart/form-data" className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="text-sm font-medium text-[var(--cc-foreground)]">Tipo de documento
             <select className={selectClass} name="document_key" defaultValue="master_mind" required>
@@ -99,7 +98,7 @@ export default async function OfficialDocumentsPage({
                     <p className="mt-1 text-xs text-[var(--cc-secondary)]">{item.project_id ? projectById.get(item.project_id) ?? "Projecto" : "Sem projecto"}{item.deliverable_id ? ` · Entregável: ${deliverableById.get(item.deliverable_id) ?? "associado"}` : ""}{item.created_at ? ` · ${formatDateTime(item.created_at)}` : ""}</p>
                     {item.sha256 && <p className="mt-2 break-all text-[11px] text-[var(--cc-tertiary)]">SHA-256: {item.sha256}</p>}
                   </div>
-                  <Link className={secondaryButtonClass} href={`/api/official-documents/${item.id}/download`}><Download size={16} className="mr-2" /> Baixar</Link>
+                  <a download className={secondaryButtonClass} href={`/api/official-documents/${item.id}/download`}><Download size={16} className="mr-2" /> Baixar</a>
                 </div>
               </article>
             ))}</div>

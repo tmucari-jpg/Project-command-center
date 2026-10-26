@@ -452,9 +452,9 @@ export default async function DeliverablesPage({
                                   <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">Documentos oficiais associados</p>
                                   <div className="mt-2 flex flex-wrap gap-2">
                                     {officialFiles.map((document) => (
-                                      <Link key={document.id} href={`/api/official-documents/${document.id}/download`} className="text-sm font-semibold text-[var(--cc-accent)] hover:underline">
+                                      <a download key={document.id} href={`/api/official-documents/${document.id}/download`} className="text-sm font-semibold text-[var(--cc-accent)] hover:underline">
                                         {document.title} · {String(document.format).toUpperCase()} · {document.version_label}
-                                      </Link>
+                                      </a>
                                     ))}
                                   </div>
                                 </div>

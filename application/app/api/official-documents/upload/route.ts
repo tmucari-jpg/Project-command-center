@@ -50,6 +50,34 @@ export async function POST(request: Request) {
     projectId = deliverable.project_id ?? projectId;
   }
   if (parsed.data.status === "current" && !deliverableId) return redirectTo(request, { error: "Uma versão oficial actual deve estar ligada a um entregável." });
+
+  if (parsed.data.status === "current") {
+    const releaseSha = process.env.VERCEL_GIT_COMMIT_SHA ?? null;
+    const { data: releaseValidation, error: releaseValidationError } = await supabase
+      .from("operational_validation_runs")
+      .select("status,release_sha,created_at")
+      .eq("user_id", user.id)
+      .eq("scope", "release")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (releaseValidationError) {
+      return redirectTo(request, { error: "Não foi possível validar o estado operacional da release." });
+    }
+
+    const sameRelease =
+      !releaseSha ||
+      !releaseValidation?.release_sha ||
+      releaseValidation.release_sha === releaseSha;
+
+    if (!releaseValidation || releaseValidation.status !== "passed" || !sameRelease) {
+      return redirectTo(request, {
+        error: "A versão oficial só pode ser promovida depois de a release actual estar validada operacionalmente em pleno.",
+      });
+    }
+  }
+
   if (projectId) {
     const { data: project } = await supabase.from("projects").select("id").eq("id", projectId).eq("user_id", user.id).maybeSingle();
     if (!project) return redirectTo(request, { error: "Projecto inválido." });
