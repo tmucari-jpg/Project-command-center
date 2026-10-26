@@ -3137,13 +3137,25 @@ export async function recordDeliverableQA(formData: FormData) {
   }
   const path = `/deliverables?project_id=${projectId.data}`;
   const { supabase, user } = await requireUser();
+  const { data: deliverable, error: deliverableError } = await supabase
+    .from("deliverables")
+    .select("id,status,artifact_url,artifact_reference")
+    .eq("id", deliverableId.data)
+    .eq("project_id", projectId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (deliverableError || !deliverable) fail(path, deliverableError?.message ?? "Entregável não encontrado.");
+  if (deliverable.status === "completed") fail(path, "O entregável final está bloqueado. Crie uma nova versão para alterar a validação.");
+  if (qaStatus.data === "passed" && !deliverable.artifact_url && !deliverable.artifact_reference) {
+    fail(path, "QA aprovado exige evidência real do entregável.");
+  }
+
   const { error } = await supabase
     .from("deliverables")
     .update({ qa_status: qaStatus.data, qa_notes: notes.data || null })
     .eq("id", deliverableId.data)
     .eq("project_id", projectId.data)
-    .eq("user_id", user.id)
-    .neq("status", "completed");
+    .eq("user_id", user.id);
   if (error) fail(path, error.message);
   revalidatePath("/deliverables");
   redirect(`${path}&qa=updated`);
@@ -3164,18 +3176,35 @@ export async function recordDeliverableAcceptance(formData: FormData) {
 
   const path = `/deliverables?project_id=${projectId.data}`;
   const { supabase, user } = await requireUser();
+  const { data: deliverable, error: deliverableError } = await supabase
+    .from("deliverables")
+    .select("id,status,qa_status,artifact_url,artifact_reference")
+    .eq("id", deliverableId.data)
+    .eq("project_id", projectId.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (deliverableError || !deliverable) fail(path, deliverableError?.message ?? "Entregável não encontrado.");
+  if (deliverable.status === "completed") fail(path, "O entregável final está bloqueado. Crie uma nova versão para alterar a validação.");
+
+  const isAccepted = ["accepted", "accepted_with_reservations"].includes(status.data);
+  if (isAccepted && !["passed", "not_required"].includes(deliverable.qa_status)) {
+    fail(path, "O entregável só pode ser aceite depois do QA.");
+  }
+  if (isAccepted && !deliverable.artifact_url && !deliverable.artifact_reference) {
+    fail(path, "A aceitação exige evidência real do entregável.");
+  }
+
   const { error } = await supabase
     .from("deliverables")
     .update({
       acceptance_status: status.data,
       acceptance_notes: notes.data || null,
       acceptance_reference: referenceRaw || null,
-      accepted_at: ["accepted", "accepted_with_reservations"].includes(status.data) ? new Date().toISOString() : null,
+      accepted_at: isAccepted ? new Date().toISOString() : null,
     })
     .eq("id", deliverableId.data)
     .eq("project_id", projectId.data)
-    .eq("user_id", user.id)
-    .neq("status", "completed");
+    .eq("user_id", user.id);
   if (error) fail(path, error.message);
 
   revalidatePath("/deliverables");
