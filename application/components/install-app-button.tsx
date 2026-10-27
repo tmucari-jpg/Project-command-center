@@ -8,7 +8,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
 
-export function InstallAppButton() {
+export function InstallAppButton({ compact = false }: { compact?: boolean }) {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -75,7 +75,7 @@ export function InstallAppButton() {
         type="button"
         onClick={install}
         aria-label="Instalar Project Command Center no dispositivo"
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--cc-accent)] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[var(--cc-accent-strong)]"
+        className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--cc-accent)] font-semibold text-white transition hover:bg-[var(--cc-accent-strong)] ${compact ? "px-3 py-2 text-xs" : "px-3.5 py-2 text-sm"}`}
       >
         <Download size={16} />
         <span>Instalar PCC</span>

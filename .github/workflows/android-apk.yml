@@ -2,7 +2,7 @@ name: Build PCC Android APK
 
 on:
   push:
-    branches: [main, "audit/operational-full-20261026"]
+    branches: [main]
     paths:
       - "android-apk/**"
       - ".github/workflows/android-apk.yml"
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@11bd71901bbe5b163ceea73d27597364c9af683
 
       - name: Install Java and tools
         run: |
@@ -32,19 +32,18 @@ jobs:
           unzip -q /tmp/gradle.zip -d /tmp
           echo "/tmp/gradle-8.9/bin" >> "$GITHUB_PATH"
 
-      - name: Prepare official PCC icon
-        run: |
-          mkdir -p android-apk/app/src/main/res/drawable
-          cp application/public/icons/icon-512.png android-apk/app/src/main/res/drawable/pcc_icon.png
-          test -s android-apk/app/src/main/res/drawable/pcc_icon.png
-
       - name: Guard PCC Android identity and app shell
         run: |
+          test -s android-apk/app/src/main/res/drawable/pcc_icon.png
+          cmp -s application/public/icons/icon-512.png android-apk/app/src/main/res/drawable/pcc_icon.png
+          grep -q 'android:icon="@mipmap/ic_launcher"' android-apk/app/src/main/AndroidManifest.xml
+          grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' android-apk/app/src/main/AndroidManifest.xml
+          grep -q '@drawable/pcc_icon_foreground' android-apk/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           grep -q 'PCC_URL = "https://project-command-center-seven-xi.vercel.app/dashboard"' android-apk/app/src/main/java/com/pcc/projectcommandcenter/MainActivity.java
           grep -q 'Theme.PCC.Starting' android-apk/app/src/main/AndroidManifest.xml
           grep -q 'windowSplashScreenAnimatedIcon.*@drawable/pcc_icon' android-apk/app/src/main/res/values/styles.xml
-          grep -q 'versionCode 2' android-apk/app/build.gradle
-          grep -q 'versionName "1.0.1"' android-apk/app/build.gradle
+          grep -q 'versionCode 3' android-apk/app/build.gradle
+          grep -q 'versionName "1.0.2"' android-apk/app/build.gradle
 
       - name: Build installable debug APK
         working-directory: android-apk
@@ -57,8 +56,9 @@ jobs:
           $ANDROID_HOME/build-tools/35.0.0/aapt dump badging android-apk/app/build/outputs/apk/debug/app-debug.apk | tee /tmp/apk-badging.txt
           grep -q "package: name='com.pcc.projectcommandcenter'" /tmp/apk-badging.txt
           grep -q "application-label:'PCC'" /tmp/apk-badging.txt
-          grep -q "versionCode='2'" /tmp/apk-badging.txt
-          grep -q "versionName='1.0.1'" /tmp/apk-badging.txt
+          grep -q "versionCode='3'" /tmp/apk-badging.txt
+          grep -q "versionName='1.0.2'" /tmp/apk-badging.txt
+          $ANDROID_HOME/build-tools/35.0.0/aapt dump resources android-apk/app/build/outputs/apk/debug/app-debug.apk | grep -q "mipmap/ic_launcher"
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose android-apk/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Publish APK artifact
@@ -79,7 +79,7 @@ jobs:
           git rm -rf . >/dev/null 2>&1 || true
           mkdir -p downloads
           cp /tmp/PCC-Android.apk downloads/PCC-Android.apk
-          printf '%s\n' "PCC Android build from ${GITHUB_SHA}" > downloads/version.txt
+          printf '%s\n' "PCC Android build from $GITHUB_SHA" > downloads/version.txt
           git add downloads/PCC-Android.apk downloads/version.txt
           git commit -m "Publish validated PCC Android APK"
           git push --force origin mobile-builds
