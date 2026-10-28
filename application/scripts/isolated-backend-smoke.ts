@@ -60,7 +60,7 @@ try{
  const organizations:string[]=[];
  await check('gie360-provisioning-and-product-catalog',async()=>{
   const catalog=await owner.client.from('pcc_products').select('code').eq('code','gie360');assert.ifError(catalog.error);assert.equal(catalog.data!.length,1);
-  const packages=await owner.client.from('pcc_product_packages').select('code,price_mzn').eq('product_code','gie360');assert.ifError(packages.error);assert.equal(packages.data!.length,4);assert(packages.data!.every(row=>row.price_mzn===null),'Proposed packages must not invent prices');
+  const packages=await owner.client.from('pcc_product_packages').select('code,price_mzn').eq('product_code','gie360');assert.ifError(packages.error);assert.equal(packages.data!.length,4);assert.equal(packages.data!.find(row=>row.code==='gie360-enterprise')?.price_mzn,32350);
   for(const client of [clientA,clientB]){
    const factory=await owner.client.from('project_factory_cases').insert({user_id:owner.id,title:`GIE360 synthetic ${client.id}`,problem:'Questionnaire validation',project_type:'commercial'}).select('id').single();assert.ifError(factory.error);
    const args={p_case_id:factory.data!.id,p_client_email:client.email,p_name:'Empresa sintética de testes',p_profile:{sector:'Comércio'}};
@@ -121,7 +121,7 @@ try{
   const noEvidence=await fetch(base+'/review',{method:'POST',headers:{cookie,origin},body:missingLedger,redirect:'manual'});assert.equal(noEvidence.status,303);assert(new URL(noEvidence.headers.get('location')!,origin).searchParams.has('error'));
   const approval=await review('approved',cookie);assert.equal(approval.status,303);assert(new URL(approval.headers.get('location')!,origin).searchParams.has('success'));
   const approved=await owner.client.from('gie360_import_batches').select('state').eq('id',batch.data!.id).single();assert.ifError(approved.error);assert.equal(approved.data!.state,'approved');
-  const configured=await owner.client.rpc('gie360_configure_organization',{p_organization_id:organizations[0],p_package_code:'gie360-professional',p_approved_modules:['data','exports'],p_ai_cloud_authorized:false,p_contract_reference:'SYNTHETIC-VALIDATION-ONLY'});assert.ifError(configured.error);
+  const configured=await owner.client.rpc('gie360_configure_organization',{p_organization_id:organizations[0],p_package_code:'gie360-enterprise',p_approved_modules:['data','exports'],p_ai_cloud_authorized:false,p_contract_reference:'SYNTHETIC-VALIDATION-ONLY'});assert.ifError(configured.error);
   const exported=await fetch(base+'/download?format=csv',{headers:{cookie:clientCookie}});assert.equal(exported.status,200);assert((await exported.text()).includes('TEST-001'));
   const report=await fetch(base+'/download?format=report',{headers:{cookie:clientCookie}});assert.equal(report.status,200);assert.equal((await report.json()).state,'approved');
   const immutable=await review('rejected',cookie);assert(new URL(immutable.headers.get('location')!,origin).searchParams.has('error'));
