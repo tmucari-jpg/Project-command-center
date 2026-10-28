@@ -1,6 +1,7 @@
 import {createHash} from "node:crypto";
 import {NextResponse} from "next/server";
 import {createClient} from "@/lib/supabase/server";
+import {createServiceClient} from "@/lib/supabase/service";
 import type {GIEImportSnapshot} from "@/lib/gie360-import";
 export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
  const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return NextResponse.json({error:"Sessão expirada."},{status:401});
@@ -18,7 +19,11 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
   const lines=[fields.join(","),...snapshot.records.map(r=>fields.map(f=>safe(r[f])).join(","))];
   return new Response("\uFEFF"+lines.join("\r\n"),{headers:{...headers,"Content-Type":"text/csv; charset=utf-8","Content-Disposition":`attachment; filename="GIE360-${id}-${batch.state}.csv"`}});
  }
- const {data:file,error}=await supabase.storage.from("gie360-import-originals").download(batch.source_path);
+ // RLS authorizes the caller through the tenant-scoped batch query above.
+ // Storage originals were written with the service client; retrieve server-side only after that authorization.
+ const service=createServiceClient();
+ if(!service)return NextResponse.json({error:"Arquivo indisponível: serviço de armazenamento não configurado."},{status:503});
+ const {data:file,error}=await service.storage.from("gie360-import-originals").download(batch.source_path);
  if(error||!file)return NextResponse.json({error:"Original indisponível; contacte o gestor."},{status:503});
  const buffer=Buffer.from(await file.arrayBuffer());if(createHash("sha256").update(buffer).digest("hex")!==batch.original_sha256)return NextResponse.json({error:"Falha de integridade do original."},{status:409});
  const extension=batch.source_path.endsWith(".xlsx")?"xlsx":"csv";
