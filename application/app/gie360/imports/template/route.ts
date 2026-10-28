@@ -1,0 +1,3 @@
+import {createClient} from "@/lib/supabase/server";
+import {NextResponse} from "next/server";
+export async function GET(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return NextResponse.json({error:"Sessão expirada."},{status:401});return new Response("\uFEFFdocumento;linha;tipo;data;moeda;base_tributavel;imposto;total;documento_original;desconto;cliente;produto\r\n",{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":"attachment; filename=GIE360-modelo-importacao.csv","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});}

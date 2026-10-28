@@ -8,7 +8,7 @@ $results = [System.Collections.Generic.List[object]]::new()
 $reportDirectory = Join-Path $repo 'tmp/local-validation'
 New-Item -ItemType Directory -Force -Path $reportDirectory | Out-Null
 $reportPath = Join-Path $reportDirectory ("PCC-validation-{0}-{1}.json" -f (Get-Date -Format 'yyyyMMdd-HHmmss'),[guid]::NewGuid().ToString('N').Substring(0,8))
-$names = @('NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY','NEXT_PUBLIC_SITE_URL','PCC_ARTIFACT_GENERATION_ENABLED','PCC_GROQ_FREE_TIER','OPENAI_API_KEY','QWEN_API_KEY','GROQ_API_KEY','MOONSHOT_API_KEY','N8N_WEBHOOK_URL','BRAVE_SEARCH_API_KEY','PCC_ADMIN_EMAILS')
+$names = @('NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY','NEXT_PUBLIC_SITE_URL','PCC_ARTIFACT_GENERATION_ENABLED','PCC_GROQ_FREE_TIER','OPENAI_API_KEY','QWEN_API_KEY','GROQ_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','GEMINI_MODEL','PCC_GEMINI_FREE_TIER','PCC_GEMINI_DATA_PROCESSING_ACCEPTED','MOONSHOT_API_KEY','N8N_WEBHOOK_URL','BRAVE_SEARCH_API_KEY','PCC_ADMIN_EMAILS')
 $saved = @{}
 $locationPushed = $false
 $completed = $false
@@ -59,6 +59,8 @@ try {
   $env:NEXT_PUBLIC_SITE_URL = 'http://localhost:3000'
   $env:PCC_ARTIFACT_GENERATION_ENABLED = 'true'
   $env:PCC_GROQ_FREE_TIER = 'false'
+  $env:PCC_GEMINI_FREE_TIER = 'false'
+  $env:PCC_GEMINI_DATA_PROCESSING_ACCEPTED = 'false'
   $health = Invoke-WebRequest -Uri "$url/auth/v1/health" -Headers @{apikey=$key} -TimeoutSec 20
   if ($health.StatusCode -ne 200) { throw 'Auth local indisponivel.' }
   Record 'auth-health' 'passed' 'HTTP 200; nao equivale a login autenticado.'

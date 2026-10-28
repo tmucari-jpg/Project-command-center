@@ -1,0 +1,88 @@
+import { expect, it } from "vitest";
+import { PGlite } from "@electric-sql/pglite";
+import { readFile } from "node:fs/promises";
+const manager = "10000000-0000-4000-8000-000000000001";
+const client = "10000000-0000-4000-8000-000000000002";
+const outsider = "10000000-0000-4000-8000-000000000003";
+const caseId = "20000000-0000-4000-8000-000000000001";
+
+it("persists drafts, enforces tenant RLS and optimistic revisions, and atomically submits once to the original PCC case", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`create role anon;create role authenticated;create schema auth;
+      create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+      grant usage on schema auth to authenticated;
+      create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
+      create table profiles(id uuid primary key);
+      create table user_roles(user_id uuid,role text);
+      create table projects(id uuid,user_id uuid);
+      create table project_factory_cases(id uuid primary key,user_id uuid);
+      create table client_diagnostic_requests(id uuid primary key default gen_random_uuid(),user_id uuid,factory_case_id uuid,token_hash text unique,questionnaire_version text,client_organization text,status text,expires_at timestamptz,submitted_at timestamptz,triaged_at timestamptz,triage_missing_information text[],triage_points_to_confirm text[],updated_at timestamptz);
+      create table client_diagnostic_responses(request_id uuid unique,respondent_name text,answers jsonb);
+      create table notifications(user_id uuid,type text,title text,message text,priority text,related_entity_type text,related_entity_id uuid);
+      insert into profiles values('${manager}'),('${client}'),('${outsider}');
+      insert into auth.users values('${manager}','manager@example.test',now()),('${client}','client@example.test',now()),('${outsider}','outsider@example.test',now());
+      insert into project_factory_cases values('${caseId}','${manager}');`);
+    await db.exec(await readFile("../supabase/migrations/20261028115017_gie360_isolated_portal.sql", "utf8"));
+    await db.exec(`alter table project_factory_cases enable row level security;
+      grant select,insert,update on project_factory_cases to authenticated;
+      create policy own_cases on project_factory_cases for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());`);
+    await db.exec(await readFile("../supabase/migrations/20261028115312_gie360_pcc_identity_boundary.sql", "utf8"));
+    await db.exec(await readFile("../supabase/migrations/20261028115451_gie360_ai_requests.sql", "utf8"));
+    const asUser = async (id: string) => { await db.exec(`reset role;set request.jwt.claim.sub='${id}';set role authenticated;`); };
+    await asUser(outsider);
+    await expect(db.query("select gie360_provision($1,$2,$3,$4)", [caseId, "client@example.test", "Empresa", "{}"])) .rejects.toThrow("case owner required");
+    await asUser(manager);
+    const first = await db.query<{ id: string }>("select gie360_provision($1,$2,$3,$4) as id", [caseId, "client@example.test", "Empresa de teste", JSON.stringify({ sector: "Agricultura" })]);
+    const organization = first.rows[0].id;
+    expect((await db.query("select gie360_provision($1,$2,$3,$4) as id", [caseId, "client@example.test", "Empresa de teste", "{}"])) .rows).toEqual(first.rows);
+    const assessment = (await db.query<{ id: string; answers: Record<string, string> }>("select id,answers from gie360_assessments")).rows[0];
+    expect(assessment.answers).toEqual({ sector: "Agricultura" });
+    await expect(db.query("select gie360_reserve_ai($1)", [organization])).rejects.toThrow("GIE360_AI_SCOPE_NOT_APPROVED");
+    await expect(db.query("select gie360_configure_organization($1,$2,$3,$4,$5)", [organization, "gie360-essential", ["ai"], true, "Real agreement"])).rejects.toThrow("Invalid package scope");
+    await db.query("select gie360_configure_organization($1,$2,$3,$4,$5)", [organization, "gie360-enterprise", ["ai", "data"], true, "Real pilot agreement 001"]);
+    await asUser(client);
+    // The original PCC own-row policy alone allowed self-created workspaces.
+    // The restrictive overlay must deny clients even for their own forged row.
+    await expect(db.query("insert into project_factory_cases(id,user_id) values(gen_random_uuid(),$1)", [client])).rejects.toThrow("row-level security");
+    expect((await db.query("select id from project_factory_cases")).rows).toHaveLength(0);
+    expect((await db.query("select id from gie360_organizations")).rows).toHaveLength(1);
+    await expect(db.query("update gie360_organizations set manager_user_id=$1", [client])).rejects.toThrow("permission denied");
+    await expect(db.query("select gie360_configure_organization($1,$2,$3,$4,$5)", [organization, "gie360-enterprise", ["ai"], true, "Forged"])).rejects.toThrow("manager required");
+    const save = (revision: number, answers: Record<string, string>, submit = false, key: string | null = null) => db.query<{ result: { revision: number; status: string; information_gaps: string[] } }>("select gie360_save_assessment($1,$2,$3,$4,$5) as result", [assessment.id, revision, JSON.stringify(answers), submit, key]);
+    const answers = { sector: "Agricultura", costs: "Não sei", desired_result: "Organizar a gestão" };
+    expect((await save(0, answers)).rows[0].result.revision).toBe(1);
+    await expect(save(0, answers)).rejects.toThrow("Revision conflict");
+    await expect(db.query("select gie360_save_assessment($1,null,$2,false,null)", [assessment.id, JSON.stringify(answers)])).rejects.toThrow("Revision conflict");
+    await expect(save(1, { forged_gate: "g5" })).rejects.toThrow("Invalid question answer");
+    for (let index = 0; index < 10; index++) await db.query("select gie360_reserve_ai($1)", [organization]);
+    await expect(db.query("select gie360_reserve_ai($1)", [organization])).rejects.toThrow("GIE360_AI_RATE_LIMIT");
+    expect((await db.query("select id from gie360_ai_requests")).rows).toHaveLength(10);
+    await expect(db.query("insert into gie360_ai_requests(organization_id,user_id) values($1,$2)", [organization, client])).rejects.toThrow("permission denied");
+    await asUser(outsider);
+    await expect(db.query("select gie360_reserve_ai($1)", [organization])).rejects.toThrow("GIE360_ORGANIZATION_FORBIDDEN");
+    expect((await db.query("select id from gie360_ai_requests")).rows).toHaveLength(0);
+    expect((await db.query("select id from gie360_organizations")).rows).toHaveLength(0);
+    expect((await db.query("select id from gie360_assessments")).rows).toHaveLength(0);
+    await expect(save(1, answers)).rejects.toThrow("inaccessible");
+    await asUser(client);
+    const requestKey = "30000000-0000-4000-8000-000000000001";
+    // Failure in downstream notification must roll back the response and submitted snapshot.
+    await db.exec("reset role;create function reject_notification() returns trigger language plpgsql as $$begin raise exception 'Injected notification failure';end;$$;create trigger reject_notification before insert on notifications for each row execute function reject_notification();set role authenticated;");
+    await expect(save(1, answers, true, requestKey)).rejects.toThrow("Injected notification failure");
+    expect((await db.query("select id from gie360_submissions")).rows).toHaveLength(0);
+    await db.exec("reset role;drop trigger reject_notification on notifications;set role authenticated;");
+    const submitted = await save(1, answers, true, requestKey);
+    expect(submitted.rows[0].result.status).toBe("submitted");
+    expect(submitted.rows[0].result.information_gaps).toHaveLength(10);
+    expect((await save(1, answers, true, requestKey)).rows).toEqual(submitted.rows);
+    await expect(save(2, answers)).rejects.toThrow("already submitted");
+    await expect(save(2, answers, true, "30000000-0000-4000-8000-000000000002")).rejects.toThrow("already submitted");
+    await db.exec("reset role");
+    expect((await db.query("select * from notifications")).rows).toHaveLength(1);
+    expect((await db.query<{ related_entity_id: string }>("select related_entity_id from notifications")).rows[0].related_entity_id).toBe(caseId);
+    expect((await db.query("select * from client_diagnostic_responses")).rows).toHaveLength(1);
+    expect((await db.query("select * from gie360_scope_events")).rows).toHaveLength(1);
+    expect((await db.query<{ validation_status: string }>("select validation_status from gie360_submissions")).rows[0].validation_status).toBe("declared");
+  } finally { await db.close(); }
+}, 30000);

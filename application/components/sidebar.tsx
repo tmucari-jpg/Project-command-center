@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  Boxes,
   Factory,
   FolderKanban,
   Gauge,
@@ -64,6 +65,7 @@ export function Sidebar({ isAdmin, notificationCount }: { isAdmin: boolean; noti
           <NavLink pathname={pathname} href="/dashboard" label="Início" Icon={Gauge} />
           <NavLink pathname={pathname} href="/project-factory" label="Novo projecto" Icon={Factory} />
           <NavLink pathname={pathname} href="/projects" label="Projectos" Icon={FolderKanban} />
+          <NavLink pathname={pathname} href="/products" label="Produtos e Pacotes" Icon={Boxes} />
           <NavLink pathname={pathname} href="/notifications" label="Alertas" Icon={Bell} badge={notificationCount} />
         </nav>
 
@@ -81,12 +83,13 @@ export function MobileNav({ notificationCount }: { notificationCount: number }) 
     { href: "/dashboard", label: "Início", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
+    { href: "/products", label: "Produtos", icon: Boxes },
     { href: "/notifications", label: notificationCount > 0 ? `Alertas ${notificationCount > 99 ? "99+" : notificationCount}` : "Alertas", icon: Bell },
   ];
 
   return (
     <div className="cc-safe-bottom border-t border-[var(--cc-border)] bg-[var(--cc-glass)] px-2 py-2 backdrop-blur-2xl lg:hidden">
-      <nav className="grid grid-cols-4 gap-1" aria-label="Navegação principal">
+      <nav className="grid grid-cols-5 gap-1" aria-label="Navegação principal">
         {mobileItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (

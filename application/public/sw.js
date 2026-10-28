@@ -1,4 +1,4 @@
-const CACHE_NAME = "project-command-center-v9";
+const CACHE_NAME = "project-command-center-v10";
 const STATIC_ASSETS = [
   "/offline.html",
   "/offline-app.js",
@@ -20,7 +20,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("project-command-center-") && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
@@ -37,6 +37,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname === "/gie360" || url.pathname.startsWith("/gie360/")) return;
   if (url.pathname.startsWith("/api/")) return;
   if (url.pathname.startsWith("/client-diagnostic/")) return;
 
@@ -71,9 +72,5 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => cacheSuccessful(event.request, response))
-      .catch(() => caches.match(event.request)),
-  );
+  // Only explicitly static resources belong in the shared cache.
 });

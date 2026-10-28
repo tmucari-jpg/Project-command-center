@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isFreeAIEligible, requestAIText, type RuntimeProfile } from "@/lib/ai-runtime";
 import { classifyAIProviderHealth } from "@/lib/ai-provider-state";
 export type AssistProviderProfile = RuntimeProfile & { id: string; label: string };
-export async function generateAssistWithFallback(supabase: SupabaseClient, userId: string, input: string, instructions?: string) {
+export async function generateAssistWithFallback(supabase: SupabaseClient, userId: string, input: string, instructions?: string, validateText?: (text: string) => void) {
   const { data: rows, error } = await supabase.from("ai_provider_profiles")
     .select("id,provider,label,mode,enabled,cost_class,priority,endpoint_hint,model_hint,last_health_status")
     .eq("user_id", userId).eq("enabled", true).order("priority", { ascending: true });
@@ -16,6 +16,8 @@ export async function generateAssistWithFallback(supabase: SupabaseClient, userI
     if (remaining < 500) break;
     try {
       const text = await requestAIText(profile, input, instructions, Math.min(8000, remaining));
+      // A successful transport is insufficient when the caller requires grounded structured output.
+      validateText?.(text);
       attempts.push({ provider: profile.provider, label: profile.label, status: "passed" });
       await supabase.from("ai_provider_profiles").update({ last_health_status: "healthy", configuration_status: "valid", availability_reason: "healthy",
         last_health_message: "Geração real concluída.", last_health_at: new Date().toISOString(),

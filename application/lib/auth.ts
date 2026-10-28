@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isGIE360Client } from "@/lib/pcc-access";
 
 export async function requireUser() {
   const supabase = await createClient();
@@ -17,6 +18,7 @@ export async function requireUser() {
 }
 
 export async function resolveWorkspaceUser(supabase: Awaited<ReturnType<typeof createClient>>, authUser: { id: string; email?: string }) {
+  if (await isGIE360Client(supabase, authUser.id)) redirect("/gie360");
   let dataUser = authUser;
 
   if (await isAdminUser(supabase, authUser.id, authUser.email)) {

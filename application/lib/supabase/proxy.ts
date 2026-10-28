@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { requirePublicSupabaseEnv } from "@/lib/env";
+import { isGIE360Client, isGIE360Path } from "@/lib/pcc-access";
 
 const AUTH_PATHS = ["/auth/login", "/auth/sign-up", "/auth/forgot-password"];
 const PUBLIC_PATHS = [
@@ -13,6 +14,7 @@ const PUBLIC_PATHS = [
   "/offline-app.js",
   "/client-diagnostic",
   "/project-status",
+  "/gie360",
 ];
 
 function isPublicPath(pathname: string) {
@@ -54,6 +56,24 @@ export async function updateSession(request: NextRequest) {
 
   const isAuthenticated = Boolean(claims?.sub);
   const pathname = request.nextUrl.pathname;
+
+  // API handlers still own authentication; the shared boundary only prevents
+  // authenticated client accounts from entering any internal PCC API.
+  const isApi = pathname === "/api" || pathname.startsWith("/api/");
+  if (isAuthenticated && !isGIE360Path(pathname)) {
+    let clientIdentity: boolean;
+    try { clientIdentity = await isGIE360Client(supabase, String(claims!.sub)); }
+    catch { return NextResponse.json({ error: "identity_boundary_unavailable" }, { status: 503 }); }
+    if (clientIdentity) {
+      if (isApi) return NextResponse.json({ error: "pcc_access_forbidden" }, { status: 403 });
+      const target = request.nextUrl.clone(); target.pathname = "/gie360"; target.search = "";
+      const redirected = NextResponse.redirect(target);
+      response.cookies.getAll().forEach((cookie) => redirected.cookies.set(cookie));
+      redirected.headers.set("Cache-Control", "no-store");
+      return redirected;
+    }
+  }
+  if (isApi) return response;
 
   if (!isAuthenticated && !isPublicPath(pathname)) {
     const redirectUrl = request.nextUrl.clone();

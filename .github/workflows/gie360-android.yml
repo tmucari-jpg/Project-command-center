@@ -1,0 +1,145 @@
+name: GIE360 Android candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      gie360_url:
+        description: 'Explicit HTTPS test deployment ending /gie360'
+        type: string
+        required: true
+      signed_release:
+        description: 'Build with separately configured release signing secrets'
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      gie360_url:
+        type: string
+        required: true
+      signed_release:
+        type: boolean
+        default: false
+    secrets:
+      GIE360_KEYSTORE_BASE64:
+        required: false
+      GIE360_KEYSTORE_PASSWORD:
+        required: false
+      GIE360_KEY_ALIAS:
+        required: false
+      GIE360_KEY_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-candidate:
+    if: startsWith(github.ref, 'refs/heads/pcc-validation/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GIE360_URL: ${{ inputs.gie360_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate explicit product URL and official icon
+        run: |
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlparse
+          u = urlparse(os.environ.get('GIE360_URL', ''))
+          if not (u.scheme == 'https' and u.hostname and not u.username and not u.password and
+                  u.port in [None,443] and u.path in ['/gie360','/gie360/'] and not u.query and not u.fragment):
+              raise SystemExit('BLOCKED: configure an explicit HTTPS GIE360 deployment URL; PCC production is never used as a fallback.')
+          PY
+          test -s application/public/gie360/icon-maskable-512.png
+          cmp application/public/gie360/icon-maskable-512.png gie360-android/app/src/main/res/drawable/gie360_icon.png
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Prepare release signing only when explicitly requested
+        if: inputs.signed_release
+        env:
+          KEYSTORE_BASE64: ${{ secrets.GIE360_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.GIE360_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.GIE360_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.GIE360_KEY_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          names = ['KEYSTORE_BASE64','KEYSTORE_PASSWORD','KEY_ALIAS','KEY_PASSWORD']
+          if not all(os.environ.get(n) for n in names):
+              raise SystemExit('BLOCKED: release signing is incomplete; no debug signature will be substituted.')
+          path = Path(os.environ['RUNNER_TEMP']) / 'gie360-release.keystore'
+          path.write_bytes(base64.b64decode(os.environ['KEYSTORE_BASE64'], validate=True))
+          path.chmod(0o600)
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write('GIE360_KEYSTORE_PATH=' + str(path) + '\n')
+          PY
+      - name: Test navigation boundary and build candidate
+        working-directory: gie360-android
+        env:
+          GIE360_KEYSTORE_PASSWORD: ${{ secrets.GIE360_KEYSTORE_PASSWORD }}
+          GIE360_KEY_ALIAS: ${{ secrets.GIE360_KEY_ALIAS }}
+          GIE360_KEY_PASSWORD: ${{ secrets.GIE360_KEY_PASSWORD }}
+          SIGNED_RELEASE: ${{ inputs.signed_release }}
+        run: |
+          gradle --no-daemon testDebugUnitTest
+          if [ "$SIGNED_RELEASE" = true ]; then
+            gradle --no-daemon assembleRelease
+          else
+            gradle --no-daemon assembleDebug
+          fi
+      - name: Verify signature, identity, checksum and traceability
+        env:
+          SIGNED_RELEASE: ${{ inputs.signed_release }}
+        run: |
+          set -euo pipefail
+          variant=debug
+          package=com.pcc.gie360.test
+          if [ "$SIGNED_RELEASE" = true ]; then variant=release; package=com.pcc.gie360; fi
+          apk="gie360-android/app/build/outputs/apk/$variant/app-$variant.apk"
+          test -s "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" > /tmp/gie360-badging.txt
+          grep -F "package: name='$package'" /tmp/gie360-badging.txt
+          grep -F "application-label:'GIE360°'" /tmp/gie360-badging.txt
+          mkdir -p gie360-android/artifacts
+          cp "$apk" "gie360-android/artifacts/GIE360-$variant.apk"
+          export APK_VARIANT="$variant"
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          directory = Path('gie360-android/artifacts')
+          apk = directory / ('GIE360-' + os.environ['APK_VARIANT'] + '.apk')
+          record = dict(product='GIE360°',version='1.0.0' if os.environ['SIGNED_RELEASE']=='true' else '1.0.0-test',versionCode=1,
+                        commit=os.environ['GITHUB_SHA'],webCandidateCommit=os.environ['GITHUB_SHA'],
+                        deploymentUrl=os.environ['GIE360_URL'],webDeploymentCommitVerified=False,
+                        variant=os.environ['APK_VARIANT'],
+                        signature='release' if os.environ['SIGNED_RELEASE']=='true' else 'debug-test-only',
+                        sha256=hashlib.sha256(apk.read_bytes()).hexdigest(),
+                        physicalInstallValidated=False,iosCompatible=False,
+                        publicationApproved=False)
+          (directory / 'release-manifest.json').write_text(json.dumps(record,ensure_ascii=False,indent=2))
+          (directory / (apk.name+'.sha256')).write_text(record['sha256']+'  '+apk.name+'\n')
+          PY
+      - name: Upload candidate only (no store or production publication)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gie360-android-${{ github.sha }}
+          path: |
+            gie360-android/artifacts/
+            gie360-android/app/build/test-results/testDebugUnitTest/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Record validation boundaries
+        if: always()
+        run: |
+          echo 'GIE360 Android candidate only. Physical installation, deployed web commit parity, live AI, download/import/export inside WebView and publication approval remain separate checks. Debug builds are test-only and cannot replace the release signing identity.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove temporary signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/gie360-release.keystore"

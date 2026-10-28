@@ -18,9 +18,14 @@ jobs:
       QWEN_API_KEY: ''
       MOONSHOT_API_KEY: ''
       GROQ_API_KEY: ''
+      GEMINI_API_KEY: ''
+      GOOGLE_API_KEY: ''
+      GEMINI_MODEL: ''
+      PCC_GEMINI_FREE_TIER: 'false'
+      PCC_GEMINI_DATA_PROCESSING_ACCEPTED: 'false'
       PCC_GROQ_FREE_TIER: 'false'
       PCC_ARTIFACT_GENERATION_ENABLED: 'true'
-      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,6 +38,14 @@ jobs:
           version: 2.122.0
       - name: Install locked dependencies
         run: npm ci --prefix application
+      - name: Validate PowerShell launcher syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PWD 'scripts/TEST_PCC_GITHUB.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
+          & ./scripts/test-github-launcher.ps1
       - name: Static and isolated SQL tests
         working-directory: application
         run: |
@@ -56,19 +69,39 @@ jobs:
         run: npm run start -- --hostname 127.0.0.1 > /tmp/pcc-next.log 2>&1 &
       - name: Real Auth Storage and archive smoke
         working-directory: application
-        run: npx tsx scripts/isolated-backend-smoke.ts
+        run: node --import tsx scripts/isolated-backend-smoke.ts
+      - name: Install Chromium for integrated UI validation
+        working-directory: application
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Real manager and client browser controls
+        working-directory: application
+        run: npx --no-install playwright test --config scripts/gie360-browser.config.ts
+      - name: Record Gemini live-validation boundary
+        if: always()
+        working-directory: application
+        run: node --import tsx scripts/test-gemini-live.ts
+      - name: Review synthetic UI previews
+        if: always()
+        run: node scripts/print-ui-previews.mjs
       - name: Validation boundaries
         if: always()
         run: |
           echo 'Real WebGPU inference, physical mobile installation and complete production backup/restore are not validated by this run.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Record validation scope
+        if: always()
+        run: node scripts/write-validation-scope.mjs
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pcc-validation-${{ github.sha }}
+          name: pcc-validation-${{ github.sha }}-attempt-${{ github.run_attempt }}
           path: |
             validation-tests.json
             validation-backend.json
+            validation-run.json
+            validation-gemini.json
+            validation-browser.json
+            validation-browser-artifacts
           if-no-files-found: warn
           retention-days: 7
       - name: Stop disposable backend

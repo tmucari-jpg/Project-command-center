@@ -35,6 +35,7 @@ export function ProjectQuestionnaireActions({
   const [generated, setGenerated] = useState<Generated | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState("");
   const [error, setError] = useState("");
 
   async function generate() {
@@ -85,9 +86,15 @@ export function ProjectQuestionnaireActions({
 
   async function copyLink() {
     if (!generated?.url) return;
-    await navigator.clipboard.writeText(generated.url);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    setCopyError("");
+    try {
+      await navigator.clipboard.writeText(generated.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+      setCopyError("O navegador não permitiu copiar. Seleccione o link apresentado e copie-o manualmente; o link continua válido.");
+    }
   }
 
   return (
@@ -188,6 +195,7 @@ export function ProjectQuestionnaireActions({
       {generated && (
         <div className="mt-5 rounded-xl border border-[#b9d0c7] bg-white p-4">
           <p className="text-sm font-semibold text-[#073f36]">Questionário pronto para enviar</p>
+          {copyError && <p role="alert" className="mt-2 text-sm text-[var(--cc-danger)]">{copyError}</p>}
           <p className="mt-1 text-xs text-[#667085]">
             Válido até {new Date(generated.expiresAt).toLocaleDateString("pt-PT")}.
           </p>

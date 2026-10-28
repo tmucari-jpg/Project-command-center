@@ -25,6 +25,7 @@ export function ClientDiagnosticLinkGenerator({
 }) {
   const [state, action, pending] = useActionState(createClientDiagnosticRequest, initialState);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -33,9 +34,15 @@ export function ClientDiagnosticLinkGenerator({
 
   async function copyLink() {
     if (!state.url) return;
-    await navigator.clipboard.writeText(state.url);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    setCopyError("");
+    try {
+      await navigator.clipboard.writeText(state.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+      setCopyError("O navegador não permitiu copiar. Seleccione o link apresentado e copie-o manualmente; o link continua válido.");
+    }
   }
 
   return (
@@ -90,6 +97,7 @@ export function ClientDiagnosticLinkGenerator({
             Link do questionário
           </p>
           <p className="mt-2 break-all text-sm text-[var(--cc-foreground)]">{state.url}</p>
+          {copyError && <p role="alert" className="mt-2 text-sm text-[var(--cc-danger)]">{copyError}</p>}
           <button
             type="button"
             onClick={copyLink}

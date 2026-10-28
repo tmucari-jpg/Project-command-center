@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export function RegisterServiceWorker() {
+  const pathname = usePathname();
   useEffect(() => {
+    if (pathname === "/gie360" || pathname.startsWith("/gie360/")) return;
     if (!("serviceWorker" in navigator)) return;
 
     const register = () => {
@@ -16,7 +19,7 @@ export function RegisterServiceWorker() {
     else window.addEventListener("load", register, { once: true });
 
     return () => window.removeEventListener("load", register);
-  }, []);
+  }, [pathname]);
 
   return null;
 }

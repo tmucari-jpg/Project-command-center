@@ -47,7 +47,7 @@ import { classifyAIProviderHealth } from "@/lib/ai-provider-state";
 import { hasBlockingGovernanceRisk } from "@/lib/governance-risk";
 import { resolveNextReviewDate } from "@/lib/review-cadence";
 import { defaultMonetizationStatus, defaultReturnType } from "@/lib/value-return";
-import { isFreeAIProfile } from "@/lib/ai-runtime";
+import { freeAIConfigurationIssue, isFreeAIProfile } from "@/lib/ai-runtime";
 import { generateAssistWithFallback } from "@/lib/ai-assist-router";
 import {
   investmentDiscoveryInstructions,
@@ -890,7 +890,7 @@ export async function validateAIProviderProfile(formData: FormData) {
 
   if (error || !provider) fail(path, error?.message ?? "Provider não encontrado.");
 
-  const result = isFreeAIProfile(provider) ? await validateAIProviderHealth(provider) : { status: "unknown" as const, message: "Provider não elegível na política gratuita; nenhuma chamada executada." };
+  const result = isFreeAIProfile(provider) ? await validateAIProviderHealth(provider) : { status: "unknown" as const, message: freeAIConfigurationIssue(provider) ?? "Provider não elegível na política gratuita; nenhuma chamada executada." };
   const providerState = classifyAIProviderHealth(result);
   const { error: updateError } = await supabase
     .from("ai_provider_profiles")
@@ -944,7 +944,7 @@ export async function validateAllAIProviderProfiles() {
   const results: Array<{ label: string; status: string; message: string }> = [];
 
   for (const provider of providers) {
-    const result = isFreeAIProfile(provider) ? await validateAIProviderHealth(provider) : { status: "unknown" as const, message: "Provider não elegível na política gratuita; nenhuma chamada executada." };
+    const result = isFreeAIProfile(provider) ? await validateAIProviderHealth(provider) : { status: "unknown" as const, message: freeAIConfigurationIssue(provider) ?? "Provider não elegível na política gratuita; nenhuma chamada executada." };
     const enabled = result.status === "healthy";
     const providerState = classifyAIProviderHealth(result);
 
@@ -995,7 +995,7 @@ export async function validateAllAIProviderProfiles() {
 export async function registerAIProviderProfile(formData: FormData) {
   const path = "/ai-providers";
   const parsed = z.object({
-    provider: z.enum(["openai", "moonshot", "qwen_cloud", "groq", "huggingchat", "qwen_local", "koboldcpp_local", "other"]),
+    provider: z.enum(["openai", "moonshot", "qwen_cloud", "gemini", "groq", "huggingchat", "qwen_local", "koboldcpp_local", "other"]),
     label: z.string().trim().min(2).max(120),
     mode: z.enum(["cloud", "local"]),
     priority: z.coerce.number().int().min(1).max(100),
@@ -1014,7 +1014,7 @@ export async function registerAIProviderProfile(formData: FormData) {
         : [],
       z.array(z.string().min(1).max(80)).max(20),
     ),
-  }).safeParse(values(formData));
+  }).refine((value) => value.provider !== "gemini" || value.mode === "cloud", { message: "Gemini requer o modo Nuvem." }).safeParse(values(formData));
 
   if (!parsed.success) fail(path, zodMessage(parsed.error));
 

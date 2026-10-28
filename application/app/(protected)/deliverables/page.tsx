@@ -131,7 +131,7 @@ export default async function DeliverablesPage({
                         <Info label="Critério de aceitação" value={item.completion_criteria || "Por definir"} />
                         <Info
                           label="Evidência"
-                          value={item.artifact_reference || item.artifact_type || (item.artifact_url ? "Link disponível" : "Em falta")}
+                          value={item.artifact_reference || (item.artifact_url ? "Link disponível" : "Em falta — sem URL ou referência")}
                         />
                         <Info label="Prazo" value={item.due_date ? formatDate(item.due_date) : "Sem prazo"} />
                         <Info
@@ -141,6 +141,18 @@ export default async function DeliverablesPage({
                             : displayLabel(item.acceptance_status || "pending")}
                         />
                       </div>
+
+                      {!item.artifact_url && !item.artifact_reference && (
+                        <div role="alert" className="mt-4 rounded-[var(--cc-radius-md)] border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+                          <p className="font-semibold">Falta o resultado verificável deste entregável.</p>
+                          <p className="mt-1">
+                            {process.env.PCC_ARTIFACT_GENERATION_ENABLED === "true" && item.status !== "completed" && ["document", "pdf", "spreadsheet", "presentation"].includes(item.artifact_type)
+                              ? "Use Gerar e arquivar rascunho abaixo. A geração indicará os dados ainda necessários; QA e aceitação continuam sujeitos a revisão."
+                              : "Associe uma evidência existente ou complete os dados em falta. A geração automática não está disponível para este entregável neste ambiente."}
+                          </p>
+                          <Link href={`/evidence?project_id=${project.id}&deliverable_id=${item.id}`} className="mt-2 inline-block font-semibold underline">Registar evidência deste entregável</Link>
+                        </div>
+                      )}
 
                       {process.env.PCC_ARTIFACT_GENERATION_ENABLED === "true" && item.status !== "completed" && ["document", "pdf", "spreadsheet", "presentation"].includes(item.artifact_type) && (
                         <DeliverableGeneration id={item.id} type={item.artifact_type} hasArtifact={Boolean(item.artifact_url)} />

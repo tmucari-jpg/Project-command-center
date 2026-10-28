@@ -21,4 +21,22 @@ describe("assistant free fallback",()=>{
   const result=await generateAssistWithFallback(db,"owner","test");expect(result.text).toBe("Factual answer");expect(fetch).toHaveBeenCalledTimes(2);
   expect(updates.every(u=>!("enabled" in u))).toBe(true);expect(result.attempts.map(a=>a.status)).toEqual(["failed","passed"]);
  });
+ it("rejects invalid generated content within the attempt and validates the authorised fallback",async()=>{
+  vi.stubEnv("PCC_GROQ_FREE_TIER","true");vi.stubEnv("GROQ_API_KEY","free-key");
+  const fetch=vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({choices:[{message:{content:'{"total_mzn":999}'}}]}),{status:200})).mockResolvedValueOnce(new Response(JSON.stringify({choices:[{message:{content:'{"total_mzn":120}'}}]}),{status:200}));vi.stubGlobal("fetch",fetch);
+  const {db,updates}=registry([{id:"local",provider:"qwen_local",label:"Local",mode:"local",enabled:true,endpoint_hint:"http://localhost:8080",model_hint:"model"},{id:"groq",provider:"groq",label:"Free Groq",mode:"cloud",enabled:true,cost_class:"free",model_hint:"model"}]);
+  const validate=vi.fn((text:string)=>{if(JSON.parse(text).total_mzn!==120)throw new Error("UNGROUNDED_TOTAL");});
+  const result=await generateAssistWithFallback(db,"owner","Approved sales: MZN 80 + MZN 40","Return factual JSON",validate);
+  expect(result.provider.provider).toBe("groq");expect(result.text).toBe('{"total_mzn":120}');expect(validate).toHaveBeenCalledTimes(2);
+  expect(result.attempts).toEqual([expect.objectContaining({provider:"qwen_local",status:"failed",error:"UNGROUNDED_TOTAL"}),expect.objectContaining({provider:"groq",status:"passed"})]);
+  expect(updates.map(u=>u.last_health_status)).toEqual(["degraded","healthy"]);
+  expect(updates.every(u=>!("enabled" in u))).toBe(true);
+ });
+ it("does not mark any provider healthy when caller validation rejects every answer",async()=>{
+  const fetch=vi.fn().mockResolvedValue(new Response(JSON.stringify({choices:[{message:{content:"not JSON"}}]}),{status:200}));vi.stubGlobal("fetch",fetch);
+  const {db,updates}=registry([{id:"local",provider:"qwen_local",label:"Local",mode:"local",enabled:true,endpoint_hint:"http://localhost:8080",model_hint:"model"}]);
+  await expect(generateAssistWithFallback(db,"owner","test","Return JSON",text=>{JSON.parse(text);})).rejects.toThrow("FREE_PROVIDERS_UNAVAILABLE");
+  expect(updates).toHaveLength(1);expect(updates[0].last_health_status).toBe("degraded");
+ });
+
 });
