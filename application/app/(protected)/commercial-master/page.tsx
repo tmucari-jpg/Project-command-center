@@ -42,7 +42,7 @@ export default async function CommercialMasterPage() {
     supabase.from("actions").select("id,title,status,priority,is_next_action").eq("user_id", user.id).eq("project_id", project.id).order("is_next_action", { ascending: false }).order("created_at"),
     supabase.from("metrics").select("id,name,unit,current_value,target_value").eq("user_id", user.id).eq("project_id", project.id).order("created_at"),
     supabase.from("financial_entries").select("id,description,amount,currency,status,evidence_reference").eq("user_id", user.id).eq("project_id", project.id).eq("entry_type", "cost").order("occurred_on", { ascending: false }),
-    supabase.from("pcc_product_packages").select("code,name,modules,price_mzn,commercial_status,export_rights").eq("product_code","gie360").order("code"),
+    supabase.from("pcc_product_packages").select("code,name,modules,price_mzn,commercial_status,export_rights").eq("product_code","gie360").eq("code","gie360-enterprise").order("code"),
   ]);
   const error = planError ?? deliverablesError ?? actionsError ?? metricsError ?? costsError;
 
@@ -97,12 +97,12 @@ export default async function CommercialMasterPage() {
 
       <Card className="mt-6 p-5">
         <h2 className="text-lg font-semibold">GIE360° — Gestão Inteligente Empresarial</h2>
-        <p className="mt-2 text-sm leading-6">Serviço empresarial do ecossistema PCC, com identidade própria para o cliente. Inclui diagnóstico, recolha e validação documental e, conforme o âmbito contratado, análise de dados, acompanhamento, planos de melhoria e relatórios reais para descarregar. Não constitui software de emissão de facturas nem certificação contabilística automática.</p>
+        <p className="mt-2 text-sm leading-6">Oferta única GIE360° Empresarial, com identidade própria para o cliente. Cada empresa escolhe individualmente os módulos pretendidos; a selecção não altera o preço único. Inclui diagnóstico, recolha e validação documental e, conforme o âmbito aprovado, análise de dados, acompanhamento, planos de melhoria e relatórios reais para descarregar. Não constitui software de emissão de facturas nem certificação contabilística automática.</p>
         <h3 className="mt-4 font-semibold">Custo do serviço e pacotes</h3>
         {giePackagesError ? <p role="alert" className="mt-2 text-sm">Catálogo GIE360° indisponível: {giePackagesError.message}</p> :
-          <div className="mt-3 grid gap-3 md:grid-cols-2">{(giePackages ?? []).map(p => <div key={p.code} className="rounded-lg border p-4"><strong>{p.name}</strong><p className="mt-1 text-sm">{p.commercial_status === "approved" && p.price_mzn != null ? Number(p.price_mzn).toLocaleString("pt-MZ") + " MZN (preço aprovado)" : "Preço sob proposta — ainda não aprovado"}</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">{p.modules.length} módulos previstos · Exportações: {(p.export_rights ?? []).join(", ") || "a definir"} · Disponibilidade efectiva sujeita a validação.</p></div>)}</div>}
-        <p className="mt-4 text-sm leading-6"><strong>Composição do custo:</strong> configuração e implementação inicial, diagnóstico, tratamento e validação de dados, produção de relatórios, acompanhamento e suporte, infra-estrutura, armazenamento e eventuais consumos de IA. Definir preço de adesão, mensalidade, limites de dados, horas de suporte e serviços extra em proposta aprovada, sem valores fictícios.</p>
-        <p className="mt-2 text-sm leading-6"><strong>Condição comercial:</strong> o valor só pode ser apresentado como preço final após aprovação do âmbito, orçamento e referência contratual. Os dados não validados não geram conclusões financeiras definitivas.</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">{(giePackages ?? []).map(p => <div key={p.code} className="rounded-lg border p-4"><strong>{p.name}</strong><p className="mt-1 text-sm">{"32.350 MZN · pagamento único"}</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">Módulos à escolha individual, sem alteração de preço · Exportações: {(p.export_rights ?? []).join(", ") || "a definir"} · Disponibilidade efectiva sujeita a validação.</p></div>)}</div>}
+        <p className="mt-4 text-sm leading-6"><strong>Composição do custo:</strong> configuração e implementação inicial, diagnóstico, tratamento e validação de dados, produção de relatórios, acompanhamento e suporte, infra-estrutura, armazenamento e eventuais consumos de IA. Preço único de 32.350 MZN pelo serviço, sem mensalidade de subscrição definida nesta oferta; consumos externos e serviços extraordinários só poderão ser cobrados separadamente quando expressamente acordados.</p>
+        <p className="mt-2 text-sm leading-6"><strong>Condição comercial:</strong> o preço único é de 32.350 MZN, independentemente dos módulos seleccionados. A selecção de módulos, o âmbito, os limites de utilização e as condições contratuais são registados na proposta aprovada. Os dados não validados não geram conclusões financeiras definitivas.</p>
       </Card>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
