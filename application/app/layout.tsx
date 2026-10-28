@@ -11,10 +11,10 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Project Command Center" },
   icons: {
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/icon-192.png?v=20261028", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png?v=20261028", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-touch-icon.png", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png?v=20261028", type: "image/png" }],
   },
 };
 

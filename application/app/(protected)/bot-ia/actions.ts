@@ -11,6 +11,7 @@ import {
 } from "@/lib/bot-ia";
 import { generateBotIAPlanWithFallback, type BotIAProviderProfile } from "@/lib/bot-ia-provider";
 import { validateAIProviderHealth } from "@/lib/ai-provider-health";
+import { isFreeAIEligible } from "@/lib/ai-runtime";
 import { classifyAIProviderHealth } from "@/lib/ai-provider-state";
 
 const prepareSchema = z.object({
@@ -57,7 +58,7 @@ async function resolveBotIAProviders(
 
   const healthyProviders = [];
 
-  for (const provider of providers) {
+  for (const provider of providers.filter(isFreeAIEligible).sort((a, b) => Number(a.mode !== "local") - Number(b.mode !== "local"))) {
     if (provider.enabled && provider.last_health_status === "healthy") {
       healthyProviders.push(provider);
       continue;
@@ -70,7 +71,6 @@ async function resolveBotIAProviders(
     const { error: updateError } = await supabase
       .from("ai_provider_profiles")
       .update({
-        enabled,
         configuration_status: providerState.configuration_status,
         availability_reason: providerState.availability_reason,
         last_health_status: health.status,
@@ -102,7 +102,6 @@ async function resolveBotIAProviders(
     if (enabled) {
       healthyProviders.push({
         ...provider,
-        enabled: true,
         last_health_status: "healthy" as const,
         last_health_message: health.message,
       });
@@ -238,6 +237,7 @@ export async function prepareBotIARun(input: {
       model_hint: provider.model_hint,
     } satisfies BotIAProviderProfile & { id: string }));
 
+    try {
     const {
       plan: rawPlan,
       provider,
@@ -251,7 +251,6 @@ export async function prepareBotIARun(input: {
         const { error: degradeError } = await supabase
           .from("ai_provider_profiles")
           .update({
-            enabled: false,
             configuration_status: runtimeState.configuration_status,
             availability_reason: runtimeState.availability_reason,
             last_health_status: "degraded",
@@ -370,6 +369,12 @@ export async function prepareBotIARun(input: {
       diagnosis: plan.diagnosis,
       operations: plan.operations,
     };
+    } catch {
+      return { ok: false as const, localFallback: true as const,
+        error: "Serviços gratuitos indisponíveis; tente a IA local ou continue manualmente.",
+        localContext: factualContext, projectId: project.id, blockerId: parsed.data.blockerId ?? null };
+    }
+
   } catch (error) {
     return { ok: false as const, error: errorMessage(error) };
   }

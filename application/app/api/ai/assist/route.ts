@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { resolveWorkspaceUser } from "@/lib/auth";
+import { isFreeAIEligible } from "@/lib/ai-runtime";
 import { generateAssistWithFallback } from "@/lib/ai-assist-router";
 
 const requestSchema = z.object({
@@ -13,11 +15,11 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
+  const workspaceUser = await resolveWorkspaceUser(supabase, user);
   const { data: providers, error } = await supabase
     .from("ai_provider_profiles")
-    .select("provider,label,mode,enabled,priority,last_health_status")
-    .eq("user_id", user.id)
-    .eq("mode", "cloud")
+    .select("provider,label,mode,enabled,cost_class,priority,last_health_status")
+    .eq("user_id", workspaceUser.id)
     .order("priority", { ascending: true });
 
   if (error) {
@@ -25,7 +27,8 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    configured: Boolean(providers?.length),
+    configured: Boolean(providers?.some(isFreeAIEligible)),
+    policy: "local-first-free-only",
     providers: providers ?? [],
   });
 }
@@ -41,9 +44,10 @@ export async function POST(request: Request) {
   }
 
   try {
+    const workspaceUser = await resolveWorkspaceUser(supabase, user);
     const result = await generateAssistWithFallback(
       supabase,
-      user.id,
+      workspaceUser.id,
       parsed.data.input,
       parsed.data.instructions,
     );
@@ -57,7 +61,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "assist_unavailable";
     return NextResponse.json(
-      { error: message, fallback: "deterministic" },
+      { error: message, fallback: "local_or_manual" },
       { status: 503 },
     );
   }

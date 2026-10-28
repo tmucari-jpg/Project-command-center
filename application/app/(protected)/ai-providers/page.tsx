@@ -7,6 +7,7 @@ import { Card, EmptyState } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 import { displayLabel } from "@/lib/display-label";
+import { isFreeAIEligible } from "@/lib/ai-runtime";
 import { resolveAIExecutionState } from "@/lib/ai-provider-adapter";
 
 export default async function AIFornecedoresPage({
@@ -23,12 +24,12 @@ export default async function AIFornecedoresPage({
   ]);
 
   const error = providerError?.message ?? queueError?.message;
-  const enabledProviders = (providers ?? []).filter((provider) => provider.enabled);
+  const enabledProviders = (providers ?? []).filter(isFreeAIEligible);
   const operationalProviders = enabledProviders.filter((provider) => provider.last_health_status === "healthy");
   const cloudQuotaBlocked = (providers ?? []).length > 0 && (providers ?? []).every(
     (provider) => provider.mode !== "cloud" || (provider.configuration_status === "valid" && provider.availability_reason === "quota"),
   );
-  const executionState = resolveAIExecutionState(providers ?? []);
+  const executionState = resolveAIExecutionState((providers ?? []).filter(isFreeAIEligible));
   const queuedOperations = (queue ?? []).filter((item) => item.status !== "completed" && item.status !== "cancelled");
   const failedOperations = (queue ?? []).filter((item) => item.status === "failed" || Boolean(item.last_error));
   const capabilities = Array.from(
@@ -100,7 +101,7 @@ export default async function AIFornecedoresPage({
           O PCC deve consumir capacidades, não depender de uma ferramenta específica: pesquisa, navegação web, execução de código, diagnóstico, automação e agentes podem ser fornecidos por serviços diferentes ou por runtime local.
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Regra operacional: usar IA na nuvem quando estiver saudável; se ficar indisponível, usar IA local apenas quando o endpoint local estiver validado e alcançável a partir do runtime do PCC.
+          Regra operacional: usar IA local primeiro, sem créditos de API. Groq em plano gratuito é apenas um complemento explicitamente configurado; serviços pagos não entram no fallback.
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
           Sem provider saudável, o PCC continua a executar as funções normais baseadas em dados e regras, mas não deve simular capacidades de IA. O modo offline operacional permanece disponível após a criação do snapshot local; capacidades de IA local dependem de um endpoint local validado e acessível.
@@ -133,7 +134,7 @@ export default async function AIFornecedoresPage({
           {operationalProviders.length
             ? "O PCC pode usar as capacidades cloud abaixo, respeitando prioridade, custo e estado de saúde."
             : cloudQuotaBlocked
-              ? "OpenAI/Qwen continuam configurados, mas sem quota. Isto não bloqueia o BotIA: a assistência local no dispositivo é o fallback sem quota."
+              ? "OpenAI/Qwen mantêm o histórico de configuração, mas ficam fora da política gratuita. A IA local depende de dispositivo compatível e do carregamento do modelo; o trabalho manual continua disponível."
               : "Sem cloud saudável, o PCC não simula resposta cloud; o BotIA tenta a IA Local PCC quando o dispositivo suporta WebGPU."}
         </p>
         {capabilities.length > 0 && (

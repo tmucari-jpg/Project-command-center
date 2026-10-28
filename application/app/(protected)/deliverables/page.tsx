@@ -1,3 +1,4 @@
+import { DeliverableGeneration } from "@/components/deliverable-generation";
 import Link from "next/link";
 import { createDeliverable, recordDeliverableAcceptance, recordDeliverableQA } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
@@ -30,7 +31,10 @@ export default async function DeliverablesPage({
         .order("created_at", { ascending: true }),
     ]);
 
-  const error = projectError?.message ?? deliverableError?.message;
+  const archive = process.env.PCC_ARTIFACT_GENERATION_ENABLED === "true"
+    ? await supabase.from("generated_deliverable_artifacts").select("id,deliverable_id,document_kind,created_at,previous_url:source_snapshot->deliverable->>artifact_url").eq("user_id", user.id).order("created_at", { ascending: false }).limit(1000)
+    : { data: [], error: null };
+  const error = projectError?.message ?? deliverableError?.message ?? archive.error?.message;
   const visibleProjects = params.project_id
     ? (projects ?? []).filter((project) => project.id === params.project_id)
     : projects ?? [];
@@ -138,6 +142,16 @@ export default async function DeliverablesPage({
                         />
                       </div>
 
+                      {process.env.PCC_ARTIFACT_GENERATION_ENABLED === "true" && item.status !== "completed" && ["document", "pdf", "spreadsheet", "presentation"].includes(item.artifact_type) && (
+                        <DeliverableGeneration id={item.id} type={item.artifact_type} hasArtifact={Boolean(item.artifact_url)} />
+                      )}
+                      {(archive.data ?? []).some(version => version.deliverable_id === item.id) && (
+                        <details className="mt-3 text-sm"><summary className="cursor-pointer font-semibold">Histórico de ficheiros gerados</summary>
+                          <ul className="mt-2 space-y-2">{(archive.data ?? []).filter(version => version.deliverable_id === item.id).map(version => <li key={version.id}>
+                            <a className="underline" href={`/api/deliverables/artifacts/${version.id}/download`}>{formatDate(version.created_at)} · {version.document_kind} · {version.id.slice(0,8)}</a>
+                          </li>)}</ul>
+                        </details>
+                      )}
                       {item.artifact_url && (
                         <div className="mt-4">
                           <a className={secondaryButtonClass} href={item.artifact_url} target="_blank" rel="noreferrer">

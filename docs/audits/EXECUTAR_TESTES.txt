@@ -1,0 +1,11 @@
+PCC — CANDIDATO PARA TESTES LOCAIS (não é backup final)
+
+Extraia o ZIP. Abra PowerShell na pasta PCC_Candidato_Testes.
+Com PowerShell 7, Node 24 e Docker local em execução:
+
+pwsh -NoProfile -File .\scripts\TEST_PCC_LOCAL.ps1 -StartApp
+
+Não use o launcher antigo RUN_PCC_SMOKE.ps1 para esta cópia: sincroniza outra referência.
+O novo launcher não publica nem altera produção. Relatórios: tmp/local-validation.
+Os testes Auth/Storage ponta a ponta, WebGPU, telemóvel e restauro permanecem gates próprios. O script não os declara aprovados.
+Veja docs/audits/VALIDATION_MATRIX.md e LOCAL_TESTING.md.

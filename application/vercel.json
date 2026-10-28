@@ -79,21 +79,7 @@
   ],
   "git": {
     "deploymentEnabled": {
-      "audit/consolidated-diagnostic-20261022": false,
-      "audit/commercial-master-20261022": false,
-      "audit/pcc-final-consolidation-20261023": false,
-      "audit/adaptive-factory-ai-router-20261024": false,
-      "audit/investment-discovery-decision-20261024": false,
-      "audit/investment-capabilities-options-20261024": false,
-      "audit/investment-intake-multiselect-diagnostic-20261024": false,
-      "audit/client-diagnostic-questionnaire-20261024": false,
-      "audit/client-diagnostic-short-v2-20261024": false,
-      "audit/client-diagnostic-executive-v3-20261024": false,
-      "audit/new-project-questionnaire-actions-ui-20261024": false,
-      "audit/questionnaire-first-dynamic-intake-20261024": false,
-      "audit/public-direct-client-diagnostic-20261024": false,
-      "audit/questionnaire-visual-rules-20261024": false,
-      "audit/operational-full-20261026": false
+      "pcc-validation/**": false
     }
   }
 }

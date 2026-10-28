@@ -1,0 +1,76 @@
+name: PCC isolated validation
+on:
+  push:
+    branches: ['pcc-validation/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pcc-isolated-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    if: startsWith(github.ref, 'refs/heads/pcc-validation/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      OPENAI_API_KEY: ''
+      QWEN_API_KEY: ''
+      MOONSHOT_API_KEY: ''
+      GROQ_API_KEY: ''
+      PCC_GROQ_FREE_TIER: 'false'
+      PCC_ARTIFACT_GENERATION_ENABLED: 'true'
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: application/package-lock.json
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Install locked dependencies
+        run: npm ci --prefix application
+      - name: Static and isolated SQL tests
+        working-directory: application
+        run: |
+          npm run typecheck
+          npm test -- --reporter=default --reporter=json --outputFile=../validation-tests.json
+          npm run lint
+          npm run icons:validate
+          npm run ui:standard
+          npm audit --omit=dev --audit-level=moderate
+      - name: Start throwaway Supabase
+        run: supabase start
+      - name: Export ephemeral loopback credentials
+        run: |
+          supabase status -o json > /tmp/pcc-local-status.json
+          node scripts/export-ci-local-env.mjs
+      - name: Build application
+        working-directory: application
+        run: npm run build
+      - name: Start isolated application
+        working-directory: application
+        run: npm run start -- --hostname 127.0.0.1 > /tmp/pcc-next.log 2>&1 &
+      - name: Real Auth Storage and archive smoke
+        working-directory: application
+        run: npx tsx scripts/isolated-backend-smoke.ts
+      - name: Validation boundaries
+        if: always()
+        run: |
+          echo 'Real WebGPU inference, physical mobile installation and complete production backup/restore are not validated by this run.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcc-validation-${{ github.sha }}
+          path: |
+            validation-tests.json
+            validation-backend.json
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Stop disposable backend
+        if: always()
+        run: supabase stop --no-backup

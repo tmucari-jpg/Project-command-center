@@ -47,6 +47,7 @@ import { classifyAIProviderHealth } from "@/lib/ai-provider-state";
 import { hasBlockingGovernanceRisk } from "@/lib/governance-risk";
 import { resolveNextReviewDate } from "@/lib/review-cadence";
 import { defaultMonetizationStatus, defaultReturnType } from "@/lib/value-return";
+import { isFreeAIProfile } from "@/lib/ai-runtime";
 import { generateAssistWithFallback } from "@/lib/ai-assist-router";
 import {
   investmentDiscoveryInstructions,
@@ -882,14 +883,14 @@ export async function validateAIProviderProfile(formData: FormData) {
   const { supabase, user } = await requireAdmin();
   const { data: provider, error } = await supabase
     .from("ai_provider_profiles")
-    .select("id,provider,label,mode,endpoint_hint,model_hint")
+    .select("id,provider,label,mode,cost_class,endpoint_hint,model_hint")
     .eq("id", providerId.data)
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (error || !provider) fail(path, error?.message ?? "Provider não encontrado.");
 
-  const result = await validateAIProviderHealth(provider);
+  const result = isFreeAIProfile(provider) ? await validateAIProviderHealth(provider) : { status: "unknown" as const, message: "Provider não elegível na política gratuita; nenhuma chamada executada." };
   const providerState = classifyAIProviderHealth(result);
   const { error: updateError } = await supabase
     .from("ai_provider_profiles")
@@ -933,7 +934,7 @@ export async function validateAllAIProviderProfiles() {
   const { supabase, user } = await requireAdmin();
   const { data: providers, error } = await supabase
     .from("ai_provider_profiles")
-    .select("id,provider,label,mode,endpoint_hint,model_hint")
+    .select("id,provider,label,mode,cost_class,endpoint_hint,model_hint")
     .eq("user_id", user.id)
     .order("priority", { ascending: true });
 
@@ -943,7 +944,7 @@ export async function validateAllAIProviderProfiles() {
   const results: Array<{ label: string; status: string; message: string }> = [];
 
   for (const provider of providers) {
-    const result = await validateAIProviderHealth(provider);
+    const result = isFreeAIProfile(provider) ? await validateAIProviderHealth(provider) : { status: "unknown" as const, message: "Provider não elegível na política gratuita; nenhuma chamada executada." };
     const enabled = result.status === "healthy";
     const providerState = classifyAIProviderHealth(result);
 
@@ -2204,7 +2205,7 @@ export async function finalizeFactoryDecision(formData: FormData) {
   if (!parsed.success) fail(fallbackPath, zodMessage(parsed.error));
 
   const path = `/project-factory/${parsed.data.factory_case_id}`;
-  const { supabase, user, authUser } = await requireUser();
+  const { supabase, user } = await requireUser();
 
   const { data: factoryCase, error: caseError } = await supabase
     .from("project_factory_cases")
@@ -2245,6 +2246,7 @@ export async function finalizeFactoryDecision(formData: FormData) {
     }
   }
 
+  if (parsed.data.decision !== "go") {
   const { error: reportError } = await supabase
     .from("factory_reports")
     .update({
@@ -2258,35 +2260,13 @@ export async function finalizeFactoryDecision(formData: FormData) {
 
   if (reportError) fail(path, reportError.message);
 
+  }
+
   if (parsed.data.decision === "go") {
-    let projectId = factoryCase.project_id as string | null;
-
-    if (!projectId) {
-      const { data: project, error: projectError } = await supabase
-        .from("projects")
-        .insert({
-          user_id: user.id,
-          title: factoryCase.title,
-          description: factoryCase.description,
-          expected_result: factoryCase.expected_value,
-          priority: "medium",
-          status: "planning",
-          progress: 0,
-          notes: `Criado pela Project Factory. Origem: ${factoryCase.source ?? "não indicada"}`,
-          owner_id: authUser.id,
-          next_review_date: null,
-          review_cadence_days: null,
-          governance_gate: "g3_planning",
-          governance_gate_status: "in_progress",
-        })
-        .select("id")
-        .single();
-
-      if (projectError || !project) {
-        fail(path, projectError?.message ?? "Não foi possível criar o projecto.");
-      }
-      projectId = project.id;
-    }
+    const { data: projectId, error: conversionError } = await supabase.rpc("convert_factory_case_atomic", {
+      p_case_id: factoryCase.id, p_rationale: parsed.data.decision_rationale,
+    });
+    if (conversionError || !projectId) fail(path, conversionError?.message ?? "Conversão não concluída; nenhuma conclusão presumida.");
 
     const { data: convertedProject, error: convertedProjectError } = await supabase
       .from("projects")

@@ -96,7 +96,7 @@ export function AdaptiveProjectIntake() {
     }
 
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 8_000);
+    const timer = window.setTimeout(() => controller.abort(), 22_000);
 
     try {
       const input = JSON.stringify({

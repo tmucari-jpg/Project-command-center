@@ -190,20 +190,8 @@ jobs:
             }
           }
 
-      - name: Validate BotIA-aligned OpenAI health check
-        shell: pwsh
-        run: |
-          $health = Get-Content "../application/lib/ai-provider-health.ts" -Raw
-          foreach ($token in @(
-            "/chat/completions",
-            "mesmo endpoint usado pelo BotIA",
-            "providerMessage"
-          )) {
-            if (-not $health.Contains($token)) {
-              Write-Error "Missing BotIA-aligned OpenAI health guard: $token"
-              exit 1
-            }
-          }
+      - name: Validate shared AI transport and free-only policy
+        run: npx vitest run tests/ai-runtime.test.ts tests/ai-provider-health.test.ts
 
       - name: Validate BotIA provider failover guards
         shell: pwsh
@@ -386,14 +374,14 @@ jobs:
             }
           }
 
-          foreach ($token in @("generateAssistWithFallback", 'fallback: "deterministic"')) {
+          foreach ($token in @("generateAssistWithFallback", 'fallback: "local_or_manual"')) {
             if (-not $assistRoute.Contains($token)) {
               Write-Error "Central AI assist route is missing: $token"
               exit 1
             }
           }
 
-          foreach ($token in @("ai_provider_profiles", '.eq("mode", "cloud")', "validateAIProviderHealth", "QWEN_API_KEY", "OPENAI_API_KEY")) {
+          foreach ($token in @("ai_provider_profiles", "isFreeAIEligible", "requestAIText")) {
             if (-not $assistRouter.Contains($token)) {
               Write-Error "AI provider router is missing: $token"
               exit 1
@@ -1146,7 +1134,7 @@ jobs:
       - name: Validate operational health and official document guards
         shell: pwsh
         run: |
-          $health = Get-Content "./lib/ai-provider-health.ts" -Raw
+          $health = (Get-Content "./lib/ai-provider-health.ts" -Raw) + (Get-Content "./lib/ai-runtime.ts" -Raw)
           $assist = Get-Content "./lib/ai-assist-router.ts" -Raw
           $botProvider = Get-Content "./lib/bot-ia-provider.ts" -Raw
           $aiPage = Get-Content "./app/(protected)/ai-providers/page.tsx" -Raw

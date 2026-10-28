@@ -12,6 +12,11 @@ export async function requireUser() {
     redirect("/auth/login");
   }
 
+  const user = await resolveWorkspaceUser(supabase, authUser);
+  return { supabase, user, authUser };
+}
+
+export async function resolveWorkspaceUser(supabase: Awaited<ReturnType<typeof createClient>>, authUser: { id: string; email?: string }) {
   let dataUser = authUser;
 
   if (await isAdminUser(supabase, authUser.id, authUser.email)) {
@@ -30,7 +35,7 @@ export async function requireUser() {
     }
   }
 
-  return { supabase, user: dataUser, authUser };
+  return dataUser;
 }
 
 export function isConfiguredAdminEmail(email?: string | null) {

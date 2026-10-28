@@ -1,3 +1,4 @@
+import { requestAIText } from "@/lib/ai-runtime";
 import { parseBotIAPlan, type BotIAPlan } from "@/lib/bot-ia";
 
 export type BotIAProviderProfile = {
@@ -6,12 +7,6 @@ export type BotIAProviderProfile = {
   mode: "cloud" | "local";
   endpoint_hint?: string | null;
   model_hint?: string | null;
-};
-
-type ProviderRuntime = {
-  baseUrl: string;
-  apiKey?: string;
-  model: string;
 };
 
 const BOT_IA_INSTRUCTIONS = `
@@ -65,121 +60,12 @@ Devolve APENAS JSON válido, sem markdown, nesta forma:
 }
 `.trim();
 
-function runtimeForProvider(profile: BotIAProviderProfile): ProviderRuntime {
-  if (profile.provider === "openai") {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY_NOT_CONFIGURED");
-    return {
-      baseUrl: profile.endpoint_hint?.trim() || "https://api.openai.com/v1",
-      apiKey,
-      model: process.env.OPENAI_MODEL?.trim() || profile.model_hint?.trim() || "",
-    };
-  }
-
-  if (profile.provider === "moonshot") {
-    const apiKey = process.env.MOONSHOT_API_KEY;
-    if (!apiKey) throw new Error("MOONSHOT_API_KEY_NOT_CONFIGURED");
-    return {
-      baseUrl: profile.endpoint_hint?.trim() || "https://api.moonshot.ai/v1",
-      apiKey,
-      model: process.env.MOONSHOT_MODEL?.trim() || profile.model_hint?.trim() || "",
-    };
-  }
-
-  if (profile.provider === "qwen_cloud") {
-    const apiKey = process.env.QWEN_API_KEY;
-    if (!apiKey) throw new Error("QWEN_API_KEY_NOT_CONFIGURED");
-
-    const endpoint = profile.endpoint_hint?.trim();
-    if (!endpoint) throw new Error("QWEN_WORKSPACE_ENDPOINT_NOT_CONFIGURED");
-
-    return {
-      baseUrl: endpoint,
-      apiKey,
-      model: process.env.QWEN_MODEL?.trim() || profile.model_hint?.trim() || "",
-    };
-  }
-
-  if (profile.mode === "local") {
-    const endpoint = profile.endpoint_hint?.trim();
-    if (!endpoint) throw new Error("LOCAL_AI_ENDPOINT_NOT_CONFIGURED");
-    return {
-      baseUrl: endpoint,
-      model:
-        profile.model_hint?.trim() ||
-        (profile.provider === "koboldcpp_local" ? "koboldcpp" : "qwen-local"),
-    };
-  }
-
-  throw new Error("BOTIA_PROVIDER_NOT_SUPPORTED");
+export async function generateBotIAPlan(profile: BotIAProviderProfile, context: Record<string, unknown>): Promise<BotIAPlan> {
+  const text = await requestAIText(profile, `Contexto factual do PCC:\n${JSON.stringify(context)}`, BOT_IA_INSTRUCTIONS, 8000);
+  const plan = parseBotIAPlan(text);
+  if (!plan) throw new Error("BOTIA_INVALID_PROVIDER_RESPONSE");
+  return plan;
 }
-
-function chatCompletionsUrl(baseUrl: string) {
-  const root = baseUrl.replace(/\/$/, "");
-  if (root.endsWith("/chat/completions")) return root;
-  if (root.endsWith("/v1")) return `${root}/chat/completions`;
-  return `${root}/v1/chat/completions`;
-}
-
-export async function generateBotIAPlan(
-  profile: BotIAProviderProfile,
-  context: Record<string, unknown>,
-): Promise<BotIAPlan> {
-  const runtime = runtimeForProvider(profile);
-  if (!runtime.model) throw new Error("BOTIA_MODEL_NOT_CONFIGURED");
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (runtime.apiKey) headers.Authorization = `Bearer ${runtime.apiKey}`;
-
-  const body = {
-    model: runtime.model,
-    messages: [
-      { role: "system", content: BOT_IA_INSTRUCTIONS },
-      {
-        role: "user",
-        content: `Contexto factual do PCC:\n${JSON.stringify(context)}`,
-      },
-    ],
-    ...(profile.provider === "openai"
-      ? { reasoning_effort: "none", max_completion_tokens: 1800 }
-      : { max_tokens: 1800 }),
-  };
-
-  let lastStatus = 0;
-  let lastText = "";
-
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const response = await fetch(chatCompletionsUrl(runtime.baseUrl), {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      cache: "no-store",
-      signal: AbortSignal.timeout(30_000),
-    });
-
-    lastStatus = response.status;
-
-    if (response.ok) {
-      const data = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string | null } }>;
-      };
-      const text = data.choices?.[0]?.message?.content?.trim() ?? "";
-      const plan = parseBotIAPlan(text);
-      if (!plan) throw new Error("BOTIA_INVALID_PROVIDER_RESPONSE");
-      return plan;
-    }
-
-    lastText = await response.text();
-    if (![429, 500, 502, 503, 504].includes(response.status) || attempt === 1) break;
-    await new Promise((resolve) => setTimeout(resolve, 700 * (attempt + 1)));
-  }
-
-  throw new Error(`BOTIA_PROVIDER_ERROR_${lastStatus}: ${lastText.slice(0, 300)}`);
-}
-
-
 
 export type BotIAProviderAttempt = {
   provider: string;

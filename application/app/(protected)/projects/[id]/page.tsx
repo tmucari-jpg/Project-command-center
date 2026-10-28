@@ -137,7 +137,7 @@ export default async function ProjectHubPage({
       .eq("project_id", id),
     supabase
       .from("financial_entries")
-      .select("entry_type,category,amount,currency,status")
+      .select("entry_type,category,amount,currency,status,occurred_on")
       .eq("user_id", user.id)
       .eq("project_id", id),
     supabase
