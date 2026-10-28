@@ -17,6 +17,8 @@ type WebLLMModule = {
 let modulePromise: Promise<WebLLMModule> | null = null;
 let enginePromise: Promise<LocalEngine> | null = null;
 let generating = false;
+let gpuUnavailable = false;
+const GPU_LOSS_MESSAGE = "A GPU do dispositivo ficou indisponível durante a IA local. Feche outras aplicações pesadas, reinicie o navegador e use a IA cloud quando autorizada.";
 
 async function bounded<T>(operation: Promise<T>, ms: number, reason: string, cancel?: () => void): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -25,10 +27,19 @@ async function bounded<T>(operation: Promise<T>, ms: number, reason: string, can
 }
 
 async function generate(engine: LocalEngine, input: Record<string, unknown>) {
+  if (gpuUnavailable) throw new Error(GPU_LOSS_MESSAGE);
   if (generating) throw new Error("A IA local está ocupada. Aguarde a conclusão antes de repetir.");
   generating = true;
   const operation = Promise.resolve().then(() => engine.chat.completions.create(input)).finally(() => { generating = false; });
-  return bounded(operation, 45_000, "A geração local excedeu o tempo disponível.", () => engine.interruptGenerate?.());
+  return bounded(operation, 45_000, "A geração local excedeu o tempo disponível.", () => engine.interruptGenerate?.()).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/device lost|device was lost|DXGI_ERROR_DEVICE_HUNG|GPUDeviceLost|device removed/i.test(message)) {
+      gpuUnavailable = true;
+      enginePromise = null;
+      throw new Error(GPU_LOSS_MESSAGE);
+    }
+    throw error;
+  });
 }
 
 function runtimeImport(url: string) {
@@ -45,6 +56,7 @@ export function browserLocalAICompatibility() {
   if (typeof window === "undefined" || typeof navigator === "undefined") {
     return { supported: false, reason: "A IA local só pode ser executada no dispositivo do utilizador." };
   }
+  if (gpuUnavailable) return { supported: false, reason: GPU_LOSS_MESSAGE };
   if (!("gpu" in navigator)) {
     return { supported: false, reason: "Este dispositivo não disponibiliza WebGPU para a IA local." };
   }
@@ -64,7 +76,7 @@ async function getEngine(onProgress?: (message: string) => void) {
           onProgress?.(pct === null ? label : `${label} · ${pct}%`);
         },
       });
-    }).catch(error => { enginePromise = null; throw error; });
+    }).catch(error => { enginePromise = null; const message = error instanceof Error ? error.message : String(error); if (/device lost|device was lost|DXGI_ERROR_DEVICE_HUNG|GPUDeviceLost|device removed/i.test(message)) { gpuUnavailable = true; throw new Error(GPU_LOSS_MESSAGE); } throw error; });
   }
   return bounded(enginePromise, 90_000, "O carregamento do modelo local excedeu 90 segundos; verifique a ligação e tente novamente.");
 }
