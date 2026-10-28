@@ -98,11 +98,21 @@ export default async function CommercialMasterPage() {
       <Card className="mt-6 p-5">
         <h2 className="text-lg font-semibold">GIE360° — Gestão Inteligente Empresarial</h2>
         <p className="mt-2 text-sm leading-6">Oferta única GIE360° Empresarial, com identidade própria para o cliente. Cada empresa escolhe individualmente os módulos pretendidos; a selecção não altera o preço único. Inclui diagnóstico, recolha e validação documental e, conforme o âmbito aprovado, análise de dados, acompanhamento, planos de melhoria e relatórios reais para descarregar. Não constitui software de emissão de facturas nem certificação contabilística automática.</p>
-        <h3 className="mt-4 font-semibold">Custo do serviço e pacotes</h3>
-        {giePackagesError ? <p role="alert" className="mt-2 text-sm">Catálogo GIE360° indisponível: {giePackagesError.message}</p> :
-          <div className="mt-3 grid gap-3 md:grid-cols-2">{(giePackages ?? []).map(p => <div key={p.code} className="rounded-lg border p-4"><strong>{p.name}</strong><p className="mt-1 text-sm">{"32.350 MZN · pagamento único"}</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">Módulos à escolha individual, sem alteração de preço · Exportações: {(p.export_rights ?? []).join(", ") || "a definir"} · Disponibilidade efectiva sujeita a validação.</p></div>)}</div>}
-        <p className="mt-4 text-sm leading-6"><strong>Composição do custo:</strong> configuração e implementação inicial, diagnóstico, tratamento e validação de dados, produção de relatórios, acompanhamento e suporte, infra-estrutura, armazenamento e eventuais consumos de IA. Preço único de 32.350 MZN pelo serviço, sem mensalidade de subscrição definida nesta oferta; consumos externos e serviços extraordinários só poderão ser cobrados separadamente quando expressamente acordados.</p>
-        <p className="mt-2 text-sm leading-6"><strong>Condição comercial:</strong> o preço único é de 32.350 MZN, independentemente dos módulos seleccionados. A selecção de módulos, o âmbito, os limites de utilização e as condições contratuais são registados na proposta aprovada. Os dados não validados não geram conclusões financeiras definitivas.</p>
+        <h3 className="mt-4 text-lg font-semibold">EMPRESARIAL — 32.350 MZN · pagamento único</h3>
+        <p className="mt-2 text-sm"><strong>Ideal para:</strong> Empresas e organizações que procuram uma visão integrada da gestão, com selecção individual dos módulos de acordo com as suas necessidades, sem alteração do preço.</p>
+        <p className="mt-2 text-sm"><strong>Âmbito da consultoria:</strong> Diagnóstico empresarial e estruturação de uma visão transversal da gestão; selecção dos módulos pretendidos, integração e validação das informações disponibilizadas, análise dos processos e definição de prioridades e planos de melhoria. O âmbito efectivo é confirmado no diagnóstico e na proposta aprovada.</p>
+        <h4 className="mt-4 font-semibold">Entregáveis principais</h4>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+          <li>Diagnóstico empresarial estruturado, com lacunas e informação por validar identificadas.</li>
+          <li>Mapa dos módulos seleccionados, objectivos, indicadores e prioridades.</li>
+          <li>Relatórios de análise comercial, financeira e operacional, conforme os módulos e dados validados.</li>
+          <li>Plano de melhoria empresarial com acções, responsáveis, prioridades e indicadores.</li>
+          <li>Relatórios de acompanhamento, riscos, dependências e evolução de resultados.</li>
+          <li>Arquivo estruturado de documentos, versões, decisões e evidências, com ficheiros reais para descarregar.</li>
+        </ul>
+        <p className="mt-3 text-sm"><strong>Como o cliente recebe:</strong> Através da aplicação GIE360°, com relatórios e documentos descarregáveis nos formatos aplicáveis. A periodicidade e os critérios de aceitação são definidos no diagnóstico. Serviços externos e necessidades fora do âmbito acordado são cotados à parte.</p>
+        <p className="mt-3 text-sm"><strong>Benefício real:</strong> Transforma informação empresarial dispersa em decisões melhor fundamentadas, prioridades claras e acompanhamento estruturado dos resultados, sem impor módulos desnecessários nem variar o preço pela selecção.</p>
+        <p className="mt-3 text-xs text-[var(--cc-secondary)]">O valor de 32.350 MZN é único pelo serviço; não constitui mensalidade. A activação dos módulos depende da validação funcional e dos dados necessários. Esta oferta não implica emissão automática de facturas nem certificação fiscal ou contabilística.</p>
       </Card>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
