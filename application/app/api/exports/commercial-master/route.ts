@@ -89,7 +89,7 @@ export async function GET() {
       .eq("user_id", userId)
       .eq("project_id", project.id)
       .order("created_at"),
-    supabase.from("pcc_product_packages").select("code,name,modules,price_mzn,commercial_status,export_rights").eq("product_code","gie360").order("code"),
+    supabase.from("pcc_product_packages").select("code,name,modules,price_mzn,commercial_status,export_rights").eq("product_code","gie360").eq("code","gie360-enterprise").order("code"),
   ]);
 
   const plan = (planResult.data ?? {}) as {
@@ -138,7 +138,7 @@ export async function GET() {
     esc(item.external_provider ?? "—") + "</td><td>" + esc(item.status) + "</td></tr>"
   ).join("");
 
-  const gieRows = (giePackagesResult.data ?? []).map(p => "<tr><td>"+esc(p.name)+"</td><td>"+(p.commercial_status==="approved" && p.price_mzn != null ? esc(p.price_mzn)+" MZN (aprovado)" : "Preço a definir e aprovar")+"</td><td>"+esc(p.modules.length)+" módulos previstos</td><td>"+esc((p.export_rights ?? []).join(", "))+"</td></tr>").join("");
+  const gieRows = (giePackagesResult.data ?? []).map(p => "<tr><td>"+esc(p.name)+"</td><td>"+"32.350 MZN · pagamento único"+"</td><td>"+esc(p.modules.length)+" módulos previstos</td><td>"+esc((p.export_rights ?? []).join(", "))+"</td></tr>").join("");
 
   const html = "<!doctype html><html><head><meta charset='utf-8'><title>PCC Snapshot Operacional Comercial</title>" +
     "<style>body{font-family:Aptos,Arial,sans-serif;color:#18332f;margin:42px;background:#fffdf6}h1,h2{color:#073f36}h1{font-size:28px}h2{font-size:18px;border-bottom:1px solid #d7c59b;padding-bottom:6px;margin-top:28px}.wordmark{font-size:28px;font-weight:800;letter-spacing:.08em;color:#073f36}.muted{color:#66746f}.box{border:1px solid #e5dcc7;background:#f8f1df;padding:12px;margin:8px 0;border-radius:8px}table{border-collapse:collapse;width:100%;margin-top:10px}th,td{border:1px solid #ded5c2;padding:8px;text-align:left;vertical-align:top}th{background:#f3ead5;color:#073f36}li{margin:4px 0}.note{border-left:4px solid #c99439;padding:10px;background:#fff8e9}</style></head><body>" +
@@ -150,9 +150,9 @@ export async function GET() {
     "<h2>Pontos de entrada</h2>" + entryBlocks +
     "<h2>Pacotes e preços</h2><table><thead><tr><th>Pacote</th><th>Preço</th><th>Âmbito</th><th>Benefício</th></tr></thead><tbody>" + packageRows + "</tbody></table>" +
     "<h2>GIE360° — Gestão Inteligente Empresarial</h2>" +
-    "<p>Serviço empresarial do PCC, com portal próprio, diagnóstico, importação e validação de informação, planos de melhoria e entregáveis descarregáveis conforme o pacote e o âmbito aprovados. Não emite facturas nem substitui validação contabilística ou fiscal profissional.</p>" +
+    "<p>Serviço empresarial do PCC, com uma única oferta GIE360° Empresarial: 32.350 MZN por pagamento único. A empresa escolhe individualmente os módulos pretendidos sem alteração do preço. Inclui portal próprio, diagnóstico, importação e validação de informação, planos de melhoria e entregáveis descarregáveis conforme o âmbito aprovado. Não emite facturas nem substitui validação contabilística ou fiscal profissional.</p>" +
     "<table><thead><tr><th>Pacote GIE360°</th><th>Preço do serviço</th><th>Âmbito</th><th>Exportações</th></tr></thead><tbody>" + gieRows + "</tbody></table>" +
-    "<p><strong>Composição do custo:</strong> configuração inicial, diagnóstico, tratamento de dados, validação, relatórios, suporte, infra-estrutura, armazenamento e consumos de IA. Adesão, mensalidade, limites, suporte adicional e serviços externos dependem de proposta e aprovação. Nenhum preço em aberto é apresentado como aprovado.</p>" +
+    "<p><strong>Composição do custo:</strong> configuração inicial, diagnóstico, tratamento de dados, validação, relatórios, suporte, infra-estrutura, armazenamento e consumos de IA. Preço único de 32.350 MZN, sem mensalidade de subscrição definida. Limites, suporte adicional e serviços externos exigem acordo explícito.</p>" +
     "<h2>Custos e condições de execução</h2>" +
     "<div class='note'><strong>Regra:</strong> o preço base do PCC remunera a consultoria e os entregáveis expressamente contratados. Domínio, hosting, licenças, publicidade, fornecedores e trabalhos paralelos são identificados e aprovados separadamente, salvo inclusão explícita na proposta.</div>" +
     "<table><thead><tr><th>Custo</th><th>Valor</th><th>Tratamento</th><th>Frequência</th><th>Fornecedor</th><th>Estado</th></tr></thead><tbody>" + costs + "</tbody></table>" +
