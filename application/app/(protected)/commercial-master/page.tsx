@@ -108,7 +108,7 @@ export default async function CommercialMasterPage() {
           <li>Relatórios de análise comercial, financeira e operacional, conforme os módulos e dados validados.</li>
           <li>Plano de melhoria empresarial com acções, responsáveis, prioridades e indicadores.</li>
           <li>Relatórios de acompanhamento, riscos, dependências e evolução de resultados.</li>
-          <li>Arquivo estruturado de documentos, versões, decisões e evidências, com ficheiros reais para descarregar.</li>
+          <li>Arquivo documental estruturado de documentos, versões, decisões e evidências, com ficheiros reais para descarregar.</li>
         </ul>
         <p className="mt-3 text-sm"><strong>Como o cliente recebe:</strong> Através da aplicação GIE360°, com relatórios e documentos descarregáveis nos formatos aplicáveis. A periodicidade e os critérios de aceitação são definidos no diagnóstico. Serviços externos e necessidades fora do âmbito acordado são cotados à parte.</p>
         <p className="mt-3 text-sm"><strong>Benefício real:</strong> Transforma informação empresarial dispersa em decisões melhor fundamentadas, prioridades claras e acompanhamento estruturado dos resultados, sem impor módulos desnecessários nem variar o preço pela selecção.</p>
