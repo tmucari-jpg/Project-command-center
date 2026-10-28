@@ -34,7 +34,7 @@ export function DeliverableGeneration({id,type,hasArtifact}:{id:string;type:stri
       </label>
       {hasArtifact&&<label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} />Confirmo uma nova versão e a actualização do vínculo; a versão anterior permanece no histórico.</label>}
       {!download&&<button type="button" disabled={busy||(hasArtifact&&!confirmed)} className={primaryButtonClass} onClick={generate}>{busy?"A gerar e arquivar...":"Gerar ficheiros reais"}</button>}
-      {message&&requestId&&!download&&<button type="button" disabled={busy} className={secondaryButtonClass} onClick={()=>{setRequestId(null);setMessage("Nova referência preparada. O arquivo incompleto anterior será preservado.");}}>Preparar nova versão após falha</button>}
+      {message&&requestId&&!download&&<button type="button" disabled={busy} className={secondaryButtonClass} onClick={()=>{setRequestId(null);setMessage("Nova referência preparada. O registo incompleto anterior será preservado.");}}>Preparar nova versão após falha</button>}
       <p role="status" className="text-sm">{message}</p>
       {gaps.length>0&&<div role="alert"><p className="font-semibold">Informação em falta — requer seguimento</p><ul>{gaps.map(g=><li key={g.field}>{g.cause} {g.nextAction}</li>)}</ul></div>}
       {download&&<div className="flex flex-wrap gap-2"><a className={secondaryButtonClass} href={download}>Descarregar</a>{!["spreadsheet","presentation"].includes(type)&&<a className={secondaryButtonClass} href={`${download}?format=docx`}>Descarregar Word</a>}</div>}
