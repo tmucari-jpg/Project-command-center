@@ -16,7 +16,8 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
  if(reason.length<3||reason.length>2000)return back("Indique o motivo da revisão, entre 3 e 2000 caracteres.");
  let reconciliation:ReturnType<typeof reconcileGIE360Ledger>|null=null;
  if(target==="approved"){
-  const {data:file,error}=await supabase.storage.from("gie360-import-originals").download(batch.source_path);
+  const service=createServiceClient();if(!service)return back("A revisão segura não está configurada no servidor.");
+  const {data:file,error}=await service.storage.from("gie360-import-originals").download(batch.source_path);
   if(error||!file)return back("O original não está disponível. Aprovação bloqueada.");
   const buffer=Buffer.from(await file.arrayBuffer());
   if(createHash("sha256").update(buffer).digest("hex")!==batch.original_sha256)return back("O hash do original diverge. Aprovação bloqueada.");
