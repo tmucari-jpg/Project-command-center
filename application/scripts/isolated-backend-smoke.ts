@@ -3,6 +3,7 @@ import {createServerClient} from '@supabase/ssr';
 import {randomUUID,createHash} from 'node:crypto';
 import {writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
+async function main(){
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
 assert(['localhost','127.0.0.1'].includes(new URL(url).hostname)&&new URL(url).protocol==='http:'&&new URL(url).port==='54321','Local backend only');
 const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
@@ -56,3 +57,6 @@ try{
 
 }catch(error){checks.push({name:error instanceof Error?error.message:'unknown failure',status:'failed'});throw error;}
 finally{await writeFile('../validation-backend.json',JSON.stringify({scope:'throwaway-local-only',checks,physicalDeviceValidated:false,realAIValidated:false},null,2));}
+
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});
