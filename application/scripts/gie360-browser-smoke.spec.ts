@@ -42,7 +42,7 @@ test('manager associates and configures; client saves, resumes and submits real 
   await expect(page.getByRole('status').filter({ hasText: 'Empresa e diagnóstico associados ao caso' })).toBeVisible();
   const settings = page.locator('form').filter({ has: page.getByRole('heading', { name: `Âmbito de ${organizationName}`, exact: true }) });
   await expect(settings).toBeVisible();
-  await settings.getByLabel('Pacote acordado', { exact: true }).selectOption('gie360-professional');
+  await settings.getByLabel('Pacote acordado', { exact: true }).selectOption('gie360-enterprise');
   await settings.getByLabel('Dados e validação', { exact: true }).check();
   await settings.getByLabel(/Referência do acordo aprovado/).fill('SYNTHETIC-UI-PILOT-ONLY');
   await settings.getByRole('button', { name: 'Registar âmbito e autorização', exact: true }).click();
@@ -50,7 +50,7 @@ test('manager associates and configures; client saves, resumes and submits real 
   await page.screenshot({ path: testInfo.outputPath('manager-products.png'), fullPage: true });
   const organization = await manager.from('gie360_organizations').select('id,package_code,approved_modules,ai_cloud_authorized').eq('name', organizationName).single();
   expect(organization.error).toBeNull();
-  expect(organization.data!.package_code).toBe('gie360-professional');
+  expect(organization.data!.package_code).toBe('gie360-enterprise');
   expect(organization.data!.approved_modules).toContain('data');
   expect(organization.data!.ai_cloud_authorized).toBe(false);
 
