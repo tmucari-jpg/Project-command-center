@@ -33,7 +33,9 @@ test('manager associates and configures; client saves, resumes and submits real 
   await expect(page).toHaveURL(/\/dashboard/);
   await page.goto('/products');
   await expect(page.getByRole('heading', { name: 'Produtos e Pacotes', exact: true })).toBeVisible();
-  await page.getByLabel('Caso PCC', { exact: true }).selectOption(factory.data!.id);
+  const caseField=page.getByLabel('Caso PCC', { exact: true });
+  await expect(caseField, `GIE360 products form absent. Page excerpt: ${(await page.locator('body').innerText()).slice(0,1600)}`).toBeVisible({timeout:10000});
+  await caseField.selectOption(factory.data!.id);
   await page.getByLabel('Empresa', { exact: true }).fill(organizationName);
   await page.getByLabel('Email confirmado do cliente', { exact: true }).fill(clientEmail);
   await page.getByRole('button', { name: 'Associar cliente e diagnóstico', exact: true }).click();
