@@ -113,7 +113,7 @@ export function BotIAOperator({
         operations: result.operations,
       });
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Falha ao preparar o BotIA.");
+      setError(nextError instanceof Error ? nextError.message : "Falha ao preparar o PCC IA.");
     } finally {
       setBusy(false);
       setLocalProgress(null);
@@ -136,7 +136,7 @@ export function BotIAOperator({
       setApplied(result.applied);
       router.refresh();
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Falha ao aplicar alterações BotIA.");
+      setError(nextError instanceof Error ? nextError.message : "Falha ao aplicar alterações PCC IA.");
     } finally {
       setApplying(false);
     }
@@ -152,7 +152,7 @@ export function BotIAOperator({
           <div>
             <h2 className="font-semibold text-[var(--cc-foreground)]">Assistente e operador interno do projecto</h2>
             <p className="mt-1 text-sm leading-6 text-[var(--cc-secondary)]">
-              Escreva perguntas ou comandos em linguagem natural. O BotIA responde com base nos dados reais do PCC e, quando houver alterações, prepara-as para confirmação antes de gravar.
+              Escreva perguntas ou comandos em linguagem natural. O PCC IA responde com base nos dados reais do PCC e, quando houver alterações, prepara-as para confirmação antes de gravar.
             </p>
           </div>
         </div>
@@ -211,7 +211,7 @@ export function BotIAOperator({
             {busy ? (
               <span className="inline-flex items-center gap-2"><LoaderCircle className="animate-spin" size={16} /> A responder...</span>
             ) : (
-              "Enviar ao BotIA"
+              "Enviar ao PCC IA"
             )}
           </button>
 
@@ -244,7 +244,7 @@ export function BotIAOperator({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--cc-secondary)]">
-                  {prepared.intent === "question" ? "Resposta BotIA" : prepared.intent === "command" ? "Comando BotIA" : "Resposta + comando BotIA"}
+                  {prepared.intent === "question" ? "Resposta PCC IA" : prepared.intent === "command" ? "Comando PCC IA" : "Resposta + comando PCC IA"}
                 </p>
                 <h3 className="mt-1 font-semibold text-[var(--cc-foreground)]">{prepared.summary}</h3>
               </div>
@@ -276,7 +276,7 @@ export function BotIAOperator({
                 <p className="mt-2 text-sm text-[var(--cc-secondary)]">
                   {prepared.intent === "question"
                     ? "A mensagem foi respondida sem alterar dados do projecto."
-                    : "O BotIA não encontrou base factual suficiente para preparar uma alteração segura."}
+                    : "O PCC IA não encontrou base factual suficiente para preparar uma alteração segura."}
                 </p>
               </div>
             ) : (
@@ -320,7 +320,7 @@ export function BotIAOperator({
                   )}
                 </button>
                 <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
-                  Este botão confirma apenas alterações operacionais permitidas. Preços, Gates, permissões, ownership e eliminações ficam fora do BotIA.
+                  Este botão confirma apenas alterações operacionais permitidas. Preços, Gates, permissões, ownership e eliminações ficam fora do PCC IA.
                 </p>
               </div>
             )}
@@ -334,7 +334,7 @@ export function BotIAOperator({
             <CheckCircle2 size={18} /> Alterações gravadas no PCC
           </p>
           <p className="mt-2 text-sm text-[var(--cc-secondary)]">
-            {applied.length} operação(ões) foram persistidas e registadas na execução BotIA.
+            {applied.length} operação(ões) foram persistidas e registadas na execução PCC IA.
           </p>
         </div>
       )}
