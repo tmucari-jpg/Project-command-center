@@ -107,7 +107,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         factory_case_id: factoryCase.id,
         token_hash: tokenHash,
-        questionnaire_version: "executive-v3",
+        questionnaire_version: payload.data.intent === "gie360" ? "executive-gie360-v1" : "executive-v3",
         client_name: payload.data.client_name || null,
         client_organization: payload.data.client_organization || null,
         public_context:
