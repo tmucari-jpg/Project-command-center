@@ -76,6 +76,28 @@ export function aiRuntime(p: RuntimeProfile) {
 export class AIRequestError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
 }
+async function requestGeminiNative(model: string, key: string, input: string, instructions: string | undefined, timeoutMs: number, maxTokens: number) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const response = await fetch(url, {
+    method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: input }] }],
+      ...(instructions ? { systemInstruction: { parts: [{ text: instructions }] } } : {}),
+      generationConfig: { maxOutputTokens: maxTokens },
+    }), cache: "no-store", redirect: "error", signal: AbortSignal.timeout(timeoutMs),
+  });
+  const body = await response.json().catch(() => null) as {
+    candidates?: Array<{ content?: { parts?: Array<{text?:string}> } }>;
+    error?: { status?:string; message?:string; code?:number };
+  } | null;
+  if (!response.ok) {
+    const message = String(body?.error?.message || body?.error?.status || "Falha do endpoint nativo Gemini");
+    throw new AIRequestError(response.status, String(body?.error?.status || "provider_error"), `Gemini native HTTP ${response.status}: ${message.slice(0,220)}`);
+  }
+  const output = (body?.candidates?.[0]?.content?.parts ?? []).map(part=>part.text ?? "").join("").trim();
+  if (!output) throw new AIRequestError(502,"empty_response","Gemini native returned empty output");
+  return output;
+}
 export async function requestAIText(p: RuntimeProfile, input: string, instructions?: string, timeoutMs = 12_000, maxTokens = 1800) {
   const r = aiRuntime(p);
   const send = () => fetch(r.url, {
@@ -85,11 +107,22 @@ export async function requestAIText(p: RuntimeProfile, input: string, instructio
       ...(p.provider === "openai" ? { reasoning_effort: "none", max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
     }), cache: "no-store", redirect: "error", signal: AbortSignal.timeout(timeoutMs),
   });
-  let response = await send();
-  // Google documents 503 as transient overload. Retry once only; never retry authentication or billing errors.
-  if (p.provider === "gemini" && (response.status === 503 || response.status === 502)) {
-    await new Promise((resolve) => setTimeout(resolve, 900));
+  let response: Response;
+  try {
     response = await send();
+    if (p.provider === "gemini" && (response.status === 503 || response.status === 502)) {
+      await new Promise(resolve => setTimeout(resolve, 900));
+      response = await send();
+      if (response.status === 503 || response.status === 502) {
+        return requestGeminiNative(r.model, r.apiKey!, input, instructions, timeoutMs, maxTokens);
+      }
+    }
+  } catch (error) {
+    // A compatible gateway timeout may not affect the native Google endpoint.
+    if (p.provider === "gemini" && error instanceof Error && /timeout|abort/i.test(error.name+" "+error.message)) {
+      return requestGeminiNative(r.model, r.apiKey!, input, instructions, timeoutMs, maxTokens);
+    }
+    throw error;
   }
   const payload = await response.json().catch(() => null) as {
     choices?: Array<{ message?: { content?: string | null } }>;
