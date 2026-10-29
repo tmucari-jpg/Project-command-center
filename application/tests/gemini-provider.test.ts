@@ -60,6 +60,12 @@ describe("Gemini within the PCC runtime", () => {
     expect(String(fetch.mock.calls[2][0])).toContain("/models/configured-free-model:generateContent");
     expect(fetch.mock.calls[2][1].headers["x-goog-api-key"]).toBe("synthetic-test-key");
   });
+  it("uses native Gemini after a timeout", async () => {
+    const fetch = vi.fn().mockRejectedValueOnce(new DOMException("Timed out", "TimeoutError")).mockResolvedValueOnce(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "OK" }] } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    await expect(requestAIText(profile, "Teste")).resolves.toBe("OK");
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
   it("normalizes Google's base without appending an extra v1", () => {
     expect(chatCompletionsUrl("https://generativelanguage.googleapis.com/v1beta/openai/")).toBe(endpoint);
     expect(chatCompletionsUrl(endpoint)).toBe(endpoint);
