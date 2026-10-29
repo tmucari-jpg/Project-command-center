@@ -38,8 +38,10 @@ export function ProjectQuestionnaireActions({
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
   const [error, setError] = useState("");
+  const [approved, setApproved] = useState(false);
 
   async function generate() {
+    if (!approved) { setError("Revise e aprove a pré-visualização."); return; }
     if (!caseTitle.trim()) {
       setError("Indique um nome para identificar este caso.");
       return;
@@ -58,6 +60,7 @@ export function ProjectQuestionnaireActions({
           client_name: clientName,
           client_organization: clientOrganization,
           public_context: publicContext,
+          reviewed: approved,
         }),
       });
 
