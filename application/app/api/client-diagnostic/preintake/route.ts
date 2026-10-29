@@ -7,7 +7,7 @@ import {
 } from "@/lib/client-diagnostic-token";
 
 const schema = z.object({
-  intent: z.enum(["idea", "client_request", "investment", "internal_improvement", "digital_solution", "problem"]),
+  intent: z.enum(["idea", "client_request", "investment", "internal_improvement", "digital_solution", "problem", "gie360"]),
   case_title: z.string().trim().min(2).max(180),
   client_name: z.string().trim().max(200).optional().default(""),
   client_organization: z.string().trim().max(300).optional().default(""),
@@ -15,6 +15,12 @@ const schema = z.object({
 });
 
 const intentMeta = {
+  gie360: {
+    label: "GIE360° — Gestão Inteligente Empresarial",
+    problem: "Recolher o diagnóstico inicial da empresa para definir necessidades e preparar o questionário empresarial específico.",
+    expected: "Identificar o ponto de partida e preparar a avaliação empresarial personalizada GIE360°.",
+    projectType: "commercial" as const,
+  },
   idea: {
     label: "Ideia / projecto a avaliar",
     problem: "Recolher informação inicial para compreender e avaliar uma ideia ou projecto.",
