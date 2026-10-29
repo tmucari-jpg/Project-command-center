@@ -7,6 +7,7 @@ import {
 } from "@/lib/client-diagnostic-token";
 
 const schema = z.object({
+  reviewed: z.literal(true),
   intent: z.enum(["idea", "client_request", "investment", "internal_improvement", "digital_solution", "problem", "gie360"]),
   case_title: z.string().trim().min(2).max(180),
   client_name: z.string().trim().max(200).optional().default(""),
