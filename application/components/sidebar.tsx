@@ -65,7 +65,7 @@ export function Sidebar({ isAdmin, notificationCount }: { isAdmin: boolean; noti
           <NavLink pathname={pathname} href="/dashboard" label="Início" Icon={Gauge} />
           <NavLink pathname={pathname} href="/project-factory" label="Novo projecto" Icon={Factory} />
           <NavLink pathname={pathname} href="/projects" label="Projectos" Icon={FolderKanban} />
-          <NavLink pathname={pathname} href="/products" label="Produtos e Pacotes" Icon={Boxes} />
+          <NavLink pathname={pathname} href="/products" label="GIE360°" Icon={Boxes} />
           <NavLink pathname={pathname} href="/notifications" label="Alertas" Icon={Bell} badge={notificationCount} />
         </nav>
 
