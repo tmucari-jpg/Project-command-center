@@ -46,7 +46,7 @@ export function ClientDiagnosticQuestionnaire({token,clientName,clientOrganizati
       {publicContext&&<p className="mt-3 whitespace-pre-wrap text-sm">{publicContext}</p>}
     </div>
     <nav aria-label="Etapas do questionário" className="my-5 flex flex-wrap gap-2">{["Empresa","Necessidades","Dados e objectivos","Revisão e envio"].map((n,i)=><span key={n} className={`rounded-full border px-3 py-2 text-xs font-semibold ${stage===i+1?"bg-[#073f36] text-white":"border-[#d0ded6] bg-white"}`}>{i+1} · {n}</span>)}</nav>
-    <form action={submitClientDiagnostic} onSubmit={submit} onChange={event => { if ((event.target as HTMLInputElement).type !== "checkbox" || (event.target as HTMLInputElement).name !== "") invalidate(); }} className="space-y-5">
+    <form action={submitClientDiagnostic} onSubmit={submit} onChange={event => { if ((event.target as unknown as HTMLInputElement).type !== "checkbox" || (event.target as unknown as HTMLInputElement).name !== "") invalidate(); }} className="space-y-5">
       <input type="hidden" name="token" value={token}/><input type="hidden" name="reviewed" value={approved?"yes":"no"}/>
       <input type="hidden" name="respondent_type" value={gie?"organization":"individual"}/><input type="hidden" name="request_nature" value={gie?"organization_solution":purpose}/>
       <Panel step={1} title={gie?"Quem responde e em nome de que empresa?":"Quem responde ao questionário?"}>
