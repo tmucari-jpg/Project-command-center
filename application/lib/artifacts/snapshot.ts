@@ -4,7 +4,7 @@ export async function loadArtifactSnapshot(db:SupabaseClient, userId:string, del
   const {data:deliverable,error}=await db.from("deliverables").select("id,project_id,title,description,status,completion_criteria,artifact_type,artifact_url,artifact_reference,artifact_version,qa_status,acceptance_status,locked_at").eq("user_id",userId).eq("id",deliverableId).maybeSingle();
   if(error||!deliverable)throw new Error("DELIVERABLE_NOT_FOUND");
   if(deliverable.status==="completed"||deliverable.locked_at)throw new Error("DELIVERABLE_LOCKED");
-  const {data:project,error:projectError}=await db.from("projects").select("id,title,description,expected_result,status,priority,next_action,budget,currency,notes,governance_gate,governance_gate_status").eq("id",deliverable.project_id).eq("user_id",userId).maybeSingle();
+  const {data:project,error:projectError}=await db.from("projects").select("id,title,description,expected_result,status,priority,next_action,budget,currency,due_date,notes,governance_gate,governance_gate_status").eq("id",deliverable.project_id).eq("user_id",userId).maybeSingle();
   if(projectError||!project)throw new Error("PROJECT_NOT_FOUND");
   const specs=[
     ["Entregáveis e validação","deliverables","title,description,status,progress,completion_criteria,artifact_type,artifact_url,artifact_reference,qa_status,acceptance_status"],
