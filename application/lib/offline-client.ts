@@ -48,7 +48,8 @@ export type OfflineQueueType =
   | "create_evidence"
   | "create_blocker"
   | "create_factory_intake"
-  | "update_action_status";
+  | "update_action_status"
+  | "update_project_next_action";
 
 export type OfflineQueueItem = {
   id: string;
