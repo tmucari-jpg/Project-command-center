@@ -6,6 +6,7 @@ import { hashClientDiagnosticToken } from "@/lib/client-diagnostic-token";
 import { createPublicClient } from "@/lib/supabase/public";
 
 const responseSchema = z.object({
+  reviewed: z.literal("yes"),
   token: z.string().trim().regex(/^[A-Za-z0-9_-]{43,200}$/),
   respondent_type: z.string().trim().min(2).max(80),
   respondent_name: z.string().trim().min(2).max(200),
@@ -42,6 +43,7 @@ export async function submitClientDiagnostic(formData: FormData) {
 
   const parsed = responseSchema.safeParse({
     token,
+    reviewed: String(formData.get("reviewed") ?? ""),
     respondent_type: String(formData.get("respondent_type") ?? "").trim(),
     respondent_name: String(formData.get("respondent_name") ?? "").trim(),
     respondent_role: String(formData.get("respondent_role") ?? "").trim(),
@@ -60,7 +62,7 @@ export async function submitClientDiagnostic(formData: FormData) {
     redirect(`${back}?error=${encodeURIComponent("Preencha os campos essenciais antes de enviar.")}`);
   }
 
-  const { token: rawToken, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
+  const { reviewed: _reviewed, token: rawToken, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
   const supabase = createPublicClient();
   const tokenHash = hashClientDiagnosticToken(rawToken);
 
