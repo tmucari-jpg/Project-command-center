@@ -176,6 +176,14 @@ export function ProjectQuestionnaireActions({
             </label>
           </div>
 
+          <div className="mt-4 rounded-xl border border-[#c9dbd4] bg-white p-4 text-sm">
+            <p className="font-semibold text-[#073f36]">Pré-visualização para validação interna</p>
+            <p className="mt-2">Finalidade: {intentLabel}</p>
+            <p>Cliente: {clientName || "Por identificar"}</p>
+            <p>Empresa: {clientOrganization || "Por identificar"}</p>
+            <p className="mt-2 whitespace-pre-wrap">Mensagem: {publicContext || "Diagnóstico inicial personalizado."}</p>
+            <label className="mt-3 flex items-start gap-2"><input type="checkbox" checked={approved} onChange={event => setApproved(event.target.checked)} />Aprovo a informação apresentada para partilha com este cliente.</label>
+          </div>
           {error && (
             <p className="mt-3 rounded-lg border border-[#ead2d2] bg-white px-3 py-2 text-sm text-[#8a3e3e]">
               {error}
@@ -187,7 +195,7 @@ export function ProjectQuestionnaireActions({
               className="rounded-[var(--cc-radius-md)] bg-[#073f36] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               type="button"
               onClick={generate}
-              disabled={loading}
+              disabled={loading || !approved}
             >
               {loading ? "A gerar..." : "Gerar link seguro"}
             </button>
