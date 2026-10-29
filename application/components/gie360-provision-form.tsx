@@ -1,6 +1,6 @@
 "use client";
 import { useActionState, useState } from "react";
-import { GIE360_MODULES } from "@/lib/gie360";
+import { GIE360_MODULES, GIE360_QUESTIONS } from "@/lib/gie360";
 import { provisionGIE360, configureGIE360 } from "@/lib/gie360-management-actions";
 export function GIE360ProvisionForm({ cases }: { cases: { id: string; title: string }[] }) {
   const [state, action, pending] = useActionState(provisionGIE360, {});
@@ -17,17 +17,19 @@ export function GIE360ProvisionForm({ cases }: { cases: { id: string; title: str
 
 type PackageOption = { code: string; name: string; modules: string[] };
 type ScopeOrganization = { id: string; name: string; package_code: string | null; approved_modules: string[]; ai_cloud_authorized: boolean; contract_reference: string | null };
-export function GIE360SettingsForm({ organization, packages }: { organization: ScopeOrganization; packages: PackageOption[] }) {
+export function GIE360SettingsForm({ organization, packages, assessmentAnswers }: { organization: ScopeOrganization; packages: PackageOption[]; assessmentAnswers: Record<string,string> }) {
   const [state, action, pending] = useActionState(configureGIE360, {});
   const [packageCode, setPackageCode] = useState(organization.package_code ?? "");
   const allowed = packages.find((item) => item.code === packageCode)?.modules ?? [];
   return <form action={action} className="space-y-4 rounded-xl border bg-white p-6">
     <h2 className="text-xl font-semibold">Âmbito de {organization.name}</h2>
+    <div className="rounded-xl border border-[#d8e2dc] bg-[#f8f6f0] p-4"><h3 className="font-semibold text-[#073f36]">Revisão do segundo diagnóstico GIE360°</h3><p className="mt-2 text-xs text-slate-600">Informação declarada pelo cliente. Confirme os dados e as lacunas antes de seleccionar módulos; esta revisão não certifica automaticamente os factos.</p><dl className="mt-3 grid gap-3 md:grid-cols-2">{GIE360_QUESTIONS.map(q => <div key={q.key}><dt className="text-xs font-semibold">{q.label}</dt><dd className="mt-1 whitespace-pre-wrap text-sm">{assessmentAnswers[q.key]?.trim() || "Informação em falta"}</dd></div>)}</dl></div>
     <input type="hidden" name="organizationId" value={organization.id} />
     <label className="block text-sm">Pacote acordado<select aria-label="Pacote acordado" name="packageCode" required value={packageCode} onChange={(event) => setPackageCode(event.target.value)} className="mt-2 w-full rounded-lg border p-3"><option value="">Seleccione o pacote</option>{packages.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
     <fieldset className="grid gap-2 md:grid-cols-2" key={packageCode}><legend className="mb-2 text-sm font-medium">Módulos com âmbito aprovado</legend>{GIE360_MODULES.filter((module) => allowed.includes(module.code)).map((module) => <label key={module.code} className="flex gap-2 text-sm"><input type="checkbox" name="modules" value={module.code} defaultChecked={organization.approved_modules.includes(module.code)} />{module.label}</label>)}</fieldset>
     <label className="block text-sm">Referência do acordo aprovado<input name="contract" required minLength={3} maxLength={500} defaultValue={organization.contract_reference ?? ""} className="mt-2 w-full rounded-lg border p-3" /><span className="mt-1 block text-xs text-slate-500">Introduza a referência real da aprovação comercial ou piloto. Este formulário não define nem cobra preços.</span></label>
     <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="ai" defaultChecked={organization.ai_cloud_authorized} className="mt-1" />Autorizo o tratamento dos dados desta empresa pelos fornecedores de IA cloud aprovados na configuração PCC, incluindo fallback compatível. Confirmo a informação e autorização do cliente.</label>
+    <label className="flex items-start gap-2 rounded-lg border border-[#d8e2dc] p-3 text-sm"><input type="checkbox" name="reviewed" required className="mt-1" />Revisei o diagnóstico recebido e identifiquei os dados por confirmar. Aprovo o âmbito proposto para esta empresa, sem considerar automaticamente validados os dados declarados.</label>
     <button disabled={pending} className="rounded-lg bg-[#073F36] px-4 py-3 text-white disabled:opacity-50">{pending ? "A registar…" : "Registar âmbito e autorização"}</button>
     {state.error && <p role="alert" className="text-red-800">{state.error}</p>}{state.success && <p role="status" className="text-green-900">{state.success}</p>}
   </form>;
