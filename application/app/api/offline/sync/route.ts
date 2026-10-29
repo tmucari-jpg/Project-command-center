@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 const itemSchema = z.object({
   id: z.string().uuid(),
-  type: z.enum(["create_action", "create_idea", "create_evidence", "create_blocker", "create_factory_intake", "update_action_status"]),
+  type: z.enum(["create_action", "create_idea", "create_evidence", "create_blocker", "create_factory_intake", "update_action_status", "update_project_next_action"]),
   payload: z.record(z.string(), z.unknown()),
   createdAt: z.string().optional(),
   status: z.string().optional(),
@@ -261,6 +261,18 @@ export async function POST(request: Request) {
         entityType = "factory_case";
         entityId = item.id;
         projectId = null;
+      }
+
+      if (item.type === "update_project_next_action") {
+        const targetId = z.string().uuid().parse(item.payload.project_id);
+        const nextAction = z.string().trim().min(1).max(2000).parse(item.payload.next_action);
+        if (!(await owned(supabase, "projects", targetId, user.id))) throw new Error("Projecto inacessível.");
+        const { error } = await supabase.from("projects").update({ next_action: nextAction }).eq("id", targetId).eq("user_id", user.id);
+        if (error) throw error;
+        entityType = "project";
+        entityId = targetId;
+        projectId = targetId;
+        operation = "update";
       }
 
       if (item.type === "update_action_status") {
