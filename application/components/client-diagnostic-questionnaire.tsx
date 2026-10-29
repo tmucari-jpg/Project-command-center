@@ -28,7 +28,11 @@ export function ClientDiagnosticQuestionnaire({token,clientName,clientOrganizati
   const [stage,setStage] = useState(1);
   function invalidate(){setPreview(null);setApproved(false);}
   function toggle(name:string){setSelected(old=>old.includes(name)?old.filter(v=>v!==name):[...old,name]);invalidate();}
-  function submit(e:FormEvent<HTMLFormElement>){if(approved&&preview)return;e.preventDefault();const fd=new FormData(e.currentTarget);const entries:Array<[string,string]>=[];for(const key of ["respondent_name","respondent_email","respondent_type","organization","respondent_role","request_nature","context","focus","desired_result","conditions","deadline_urgency","success_criteria"]){const vals=fd.getAll(key).map(String).map(v=>v.trim()).filter(Boolean);if(vals.length)entries.push([fieldNames[key]??key,vals.join("; ")]);}setPreview(entries);setApproved(false);setStage(4);}
+  function submit(e:FormEvent<HTMLFormElement>){if(approved&&preview)return;e.preventDefault();const fd=new FormData(e.currentTarget);const entries:Array<[string,string]>=[];for(const key of ["respondent_name","respondent_email","respondent_type","organization","respondent_role","request_nature","context","focus","desired_result","conditions","deadline_urgency","success_criteria"]){const vals=fd.getAll(key).map(String).map(v=>v.trim()).filter(Boolean);if(vals.length)entries.push([fieldNames[key]??key,vals.join("; ")]);}for(const area of areas) {
+    const vals=fd.getAll("focus_"+area.key).map(String).map(v=>v.trim()).filter(Boolean);
+    if(vals.length) entries.push([area.question,vals.join("; ")]);
+  }
+  setPreview(entries);setApproved(false);setStage(4);}
   return <main className="min-h-screen bg-[#f8f6f0] px-4 py-8 text-[#17322d]"><div className="mx-auto max-w-[850px]">
     <header className="overflow-hidden rounded-t-[18px] bg-[#073f36] px-6 py-7 text-white sm:px-8">
       <div className="flex flex-wrap items-center gap-4">
