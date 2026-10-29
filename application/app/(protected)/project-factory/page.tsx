@@ -1,10 +1,8 @@
+import Link from "next/link";
 import { AdaptiveProjectIntake } from "@/components/adaptive-project-intake";
 import { FlashMessage } from "@/components/flash-message";
-import { ClientDiagnosticAlerts, type ClientDiagnosticAlertRow } from "@/components/client-diagnostic-alerts";
-import { ClientDiagnosticTracker, type ClientDiagnosticTrackingRow } from "@/components/client-diagnostic-tracker";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
 
 export default async function ProjectFactoryPage({
   searchParams,
@@ -12,57 +10,7 @@ export default async function ProjectFactoryPage({
   searchParams: Promise<{ error?: string; created?: string }>;
 }) {
   const params = await searchParams;
-  const { supabase, user } = await requireUser();
 
-  const [{ data: requests }, { data: unreadAlerts }] = await Promise.all([
-    supabase
-      .from("client_diagnostic_requests")
-      .select("factory_case_id,client_name,client_organization,status,expires_at,created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("notifications")
-      .select("id,title,message,related_entity_id,created_at")
-      .eq("user_id", user.id)
-      .eq("type", "client_diagnostic_response")
-      .eq("related_entity_type", "project_factory_case")
-      .is("read_at", null)
-      .order("created_at", { ascending: false })
-      .limit(10),
-  ]);
-
-  const diagnosticAlerts = (unreadAlerts ?? []) as ClientDiagnosticAlertRow[];
-
-  const requestCounts = new Map<string, number>();
-  const latestByCase = new Map<string, NonNullable<typeof requests>[number]>();
-
-  for (const request of requests ?? []) {
-    requestCounts.set(request.factory_case_id, (requestCounts.get(request.factory_case_id) ?? 0) + 1);
-    if (!latestByCase.has(request.factory_case_id)) latestByCase.set(request.factory_case_id, request);
-  }
-
-  const caseIds = Array.from(latestByCase.keys());
-  const { data: cases } = caseIds.length
-    ? await supabase
-        .from("project_factory_cases")
-        .select("id,title")
-        .eq("user_id", user.id)
-        .in("id", caseIds)
-    : { data: [] as Array<{ id: string; title: string }> };
-
-  const caseTitles = new Map((cases ?? []).map((item) => [item.id, item.title]));
-  const diagnosticRows: ClientDiagnosticTrackingRow[] = Array.from(latestByCase.values())
-    .map((request) => ({
-      factory_case_id: request.factory_case_id,
-      title: caseTitles.get(request.factory_case_id) ?? "Caso PCC",
-      client_name: request.client_name,
-      client_organization: request.client_organization,
-      status: request.status,
-      expires_at: request.expires_at,
-      created_at: request.created_at,
-      request_count: requestCounts.get(request.factory_case_id) ?? 1,
-    }))
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   return (
     <>
@@ -74,8 +22,6 @@ export default async function ProjectFactoryPage({
       />
 
       <div className="max-w-6xl">
-        <ClientDiagnosticAlerts alerts={diagnosticAlerts} />
-        <ClientDiagnosticTracker rows={diagnosticRows} />
         <Card className="overflow-hidden p-0">
           <div className="border-b border-[var(--cc-border)] bg-[var(--cc-surface-muted)] px-5 py-5 sm:px-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
@@ -94,6 +40,7 @@ export default async function ProjectFactoryPage({
             </div>
           </div>
 
+          <div className="mx-5 mt-5 rounded-xl border border-[#c99439]/40 bg-[#f8f6f0] p-5 sm:mx-6"><p className="text-xs font-semibold uppercase tracking-widest text-[#146453]">Entrada empresarial</p><h3 className="mt-2 text-lg font-semibold text-[#073f36]">GIE360° — Gestão Inteligente Empresarial</h3><p className="mt-2 text-sm text-slate-700">Para associar uma empresa ao diagnóstico, configurar os módulos seleccionados e disponibilizar o percurso autónomo do cliente.</p><Link href="/products" className="mt-4 inline-flex rounded-lg bg-[#073f36] px-4 py-2.5 text-sm font-semibold text-white">Associar empresa no GIE360°</Link></div>
           <AdaptiveProjectIntake />
         </Card>
       </div>
