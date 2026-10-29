@@ -18,8 +18,8 @@ export async function provisionGIE360(_previous: { error?: string; success?: str
 }
 
 export async function configureGIE360(_previous: { error?: string; success?: string }, formData: FormData): Promise<{ error?: string; success?: string }> {
-  const parsed = z.object({ organizationId: z.uuid(), packageCode: z.string().min(1).max(100), modules: z.array(z.string().max(50)).max(20), ai: z.boolean(), contract: z.string().trim().min(3).max(500) }).safeParse({ organizationId: formData.get("organizationId"), packageCode: formData.get("packageCode"), modules: formData.getAll("modules"), ai: formData.get("ai") === "on", contract: formData.get("contract") });
-  if (!parsed.success) return { error: "Reveja o pacote, o âmbito e a referência do acordo aprovado." };
+  const parsed = z.object({ organizationId: z.uuid(), packageCode: z.string().min(1).max(100), modules: z.array(z.string().max(50)).max(20), ai: z.boolean(), contract: z.string().trim().min(3).max(500), reviewed: z.literal(true) }).safeParse({ organizationId: formData.get("organizationId"), packageCode: formData.get("packageCode"), modules: formData.getAll("modules"), ai: formData.get("ai") === "on", contract: formData.get("contract"), reviewed: formData.get("reviewed") === "on" });
+  if (!parsed.success) return { error: "É obrigatório rever as respostas empresariais e confirmar a validação antes de aprovar o âmbito." };
   const { supabase } = await requireUser();
   const { data: assessment } = await supabase.from("gie360_assessments").select("id").eq("organization_id", parsed.data.organizationId).eq("status", "submitted").limit(1);
   if (!assessment?.length) return { error: "Receba primeiro o segundo diagnóstico empresarial no portal GIE360° antes de confirmar o âmbito." };
