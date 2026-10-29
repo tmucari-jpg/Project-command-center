@@ -222,6 +222,7 @@ export async function createClientDiagnosticRequest(
   _previousState: ClientDiagnosticLinkState,
   formData: FormData,
 ): Promise<ClientDiagnosticLinkState> {
+  if (formData.get("reviewed") !== "on") return { ok: false, error: "Confirme a revisão e aprovação do conteúdo antes de emitir o link." };
   const factoryCaseId = z.string().uuid().safeParse(formData.get("factory_case_id"));
   const clientName = z.string().trim().max(200).safeParse(String(formData.get("client_name") ?? ""));
   const clientOrganization = z.string().trim().max(300).safeParse(String(formData.get("client_organization") ?? ""));
@@ -243,6 +244,7 @@ export async function createClientDiagnosticRequest(
     return { ok: false, error: caseError?.message ?? "Caso não encontrado." };
   }
 
+  if (!clientName.data?.trim() || !clientOrganization.data?.trim()) return { ok: false, error: "Identifique o destinatário e a empresa antes da aprovação externa." };
   const { token, tokenHash } = createClientDiagnosticToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -275,6 +277,13 @@ export async function createClientDiagnosticRequest(
     return { ok: false, error: error?.message ?? "Não foi possível gerar o questionário." };
   }
 
+  const { createHash } = await import("node:crypto");
+  const approvedPayload = JSON.stringify({ factoryCaseId: factoryCase.id, clientName: clientName.data, clientOrganization: clientOrganization.data, publicContext: publicContext.data, expiresAt, version: "executive-v3" });
+  const { error: approvalError } = await supabase.from("pcc_external_share_approvals").insert({ request_id: request.id, factory_case_id: factoryCase.id, manager_user_id: user.id, audience_name: clientName.data, audience_organization: clientOrganization.data, public_context: publicContext.data, content_sha256: createHash("sha256").update(approvedPayload).digest("hex"), expires_at: expiresAt });
+  if (approvalError) {
+    await supabase.from("client_diagnostic_requests").update({ status: "revoked" }).eq("id", request.id).eq("user_id", user.id);
+    return { ok: false, error: "Falha ao registar a aprovação externa. O link não foi disponibilizado." };
+  }
   revalidatePath(`/project-factory/${factoryCase.id}`);
 
   return {
