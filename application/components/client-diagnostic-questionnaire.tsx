@@ -36,16 +36,19 @@ export function ClientDiagnosticQuestionnaire({
   clientName,
   clientOrganization,
   publicContext,
+  questionnaireVersion,
   expiresAt,
 }: {
   token: string;
   clientName?: string | null;
   clientOrganization?: string | null;
   publicContext?: string | null;
+  questionnaireVersion?: string | null;
   expiresAt: string;
 }) {
   const [respondentType, setRespondentType] = useState("");
-  const [nature, setNature] = useState<Nature | "">("");
+  const isGIE360 = questionnaireVersion === "executive-gie360-v1";
+  const [nature, setNature] = useState<Nature | "">(isGIE360 ? "organization_solution" : "");
 
   return (
     <main className="min-h-screen bg-[#f8f6f0] px-4 py-8 text-[#142825] sm:py-12">
@@ -74,11 +77,11 @@ export function ClientDiagnosticQuestionnaire({
               Questionário Executivo
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-[#073f36] sm:text-3xl">
-              Diagnóstico inicial
+              {isGIE360 ? "Diagnóstico inicial GIE360°" : "Diagnóstico inicial"}
             </h1>
             <div className="mt-3 h-0.5 w-14 bg-[#c99439]" />
             <p className="mt-4 text-sm leading-6 text-[#4f625d]">
-              Antes de recomendarmos uma solução, queremos compreender o essencial sobre o que procura,
+              {isGIE360 ? "Este diagnóstico empresarial ajuda a identificar as necessidades específicas da sua empresa e a preparar uma avaliação GIE360° adequada ao contexto declarado." : "Antes de recomendarmos uma solução, queremos compreender o essencial sobre o que procura,"}
               o contexto em que se encontra e o resultado que pretende alcançar. As suas respostas
               permitem-nos preparar um diagnóstico mais focado e tornar a próxima conversa mais
               objectiva e útil.
