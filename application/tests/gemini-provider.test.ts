@@ -40,7 +40,7 @@ describe("Gemini within the PCC runtime", () => {
   it("validates health through real generation with space for model reasoning", async () => {
     const fetch = vi.fn().mockResolvedValue(response("OK")); vi.stubGlobal("fetch", fetch);
     expect((await validateAIProviderHealth(profile)).status).toBe("healthy");
-    expect(JSON.parse(String(fetch.mock.calls[0][1].body)).max_tokens).toBe(512);
+    expect(JSON.parse(String(fetch.mock.calls[0][1].body)).max_tokens).toBe(64);
   });
   it("normalizes Google's base without appending an extra v1", () => {
     expect(chatCompletionsUrl("https://generativelanguage.googleapis.com/v1beta/openai/")).toBe(endpoint);
