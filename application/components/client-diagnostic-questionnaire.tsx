@@ -81,10 +81,9 @@ export function ClientDiagnosticQuestionnaire({
             </h1>
             <div className="mt-3 h-0.5 w-14 bg-[#c99439]" />
             <p className="mt-4 text-sm leading-6 text-[#4f625d]">
-              {isGIE360 ? "Este diagnóstico empresarial ajuda a identificar as necessidades específicas da sua empresa e a preparar uma avaliação GIE360° adequada ao contexto declarado." : "Antes de recomendarmos uma solução, queremos compreender o essencial sobre o que procura,"}
-              o contexto em que se encontra e o resultado que pretende alcançar. As suas respostas
-              permitem-nos preparar um diagnóstico mais focado e tornar a próxima conversa mais
-              objectiva e útil.
+              {isGIE360
+                ? "Este diagnóstico inicial GIE360° identifica as necessidades da sua empresa e prepara uma avaliação empresarial ajustada à situação descrita. As respostas regressam directamente ao PCC e serão revistas antes de qualquer proposta ou definição de âmbito."
+                : "Antes de recomendarmos uma solução, queremos compreender o essencial sobre o que procura, o contexto em que se encontra e o resultado que pretende alcançar. As suas respostas permitem-nos preparar um diagnóstico mais focado e tornar a próxima conversa mais objectiva e útil."}
             </p>
           <div className="mt-4 grid gap-3 rounded-xl bg-[#f5f1e6] p-4 text-sm sm:grid-cols-2">
             <div>
