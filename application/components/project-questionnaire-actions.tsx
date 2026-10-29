@@ -144,7 +144,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={caseTitle}
-                onChange={(event) => setCaseTitle(event.target.value); setApproved(false)}
+                onChange={(event) => { setCaseTitle(event.target.value); setApproved(false); }}
                 placeholder="Ex.: Diagnóstico comercial — Cliente X"
               />
             </label>
@@ -153,7 +153,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={clientName}
-                onChange={(event) => setClientName(event.target.value); setApproved(false)}
+                onChange={(event) => { setClientName(event.target.value); setApproved(false); }}
                 placeholder="Obrigatório"
               />
             </label>
@@ -162,7 +162,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={clientOrganization}
-                onChange={(event) => setClientOrganization(event.target.value); setApproved(false)}
+                onChange={(event) => { setClientOrganization(event.target.value); setApproved(false); }}
                 placeholder="Opcional"
               />
             </label>
@@ -171,7 +171,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={publicContext}
-                onChange={(event) => setPublicContext(event.target.value); setApproved(false)}
+                onChange={(event) => { setPublicContext(event.target.value); setApproved(false); }}
                 placeholder="Opcional"
               />
             </label>
