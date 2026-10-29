@@ -47,6 +47,8 @@ export function ClientDiagnosticQuestionnaire({
   expiresAt: string;
 }) {
   const [respondentType, setRespondentType] = useState("");
+  const [preview, setPreview] = useState<Array<[string,string]> | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
   const isGIE360 = questionnaireVersion === "executive-gie360-v1";
   const [nature, setNature] = useState<Nature | "">(isGIE360 ? "organization_solution" : "");
 
@@ -110,8 +112,9 @@ export function ClientDiagnosticQuestionnaire({
           </div>
         </header>
 
-        <form action={submitClientDiagnostic} className="space-y-5">
+        <form action={submitClientDiagnostic} onSubmit={event => { if (confirmed) return; event.preventDefault(); const data=new FormData(event.currentTarget); setPreview(Array.from(data.entries()).filter(([key,value])=>key!=="token" && String(value).trim()).map(([key,value])=>[key,String(value)])); }} className="space-y-5">
           <input type="hidden" name="token" value={token} />
+          <input type="hidden" name="reviewed" value={confirmed ? "yes" : "no"} />
 
           <Block number={1} title="Fale-nos um pouco sobre si">
             <ChoiceGrid
@@ -235,9 +238,10 @@ export function ClientDiagnosticQuestionnaire({
             />
           </Block>
 
+          {preview && <section className="rounded-xl border border-[#c9dbd4] bg-white p-5"><h2 className="font-semibold text-[#073f36]">Pré-visualização das respostas</h2><p className="mt-2 text-sm text-[#667085]">Confirme os dados antes de os devolver ao PCC.</p><dl className="mt-3 space-y-2">{preview.map(([key,value],i)=><div key={`${key}-${i}`} className="border-b pb-2"><dt className="text-xs font-semibold">{key.replaceAll("_"," ")}</dt><dd className="whitespace-pre-wrap text-sm">{value}</dd></div>)}</dl><label className="mt-4 flex gap-2 text-sm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>Confirmo que revi as respostas e autorizo a submissão ao PCC.</label></section>}
           <div className="flex justify-end pt-1">
             <button className={primaryButtonClass} type="submit">
-              Enviar respostas
+              {preview ? (confirmed ? "Confirmar e enviar ao PCC" : "Confirmar respostas antes de enviar") : "Pré-visualizar respostas"}
             </button>
           </div>
         </form>
