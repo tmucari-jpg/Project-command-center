@@ -42,6 +42,7 @@ export function ProjectQuestionnaireActions({
 
   async function generate() {
     if (!approved) { setError("Revise e aprove a pré-visualização."); return; }
+    if (!clientName.trim() || !clientOrganization.trim()) { setError("Identifique o destinatário e a organização antes de aprovar."); return; }
     if (!caseTitle.trim()) {
       setError("Indique um nome para identificar este caso.");
       return;
@@ -143,7 +144,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={caseTitle}
-                onChange={(event) => setCaseTitle(event.target.value)}
+                onChange={(event) => setCaseTitle(event.target.value); setApproved(false)}
                 placeholder="Ex.: Diagnóstico comercial — Cliente X"
               />
             </label>
@@ -152,8 +153,8 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={clientName}
-                onChange={(event) => setClientName(event.target.value)}
-                placeholder="Opcional"
+                onChange={(event) => setClientName(event.target.value); setApproved(false)}
+                placeholder="Obrigatório"
               />
             </label>
             <label className="block text-sm font-medium text-[#142825]">
@@ -161,7 +162,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={clientOrganization}
-                onChange={(event) => setClientOrganization(event.target.value)}
+                onChange={(event) => setClientOrganization(event.target.value); setApproved(false)}
                 placeholder="Opcional"
               />
             </label>
@@ -170,7 +171,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={publicContext}
-                onChange={(event) => setPublicContext(event.target.value)}
+                onChange={(event) => setPublicContext(event.target.value); setApproved(false)}
                 placeholder="Opcional"
               />
             </label>
