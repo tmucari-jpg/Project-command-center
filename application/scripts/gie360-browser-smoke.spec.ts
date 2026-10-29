@@ -25,6 +25,9 @@ test('manager associates and configures; client saves, resumes and submits real 
   const ownerId = login.data.user!.id;
   const factory = await manager.from('project_factory_cases').insert({ user_id: ownerId, title: caseTitle, problem: 'Synthetic browser validation', project_type: 'commercial' }).select('id').single();
   expect(factory.error).toBeNull();
+  // Synthetic initial PCC diagnostic already received: prerequisite for GIE360 association.
+  const initialRequest = await admin.from('client_diagnostic_requests').insert({ user_id: ownerId, factory_case_id: factory.data!.id, token_hash: randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', ''), questionnaire_version: 'client-diagnostic-v1', status: 'submitted', expires_at: new Date(Date.now() + 86400000).toISOString() });
+  expect(initialRequest.error).toBeNull();
 
   await page.goto('/auth/login');
   await page.getByLabel('Email', { exact: true }).fill(ownerEmail);
@@ -32,7 +35,7 @@ test('manager associates and configures; client saves, resumes and submits real 
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard/);
   await page.goto('/products');
-  await expect(page.getByRole('heading', { name: 'Produtos e Pacotes', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'GIE360°', exact: true })).toBeVisible();
   const caseField=page.getByLabel('Caso PCC', { exact: true });
   await expect(caseField, `GIE360 products form absent. Page excerpt: ${(await page.locator('body').innerText()).slice(0,1600)}`).toBeVisible({timeout:10000});
   await caseField.selectOption(factory.data!.id);
@@ -40,19 +43,9 @@ test('manager associates and configures; client saves, resumes and submits real 
   await page.getByLabel('Email confirmado do cliente', { exact: true }).fill(clientEmail);
   await page.getByRole('button', { name: 'Associar cliente e diagnóstico', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Empresa e diagnóstico associados ao caso' })).toBeVisible();
-  const settings = page.locator('form').filter({ has: page.getByRole('heading', { name: `Âmbito de ${organizationName}`, exact: true }) });
-  await expect(settings).toBeVisible();
-  await settings.getByLabel('Pacote acordado', { exact: true }).selectOption('gie360-enterprise');
-  await settings.getByLabel('Dados e validação', { exact: true }).check();
-  await settings.getByLabel(/Referência do acordo aprovado/).fill('SYNTHETIC-UI-PILOT-ONLY');
-  await settings.getByRole('button', { name: 'Registar âmbito e autorização', exact: true }).click();
-  await expect(settings.getByRole('status')).toContainText('Pacote, âmbito e autorização de IA registados');
-  await page.screenshot({ path: testInfo.outputPath('manager-products.png'), fullPage: true });
   const organization = await manager.from('gie360_organizations').select('id,package_code,approved_modules,ai_cloud_authorized').eq('name', organizationName).single();
   expect(organization.error).toBeNull();
-  expect(organization.data!.package_code).toBe('gie360-enterprise');
-  expect(organization.data!.approved_modules).toContain('data');
-  expect(organization.data!.ai_cloud_authorized).toBe(false);
+  await expect(page.getByText('Diagnóstico GIE360° pendente')).toBeVisible();
 
   const clientContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   try {
@@ -96,6 +89,21 @@ test('manager associates and configures; client saves, resumes and submits real 
     await expect(client.getByRole('status')).toContainText('Respostas recebidas e ligadas ao mesmo caso');
     await expect(client.getByText('Informação a completar ou confirmar: 2', { exact: true })).toBeVisible();
     await client.screenshot({ path: testInfo.outputPath('client-mobile-submitted.png'), fullPage: true });
+    // Only after the client submits their GIE360 assessment may the manager approve scope.
+    await page.reload();
+    const settings = page.locator('form').filter({ has: page.getByRole('heading', { name: `Âmbito de ${organizationName}`, exact: true }) });
+    await expect(settings).toBeVisible();
+    await settings.getByLabel('Pacote acordado', { exact: true }).selectOption('gie360-enterprise');
+    await settings.getByLabel('Dados e validação', { exact: true }).check();
+    await settings.getByLabel(/Referência do acordo aprovado/).fill('SYNTHETIC-UI-PILOT-ONLY');
+    await settings.getByRole('button', { name: 'Registar âmbito e autorização', exact: true }).click();
+    await expect(settings.getByRole('status')).toContainText('Pacote, âmbito e autorização de IA registados');
+    await page.screenshot({ path: testInfo.outputPath('manager-gie360.png'), fullPage: true });
+    const configured = await manager.from('gie360_organizations').select('package_code,approved_modules,ai_cloud_authorized').eq('id', organization.data!.id).single();
+    expect(configured.error).toBeNull();
+    expect(configured.data!.package_code).toBe('gie360-enterprise');
+    expect(configured.data!.approved_modules).toContain('data');
+    expect(configured.data!.ai_cloud_authorized).toBe(false);
     await client.goto('http://localhost:3000/dashboard');
     await expect(client).toHaveURL('http://localhost:3000/gie360');
     const assessment = await manager.from('gie360_assessments').select('status,answers,revision').eq('organization_id', organization.data!.id).single();
