@@ -62,7 +62,10 @@
     activeProjects.filter(matches).slice(0,12).forEach(p=>{const count=openActions.filter(a=>a.project_id===p.id).length;const max=Math.max(1,...activeProjects.map(x=>openActions.filter(a=>a.project_id===x.id).length));html+=`<div><div class="itemtop"><span>${esc(p.title)}</span><b>${count}</b></div><div class="bar"><span style="width:${Math.max(count?5:0,count/max*100)}%"></span></div></div>`});
     html+=`</div></div></div><p class="small muted section">Snapshot: ${fmt(snapshot.generatedAt)}</p>`;return html
   }
-  function renderProjects(){const rows=snapshot.projects.filter(matches);return `<div class="card"><h2>Projectos</h2><p class="small muted">Todos os projectos guardados no último snapshot.</p><div class="list section">${rows.map(p=>item(p,[`Progresso ${p.progress??0}%`,p.due_date?`Prazo ${fmt(p.due_date)}`:"Sem prazo",p.next_action?`Próxima: ${p.next_action}`:""])).join("")||'<div class="empty">Sem projectos.</div>'}</div></div>`}
+  function renderProjects(){
+    const rows=snapshot.projects.filter(matches);
+    return `<div class="card"><h2>Projectos</h2><p class="small muted">Edite a próxima acção e guarde no dispositivo. A sincronização ocorre quando voltar a ter ligação.</p><div class="list section">${rows.map(p=>`<article class="item"><div class="itemtop"><h3>${esc(p.title)}</h3>${tag(p.status)}</div><div class="meta">Progresso ${esc(p.progress??0)}% · ${p.due_date?"Prazo "+fmt(p.due_date):"Sem prazo"}</div><label class="small muted" for="next-${esc(p.id)}">Próxima acção</label><textarea id="next-${esc(p.id)}" data-project-next="${esc(p.id)}" maxlength="2000" rows="2" style="box-sizing:border-box;width:100%;margin-top:6px;padding:9px;border:1px solid #a9b9b3;border-radius:8px">${esc(p.next_action||"")}</textarea><div class="row" style="margin-top:9px"><button class="button secondary small" data-save-next="${esc(p.id)}">Guardar no dispositivo</button></div></article>`).join("")||'<div class="empty">Sem projectos.</div>'}</div></div>`;
+  }
   function actionButtons(a){if(isClosed(a.status))return"";return `<div class="row" style="margin-top:9px"><button class="button secondary small" data-action="${a.id}" data-status="in_progress">Em curso</button><button class="button secondary small" data-action="${a.id}" data-status="blocked">Bloquear</button><button class="button secondary small" data-action="${a.id}" data-status="completed">Concluir</button></div>`}
   function renderActions(){const now=Date.now();const rows=snapshot.actions.filter(matches);return `<div class="card"><h2>Executar</h2><p class="small muted">Acções, prazos e bloqueios disponíveis offline.</p><div class="list section">${rows.map(a=>{const overdue=a.due_at&&!isClosed(a.status)&&new Date(a.due_at).getTime()<now;const cls=overdue?"overdue":statusClass(a.status);return `<article class="item"><div class="itemtop"><h3>${esc(a.title)}</h3><span class="tag ${cls}">${overdue?"Em atraso":esc(a.status||"Pendente")}</span></div><div class="meta">${esc(projectName(a.project_id))} · ${a.due_at?fmt(a.due_at):"Sem prazo"}</div>${actionButtons(a)}</article>`}).join("")||'<div class="empty">Sem acções.</div>'}</div><h3 class="section">Bloqueios</h3><div class="list">${snapshot.blockers.filter(matches).map(b=>item(b,[projectName(b.project_id),b.impact||"",b.resolution_due_at?fmt(b.resolution_due_at):""])).join("")||'<div class="empty">Sem bloqueios.</div>'}</div></div>`}
   function renderGeneric(title,rows,metaFn){const filtered=rows.filter(matches);return `<div class="card"><h2>${esc(title)}</h2><div class="list section">${filtered.map(r=>item(r,metaFn(r))).join("")||'<div class="empty">Sem registos.</div>'}</div></div>`}
@@ -102,7 +105,20 @@
       html=`<div class="grid two">${renderGeneric("Dependências",snapshot.dependencies,r=>[projectName(r.project_id),r.responsible||"",r.missing_key||""])}${renderGeneric("Riscos",snapshot.risks,r=>[projectName(r.project_id),r.severity||r.impact||""])}</div><div class="section">${renderGeneric("Decisões",snapshot.decisions,r=>[projectName(r.project_id),r.decision||"",r.created_at?fmt(r.created_at):""])}</div>`;
     }
     $("content").innerHTML=html;
-    document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",()=>queue("update_action_status",{action_id:btn.dataset.action,status:btn.dataset.status})));
+    document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",async()=>{
+      const row=snapshot.actions.find(x=>x.id===btn.dataset.action);
+      if(row){row.status=btn.dataset.status;await put(SNAPSHOT,snapshot,"workspace");render()}
+      await queue("update_action_status",{action_id:btn.dataset.action,status:btn.dataset.status});
+    }));
+    document.querySelectorAll("[data-save-next]").forEach(btn=>btn.addEventListener("click",async()=>{
+      const id=btn.dataset.saveNext;
+      const value=document.querySelector('[data-project-next="'+id+'"]')?.value?.trim();
+      if(!value){$("message").textContent="Escreva a próxima acção antes de guardar.";return}
+      const row=snapshot.projects.find(x=>x.id===id);
+      if(row){row.next_action=value;await put(SNAPSHOT,snapshot,"workspace")}
+      await queue("update_project_next_action",{project_id:id,next_action:value});
+      render();
+    }));
     renderQueue();
   }
   async function queue(type,payload){const item={id:uuid(),type,payload,createdAt:new Date().toISOString(),status:"pending"};await put(QUEUE,item);$("message").textContent="Guardado no dispositivo. Será sincronizado quando a ligação voltar.";$("message").className="small ok";await renderQueue();if(navigator.onLine)sync()}
