@@ -78,13 +78,19 @@ export class AIRequestError extends Error {
 }
 export async function requestAIText(p: RuntimeProfile, input: string, instructions?: string, timeoutMs = 12_000, maxTokens = 1800) {
   const r = aiRuntime(p);
-  const response = await fetch(r.url, {
+  const send = () => fetch(r.url, {
     method: "POST", headers: { "Content-Type": "application/json", ...(p.provider === "gemini" ? { "x-goog-api-client": "pcc/0.1.0" } : {}), ...(r.apiKey ? { Authorization: `Bearer ${r.apiKey}` } : {}) },
     body: JSON.stringify({ model: r.model,
       messages: [...(instructions ? [{ role: "system", content: instructions }] : []), { role: "user", content: input }],
       ...(p.provider === "openai" ? { reasoning_effort: "none", max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
     }), cache: "no-store", redirect: "error", signal: AbortSignal.timeout(timeoutMs),
   });
+  let response = await send();
+  // Google documents 503 as transient overload. Retry once only; never retry authentication or billing errors.
+  if (p.provider === "gemini" && (response.status === 503 || response.status === 502)) {
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    response = await send();
+  }
   const payload = await response.json().catch(() => null) as {
     choices?: Array<{ message?: { content?: string | null } }>;
     error?: { code?: string | number; status?: string; message?: string }; code?: string; message?: string;
