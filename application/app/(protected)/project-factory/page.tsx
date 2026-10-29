@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { AdaptiveProjectIntake } from "@/components/adaptive-project-intake";
 import { FlashMessage } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
@@ -40,7 +39,7 @@ export default async function ProjectFactoryPage({
             </div>
           </div>
 
-          <div className="mx-5 mt-5 rounded-xl border border-[#c99439]/40 bg-[#f8f6f0] p-5 sm:mx-6"><p className="text-xs font-semibold uppercase tracking-widest text-[#146453]">Entrada empresarial</p><h3 className="mt-2 text-lg font-semibold text-[#073f36]">GIE360° — Gestão Inteligente Empresarial</h3><p className="mt-2 text-sm text-slate-700">Para associar uma empresa ao diagnóstico, configurar os módulos seleccionados e disponibilizar o percurso autónomo do cliente.</p><Link href="/products" className="mt-4 inline-flex rounded-lg bg-[#073f36] px-4 py-2.5 text-sm font-semibold text-white">Associar empresa no GIE360°</Link></div>
+
           <AdaptiveProjectIntake />
         </Card>
       </div>
