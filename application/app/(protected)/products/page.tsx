@@ -14,12 +14,21 @@ export default async function ProductsPage() {
   ]);
   const error = [products, packages, organizations, cases].some((result) => result.error);
   return <>
-    <PageHeader eyebrow="Catálogo PCC" title="Produtos e Pacotes" />
-    {error ? <EmptyState>Não foi possível carregar o catálogo ou as empresas. Verifique se as migrações GIE360° foram aplicadas no ambiente de testes antes de associar clientes.</EmptyState> : <div className="space-y-6">
-      {(products.data ?? []).map((product) => <Card key={product.code} className="p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-xl font-semibold">{product.name}</h2><p className="mt-2 text-sm text-[var(--cc-secondary)]">{product.description} · Versão {product.version}</p></div><span className="rounded-full bg-amber-50 px-3 py-1 text-xs">{product.status === "proposed" ? "Proposta em validação" : product.status === "active" ? "Activo" : "Descontinuado"}</span></div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">{(packages.data ?? []).filter((item) => item.product_code === product.code).map((item) => <div key={item.code} className="rounded-xl border border-[var(--cc-border)] p-4"><h3 className="font-semibold">{item.name}</h3><p className="mt-2 text-sm">32.350 MZN · pagamento único</p><p className="mt-2 text-xs text-[var(--cc-secondary)]">Módulos seleccionados individualmente sem alteração do preço. Apenas funcionalidades validadas podem ser activadas; dados e âmbito sujeitos a aprovação.</p></div>)}</div>
-      </Card>)}
+    <PageHeader eyebrow="Gestão empresarial" title="GIE360°" />
+    {error ? <EmptyState>Não foi possível carregar as empresas GIE360°. Verifique o acesso aos dados ou contacte o administrador.</EmptyState> : <div className="space-y-6">
+      <Card className="p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#146453]">Percurso GIE360°</p>
+        <h2 className="mt-2 text-lg font-semibold text-[#073f36]">Da associação ao acompanhamento da empresa</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          {[
+            ["1", "Associar empresa", "Escolher o diagnóstico existente e a conta confirmada do cliente."],
+            ["2", "Confirmar âmbito", "Seleccionar os módulos e registar as autorizações necessárias."],
+            ["3", "Diagnóstico autónomo", "O cliente responde ao questionário e fornece os dados disponíveis."],
+            ["4", "Resultados e evidências", "Importar, rever e disponibilizar ficheiros reais conforme a validação."],
+          ].map(([number, title, description]) => <div key={number} className="rounded-xl border border-[#d8e2dc] bg-[#f8f6f0] p-4"><span className="grid h-8 w-8 place-items-center rounded-full bg-[#073f36] text-sm font-semibold text-white">{number}</span><h3 className="mt-3 font-semibold">{title}</h3><p className="mt-2 text-sm text-slate-600">{description}</p></div>)}
+        </div>
+        <p className="mt-4 text-xs text-slate-600">Após a associação, o cliente pode prosseguir no portal GIE360°. Aprovações e validação de dados continuam necessárias; não são marcadas como concluídas automaticamente.</p>
+      </Card>
       <GIE360ProvisionForm cases={cases.data ?? []} />
       {(organizations.data ?? []).map((organization) => <div key={organization.id} className="space-y-3">
         <GIE360SettingsForm organization={organization} packages={packages.data ?? []} />
