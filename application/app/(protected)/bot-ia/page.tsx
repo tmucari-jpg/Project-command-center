@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { Bot, BrainCircuit, HardDrive } from "lucide-react";
-import { PCC IAOperator } from "@/components/bot-ia-operator";
+import { BotIAOperator } from "@/components/bot-ia-operator";
 import { PageHeader } from "@/components/page-header";
 import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { displayLabel } from "@/lib/display-label";
 import { formatDateTime } from "@/lib/format";
 
-export default async function PCC IAPage() {
+export default async function BotIAPage() {
   const { supabase, user } = await requireAdmin();
 
   const [
@@ -85,7 +85,7 @@ export default async function PCC IAPage() {
           <EmptyState>Não existem projectos disponíveis para o PCC IA.</EmptyState>
         </Card>
       ) : (
-        <PCC IAOperator projects={projectOptions} blockers={blockerOptions} />
+        <BotIAOperator projects={projectOptions} blockers={blockerOptions} />
       )}
 
       <Card className="mt-6">
