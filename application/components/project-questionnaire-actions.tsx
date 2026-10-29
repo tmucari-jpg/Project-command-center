@@ -9,7 +9,8 @@ type Intent =
   | "investment"
   | "internal_improvement"
   | "digital_solution"
-  | "problem";
+  | "problem"
+  | "gie360";
 
 type Generated = {
   url: string;
