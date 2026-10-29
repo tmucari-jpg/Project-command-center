@@ -11,7 +11,8 @@ type Intent =
   | "investment"
   | "internal_improvement"
   | "digital_solution"
-  | "problem";
+  | "problem"
+  | "gie360";
 
 const fieldClass =
   "mt-1 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm text-[var(--cc-foreground)] outline-none";
@@ -23,6 +24,7 @@ const intentLabels: Record<Intent, string> = {
   internal_improvement: "Quero melhorar um processo interno",
   digital_solution: "Quero criar uma solução digital / produto",
   problem: "Tenho um problema que quero resolver",
+  gie360: "Pretendo um diagnóstico e solução de gestão empresarial GIE360°",
 };
 
 function contextRows(formData: FormData) {
@@ -58,7 +60,7 @@ export function AdaptiveProjectIntake() {
     setIntent(value);
     setManualOpen(false);
     if (value === "internal_improvement") setProjectType("non_commercial");
-    if (["client_request", "investment", "digital_solution"].includes(value)) setProjectType("commercial");
+    if (["client_request", "investment", "digital_solution", "gie360"].includes(value)) setProjectType("commercial");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
