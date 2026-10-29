@@ -50,6 +50,16 @@ describe("Gemini within the PCC runtime", () => {
     await expect(requestAIText(profile, "Responda OK")).resolves.toBe("OK");
     expect(fetch).toHaveBeenCalledTimes(2);
   });
+  it("uses Google's native API after two transient compatibility failures", async () => {
+    const error = () => new Response(JSON.stringify({ error: { status: "UNAVAILABLE" } }), { status: 503 });
+    const native = new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "OK" }] } }] }), { status: 200 });
+    const fetch = vi.fn().mockResolvedValueOnce(error()).mockResolvedValueOnce(error()).mockResolvedValueOnce(native);
+    vi.stubGlobal("fetch", fetch);
+    expect(await requestAIText(profile, "Teste")).toBe("OK");
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(String(fetch.mock.calls[2][0])).toContain("/models/configured-free-model:generateContent");
+    expect(fetch.mock.calls[2][1].headers["x-goog-api-key"]).toBe("synthetic-test-key");
+  });
   it("normalizes Google's base without appending an extra v1", () => {
     expect(chatCompletionsUrl("https://generativelanguage.googleapis.com/v1beta/openai/")).toBe(endpoint);
     expect(chatCompletionsUrl(endpoint)).toBe(endpoint);
