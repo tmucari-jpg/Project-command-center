@@ -51,7 +51,7 @@ export async function submitClientDiagnostic(formData: FormData) {
     organization: String(formData.get("organization") ?? "").trim(),
     request_nature: String(formData.get("request_nature") ?? "").trim(),
     context: joined(formData, "context"),
-    focus: joined(formData, "focus"),
+    focus: [joined(formData, "focus"), ...["sales", "cash", "cost", "metrics"].map(key => { const answer = joined(formData, `focus_${key}`); return answer ? `${key}: ${answer}` : ""; })].filter(Boolean).join("; "),
     desired_result: joined(formData, "desired_result"),
     conditions: joined(formData, "conditions"),
     deadline_urgency: singleWithDetails(formData, "deadline_urgency"),
