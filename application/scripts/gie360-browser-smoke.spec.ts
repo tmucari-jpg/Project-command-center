@@ -96,6 +96,7 @@ test('manager associates and configures; client saves, resumes and submits real 
     await settings.getByLabel('Pacote acordado', { exact: true }).selectOption('gie360-enterprise');
     await settings.getByLabel('Dados e validação', { exact: true }).check();
     await settings.getByLabel(/Referência do acordo aprovado/).fill('SYNTHETIC-UI-PILOT-ONLY');
+    await settings.getByRole('checkbox', { name: /Revisei o diagnóstico recebido/ }).check();
     await settings.getByRole('button', { name: 'Registar âmbito e autorização', exact: true }).click();
     await expect(settings.getByRole('status')).toContainText('Pacote, âmbito e autorização de IA registados');
     await page.screenshot({ path: testInfo.outputPath('manager-gie360.png'), fullPage: true });
