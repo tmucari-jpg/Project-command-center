@@ -78,12 +78,12 @@ test('manager associates and configures; client saves, resumes and submits real 
     await client.getByLabel('Que documentos e dados estão disponíveis?').fill('CSV de vendas de teste');
     await client.getByLabel('Que resultado pretende alcançar?').fill('Identificar informação por completar');
     await client.getByLabel('Qual é o horizonte pretendido?').fill('A confirmar pelo gestor');
-    await expect(client.getByRole('button', { name: 'Submeter diagnóstico', exact: true })).toBeDisabled();
+    await expect(client.getByRole('button', { name: 'Enviar respostas ao PCC', exact: true })).toBeDisabled();
     await client.getByRole('checkbox', { name: /Confirmo o envio destas respostas/ }).check();
     await client.screenshot({ path: testInfo.outputPath('client-mobile-before-submit.png'), fullPage: true });
     const width = await client.evaluate(() => ({ content: document.documentElement.scrollWidth, viewport: window.innerWidth }));
     expect(width.content).toBeLessThanOrEqual(width.viewport + 1);
-    await client.getByRole('button', { name: 'Submeter diagnóstico', exact: true }).click();
+    await client.getByRole('button', { name: 'Enviar respostas ao PCC', exact: true }).click();
     await expect(client.getByText('Submetido · validação pendente', { exact: true })).toBeVisible();
     await client.reload();
     await expect(client.getByRole('status')).toContainText('Respostas recebidas e ligadas ao mesmo caso');
