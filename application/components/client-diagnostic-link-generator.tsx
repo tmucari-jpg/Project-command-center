@@ -85,7 +85,7 @@ export function ClientDiagnosticLinkGenerator({
         <div className="rounded-xl border border-[#d8e2dc] bg-[#f8f6f0] p-4 text-sm md:col-span-2">
           <p className="font-semibold text-[#073f36]">Pré-visualização da informação destinada ao cliente</p>
           <dl className="mt-3 space-y-2"><div><dt className="text-xs font-semibold">Destinatário</dt><dd>{preview.contact || "Por identificar"}</dd></div><div><dt className="text-xs font-semibold">Empresa</dt><dd>{preview.organization || "Por identificar"}</dd></div><div><dt className="text-xs font-semibold">Mensagem que o cliente verá</dt><dd className="whitespace-pre-wrap">{preview.context || "Sem mensagem adicional"}</dd></div><div><dt className="text-xs font-semibold">Validade</dt><dd>7 dias após emissão</dd></div></dl>
-          <label className="mt-4 flex items-start gap-2 border-t border-[#d8e2dc] pt-3"><input type="checkbox" checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} className="mt-1" /><span>Revisei destinatário, organização e conteúdo, confirmei que não incluem informação interna ou dados não validados e aprovo a emissão do link externo.</span></label>
+          <label className="mt-4 flex items-start gap-2 border-t border-[#d8e2dc] pt-3"><input type="checkbox" name="reviewed" checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} className="mt-1" /><span>Revisei destinatário, organização e conteúdo, confirmei que não incluem informação interna ou dados não validados e aprovo a emissão do link externo.</span></label>
         </div>
         <div className="flex items-end">
           <button className={primaryButtonClass} type="submit" disabled={pending || !reviewed}>
