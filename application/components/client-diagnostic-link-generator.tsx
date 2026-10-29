@@ -26,6 +26,8 @@ export function ClientDiagnosticLinkGenerator({
   const [state, action, pending] = useActionState(createClientDiagnosticRequest, initialState);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
+  const [reviewed, setReviewed] = useState(false);
+  const [preview, setPreview] = useState({ contact: defaultClientName, organization: defaultOrganization, context: defaultContext });
   const router = useRouter();
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export function ClientDiagnosticLinkGenerator({
 
   return (
     <div className="space-y-4">
-      <form action={action} className="grid gap-4 md:grid-cols-2">
+      <form action={action} onChange={(event) => { const data = new FormData(event.currentTarget); setPreview({ contact: String(data.get("client_name") ?? ""), organization: String(data.get("client_organization") ?? ""), context: String(data.get("public_context") ?? "") }); setReviewed(false); }} className="grid gap-4 md:grid-cols-2">
         <input type="hidden" name="factory_case_id" value={factoryCaseId} />
         <label className="block text-sm font-medium text-[var(--cc-foreground)]">
           Contacto do cliente
@@ -80,9 +82,14 @@ export function ClientDiagnosticLinkGenerator({
             Se expirar ou for necessário recolher nova informação, pode emitir uma nova solicitação.
           </p>
         </div>
+        <div className="rounded-xl border border-[#d8e2dc] bg-[#f8f6f0] p-4 text-sm md:col-span-2">
+          <p className="font-semibold text-[#073f36]">Pré-visualização da informação destinada ao cliente</p>
+          <dl className="mt-3 space-y-2"><div><dt className="text-xs font-semibold">Destinatário</dt><dd>{preview.contact || "Por identificar"}</dd></div><div><dt className="text-xs font-semibold">Empresa</dt><dd>{preview.organization || "Por identificar"}</dd></div><div><dt className="text-xs font-semibold">Mensagem que o cliente verá</dt><dd className="whitespace-pre-wrap">{preview.context || "Sem mensagem adicional"}</dd></div><div><dt className="text-xs font-semibold">Validade</dt><dd>7 dias após emissão</dd></div></dl>
+          <label className="mt-4 flex items-start gap-2 border-t border-[#d8e2dc] pt-3"><input type="checkbox" checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} className="mt-1" /><span>Revisei destinatário, organização e conteúdo, confirmei que não incluem informação interna ou dados não validados e aprovo a emissão do link externo.</span></label>
+        </div>
         <div className="flex items-end">
-          <button className={primaryButtonClass} type="submit" disabled={pending}>
-            {pending ? "A gerar..." : buttonLabel}
+          <button className={primaryButtonClass} type="submit" disabled={pending || !reviewed}>
+            {pending ? "A gerar..." : reviewed ? buttonLabel : "Validar informação antes de gerar"}
           </button>
         </div>
       </form>
