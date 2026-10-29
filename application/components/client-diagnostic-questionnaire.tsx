@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { submitClientDiagnostic } from "@/app/client-diagnostic/[token]/actions";
 
 const areas = [
@@ -17,6 +17,8 @@ const styles = {
   choice: "flex cursor-pointer items-center gap-2 rounded-lg border border-[#d1ded7] bg-white px-3 py-2.5 text-sm has-[:checked]:border-[#073f36] has-[:checked]:bg-[#e9f2ed]",
 };
 const fieldNames: Record<string,string> = { respondent_name:"Nome",respondent_email:"Email",respondent_type:"Tipo de cliente",organization:"Empresa",respondent_role:"Função",request_nature:"Percurso",context:"Situação e necessidades",focus:"Diagnóstico específico",desired_result:"Objectivo prioritário",conditions:"Dados disponíveis",deadline_urgency:"Horizonte",success_criteria:"Critério de sucesso" };
+const Choice=({name,values,multiple=false}:{name:string;values:string[];multiple?:boolean})=><div className="flex flex-wrap gap-2">{values.map(value=><label key={value} className={styles.choice}><input type={multiple?"checkbox":"radio"} name={name} value={value} className="accent-[#073f36]"/>{value}</label>)}</div>;
+const Panel=({step,title,children}:{step:number;title:string;children:ReactNode})=><section className={styles.panel}><p className="mb-2 text-xs font-bold uppercase tracking-[.13em] text-[#146453]">Etapa {step} / 4</p><h2 className={styles.title}>{title}</h2>{children}</section>;
 export function ClientDiagnosticQuestionnaire({token,clientName,clientOrganization,publicContext,questionnaireVersion,expiresAt}:{token:string;clientName?:string|null;clientOrganization?:string|null;publicContext?:string|null;questionnaireVersion?:string|null;expiresAt:string}) {
   const gie = questionnaireVersion === "executive-gie360-v1";
   const [selected,setSelected] = useState<string[]>([]);
@@ -27,8 +29,6 @@ export function ClientDiagnosticQuestionnaire({token,clientName,clientOrganizati
   function invalidate(){setPreview(null);setApproved(false);}
   function toggle(name:string){setSelected(old=>old.includes(name)?old.filter(v=>v!==name):[...old,name]);invalidate();}
   function submit(e:FormEvent<HTMLFormElement>){if(approved&&preview)return;e.preventDefault();const fd=new FormData(e.currentTarget);const entries:Array<[string,string]>=[];for(const key of ["respondent_name","respondent_email","respondent_type","organization","respondent_role","request_nature","context","focus","desired_result","conditions","deadline_urgency","success_criteria"]){const vals=fd.getAll(key).map(String).map(v=>v.trim()).filter(Boolean);if(vals.length)entries.push([fieldNames[key]??key,vals.join("; ")]);}setPreview(entries);setApproved(false);setStage(4);}
-  const Choice=({name,values,multiple=false}:{name:string;values:string[];multiple?:boolean})=><div className="flex flex-wrap gap-2">{values.map(value=><label key={value} className={styles.choice}><input type={multiple?"checkbox":"radio"} name={name} value={value} className="accent-[#073f36]"/>{value}</label>)}</div>;
-  const Panel=({step,title,children}:{step:number;title:string;children:React.ReactNode})=><section className={styles.panel}><p className="mb-2 text-xs font-bold uppercase tracking-[.13em] text-[#146453]">Etapa {step} / 4</p><h2 className={styles.title}>{title}</h2>{children}</section>;
   return <main className="min-h-screen bg-[#f8f6f0] px-4 py-8 text-[#17322d]"><div className="mx-auto max-w-[850px]">
     <header className="overflow-hidden rounded-t-[18px] bg-[#073f36] px-6 py-7 text-white sm:px-8">
       <div className="flex flex-wrap items-center gap-4">
@@ -46,7 +46,7 @@ export function ClientDiagnosticQuestionnaire({token,clientName,clientOrganizati
       {publicContext&&<p className="mt-3 whitespace-pre-wrap text-sm">{publicContext}</p>}
     </div>
     <nav aria-label="Etapas do questionário" className="my-5 flex flex-wrap gap-2">{["Empresa","Necessidades","Dados e objectivos","Revisão e envio"].map((n,i)=><span key={n} className={`rounded-full border px-3 py-2 text-xs font-semibold ${stage===i+1?"bg-[#073f36] text-white":"border-[#d0ded6] bg-white"}`}>{i+1} · {n}</span>)}</nav>
-    <form action={submitClientDiagnostic} onSubmit={submit} onChange={invalidate} className="space-y-5">
+    <form action={submitClientDiagnostic} onSubmit={submit} onChange={event => { if ((event.target as HTMLInputElement).type !== "checkbox" || (event.target as HTMLInputElement).name !== "") invalidate(); }} className="space-y-5">
       <input type="hidden" name="token" value={token}/><input type="hidden" name="reviewed" value={approved?"yes":"no"}/>
       <input type="hidden" name="respondent_type" value={gie?"organization":"individual"}/><input type="hidden" name="request_nature" value={gie?"organization_solution":purpose}/>
       <Panel step={1} title={gie?"Quem responde e em nome de que empresa?":"Quem responde ao questionário?"}>
@@ -60,7 +60,7 @@ export function ClientDiagnosticQuestionnaire({token,clientName,clientOrganizati
       </Panel>
       <Panel step={2} title={gie?"Em que áreas a empresa precisa de apoio?":"Qual é a necessidade principal?"}>
         {gie?<><p className="mb-3 text-sm text-[#63716c]">Seleccione uma ou mais áreas.</p><div className="flex flex-wrap gap-2">{areas.map(a=><label key={a.key} className={styles.choice}><input type="checkbox" checked={selected.includes(a.name)} onChange={()=>toggle(a.name)} className="accent-[#073f36]"/>{a.name}</label>)}</div>
-          {areas.filter(a=>selected.includes(a.name)).map(a=><div key={a.key} className="mt-5"><p className={styles.label}>{a.question}</p><Choice name="focus" values={a.options}/></div>)}
+          {areas.filter(a=>selected.includes(a.name)).map(a=><div key={a.key} className="mt-5"><p className={styles.label}>{a.question}</p><Choice name={"focus_"+a.key} values={a.options}/></div>)}
           <input type="hidden" name="context" value={selected.length?selected.join("; "):"Diagnóstico inicial empresarial"}/>
         </>:<><p className="mb-3 text-sm text-[#63716c]">Escolha o objectivo que melhor corresponde ao seu pedido.</p><div onChange={e=>setPurpose((e.target as HTMLInputElement).value)}><div className="flex flex-wrap gap-2">{[["problem","Resolver um problema"],["improve_existing","Melhorar o que existe"],["idea","Avaliar uma ideia"],["active_project","Desenvolver um projecto"],["commercial_growth","Aumentar vendas"],["investment_discovery","Explorar investimentos"]].map(([v,t])=><label key={v} className={styles.choice}><input type="radio" name="purpose_selection" value={v} defaultChecked={v==="problem"}/>{t}</label>)}</div></div><label className={styles.label+" mt-4"}>Descreva brevemente a situação *<textarea className={styles.field} name="context" minLength={3} required placeholder="O que está a acontecer e que apoio procura?"/></label></>}
       </Panel>
