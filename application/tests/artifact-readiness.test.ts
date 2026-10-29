@@ -17,7 +17,7 @@ it('surfaces the unresolved information already collected before the project',()
 });
 
 it('identifies missing real budget and deadline before generating an operational plan',()=>{
- const snapshot={version:'test',generatedAt:'2026-10-29',kind:'master_plan' as const,deliverable:{id:'existing',completion_criteria:'Aprovado',description:'Objectivo real'},project:{expected_result:'Resultado registado',budget:null,due_date:null},sections:[]};
+ const snapshot={version:'test',generatedAt:'2026-10-29',kind:'master_plan' as const,deliverable:{id:'existing',completion_criteria:'Aprovado',description:'Objectivo real'},project:{expected_result:'Resultado registado',budget:null as number|null,due_date:null as string|null},sections:[]};
  const gaps=artifactInformationGaps(snapshot);
  expect(gaps.map(g=>g.field)).toContain('project.budget');
  expect(gaps.map(g=>g.field)).toContain('project.due_date');
