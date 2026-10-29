@@ -37,7 +37,7 @@ export function ClientDiagnosticQuestionnaire({token,clientName,clientOrganizati
     <header className="overflow-hidden rounded-t-[18px] bg-[#073f36] px-6 py-7 text-white sm:px-8">
       <div className="flex flex-wrap items-center gap-4">
         <Image src="/brand/pcc-logo-transparent.svg" alt="Project Command Center" width={190} height={68} className="max-h-20 w-auto max-w-44" priority/>
-        {gie && <><span className="text-xl font-bold text-[#c99439]">×</span><Image src="/brand/gie360/logo.png" alt="GIE360°" width={125} height={70} className="max-h-20 w-auto max-w-32"/></>}
+        {gie && <><span className="text-xl font-bold text-[#c99439]">×</span><Image src="/gie360/logo.png" alt="GIE360°" width={125} height={70} className="max-h-20 w-auto max-w-32"/></>}
       </div>
       <p className="mt-3 text-sm text-white/80">{gie?"Da estratégia à execução · Gestão Inteligente Empresarial":"PCC · Da estratégia à execução"}</p>
     </header>
