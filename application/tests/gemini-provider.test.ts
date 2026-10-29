@@ -42,6 +42,14 @@ describe("Gemini within the PCC runtime", () => {
     expect((await validateAIProviderHealth(profile)).status).toBe("healthy");
     expect(JSON.parse(String(fetch.mock.calls[0][1].body)).max_tokens).toBe(64);
   });
+  it("retries a transient 503 and accepts the subsequent Gemini response", async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { status: "UNAVAILABLE" } }), { status: 503 }))
+      .mockResolvedValueOnce(response("OK"));
+    vi.stubGlobal("fetch", fetch);
+    await expect(requestAIText(profile, "Responda OK")).resolves.toBe("OK");
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
   it("normalizes Google's base without appending an extra v1", () => {
     expect(chatCompletionsUrl("https://generativelanguage.googleapis.com/v1beta/openai/")).toBe(endpoint);
     expect(chatCompletionsUrl(endpoint)).toBe(endpoint);
