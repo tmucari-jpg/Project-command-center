@@ -10,7 +10,7 @@ export async function validateAIProviderHealth(profile: AIProviderHealthProfile)
   }
   const started = Date.now();
   try {
-    await requestAIText(profile, "Responda apenas OK.", undefined, 10_000, profile.provider === "gemini" ? 512 : profile.provider === "openai" ? 64 : 16);
+    await requestAIText(profile, "Responda apenas OK.", undefined, profile.provider === "gemini" ? 25_000 : 10_000, profile.provider === "gemini" ? 64 : profile.provider === "openai" ? 64 : 16);
     return { status: "healthy", message: "Provider e modelo responderam com geração real não vazia.", latency_ms: Date.now() - started };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Falha de ligação ao provider.";
