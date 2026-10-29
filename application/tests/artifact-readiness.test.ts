@@ -15,3 +15,17 @@ it('surfaces the unresolved information already collected before the project',()
  expect(gaps.some(g=>g.cause==='Confirmar orçamento')).toBe(true);
  expect(gaps.some(g=>g.cause==='Confirmar responsável')).toBe(true);
 });
+
+it('identifies missing real budget and deadline before generating an operational plan',()=>{
+ const snapshot={version:'test',generatedAt:'2026-10-29',kind:'master_plan' as const,deliverable:{id:'existing',completion_criteria:'Aprovado',description:'Objectivo real'},project:{expected_result:'Resultado registado',budget:null,due_date:null},sections:[]};
+ const gaps=artifactInformationGaps(snapshot);
+ expect(gaps.map(g=>g.field)).toContain('project.budget');
+ expect(gaps.map(g=>g.field)).toContain('project.due_date');
+ snapshot.project.budget=0;
+ expect(artifactInformationGaps(snapshot).some(g=>g.field==='project.budget')).toBe(false);
+});
+it('does not invent a budget or deadline for ordinary diagnostic reports',()=>{
+ const snapshot={version:'test',generatedAt:'2026-10-29',kind:'diagnosis' as const,deliverable:{id:'existing',completion_criteria:'Aprovado',description:'Conteúdo real'},project:{expected_result:'Resultado registado'},sections:[]};
+ const gaps=artifactInformationGaps(snapshot);
+ expect(gaps.some(g=>g.field==='project.budget'||g.field==='project.due_date')).toBe(false);
+});
