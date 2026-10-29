@@ -75,7 +75,12 @@ export function BotIAOperator({
 
       if (!result.ok) {
         if ("localFallback" in result && result.localFallback && result.localContext) {
-          setLocalProgress("Cloud indisponível. A iniciar IA Local PCC sem quota...");
+          const gpu = (navigator as Navigator & { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu;
+          if (!gpu?.requestAdapter || !(await gpu.requestAdapter())) {
+            setError("O PCC IA não encontrou um fornecedor cloud activo e este dispositivo não permite executar o modelo local (WebGPU indisponível). Configure e valide um fornecedor de IA em Administração > Fornecedores de IA. Nenhum comando foi executado.");
+            return;
+          }
+          setLocalProgress("A iniciar o modelo local PCC IA...");
           const rawPlan = await generateBrowserLocalBotIAPlan(result.localContext as Record<string, unknown>, setLocalProgress);
           const localResult = await persistLocalBotIARun({
             projectId,
@@ -113,7 +118,8 @@ export function BotIAOperator({
         operations: result.operations,
       });
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Falha ao preparar o PCC IA.");
+      const detail = nextError instanceof Error ? nextError.message : "Falha ao preparar o PCC IA.";
+      setError(/WebGPU|adaptador|GPU/i.test(detail) ? "O dispositivo não suporta a execução local do PCC IA neste navegador. Utilize um fornecedor cloud configurado e validado no PCC. Nenhuma alteração foi executada." : detail);
     } finally {
       setBusy(false);
       setLocalProgress(null);
