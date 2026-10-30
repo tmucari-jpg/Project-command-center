@@ -66,7 +66,7 @@ export default async function ClientDiagnosticPage({
     <>
       {query.error && (
         <div className="fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-xl border border-[#e3caca] bg-white p-4 text-sm text-[#7b3131] shadow-lg">
-          {query.error}
+          Não foi possível concluir o envio. Verifique os campos e tente novamente, ou solicite um novo link.
         </div>
       )}
       <ClientDiagnosticQuestionnaire
