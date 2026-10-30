@@ -19,6 +19,6 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
   if(createHash("sha256").update(bytes).digest("hex")!==file.sha256)return NextResponse.json({error:"A integridade do ficheiro não foi confirmada."},{status:409});
   const snapshot=data.source_snapshot as {deliverable?:{title?:string};project?:{title?:string}}|null;
   const actualTitle=snapshot?.deliverable?.title?.trim()||snapshot?.project?.title?.trim()||"Entregavel";
-  const fileName=actualTitle.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-zA-Z0-9 _-]/g,"").trim().replace(/\\s+/g,"_").slice(0,100)||"Entregavel";
+  const fileName=actualTitle.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9 _-]/g,"").trim().replace(/\s+/g,"_").slice(0,100)||"Entregavel";
   return new NextResponse(new Uint8Array(bytes),{headers:{"Content-Type":file.mime,"Content-Disposition":`attachment; filename="${fileName}.${format}"`,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
 }
