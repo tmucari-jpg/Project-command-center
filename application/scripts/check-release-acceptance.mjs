@@ -22,6 +22,13 @@ for (const id of REQUIRED) {
   if (c.release_sha !== record.release_sha) issues.push(`${id}: prova não vinculada à release`);
   if (!Array.isArray(c.evidence) || c.evidence.length === 0 || c.evidence.some(x => typeof x !== "string" || !/^https:\/\/[^\s/]+\/\S+$/.test(x))) issues.push(`${id}: exigir URL HTTPS de evidência consultável`);
   if (c.evidence_verified !== true || !c.evidence_verified_by || !c.evidence_verified_at || Number.isNaN(Date.parse(c.evidence_verified_at))) issues.push(`${id}: evidência não verificada independentemente`);
+  if (Array.isArray(c.evidence) && c.evidence.some(url => {
+    try {
+      const host = new URL(url).hostname.toLowerCase();
+      return host === "example.com" || host.endsWith(".example.com") || host === "example.org" || host.endsWith(".example.org") || host === "localhost" || host === "127.0.0.1";
+    } catch { return true; }
+  })) issues.push(`${id}: referência de exemplo ou URL inválido`);
+  if (c.evidence_verified_by && c.validated_by && c.evidence_verified_by.trim() === c.validated_by.trim()) issues.push(`${id}: revisor independente igual ao executor`);
   if (!c.validated_by || typeof c.validated_by !== "string" || !c.validated_by.trim()) issues.push(`${id}: validador ausente`);
   if (!c.validated_at || !/^\d{4}-\d{2}-\d{2}T/.test(c.validated_at) || Number.isNaN(Date.parse(c.validated_at))) issues.push(`${id}: data inválida`);
 }
