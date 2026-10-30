@@ -15,3 +15,14 @@ it("does not equate a purchased module with sufficient evidence", () => {
   expect(gie360ModuleState({ contracted: true, scopeApproved: true, relevant: true, approvedData: false }).status).toBe("pendente de dados");
   expect(gie360ModuleState({ contracted: true, scopeApproved: true, relevant: true, approvedData: true }).status).toBe("pronto a avaliar");
 });
+
+import {POST as createGieQuestionnaire} from "@/app/api/client-diagnostic/preintake/route";
+it("rejects missing and foreign origins before creating an external GIE360 case",async()=>{
+ const url="https://pcc.example/api/client-diagnostic/preintake";
+ for(const origin of [undefined,"https://other.example","null"]){
+  const headers:Record<string,string>={"content-type":"application/json"};
+  if(origin!==undefined)headers.origin=origin;
+  const response=await createGieQuestionnaire(new Request(url,{method:"POST",headers,body:JSON.stringify({reviewed:true,intent:"gie360",case_title:"Caso GIE360",client_name:"Teste",client_organization:"Teste",public_context:"Questionário de validação"})}));
+  expect(response.status).toBe(403);
+ }
+});
