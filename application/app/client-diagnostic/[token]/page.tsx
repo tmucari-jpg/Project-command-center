@@ -23,7 +23,7 @@ export default async function ClientDiagnosticPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ submitted?: string; error?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { token } = await params;
   const query = await searchParams;
