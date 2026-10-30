@@ -62,6 +62,9 @@ const intentMeta = {
 };
 
 export async function POST(request: Request) {
+  if (request.headers.get("origin") !== new URL(request.url).origin) {
+    return NextResponse.json({ error: "Origem inválida." }, { status: 403 });
+  }
   try {
     const payload = schema.safeParse(await request.json());
     if (!payload.success) {
