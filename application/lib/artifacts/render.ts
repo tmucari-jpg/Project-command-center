@@ -2,15 +2,34 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Header, Footer, PageNumber, ImageRun, Table, TableRow, TableCell, WidthType, ShadingType } from "docx";
 import PDFDocument from "pdfkit";
+import sharp from "sharp";
 import type { ArtifactSnapshot, GeneratedFile } from "@/lib/artifacts/model";
 import { documentSections, fact, FIELD_LABELS, KIND_LABELS } from "@/lib/artifacts/model";
 const green="073F36", gold="C99439", ivory="F8F6F0";
 const asset = (file:string) => path.join(process.cwd(),"public/brand",file);
+export async function transparentArtifactLogo():Promise<Buffer> {
+  const source=await fs.readFile(asset("pcc-logo-transparent.svg"));
+  const {data,info}=await sharp(source).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  const at=(x:number,y:number)=>((y*info.width+x)*info.channels);
+  const corners=[[0,0],[info.width-1,0],[0,info.height-1],[info.width-1,info.height-1]];
+  const samples=corners.map(([x,y])=>{const i=at(x,y);return [data[i],data[i+1],data[i+2]];});
+  const background=samples[0];
+  const matching=samples.filter(s=>s.every((v,i)=>Math.abs(v-background[i])<=10)).length;
+  // Remove only a uniform border colour. Keep nonuniform edges unchanged.
+  if(matching>=3){
+    for(let y=0;y<info.height;y++)for(let x=0;x<info.width;x++){
+      const i=at(x,y);const diff=Math.max(...background.map((v,j)=>Math.abs(data[i+j]-v)));
+      if(diff<=8)data[i+3]=0;
+      else if(diff<24)data[i+3]=Math.round(data[i+3]*(diff-8)/16);
+    }
+  }
+  return sharp(data,{raw:{width:info.width,height:info.height,channels:4}}).png().toBuffer();
+}
 function lines(s:ArtifactSnapshot) {
   return documentSections(s).map(section => ({ title:section.title, text:section.rows.length ? section.rows.map(row => Object.entries(row).map(([k,v])=>`${FIELD_LABELS[k] ?? k}: ${fact(v)}`).join("\n")).join("\n\n") : "Evidência inexistente - não existem registos nesta secção." }));
 }
 export async function renderDocument(s:ArtifactSnapshot):Promise<GeneratedFile[]> {
-  const logo = await fs.readFile(asset("pcc-logo-official.png"));
+  const logo = await transparentArtifactLogo();
   const label = `${KIND_LABELS[s.kind]} - ${fact(s.project.title)}`;
   const subtitle = `RASCUNHO PARA VALIDAÇÃO | MZN | ${s.generatedAt.slice(0,10)} | ${s.version}`;
   const sections = lines(s);
