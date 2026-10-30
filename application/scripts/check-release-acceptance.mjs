@@ -20,7 +20,7 @@ for (const id of REQUIRED) {
   const c = matches[0];
   if (c.status !== "passed") issues.push(`${id}: estado não aprovado`);
   if (c.release_sha !== record.release_sha) issues.push(`${id}: prova não vinculada à release`);
-  if (!Array.isArray(c.evidence) || c.evidence.length === 0 || c.evidence.some(x => typeof x !== "string" || !x.trim())) issues.push(`${id}: evidência ausente`);
+  if (!Array.isArray(c.evidence) || c.evidence.length === 0 || c.evidence.some(x => typeof x !== "string" || !/^https:\/\/[^\s/]+\/\S+$/.test(x))) issues.push(`${id}: exigir URL HTTPS de evidência consultável`);
   if (!c.validated_by || typeof c.validated_by !== "string" || !c.validated_by.trim()) issues.push(`${id}: validador ausente`);
   if (!c.validated_at || !/^\d{4}-\d{2}-\d{2}T/.test(c.validated_at) || Number.isNaN(Date.parse(c.validated_at))) issues.push(`${id}: data inválida`);
 }
