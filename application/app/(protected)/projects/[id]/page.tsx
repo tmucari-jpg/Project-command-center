@@ -309,6 +309,17 @@ export default async function ProjectHubPage({
           </span>
         </div>
 
+        <div className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+          <p className="text-sm font-semibold">Carta de Compromisso / Contrato de Prestação de Serviços</p>
+          <p className="mt-1 text-sm text-[var(--cc-secondary)]">Minuta automática baseada no compromisso aprovado internamente. Não equivale a contrato assinado nem autoriza a execução. Termos ausentes são indicados para confirmação.</p>
+          {latestBaseline && ["internal_approved", "client_approved"].includes(latestBaseline.status) ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a className={secondaryButtonClass} href={`/api/projects/${project.id}/commitment-draft?format=pdf`}>Descarregar minuta PDF</a>
+              <a className={secondaryButtonClass} href={`/api/projects/${project.id}/commitment-draft?format=docx`}>Descarregar minuta Word</a>
+            </div>
+          ) : <p className="mt-2 text-sm">Para gerar a minuta, registe o compromisso e valide-o internamente.</p>}
+        </div>
+
         <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
           <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">Ver detalhes do compromisso</summary>
           <div className="border-t border-[var(--cc-border)] p-4">
