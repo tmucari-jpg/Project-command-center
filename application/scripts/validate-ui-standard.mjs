@@ -50,6 +50,8 @@ const requiredChecks = [
   ["app/(protected)/commercial-master/page.tsx", 'title="Guia Comercial do PCC"'],
   ["app/(protected)/monetization/page.tsx", "Abrir Guia Comercial do PCC"],
   ["app/api/exports/commercial-master/route.ts", "Snapshot Operacional Comercial do PCC"],
+  ["app/api/exports/commercial-master/route.ts", 'bytes.toString("base64")'],
+  ["app/api/exports/commercial-master/route.ts", "pcc-logo.png"],
   ["app/(protected)/help/page.tsx", "Referências comerciais e de governação"],
   ["components/app-shell.tsx", "LanguageSwitcher"],
   ["components/language-provider.tsx", 'const STORAGE_KEY = "pcc-language"'],
