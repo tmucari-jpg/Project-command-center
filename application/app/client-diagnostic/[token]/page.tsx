@@ -41,6 +41,18 @@ export default async function ClientDiagnosticPage({
     return <PublicMessage title="Questionário indisponível" body="O link não é válido ou deixou de estar disponível." />;
   }
 
+  // A expiração prevalece sobre qualquer estado de resposta ou parâmetro de URL.
+  // Este controlo protege a interface; a RPC continua a requerer validação server-side.
+  const expiresAt = Date.parse(request.expires_at);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() || request.status === "expired" || request.status === "revoked") {
+    return (
+      <PublicMessage
+        title="Link expirado ou indisponível"
+        body="Este questionário já não está disponível. Contacte a equipa responsável para receber uma nova solicitação."
+      />
+    );
+  }
+
   if (query.submitted || ["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
     return (
       <PublicMessage
