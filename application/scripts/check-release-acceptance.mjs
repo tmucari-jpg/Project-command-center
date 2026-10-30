@@ -19,10 +19,12 @@ for (const id of REQUIRED) {
   if (matches.length !== 1) { issues.push(`${id}: esperado exactamente um registo`); continue; }
   const c = matches[0];
   if (c.status !== "passed") issues.push(`${id}: estado não aprovado`);
+  if (c.release_sha !== record.release_sha) issues.push(`${id}: prova não vinculada à release`);
   if (!Array.isArray(c.evidence) || c.evidence.length === 0 || c.evidence.some(x => typeof x !== "string" || !x.trim())) issues.push(`${id}: evidência ausente`);
   if (!c.validated_by || typeof c.validated_by !== "string" || !c.validated_by.trim()) issues.push(`${id}: validador ausente`);
   if (!c.validated_at || !/^\d{4}-\d{2}-\d{2}T/.test(c.validated_at) || Number.isNaN(Date.parse(c.validated_at))) issues.push(`${id}: data inválida`);
 }
+if (new Set(checks.map(x => x?.id)).size !== checks.length) issues.push("IDs de verificação duplicados");
 if (record?.production_approval !== true || !record?.approved_by || !record?.approved_at || Number.isNaN(Date.parse(record.approved_at))) issues.push("Aprovação humana explícita da produção ausente");
 if (issues.length) {
   console.error("RELEASE BLOQUEADA:\n" + issues.map(x => `- ${x}`).join("\n"));
