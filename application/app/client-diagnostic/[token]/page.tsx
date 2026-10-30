@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isDiagnosticLinkUnavailable } from "@/lib/diagnostic-link-validity";
 import { ClientDiagnosticQuestionnaire } from "@/components/client-diagnostic-questionnaire";
 import { createPublicClient } from "@/lib/supabase/public";
 
@@ -43,8 +44,7 @@ export default async function ClientDiagnosticPage({
 
   // A expiração prevalece sobre qualquer estado de resposta ou parâmetro de URL.
   // Este controlo protege a interface; a RPC continua a requerer validação server-side.
-  const expiresAt = Date.parse(request.expires_at);
-  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() || request.status === "expired" || request.status === "revoked") {
+  if (isDiagnosticLinkUnavailable(request.expires_at, request.status)) {
     return (
       <PublicMessage
         title="Link expirado ou indisponível"
