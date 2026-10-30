@@ -29,3 +29,13 @@ it('does not invent a budget or deadline for ordinary diagnostic reports',()=>{
  const gaps=artifactInformationGaps(snapshot);
  expect(gaps.some(g=>g.field==='project.budget'||g.field==='project.due_date')).toBe(false);
 });
+
+it('preserves factual source gaps in a real project delivery, without turning missing data into approval',()=>{
+ const snapshot={version:'real-project-test',generatedAt:'2026-10-30',kind:'master_plan' as const,
+ deliverable:{id:'gestor-vendas-deliverable',completion_criteria:null,description:null},
+ project:{title:'Gestor de Vendas',expected_result:'Definir segmento prioritário e proposta comercial',budget:null as number|null,due_date:null as string|null},
+ sections:[{title:'Evidências registadas',rows:[]}]};
+ const gaps=artifactInformationGaps(snapshot);
+ expect(gaps.map(g=>g.field)).toEqual(expect.arrayContaining(['deliverable.completion_criteria','project.budget','project.due_date','evidence','deliverable.content']));
+ expect(gaps.every(g=>g.nextAction.trim().length>0)).toBe(true);
+});
