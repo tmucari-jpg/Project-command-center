@@ -66,8 +66,17 @@ const requiredChecks = [
   ["app/auth/actions.ts", "await supabase.auth.signOut()"],
 ];
 
-if (!fs.existsSync(path.join(root, "public", "brand", "pcc-logo-transparent.svg"))) {
+const officialLogoPath = path.join(root, "public", "brand", "pcc-logo-transparent.svg");
+if (!fs.existsSync(officialLogoPath)) {
   errors.push("public/brand/pcc-logo-transparent.svg: logótipo oficial ausente");
+} else {
+  const logoContent = fs.readFileSync(officialLogoPath, "utf8");
+  if (!/<svg[\\s>]/i.test(logoContent) || !/<\\/svg>/i.test(logoContent)) {
+    errors.push("public/brand/pcc-logo-transparent.svg: SVG malformado");
+  }
+  if (/<script[\\s>]|<foreignObject[\\s>]|onload\\s*=|href\\s*=\\s*["']https?:/i.test(logoContent)) {
+    errors.push("public/brand/pcc-logo-transparent.svg: conteúdo activo ou externo não permitido");
+  }
 }
 
 for (const [relative, expected] of requiredChecks) {
