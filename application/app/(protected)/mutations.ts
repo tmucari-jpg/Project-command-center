@@ -1625,33 +1625,29 @@ async function ensureProjectOperationalStructure(
     deliverableId = deliverable.id;
   }
 
-  const { count: actionCount, error: actionCountError } = await supabase
-    .from("actions")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("project_id", project.id);
-
-  if (actionCountError) throw new Error(actionCountError.message);
-
-  if ((actionCount ?? 0) === 0) {
-    const actionTitle =
-      project.next_action?.trim() ||
-      (project.expected_result?.trim() ? `Avançar resultado de ${project.title}` : null);
-
-    if (actionTitle) {
-      const { error } = await supabase.from("actions").insert({
-        user_id: userId,
-        project_id: project.id,
-        deliverable_id: deliverableId,
-        title: actionTitle,
-        description: project.description,
-        priority: project.priority,
-        status: "pending",
-        completion_criteria: project.expected_result,
-        is_next_action: false,
-      });
-      if (error) throw new Error(error.message);
-    }
+  // Generate one actionable task per real deliverable, based on its objective and acceptance criterion.
+  // Existing manual work is preserved; repeated invocations must not create duplicates.
+  const [{ data: projectDeliverables, error: deliverablesError }, { data: recordedActions, error: actionsError }] = await Promise.all([
+    supabase.from("deliverables").select("id,title,description,completion_criteria,status")
+      .eq("user_id",userId).eq("project_id",project.id),
+    supabase.from("actions").select("title,deliverable_id")
+      .eq("user_id",userId).eq("project_id",project.id),
+  ]);
+  if (deliverablesError || actionsError) throw new Error(deliverablesError?.message ?? actionsError?.message);
+  const existing = new Set((recordedActions ?? []).map(item => `${item.deliverable_id ?? ""}:${String(item.title).trim().toLocaleLowerCase("pt")}`));
+  const suggested = (projectDeliverables ?? [])
+    .filter(item => item.status !== "completed" && item.status !== "cancelled")
+    .map(item => ({
+      user_id:userId, project_id:project.id, deliverable_id:item.id,
+      title:`Preparar e validar: ${item.title}`,
+      description:item.description || project.description || project.expected_result,
+      completion_criteria:item.completion_criteria || project.expected_result || "Resultado sujeito à validação do responsável",
+      priority:project.priority, status:"pending" as const, is_next_action:false,
+    }))
+    .filter(item => !existing.has(`${item.deliverable_id}:${item.title.trim().toLocaleLowerCase("pt")}`));
+  if (suggested.length) {
+    const { error } = await supabase.from("actions").insert(suggested);
+    if (error) throw new Error(error.message);
   }
 
   const { count: metricCount, error: metricCountError } = await supabase
