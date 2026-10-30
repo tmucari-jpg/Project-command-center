@@ -15,7 +15,7 @@ const write = (name, value) => {
 };
 const valid = {
   release_sha: "a".repeat(40),
-  checks: ids.map(id => ({ id, release_sha: "a".repeat(40), status: "passed", evidence: [`evidence:${id}`], validated_by: "QA", validated_at: "2026-10-30T10:00:00Z" })),
+  checks: ids.map(id => ({ id, release_sha: "a".repeat(40), status: "passed", evidence: [`https://evidence.example.org/releases/test/${id}`], validated_by: "QA", validated_at: "2026-10-30T10:00:00Z" })),
   production_approval: true, approved_by: "Responsável", approved_at: "2026-10-30T11:00:00Z"
 };
 try {
@@ -25,6 +25,7 @@ try {
   assert.notEqual(run(write("failed.json", {...valid, checks: valid.checks.map(c => c.id === "AI-01" ? {...c, status: "failed"} : c)})).status, 0, "Teste falhado deve bloquear");
   assert.notEqual(run(write("missing-evidence.json", {...valid, checks: valid.checks.map(c => c.id === "GIE-01" ? {...c, evidence: []} : c)})).status, 0, "Sem prova deve bloquear");
   assert.notEqual(run(write("wrong-sha.json", {...valid, checks: valid.checks.map(c => c.id === "G3-01" ? {...c, release_sha: "b".repeat(40)} : c)})).status, 0, "Prova de outra release deve bloquear");
+  assert.notEqual(run(write("placeholder.json", {...valid, checks: valid.checks.map(c => c.id === "G3-01" ? {...c, evidence: ["evidence:G3-01"]} : c)})).status, 0, "Placeholder não é URL de evidência");
   assert.equal(run(write("valid-shape.json", valid)).status, 0, "Registo formal completo deve passar a verificação sintáctica");
-  console.log("PCC release gate: 7 cenários sintácticos aprovados; conteúdo das provas NÃO verificado.");
+  console.log("PCC release gate: 8 cenários sintácticos aprovados; conteúdo das provas NÃO verificado.");
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }
