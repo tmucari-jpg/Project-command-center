@@ -1366,6 +1366,9 @@ jobs:
       - name: Verify release acceptance gate behavior
         run: node scripts/test-release-acceptance.mjs
 
+      - name: Verify diagnostic token expiry migration
+        run: node scripts/test-diagnostic-expiry-migration.mjs
+
       - name: Typecheck
         run: npm run typecheck
 
