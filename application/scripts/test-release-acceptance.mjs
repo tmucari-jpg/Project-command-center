@@ -15,7 +15,7 @@ const write = (name, value) => {
 };
 const valid = {
   release_sha: "a".repeat(40),
-  checks: ids.map(id => ({ id, release_sha: "a".repeat(40), status: "passed", evidence: [`https://evidence.example.org/releases/test/${id}`], validated_by: "QA", validated_at: "2026-10-30T10:00:00Z", evidence_verified: true, evidence_verified_by: "Auditor independente", evidence_verified_at: "2026-10-30T10:30:00Z" })),
+  checks: ids.map(id => ({ id, release_sha: "a".repeat(40), status: "passed", evidence: [`https://github.com/tmucari-jpg/Project-command-center/actions/runs/${id}`], validated_by: "QA", validated_at: "2026-10-30T10:00:00Z", evidence_verified: true, evidence_verified_by: "Auditor independente", evidence_verified_at: "2026-10-30T10:30:00Z" })),
   independent_evidence_review: true,
   production_approval: true, approved_by: "Responsável", approved_at: "2026-10-30T11:00:00Z"
 };
@@ -29,6 +29,8 @@ try {
   assert.notEqual(run(write("placeholder.json", {...valid, checks: valid.checks.map(c => c.id === "G3-01" ? {...c, evidence: ["evidence:G3-01"]} : c)})).status, 0, "Placeholder não é URL de evidência");
   assert.notEqual(run(write("unverified.json", {...valid, checks: valid.checks.map(c => c.id === "DOC-01" ? {...c, evidence_verified: false} : c)})).status, 0, "Prova sem revisão independente deve bloquear");
   assert.notEqual(run(write("no-review.json", {...valid, independent_evidence_review: false})).status, 0, "Revisão global ausente deve bloquear");
+  assert.notEqual(run(write("example-url.json", {...valid, checks: valid.checks.map(c => c.id === "AI-01" ? {...c, evidence: ["https://evidence.example.org/AI-01"]} : c)})).status, 0, "URL ilustrativo deve bloquear");
+  assert.notEqual(run(write("self-review.json", {...valid, checks: valid.checks.map(c => c.id === "G3-01" ? {...c, evidence_verified_by: "QA"} : c)})).status, 0, "Auto-revisão deve bloquear");
   assert.equal(run(write("valid-shape.json", valid)).status, 0, "Registo formal completo deve passar a verificação sintáctica");
-  console.log("PCC release gate: 10 cenários sintácticos aprovados; conteúdo das provas NÃO verificado.");
+  console.log("PCC release gate: 12 cenários sintácticos aprovados; conteúdo das provas NÃO verificado.");
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }
