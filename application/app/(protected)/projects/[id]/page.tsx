@@ -171,7 +171,7 @@ export default async function ProjectHubPage({
     : { data: null };
   const sourceValidated = Boolean(sourceCase?.governance_gate_status === "approved" &&
     factoryValidation && ["viable", "conditional"].includes(factoryValidation.viability_status ?? "") &&
-    factoryValidation.status === "completed");
+    factoryValidation.status === "complete");
   const diagnosticConditions = sourceValidated ? String(factoryValidation?.conditions_to_proceed ?? "").trim() : "";
   const diagnosticScope = sourceValidated ? String(sourceCase?.problem ?? "").trim() : "";
 
@@ -359,7 +359,8 @@ export default async function ProjectHubPage({
               <TextArea label="Resultado esperado" name="expected_result" required defaultValue={latestBaseline?.expected_result ?? project.expected_result ?? ""} />
               <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? inferredScope} placeholder="O que o PCC fará neste projecto." />
               <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? inferredDeliverables} placeholder="Resultados concretos que o cliente receberá." />
-              <TextArea label="Exclusões" name="exclusions" defaultValue={latestBaseline?.exclusions ?? diagnosticConditions} placeholder="O que não está incluído." />
+              {diagnosticConditions && <p className="rounded-lg border border-[var(--cc-border)] p-3 text-sm"><strong>Condições do diagnóstico validado (para revisão):</strong> {diagnosticConditions}. Não são automaticamente exclusões contratuais.</p>}
+              <TextArea label="Exclusões" name="exclusions" defaultValue={latestBaseline?.exclusions ?? ""} placeholder="O que não está incluído." />
               <div className="grid gap-4 lg:grid-cols-2">
                 <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? inferredResponsibilities} />
                 <TextArea label="Responsabilidades do cliente" name="client_responsibilities" defaultValue={latestBaseline?.client_responsibilities ?? ""} />
