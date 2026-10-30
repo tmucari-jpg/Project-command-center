@@ -196,6 +196,11 @@ export default async function ProjectHubPage({
     projectCurrency: project.currency,
     commercialCurrency: commercialProfile?.currency,
   });
+  const inferredDeliverables = (deliverables ?? []).map(item => item.title).filter(Boolean).join("; ");
+  const inferredScope = typeof project.description === "string" ? project.description.trim() : "";
+  const inferredResponsibilities = projectOwner?.full_name
+    ? `Coordenação do projecto: ${projectOwner.full_name}. Confirmar obrigações específicas antes da aprovação.`
+    : "";
   const latestBaseline = commitmentBaselines?.[0];
   const approvedBaseline = (commitmentBaselines ?? []).find((item) => item.status === "client_approved");
   const pendingChanges = (changeRequests ?? []).filter((item) => item.decision === "pending");
@@ -323,6 +328,7 @@ export default async function ProjectHubPage({
         <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
           <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">Ver detalhes do compromisso</summary>
           <div className="border-t border-[var(--cc-border)] p-4">
+            <p className="mb-3 text-sm text-[var(--cc-secondary)]">Campos preenchidos com dados já registados no projecto quando disponíveis: resultado esperado, descrição do âmbito, títulos dos entregáveis e responsável. São propostas editáveis, sujeitas à sua confirmação antes da aprovação.</p>
             <form action={saveCommitmentBaseline} className="space-y-4">
               <input type="hidden" name="project_id" value={project.id} />
               <Select
@@ -336,11 +342,11 @@ export default async function ProjectHubPage({
                 <option value="restricted">Restrita · sem snapshot offline</option>
               </Select>
               <TextArea label="Resultado esperado" name="expected_result" required defaultValue={latestBaseline?.expected_result ?? project.expected_result ?? ""} />
-              <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? ""} placeholder="O que o PCC fará neste projecto." />
-              <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? ""} placeholder="Resultados concretos que o cliente receberá." />
+              <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? inferredScope} placeholder="O que o PCC fará neste projecto." />
+              <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? inferredDeliverables} placeholder="Resultados concretos que o cliente receberá." />
               <TextArea label="Exclusões" name="exclusions" defaultValue={latestBaseline?.exclusions ?? ""} placeholder="O que não está incluído." />
               <div className="grid gap-4 lg:grid-cols-2">
-                <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? ""} />
+                <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? inferredResponsibilities} />
                 <TextArea label="Responsabilidades do cliente" name="client_responsibilities" defaultValue={latestBaseline?.client_responsibilities ?? ""} />
               </div>
               <TextArea
