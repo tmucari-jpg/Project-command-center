@@ -28,4 +28,10 @@ it("uses a transparent PNG logo for all generated artifact formats",async()=>{
  const alpha=[];for(let i=3;i<data.length;i+=info.channels)alpha.push(data[i]);
  expect(alpha.some(value=>value===0)).toBe(true);
  expect(alpha.some(value=>value===255)).toBe(true);
+ // Pale corners and original white canvas must no longer be opaque.
+ const corner=(x:number,y:number)=>data[(y*info.width+x)*info.channels+3];
+ expect(corner(0,0)).toBe(0);
+ expect(corner(info.width-1,0)).toBe(0);
+ expect(corner(0,info.height-1)).toBe(0);
+ expect(corner(info.width-1,info.height-1)).toBe(0);
 },20000);
