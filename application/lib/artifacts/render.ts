@@ -10,7 +10,11 @@ const asset = (file:string) => path.join(process.cwd(),"public/brand",file);
 export async function transparentArtifactLogo():Promise<Buffer> {
   // Preserve the real alpha channel from the supplied official PCC logo.
   const source=await fs.readFile(asset("pcc-logo-approved.svg"));
-  return sharp(source).png().toBuffer();
+  const {data,info}=await sharp(source).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  // Palette optimisation can turn fully opaque pixels into alpha 254.
+  // Restore solidity to the logo artwork without changing the clear canvas.
+  for(let i=3;i<data.length;i+=info.channels)if(data[i]>=248)data[i]=255;
+  return sharp(data,{raw:{width:info.width,height:info.height,channels:4}}).png().toBuffer();
 }
 function lines(s:ArtifactSnapshot) {
   return documentSections(s).map(section => ({ title:section.title, text:section.rows.length ? section.rows.map(row => Object.entries(row).map(([k,v])=>`${FIELD_LABELS[k] ?? k}: ${fact(v)}`).join("\n")).join("\n\n") : "Evidência inexistente - não existem registos nesta secção." }));
