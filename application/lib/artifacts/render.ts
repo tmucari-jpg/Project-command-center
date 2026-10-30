@@ -13,10 +13,14 @@ export async function transparentArtifactLogo():Promise<Buffer> {
   const at=(x:number,y:number)=>((y*info.width+x)*info.channels);
   const corners=[[0,0],[info.width-1,0],[0,info.height-1],[info.width-1,info.height-1]];
   const samples=corners.map(([x,y])=>{const i=at(x,y);return [data[i],data[i+1],data[i+2]];});
-  const background=samples[0];
-  const matching=samples.filter(s=>s.every((v,i)=>Math.abs(v-background[i])<=10)).length;
-  // Remove only a uniform border colour. Keep nonuniform edges unchanged.
-  if(matching>=3){
+  // Pick the most consistent background among the four corners.
+  const background=samples.slice().sort((a,b)=>
+    samples.filter(v=>v.every((c,i)=>Math.abs(c-b[i])<=18)).length-
+    samples.filter(v=>v.every((c,i)=>Math.abs(c-a[i])<=18)).length
+  )[0];
+  const matching=samples.filter(v=>v.every((c,i)=>Math.abs(c-background[i])<=18)).length;
+  // Remove only a border background shared by at least two corners.
+  if(matching>=2){
     for(let y=0;y<info.height;y++)for(let x=0;x<info.width;x++){
       const i=at(x,y);const diff=Math.max(...background.map((v,j)=>Math.abs(data[i+j]-v)));
       if(diff<=8)data[i+3]=0;
