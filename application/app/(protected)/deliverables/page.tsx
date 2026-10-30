@@ -131,7 +131,7 @@ export default async function DeliverablesPage({
                         <Info label="Critério de aceitação" value={item.completion_criteria || "Por definir"} />
                         <Info
                           label="Evidência"
-                          value={item.artifact_reference || (item.artifact_url ? "Link disponível" : "Em falta — sem URL ou referência")}
+                          value={item.artifact_reference?.startsWith("generated:") ? `${item.title} · ficheiro arquivado` : (item.artifact_reference || (item.artifact_url ? "Link disponível" : "Em falta — sem URL ou referência"))}
                         />
                         <Info label="Prazo" value={item.due_date ? formatDate(item.due_date) : "Sem prazo"} />
                         <Info
