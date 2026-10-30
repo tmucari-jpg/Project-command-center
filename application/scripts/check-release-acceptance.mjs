@@ -21,10 +21,12 @@ for (const id of REQUIRED) {
   if (c.status !== "passed") issues.push(`${id}: estado não aprovado`);
   if (c.release_sha !== record.release_sha) issues.push(`${id}: prova não vinculada à release`);
   if (!Array.isArray(c.evidence) || c.evidence.length === 0 || c.evidence.some(x => typeof x !== "string" || !/^https:\/\/[^\s/]+\/\S+$/.test(x))) issues.push(`${id}: exigir URL HTTPS de evidência consultável`);
+  if (c.evidence_verified !== true || !c.evidence_verified_by || !c.evidence_verified_at || Number.isNaN(Date.parse(c.evidence_verified_at))) issues.push(`${id}: evidência não verificada independentemente`);
   if (!c.validated_by || typeof c.validated_by !== "string" || !c.validated_by.trim()) issues.push(`${id}: validador ausente`);
   if (!c.validated_at || !/^\d{4}-\d{2}-\d{2}T/.test(c.validated_at) || Number.isNaN(Date.parse(c.validated_at))) issues.push(`${id}: data inválida`);
 }
 if (new Set(checks.map(x => x?.id)).size !== checks.length) issues.push("IDs de verificação duplicados");
+if (record?.independent_evidence_review !== true) issues.push("Revisão independente global ausente");
 if (record?.production_approval !== true || !record?.approved_by || !record?.approved_at || Number.isNaN(Date.parse(record.approved_at))) issues.push("Aprovação humana explícita da produção ausente");
 if (issues.length) {
   console.error("RELEASE BLOQUEADA:\n" + issues.map(x => `- ${x}`).join("\n"));
