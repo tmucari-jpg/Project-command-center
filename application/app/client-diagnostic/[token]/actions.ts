@@ -76,5 +76,6 @@ export async function submitClientDiagnostic(formData: FormData) {
     redirect(`${back}?error=${encodeURIComponent("Este questionário já foi respondido, expirou ou deixou de estar disponível.")}`);
   }
 
-  redirect(`${back}?submitted=1`);
+  // A página pública confirma a recepção apenas pelo estado devolvido pela RPC.
+  redirect(back);
 }

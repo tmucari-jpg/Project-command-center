@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isDiagnosticLinkUnavailable } from "@/lib/diagnostic-link-validity";
 import { ClientDiagnosticQuestionnaire } from "@/components/client-diagnostic-questionnaire";
 import { createPublicClient } from "@/lib/supabase/public";
 
@@ -22,7 +23,7 @@ export default async function ClientDiagnosticPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ submitted?: string; error?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { token } = await params;
   const query = await searchParams;
@@ -41,7 +42,18 @@ export default async function ClientDiagnosticPage({
     return <PublicMessage title="Questionário indisponível" body="O link não é válido ou deixou de estar disponível." />;
   }
 
-  if (query.submitted || ["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
+  // A expiração prevalece sobre qualquer estado de resposta ou parâmetro de URL.
+  // Este controlo protege a interface; a RPC continua a requerer validação server-side.
+  if (isDiagnosticLinkUnavailable(request.expires_at, request.status)) {
+    return (
+      <PublicMessage
+        title="Link expirado ou indisponível"
+        body="Este questionário já não está disponível. Contacte a equipa responsável para receber uma nova solicitação."
+      />
+    );
+  }
+
+  if (["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
     return (
       <PublicMessage
         title="Resposta recebida"
@@ -50,20 +62,11 @@ export default async function ClientDiagnosticPage({
     );
   }
 
-  if (request.status === "expired") {
-    return (
-      <PublicMessage
-        title="Link expirado"
-        body="Este questionário tinha validade de 7 dias. Contacte a equipa responsável para receber uma nova solicitação."
-      />
-    );
-  }
-
   return (
     <>
       {query.error && (
         <div className="fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-xl border border-[#e3caca] bg-white p-4 text-sm text-[#7b3131] shadow-lg">
-          {query.error}
+          Não foi possível concluir o envio. Verifique os campos e tente novamente, ou solicite um novo link.
         </div>
       )}
       <ClientDiagnosticQuestionnaire
