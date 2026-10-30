@@ -8,19 +8,9 @@ import { documentSections, fact, FIELD_LABELS, KIND_LABELS } from "@/lib/artifac
 const green="073F36", gold="C99439", ivory="F8F6F0";
 const asset = (file:string) => path.join(process.cwd(),"public/brand",file);
 export async function transparentArtifactLogo():Promise<Buffer> {
-  // The legacy "transparent.svg" embeds an opaque RGB PNG with a pale
-  // neutral background. Convert those neutral pixels to genuine alpha.
-  const source=await fs.readFile(asset("pcc-logo-transparent.svg"));
-  const {data,info}=await sharp(source).ensureAlpha().raw().toBuffer({resolveWithObject:true});
-  for(let i=0;i<data.length;i+=info.channels){
-    const r=data[i],g=data[i+1],b=data[i+2];
-    const lightness=Math.min(r,g,b);
-    const chroma=Math.max(r,g,b)-lightness;
-    if(chroma<=28 && lightness>=220) data[i+3]=0;
-    else if(chroma<=24 && lightness>=185)
-      data[i+3]=Math.min(data[i+3],Math.round(255*(220-lightness)/35));
-  }
-  return sharp(data,{raw:{width:info.width,height:info.height,channels:4}}).png().toBuffer();
+  // Preserve the real alpha channel from the supplied official PCC logo.
+  const source=await fs.readFile(asset("pcc-logo-approved.svg"));
+  return sharp(source).png().toBuffer();
 }
 function lines(s:ArtifactSnapshot) {
   return documentSections(s).map(section => ({ title:section.title, text:section.rows.length ? section.rows.map(row => Object.entries(row).map(([k,v])=>`${FIELD_LABELS[k] ?? k}: ${fact(v)}`).join("\n")).join("\n\n") : "Evidência inexistente - não existem registos nesta secção." }));
