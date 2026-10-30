@@ -53,20 +53,11 @@ export default async function ClientDiagnosticPage({
     );
   }
 
-  if (query.submitted || ["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
+  if (["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
     return (
       <PublicMessage
         title="Resposta recebida"
         body="Obrigado. A sua resposta foi recebida e será utilizada para preparar o diagnóstico e os próximos passos."
-      />
-    );
-  }
-
-  if (request.status === "expired") {
-    return (
-      <PublicMessage
-        title="Link expirado"
-        body="Este questionário tinha validade de 7 dias. Contacte a equipa responsável para receber uma nova solicitação."
       />
     );
   }
