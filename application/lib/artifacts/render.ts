@@ -8,35 +8,19 @@ import { documentSections, fact, FIELD_LABELS, KIND_LABELS } from "@/lib/artifac
 const green="073F36", gold="C99439", ivory="F8F6F0";
 const asset = (file:string) => path.join(process.cwd(),"public/brand",file);
 export async function transparentArtifactLogo():Promise<Buffer> {
+  // The legacy "transparent.svg" embeds an opaque RGB PNG with a pale
+  // neutral background. Convert those neutral pixels to genuine alpha.
   const source=await fs.readFile(asset("pcc-logo-transparent.svg"));
   const {data,info}=await sharp(source).ensureAlpha().raw().toBuffer({resolveWithObject:true});
-  const w=info.width,h=info.height,c=info.channels;
-  const pixel=(x:number,y:number)=>(y*w+x)*c;
-  const corners=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
-  const backgrounds=corners.map(([x,y])=>{const i=pixel(x,y);return [data[i],data[i+1],data[i+2]];});
-  // Remove only the matching background connected to the outside edge.
-  // Avoid erasing pale parts enclosed within the official mark.
-  const visited=new Uint8Array(w*h);
-  const queue:number[]=[];
-  const matches=(i:number,background:number[])=>
-    Math.max(Math.abs(data[i]-background[0]),Math.abs(data[i+1]-background[1]),Math.abs(data[i+2]-background[2]))<24;
-  for(const bg of backgrounds){
-    for(let x=0;x<w;x++)for(const y of [0,h-1]){const i=pixel(x,y);if(matches(i,bg))queue.push(y*w+x);}
-    for(let y=0;y<h;y++)for(const x of [0,w-1]){const i=pixel(x,y);if(matches(i,bg))queue.push(y*w+x);}
-    while(queue.length){
-      const pos=queue.pop()!;
-      if(visited[pos])continue;
-      const i=pos*c;
-      if(!matches(i,bg))continue;
-      visited[pos]=1;data[i+3]=0;
-      const x=pos%w,y=Math.floor(pos/w);
-      if(x>0)queue.push(pos-1);
-      if(x<w-1)queue.push(pos+1);
-      if(y>0)queue.push(pos-w);
-      if(y<h-1)queue.push(pos+w);
-    }
+  for(let i=0;i<data.length;i+=info.channels){
+    const r=data[i],g=data[i+1],b=data[i+2];
+    const lightness=Math.min(r,g,b);
+    const chroma=Math.max(r,g,b)-lightness;
+    if(chroma<=28 && lightness>=220) data[i+3]=0;
+    else if(chroma<=24 && lightness>=185)
+      data[i+3]=Math.min(data[i+3],Math.round(255*(220-lightness)/35));
   }
-  return sharp(data,{raw:{width:w,height:h,channels:4}}).png().toBuffer();
+  return sharp(data,{raw:{width:info.width,height:info.height,channels:4}}).png().toBuffer();
 }
 function lines(s:ArtifactSnapshot) {
   return documentSections(s).map(section => ({ title:section.title, text:section.rows.length ? section.rows.map(row => Object.entries(row).map(([k,v])=>`${FIELD_LABELS[k] ?? k}: ${fact(v)}`).join("\n")).join("\n\n") : "Evidência inexistente - não existem registos nesta secção." }));
