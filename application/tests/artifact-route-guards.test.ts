@@ -11,6 +11,16 @@ describe("artifact API guards",()=>{
  it("rejects cross-origin generation before accessing storage",async()=>{
   vi.stubEnv("PCC_ARTIFACT_GENERATION_ENABLED","true");expect((await POST(new Request(`http://localhost/api/deliverables/${id}/generate`,{method:"POST",headers:{origin:"https://other.example"}}),{params:Promise.resolve({id})})).status).toBe(403);
  });
+ it("rejects a missing origin and a foreign origin, even when generation is enabled",async()=>{
+  vi.stubEnv("PCC_ARTIFACT_GENERATION_ENABLED","true");
+  const endpoint=`http://localhost/api/deliverables/${id}/generate`;
+  for(const origin of [undefined,"https://other.example","null"]){
+   const headers:Record<string,string>={};
+   if(origin!==undefined)headers.origin=origin;
+   const response=await POST(new Request(endpoint,{method:"POST",headers}),{params:Promise.resolve({id})});
+   expect(response.status).toBe(403);
+  }
+ });
  it("requires authentication for generation and downloads",async()=>{
   vi.stubEnv("PCC_ARTIFACT_GENERATION_ENABLED","true");expect((await POST(new Request(`http://localhost/api/deliverables/${id}/generate`,{method:"POST",headers:{origin:"http://localhost"}}),{params:Promise.resolve({id})})).status).toBe(401);
   expect((await GET(new Request(`http://localhost/api/deliverables/artifacts/${id}/download`),{params:Promise.resolve({id})})).status).toBe(401);
