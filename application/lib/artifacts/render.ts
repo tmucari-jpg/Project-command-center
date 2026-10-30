@@ -21,7 +21,7 @@ function lines(s:ArtifactSnapshot) {
 }
 export async function renderDocument(s:ArtifactSnapshot):Promise<GeneratedFile[]> {
   const logo = await transparentArtifactLogo();
-  const label = `${KIND_LABELS[s.kind]} - ${fact(s.project.title)}`;
+  const label = s.kind === "document" ? fact(s.deliverable.title) : `${KIND_LABELS[s.kind]} - ${fact(s.project.title)}`;
   const subtitle = `RASCUNHO PARA VALIDAÇÃO | MZN | ${s.generatedAt.slice(0,10)} | ${s.version}`;
   const sections = lines(s);
   const doc = new Document({ creator:"PCC", title:label,
