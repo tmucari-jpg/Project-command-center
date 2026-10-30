@@ -51,7 +51,7 @@ const requiredChecks = [
   ["app/(protected)/monetization/page.tsx", "Abrir Guia Comercial do PCC"],
   ["app/api/exports/commercial-master/route.ts", "Snapshot Operacional Comercial do PCC"],
   ["app/api/exports/commercial-master/route.ts", 'bytes.toString("base64")'],
-  ["app/api/exports/commercial-master/route.ts", "pcc-logo.png"],
+  ["app/api/exports/commercial-master/route.ts", "pcc-logo-transparent.svg"],
   ["app/(protected)/help/page.tsx", "Referências comerciais e de governação"],
   ["components/app-shell.tsx", "LanguageSwitcher"],
   ["components/language-provider.tsx", 'const STORAGE_KEY = "pcc-language"'],
@@ -65,6 +65,10 @@ const requiredChecks = [
   ["app/auth/actions.ts", "data.user?.identities && data.user.identities.length === 0"],
   ["app/auth/actions.ts", "await supabase.auth.signOut()"],
 ];
+
+if (!fs.existsSync(path.join(root, "public", "brand", "pcc-logo-transparent.svg"))) {
+  errors.push("public/brand/pcc-logo-transparent.svg: logótipo oficial ausente");
+}
 
 for (const [relative, expected] of requiredChecks) {
   const full = path.join(root, relative);
