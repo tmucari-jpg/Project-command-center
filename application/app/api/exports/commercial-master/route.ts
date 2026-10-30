@@ -140,12 +140,12 @@ export async function GET() {
   ).join("");
 
   // Incorporar a imagem no documento: caminhos relativos falham em aplicações Word fora do PCC.
-  let logoMarkup = "<strong>PCC — logótipo não disponível no snapshot</strong>";
+  let logoMarkup = "";
   try {
-    const bytes = await readFile(path.join(process.cwd(), "public", "brand", "pcc-logo.png"));
-    logoMarkup = `<img src="data:image/png;base64,${bytes.toString("base64")}" alt="Logótipo PCC" style="max-width:190px;height:auto" />`;
+    const bytes = await readFile(path.join(process.cwd(), "public", "brand", "pcc-logo-transparent.svg"));
+    logoMarkup = `<img src="data:image/svg+xml;base64,${bytes.toString("base64")}" alt="Logótipo PCC" style="max-width:190px;height:auto" />`;
   } catch {
-    // A exportação de trabalho continua disponível e não finge conter o logótipo oficial.
+    return NextResponse.json({ error: "Logótipo oficial em falta. Exportação bloqueada." }, { status: 503 });
   }
 
   const html = "<!doctype html><html><head><meta charset='utf-8'><title>PCC Snapshot Operacional Comercial</title>" +
