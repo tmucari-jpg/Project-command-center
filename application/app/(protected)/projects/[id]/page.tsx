@@ -160,6 +160,21 @@ export default async function ProjectHubPage({
       .order("created_at", { ascending: false }),
   ]);
 
+  // Reuse only diagnostics already converted into this project; unreviewed client answers are excluded.
+  const { data: sourceCase } = await supabase.from("project_factory_cases")
+    .select("id,problem,expected_value,constraints,governance_gate_status")
+    .eq("project_id", id).eq("user_id", user.id).maybeSingle();
+  const { data: factoryValidation } = sourceCase
+    ? await supabase.from("factory_validations")
+        .select("status,viability_status,viability_summary,conditions_to_proceed")
+        .eq("factory_case_id", sourceCase.id).eq("user_id", user.id).maybeSingle()
+    : { data: null };
+  const sourceValidated = Boolean(sourceCase?.governance_gate_status === "approved" &&
+    factoryValidation && ["viable", "conditional"].includes(factoryValidation.viability_status ?? "") &&
+    factoryValidation.status === "completed");
+  const diagnosticConditions = sourceValidated ? String(factoryValidation?.conditions_to_proceed ?? "").trim() : "";
+  const diagnosticScope = sourceValidated ? String(sourceCase?.problem ?? "").trim() : "";
+
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
   const activeDependencies = (dependencies ?? []).filter((item) =>
     ["pending", "resolving"].includes(item.status),
@@ -197,7 +212,7 @@ export default async function ProjectHubPage({
     commercialCurrency: commercialProfile?.currency,
   });
   const inferredDeliverables = (deliverables ?? []).map(item => item.title).filter(Boolean).join("; ");
-  const inferredScope = typeof project.description === "string" ? project.description.trim() : "";
+  const inferredScope = diagnosticScope || (typeof project.description === "string" ? project.description.trim() : "");
   const inferredResponsibilities = projectOwner?.full_name
     ? `Coordenação do projecto: ${projectOwner.full_name}. Confirmar obrigações específicas antes da aprovação.`
     : "";
@@ -328,7 +343,7 @@ export default async function ProjectHubPage({
         <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
           <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">Ver detalhes do compromisso</summary>
           <div className="border-t border-[var(--cc-border)] p-4">
-            <p className="mb-3 text-sm text-[var(--cc-secondary)]">Campos preenchidos com dados já registados no projecto quando disponíveis: resultado esperado, descrição do âmbito, títulos dos entregáveis e responsável. São propostas editáveis, sujeitas à sua confirmação antes da aprovação.</p>
+            <p className="mb-3 text-sm text-[var(--cc-secondary)]">Campos preenchidos com dados já registados: diagnóstico de origem validado (quando existente), resultado esperado, descrição do âmbito, entregáveis e responsável. Condições do diagnóstico são propostas para revisão, não exclusões contratuais aprovadas. Todos os campos são editáveis.</p>
             <form action={saveCommitmentBaseline} className="space-y-4">
               <input type="hidden" name="project_id" value={project.id} />
               <Select
@@ -344,7 +359,7 @@ export default async function ProjectHubPage({
               <TextArea label="Resultado esperado" name="expected_result" required defaultValue={latestBaseline?.expected_result ?? project.expected_result ?? ""} />
               <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? inferredScope} placeholder="O que o PCC fará neste projecto." />
               <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? inferredDeliverables} placeholder="Resultados concretos que o cliente receberá." />
-              <TextArea label="Exclusões" name="exclusions" defaultValue={latestBaseline?.exclusions ?? ""} placeholder="O que não está incluído." />
+              <TextArea label="Exclusões" name="exclusions" defaultValue={latestBaseline?.exclusions ?? diagnosticConditions} placeholder="O que não está incluído." />
               <div className="grid gap-4 lg:grid-cols-2">
                 <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? inferredResponsibilities} />
                 <TextArea label="Responsabilidades do cliente" name="client_responsibilities" defaultValue={latestBaseline?.client_responsibilities ?? ""} />
