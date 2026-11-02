@@ -135,15 +135,6 @@ export async function publishProjectClientStatus(
     return { ok: false, error: deliverableError?.message ?? metricError?.message ?? "Não foi possível preparar o snapshot." };
   }
 
-  const { data: latestSnapshot } = await supabase
-    .from("project_client_status_snapshots")
-    .select("version")
-    .eq("project_id", project.id)
-    .eq("user_id", user.id)
-    .order("version", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
   const deliverableSnapshot = (deliverables ?? []).map((item) => ({
     id: item.id,
     title: item.title,
@@ -175,49 +166,29 @@ export async function publishProjectClientStatus(
     measurement_date: metric.measurement_date,
   }));
 
-  const { error: snapshotError } = await supabase.from("project_client_status_snapshots").insert({
-    user_id: user.id,
-    project_id: project.id,
-    version: Number(latestSnapshot?.version ?? 0) + 1,
-    public_note: publicNote.data || null,
-    project_status: project.status,
-    expected_result: project.expected_result,
-    next_action: project.next_action,
-    deliverables: deliverableSnapshot,
-    kpis: metricSnapshot,
-  });
-
-  if (snapshotError) return { ok: false, error: snapshotError.message };
-
-  const { error: revokeError } = await supabase
-    .from("project_client_status_links")
-    .update({ status: "revoked" })
-    .eq("project_id", project.id)
-    .eq("user_id", user.id)
-    .in("status", ["active", "opened"]);
-
-  if (revokeError) return { ok: false, error: revokeError.message };
-
   const { token, tokenHash } = createProjectClientStatusToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: link, error: linkError } = await supabase
-    .from("project_client_status_links")
-    .insert({
-      user_id: user.id,
-      project_id: project.id,
-      token_hash: tokenHash,
-      expires_at: expiresAt,
-    })
-    .select("id")
-    .single();
-
-  if (linkError || !link) return { ok: false, error: linkError?.message ?? "Não foi possível gerar o link." };
+  const { data: linkId, error: publishError } = await supabase.rpc("publish_project_client_status_atomic", {
+    p_project_id: project.id,
+    p_owner_id: user.id,
+    p_public_note: publicNote.data || null,
+    p_project_status: project.status,
+    p_expected_result: project.expected_result,
+    p_next_action: project.next_action,
+    p_deliverables: deliverableSnapshot,
+    p_kpis: metricSnapshot,
+    p_token_hash: tokenHash,
+    p_expires_at: expiresAt,
+  });
+  if (publishError || !linkId) {
+    return { ok: false, error: "Não foi possível publicar o link. O anterior permanece válido." };
+  }
 
   revalidatePath(`/projects/${project.id}`);
   return {
     ok: true,
     url: projectClientStatusPublicUrl(token),
-    linkId: link.id,
+    linkId: linkId as string,
   };
 }
 
