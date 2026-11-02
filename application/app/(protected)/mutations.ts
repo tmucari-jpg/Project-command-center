@@ -125,10 +125,10 @@ export async function publishProjectClientStatus(
     ]);
 
   if (projectError || !project) {
-    return { ok: false, error: projectError?.message ?? "Projecto não encontrado." };
+    return { ok: false, error: "Não foi possível localizar o projecto autorizado." };
   }
   if (deliverableError || metricError) {
-    return { ok: false, error: deliverableError?.message ?? metricError?.message ?? "Não foi possível preparar o snapshot." };
+    return { ok: false, error: "Não foi possível preparar os dados de acompanhamento." };
   }
 
   const { data: latestSnapshot } = await supabase
@@ -183,7 +183,7 @@ export async function publishProjectClientStatus(
     kpis: metricSnapshot,
   });
 
-  if (snapshotError) return { ok: false, error: snapshotError.message };
+  if (snapshotError) return { ok: false, error: "Não foi possível guardar o estado de acompanhamento." };
 
   const { error: revokeError } = await supabase
     .from("project_client_status_links")
@@ -192,7 +192,7 @@ export async function publishProjectClientStatus(
     .eq("user_id", user.id)
     .in("status", ["active", "opened"]);
 
-  if (revokeError) return { ok: false, error: revokeError.message };
+  if (revokeError) return { ok: false, error: "Não foi possível actualizar os links de partilha." };
 
   const { token, tokenHash } = createProjectClientStatusToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -207,7 +207,7 @@ export async function publishProjectClientStatus(
     .select("id")
     .single();
 
-  if (linkError || !link) return { ok: false, error: linkError?.message ?? "Não foi possível gerar o link." };
+  if (linkError || !link) return { ok: false, error: "Não foi possível gerar o link de acompanhamento." };
 
   revalidatePath(`/projects/${project.id}`);
   return {
@@ -239,7 +239,7 @@ export async function createClientDiagnosticRequest(
     .maybeSingle();
 
   if (caseError || !factoryCase) {
-    return { ok: false, error: caseError?.message ?? "Caso não encontrado." };
+    return { ok: false, error: "Não foi possível localizar o caso autorizado." };
   }
 
   const { token, tokenHash } = createClientDiagnosticToken();
