@@ -8,7 +8,7 @@ import { artifactInformationGaps } from "@/lib/artifacts/readiness";
 import { verifyArchivedBytes } from "@/lib/artifacts/integrity";
 import { renderArtifact } from "@/lib/artifacts/render";
 export const runtime="nodejs";
-const schema=z.object({ requestId:z.string().uuid().optional(),kind:z.enum(["master_mind","master_plan","commercial_guide","diagnosis","decision","progress","closure","document","spreadsheet","presentation"]),reviewedContent:z.string().trim().max(50000).optional(),confirmNewVersion:z.boolean().default(false) });
+const schema=z.object({ requestId:z.string().uuid().optional(),kind:z.enum(["master_mind","master_plan","commercial_guide","diagnosis","decision","progress","closure","document","commitment","spreadsheet","presentation"]),reviewedContent:z.string().trim().max(50000).optional(),confirmNewVersion:z.boolean().default(false) });
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}) {
   if(process.env.PCC_ARTIFACT_GENERATION_ENABLED!=="true")return NextResponse.json({error:"Geração ainda não activada neste ambiente de testes."},{status:503});
   if(request.headers.get("origin")!==new URL(request.url).origin)return NextResponse.json({error:"Origem inválida."},{status:403});
