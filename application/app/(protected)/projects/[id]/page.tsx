@@ -333,6 +333,7 @@ export default async function ProjectHubPage({
                         <form action={createProjectChangeRequest} className="mt-3">
                           <input type="hidden" name="project_id" value={project.id} />
                           {approvedBaseline && <input type="hidden" name="baseline_id" value={approvedBaseline.id} />}
+                          <input type="hidden" name="source_decision_id" value={reply.id} />
                           <input type="hidden" name="title" value="Revisão solicitada pelo cliente" />
                           <input type="hidden" name="description" value={`Pedido recebido pelo link (referência ${reply.id}); cliente: ${reply.respondent_name}. ${reply.comment ?? "Sem comentário adicional."}`} />
                           <button className={secondaryButtonClass} type="submit">Abrir pedido de revisão interna</button>
