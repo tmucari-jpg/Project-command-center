@@ -23,7 +23,8 @@ export async function renderDocument(s:ArtifactSnapshot):Promise<GeneratedFile[]
   const logo = await transparentArtifactLogo();
   const brand = s.documentBrand ?? "PCC";
   const label = s.kind === "document" ? fact(s.deliverable.title) : `${KIND_LABELS[s.kind]} - ${fact(s.project.title)}`;
-  const subtitle = `RASCUNHO PARA VALIDAÇÃO | MZN | ${s.generatedAt.slice(0,10)} | ${s.version}`;
+  const currency = typeof s.project.currency === "string" && s.project.currency.trim() ? s.project.currency.trim() : "Moeda não definida";
+  const subtitle = `RASCUNHO PARA VALIDAÇÃO | ${currency} | ${s.generatedAt.slice(0,10)} | ${s.version}`;
   const sections = lines(s);
   const doc = new Document({ creator:brand, title:label,
     styles:{ default:{document:{run:{font:"DejaVu Sans",size:18,color:green},paragraph:{spacing:{after:100}}}}, paragraphStyles:[
@@ -33,7 +34,7 @@ export async function renderDocument(s:ArtifactSnapshot):Promise<GeneratedFile[]
     sections:[{ properties:{page:{margin:{top:1300,bottom:1100,left:1000,right:1000}}},
       headers:{default:new Header({children:[new Paragraph({children:[new ImageRun({type:"png",data:logo,transformation:{width:180,height:180*182/550}})]})]})},
       footers:{default:new Footer({children:[new Paragraph({alignment:AlignmentType.RIGHT,children:[new TextRun({text:`${brand} | ${s.version.slice(0,8)} | Página `,size:14,color:green}),new TextRun({children:[PageNumber.CURRENT],size:14})]})]})},
-      children:[new Paragraph({text:label,heading:HeadingLevel.TITLE}),new Paragraph({text:subtitle}),
+      children:[new Paragraph({text:brand,heading:HeadingLevel.HEADING_1}),new Paragraph({text:label,heading:HeadingLevel.TITLE}),new Paragraph({text:subtitle}),
         new Paragraph({text:"Conteúdo factual do documento. Geração não substitui QA ou aceitação. Dados em falta permanecem explícitos."}),
         ...sections.flatMap(section=>[new Paragraph({text:section.title,heading:HeadingLevel.HEADING_1}), ...section.text.split("\n").map(text=>new Paragraph({text}))]),
         new Table({width:{size:100,type:WidthType.PERCENTAGE},rows:[new TableRow({children:[new TableCell({shading:{fill:green,type:ShadingType.CLEAR},children:[new Paragraph({children:[new TextRun({text:"Estado de validação",color:"FFFFFF",bold:true})]})]})]}),new TableRow({children:[new TableCell({shading:{fill:ivory,type:ShadingType.CLEAR},children:[new Paragraph("QA: pendente | Aceitação: pendente | Resultado: por validar")]})]})]})
@@ -44,7 +45,8 @@ export async function renderDocument(s:ArtifactSnapshot):Promise<GeneratedFile[]
     const chunks:Buffer[]=[];const d=new PDFDocument({size:"A4",margins:{top:105,bottom:65,left:48,right:48},bufferPages:true,info:{Title:label,Author:brand}});
     d.on("data",c=>chunks.push(c));d.on("end",()=>resolve(Buffer.concat(chunks)));d.on("error",reject);
     d.registerFont("PCC",asset("fonts/DejaVuSans.ttf"));d.registerFont("PCC-Bold",asset("fonts/DejaVuSans-Bold.ttf"));
-    d.font("PCC-Bold").fillColor(`#${green}`).fontSize(20).text(label);
+    d.font("PCC-Bold").fillColor(`#${green}`).fontSize(10).text(brand);
+    d.moveDown(.3).fontSize(20).text(label);
     d.moveDown(.5).font("PCC").fontSize(8).text(subtitle);
     d.moveDown().fontSize(9).text("Conteúdo factual do documento. Geração não substitui QA ou aceitação. Dados em falta permanecem explícitos.");
     for(const section of sections){
@@ -76,7 +78,7 @@ export async function renderArtifact(s:ArtifactSnapshot):Promise<GeneratedFile[]
     for(const section of documentSections(s)){
       const sheet=w.addWorksheet(section.title.slice(0,31).replace(/[\\/*?:\[\]]/g," "));
       sheet.addImage(image,{tl:{col:0,row:0},ext:{width:200,height:200*182/550}});
-      sheet.mergeCells("A5:C5");sheet.getCell("A5").value=`${brand} | Rascunho | MZN | ${s.version}`;sheet.getRow(5).height=30;
+      sheet.mergeCells("A5:C5");sheet.getCell("A5").value=`${brand} | Rascunho | ${typeof s.project.currency === "string" ? s.project.currency : "Moeda não definida"} | ${s.version}`;sheet.getRow(5).height=30;
       const header=sheet.addRow(["Registo","Campo","Valor"]);
       header.eachCell(c=>{c.fill={type:"pattern",pattern:"solid",fgColor:{argb:green}};c.font={bold:true,color:{argb:"FFFFFF"}};});
       for(const [index,row] of section.rows.entries())for(const [key,value] of Object.entries(row)){
