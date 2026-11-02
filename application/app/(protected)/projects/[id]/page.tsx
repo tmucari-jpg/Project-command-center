@@ -329,6 +329,15 @@ export default async function ProjectHubPage({
                     <li key={reply.id} className="rounded-lg border border-[var(--cc-border)] p-3 text-sm">
                       <p className="font-semibold">{reply.respondent_name} · {reply.decision === "approve" ? "Aprovou os próximos passos" : reply.decision === "change" ? "Solicitou alteração" : "Pediu esclarecimento"}</p>
                       {reply.comment && <p className="mt-1 whitespace-pre-wrap">{reply.comment}</p>}
+                      {reply.decision === "change" && (
+                        <form action={createProjectChangeRequest} className="mt-3">
+                          <input type="hidden" name="project_id" value={project.id} />
+                          {approvedBaseline && <input type="hidden" name="baseline_id" value={approvedBaseline.id} />}
+                          <input type="hidden" name="title" value="Revisão solicitada pelo cliente" />
+                          <input type="hidden" name="description" value={`Pedido recebido pelo link (referência ${reply.id}); cliente: ${reply.respondent_name}. ${reply.comment ?? "Sem comentário adicional."}`} />
+                          <button className={secondaryButtonClass} type="submit">Abrir pedido de revisão interna</button>
+                        </form>
+                      )}
                       <p className="mt-1 text-xs text-[var(--cc-secondary)]">{formatDateTime(reply.created_at)}</p>
                     </li>
                   ))}
