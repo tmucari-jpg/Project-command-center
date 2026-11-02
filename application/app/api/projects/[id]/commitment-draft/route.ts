@@ -22,7 +22,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const [{ data: project }, { data: baselines }] = await Promise.all([
     db.from("projects").select("id,title,expected_result,currency").eq("id", id).eq("user_id", user.id).maybeSingle(),
-    db.from("project_commitment_baselines").select("id,version,status,expected_result,scope,exclusions,deliverables_summary,pcc_responsibilities,client_responsibilities,external_costs_terms,acceptance_terms,security_conditions,client_validation_reference").eq("project_id", id).eq("user_id", user.id).order("version", { ascending: false }).limit(1),
+    db.from("project_commitment_baselines").select("id,version,status,expected_result,scope,exclusions,deliverables_summary,pcc_responsibilities,client_responsibilities,external_costs_terms,acceptance_terms,security_conditions,client_validation_reference").eq("project_id", id).eq("user_id", user.id)
+      .in("status", ["internal_approved", "client_approved"])
+      .order("version", { ascending: false }).limit(1),
   ]);
   if (!project) return NextResponse.json({ error: "Projecto não encontrado." }, { status: 404 });
   const baseline = baselines?.[0];
