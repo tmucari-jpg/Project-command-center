@@ -69,7 +69,9 @@ export async function loadArtifactSnapshot(db:SupabaseClient, userId:string, del
     }
     const baselineResult = await db.from("project_commitment_baselines")
       .select("id,version,status,expected_result,scope,exclusions,deliverables_summary,pcc_responsibilities,client_responsibilities,external_costs_terms,acceptance_terms,security_conditions,client_validation_reference")
-      .eq("project_id",project.id).eq("user_id",userId).order("version",{ascending:false}).limit(1).maybeSingle();
+      .eq("project_id",project.id).eq("user_id",userId)
+      .in("status",["internal_approved","client_approved"])
+      .order("version",{ascending:false}).limit(1).maybeSingle();
     if (baselineResult.error || !baselineResult.data ||
         !["internal_approved","client_approved"].includes(baselineResult.data.status)) {
       throw new Error("COMMITMENT_BASELINE_NOT_APPROVED");
