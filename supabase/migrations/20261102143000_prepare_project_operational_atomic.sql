@@ -17,11 +17,8 @@ declare
 begin
   -- Prevent arbitrary workspace impersonation. Admin access remains bound by RLS.
   if auth.uid() is null then raise exception 'AUTH_REQUIRED' using errcode='42501'; end if;
-  if p_workspace_user_id <> auth.uid() and not exists (
-    select 1 from public.user_roles r
-    where r.user_id=auth.uid() and r.scope_type='global'
-      and r.role in ('owner','admin')
-  ) then raise exception 'WORKSPACE_FORBIDDEN' using errcode='42501'; end if;
+  if p_workspace_user_id <> auth.uid()
+    and not (select private.is_global_admin()) then raise exception 'WORKSPACE_FORBIDDEN' using errcode='42501'; end if;
 
   select * into v_project from public.projects
     where id=p_project_id and user_id=p_workspace_user_id for update;
