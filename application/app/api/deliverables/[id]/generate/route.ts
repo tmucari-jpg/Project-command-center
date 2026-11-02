@@ -25,6 +25,23 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
     if(prior.data.deliverable_id!==id)return NextResponse.json({error:"Pedido já utilizado noutro entregável."},{status:409});
     const priorSnapshot=prior.data.source_snapshot as Awaited<ReturnType<typeof loadArtifactSnapshot>>;
     if(prior.data.document_kind!==body.data.kind || priorSnapshot.reviewedContent!==body.data.reviewedContent)return NextResponse.json({error:"A referência pertence a outro conteúdo; inicie uma nova versão."},{status:409});
+    // Reuse is permitted only when every archived file still exists and matches its recorded checksum.
+    const priorFiles = prior.data.files as Record<string,{path:string;sha256:string;mime:string;size:number}>;
+    const archive = db.storage.from("pcc-deliverable-artifacts");
+    for (const [extension, file] of Object.entries(priorFiles)) {
+      if (!["docx","pdf","xlsx","pptx"].includes(extension)
+          || !file.path.startsWith(`${user.id}/${id}/${version}/`)
+          || !Number.isSafeInteger(file.size) || file.size > 20*1024*1024) {
+        return NextResponse.json({error:"ARCHIVE_INTEGRITY_FAILED"},{status:409});
+      }
+      const archived = await archive.download(file.path);
+      if (archived.error || !archived.data) return NextResponse.json({error:"ARCHIVE_FILE_UNAVAILABLE"},{status:503});
+      try {
+        verifyArchivedBytes(new Uint8Array(await archived.data.arrayBuffer()),file);
+      } catch {
+        return NextResponse.json({error:"ARCHIVE_INTEGRITY_FAILED"},{status:409});
+      }
+    }
     return NextResponse.json({informationGaps:artifactInformationGaps(priorSnapshot),formats:Object.keys(prior.data.files),id:version,download:`/api/deliverables/artifacts/${version}/download`,reused:true});
   }
   try {
