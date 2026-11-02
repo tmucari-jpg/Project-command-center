@@ -1,141 +1,181 @@
-# PCC — Relatório de prontidão operacional
+# PCC — Relatório GO/NO-GO de lançamento
 
-Data: 2 de Novembro de 2026. Parecer: **NO-GO**. Produção, dados operacionais, domínios e deployments não foram alterados. Não foi efectuado merge em main. Este parecer não é uma aprovação humana de lançamento.
+**Parecer: NO-GO.** Data: 2 de Novembro de 2026. PR em rascunho: https://github.com/tmucari-jpg/Project-command-center/pull/112 . Branch: `consolidation/pcc-operacional-20261102`.
 
-A consolidação recupera funcionalidades que estavam fora da branch QA indicada e corrige falhas comprovadas em aprovações, emissão de links e sincronização. Os testes locais passam; os seis circuitos operacionais completos ainda não estão aprovados. A Carta G3 é uma minuta, sem arquivo próprio nesta rota. Faltam ambiente Supabase isolado, autenticação real, Gemini real e validação física mobile/offline.
+Foram integradas as funcionalidades existentes da recovery e corrigidas as transacções de aprovação G3, emissão de links e sincronização. Há agora provas reais de Auth, RLS, Storage, geração/download de documentos, GIE360° e persistência offline num browser de ensaio. O PCC ainda não satisfaz a aceitação integral: faltam arquivo oficial específico de G3, atomicidade da preparação operacional e da gravação da baseline, circuito externo completo de partilha, resposta real do Gemini e validação física mobile. O gate de segurança do ensaio continua a falhar com oito vulnerabilidades moderadas.
 
-## Versões verificadas
+A produção não foi alterada. Não houve merge em main, promoção de deployment, migração remota, escrita de ensaio em produção ou criação de serviços pagos.
 
-| Referência | Versão observada | Evidência |
+## Versão e isolamento
+
+- main e produção: `d794bdad7cba02dcb93a4095480af2ca36af7ec0`; alias `project-command-center-seven-xi.vercel.app`, deployment `dpl_AB1cRHZU1wuAu8j7QHzA8J2fxwhY`.
+- QA indicada: `9778b800e50ba7b37313e05fbb357f69413b99ca`, 34 commits à frente de main. Não continha o trabalho funcional da recovery.
+- Funcionalidades recuperadas de `recovery/gie360-20261028`: `491251fa56e319ee60939e5175fec828a3727883`. A primeira consolidação corresponde à árvore `444cbc6f9714d32eacd2ebc8f64c7a3bbbc49555`, confirmada igual à árvore local.
+- Prova de integração recolhida: run 64, https://github.com/tmucari-jpg/Project-command-center/actions/runs/41416543119 ; head `8386f66a0cc06e0aedc47535483a1f11b877bb52`, commit de merge temporário testado `d1a9047d59e268de6d650bd7e22ebc61a86daa2a`.
+- Alteração posterior limitada à reposição dos bloqueios de publicação das branches de auditoria: head `8386f66a0cc06e0aedc47535483a1f11b877bb52`. Execução final deste head registada na adenda de CI.
+- O workflow criou Supabase/Auth/Storage descartáveis, com credenciais efémeras limitadas a `http://localhost:54321`. Depois executou `supabase stop --no-backup`. Os scripts recusam destinos que não sejam loopback. Nenhuma base de outro produto foi reutilizada.
+- A configuração Vercel bloqueia publicação automática da branch consolidada, das branches `pcc-validation/**` e das branches de auditoria anteriormente protegidas.
+
+Os UUIDs abaixo pertencem exclusivamente ao backend descartável. Depois da destruição desse backend, a prova persistente é composta pelo código dos testes, resultados do workflow, ficheiros descarregados e respectivos hashes; os registos não ficam consultáveis numa base de produção.
+
+## Resultado dos seis circuitos
+
+| Circuito | Estado de aceitação | Resultado real |
 | --- | --- | --- |
-| main | d794bdad7cba02dcb93a4095480af2ca36af7ec0 | Comparação GitHub e deployment por alias |
-| QA indicada | 9778b800e50ba7b37313e05fbb357f69413b99ca | 34 commits à frente de main, sem commits em falta de main |
-| Trabalho funcional recuperado | recovery/gie360-20261028, commit 491251f | Histórico Git e árvore recuperada |
-| Produção efectivamente associada ao alias | dpl_AB1cRHZU1wuAu8j7QHzA8J2fxwhY, main d794bdad… | evidence/production_alias.json; alias project-command-center-seven-xi.vercel.app |
-| Consolidação proposta | consolidation/pcc-operacional-20261102 | PR em rascunho; sem publicação automática nesta branch |
-| Código submetido aos testes | SHA256 b0d6e23fe651e8e21b202d1e8c5d72fd3b4545ab393f5a4127a4d7bc1d295e56 | evidence/source-binding.json, hashes de 359 ficheiros |
+| A Login → permissões → dados | **APROVADO no ambiente isolado** | Sessões reais e login no browser; acesso autorizado, isolamento entre utilizadores e fronteira PCC/GIE360° passaram. Expiração/refresh exaustivos não foram incluídos neste circuito. |
+| B Diagnóstico → projecto → objectivos → acções | **BLOQUEADO** | Conversão SQL com rollback e repetição testada; não há ensaio encadeado completo. Preparação operacional ainda usa escritas separadas e deduplicação anterior ao INSERT, vulnerável à concorrência. |
+| C Diagnóstico validado → G3 → DOCX/PDF → arquivo → download | **FALHOU** | Minuta G3 gerada e descarregada com Auth real, formatos e campos verificados. A rota G3 não arquiva a carta e contém termos contratuais fixos pendentes. O arquivo genérico passou, mas não comprova arquivo oficial de G3. |
+| D GIE360° → questionário → aprovação → link → respostas → encaminhamento | **BLOQUEADO para o circuito completo** | Portal e browser gestor/cliente passaram; submissão e encaminhamento reais passaram. Emissão de link com aprovação atómica passou em SQL isolado. Falta o ensaio único de pré-visualização interna, emissão do link público, resposta e encaminhamento pelo PCC. |
+| E Gemini → resposta real → falha → recuperação | **BLOQUEADO** | Retries, falhas, quota e fallback simulados passaram. Nenhuma resposta real foi obtida: o ensaio não tem chave/modelo Gemini configurados nem flags de utilização gratuita activadas. |
+| F Offline → criar → fechar/reabrir → sincronizar → confirmar | **APROVADO no browser de ensaio; BLOQUEADO para aceite mobile integral** | Criação sem rede, fecho/reabertura da página, preservação do UUID, sync, recibo Supabase, fila vazia e ausência de duplicados passaram. Não equivale a fechar o processo do browser/app ou instalar e reabrir num dispositivo físico. |
 
-A branch QA continha gates documentais e correcções de validade de tokens, mas não continha o trabalho funcional da recovery: DOCX/PDF, portal GIE360°, Gemini e acções derivadas. A integração preserva ambos os históricos. O único conflito textual foi no snapshot comercial; foram preservados o logótipo incorporado da QA e o conteúdo GIE360° da recovery.
+## A — Login, permissões e dados
 
-## Condições de execução
+**Rota/funções:** `loginAction`, `/auth/login`, `resolveWorkspaceUser`, `isGIE360Client`; políticas de projectos e portal GIE360°.
 
-Foi usada uma cópia local isolada, sem ficheiros de ambiente de produção. PGlite executou SQL real com tabelas e identidades de ensaio; não representa GoTrue/Auth, PostgREST nem Storage do Supabase. Os testes de rotas com mocks estão identificados como tal. Respostas Gemini simuladas não são respostas reais do fornecedor.
+**Dados de ensaio:** três utilizadores criados por administração no Auth local, emails aleatórios `@example.test`, passwords aleatórias de ensaio; empresas e projectos sintéticos. As credenciais não integram este pacote.
 
-O projecto Supabase PCC disponível só apresenta a branch main. O outro projecto activo pertence a outro produto e não foi reutilizado. Não foi criada uma branch Supabase com custo horário. Não foram copiadas chaves de produção, aplicadas migrações remotas ou escritos dados de ensaio na base operacional.
+**Esperado:** login válido; leitura dos dados autorizados; outro utilizador não vê projectos nem objectos Storage; cliente GIE360° não cria projectos PCC nem entra no shell/assistente interno.
 
-A tentativa do smoke integrado parou antes de qualquer ligação: falta NEXT_PUBLIC_SUPABASE_URL local. Não há Docker nem backend Supabase local disponível. O download de Chromium pelo Playwright falhou com arquivo truncado; não foi executado browser E2E nem ensaio físico. A disponibilidade de ferramentas não foi tratada como falha funcional da aplicação.
+**Real:** onze verificações do backend passaram, incluindo os casos de autenticação, RLS e Storage; login real de gestor/cliente e navegação no browser passaram. A regra que tratava a ausência da tabela de identidade como ausência de associação GIE360° foi corrigida para falhar com acesso bloqueado.
 
-## Circuitos completos
+**Evidência:** `integracao/validation-backend.json`, `integracao/validation-browser.json`, resultados do run 64; testes `pcc-access.test.ts`, `gie360-database.test.ts` e `gie360-import-rls.test.ts` no PR.
 
-| Circuito | Estado final | Motivo |
+**Estado:** APROVADO neste âmbito. **Limite:** não constitui auditoria exaustiva de todas as políticas ou prova de refresh/expiração de sessão em dispositivo físico.
+
+## B — Diagnóstico, projecto, objectivos e acções
+
+**Rota/funções:** `convert_factory_case_atomic`, `ensureProjectOperationalStructure`, `prepareProjectOperationalStructure`; criação e ligação de objectivos/entregáveis/acções.
+
+**Dados de ensaio:** caso SQL `20000000-0000-4000-8000-000000000001`, validação `viable`, decisão explícita de ensaio, risco bloqueante e falha injectada na ligação do caso. Fixtures de autonomia usam objectivo e critérios de conclusão existentes.
+
+**Esperado:** falha intermédia não deixa projecto ou decisão parcial; repetição mantém um projecto; acções derivadas correspondem aos entregáveis e não se duplicam com pedidos simultâneos.
+
+**Real:** rollback e idempotência da conversão passaram no Postgres isolado. O código de geração foi recuperado da recovery. Não foi executada a cadeia completa por UI, nem demonstrada a segurança sob concorrência da preparação operacional.
+
+**Evidência:** `tests/factory-atomic.test.ts`, `tests/action-autonomy.test.ts`, `tests/project-autonomy.test.ts`, `vitest-results.json`.
+
+**Estado:** BLOQUEADO para o circuito completo; defeito de atomicidade identificado na revisão. **Correcção necessária:** RPC que serialize e reúna preparação de objectivo, entregável, acções e métrica; definir idempotência por operação e testar dois pedidos concorrentes, sem eliminar trabalho manual existente.
+
+## C — Compromisso G3 e documentos
+
+**Rota/funções:** `approve_commitment_atomic`; `GET /api/projects/[id]/commitment-draft?format=pdf|docx`; `POST /api/deliverables/[id]/generate`; `GET /api/deliverables/artifacts/[id]/download`; `finalize_generated_deliverable`.
+
+**Dados reais do ensaio descartável:**
+
+| Registo | ID |
+| --- | --- |
+| projectId | `57ebe697-1b3f-4efa-926e-be0d724f8b8d` |
+| deliverableId | `89b30965-c257-4cf7-8232-41cae093c9fc` |
+| artifactVersion | `3ac9222f-af8b-466f-8ffc-1d6c424fc165` |
+| baselineId | `2bf80b8f-e0ed-4a29-810b-19d09d4a9576` |
+| offlineItemId | `0eb33e28-5bac-4239-ab8c-a0a085a4e96d` |
+
+**Esperado:** 409 antes da aprovação interna, aprovação e evento atómicos, DOCX/PDF coerentes, arquivo persistente versionado e download autorizado. Nenhuma aprovação humana de produção pode ser presumida.
+
+**Real:** a minuta G3 recusou geração antes da aprovação interna e produziu dois ficheiros com sessão real depois da transição explícita de ensaio. Os formatos nativos, os campos de ensaio e a integridade dos ficheiros foram verificados. O arquivo genérico gerou Word/PDF, recusou acesso anónimo/cruzado, confirmou hashes em Storage privado e repetiu sem duplicar evidência. A minuta G3 continua sem esse arquivo próprio e apresenta partes, pagamentos, cronograma e termos jurídicos pendentes.
+
+**Evidência:** `integracao/validation-backend.json`; `integracao/validation-artifacts/`; testes SQL de rollback em `operational-atomic.test.ts`; `native-files-verification.json`. Os documentos são minutas de ensaio, não cartas oficiais aceites. A Carta G3 de uma página foi renderizada e inspeccionada em PDF e Word. O DOCX genérico de duas páginas ainda requer ajuste visual da segunda página, cujo conteúdo fica demasiado próximo do cabeçalho; o teste de arquivo valida integridade e permissões, não aprova esse layout.
+
+| Ficheiro efectivamente descarregado | Bytes | SHA256 |
 | --- | --- | --- |
-| A Login → permissões → dados | **BLOQUEADO** | Sem Supabase/Auth isolado e utilizadores reais de ensaio; testes locais de fronteira de identidade e RLS passaram |
-| B Diagnóstico → projecto → objectivos → acções | **BLOQUEADO** | Conversão SQL e geração recuperadas; falta execução completa por UI/Auth. Persistem escritas separadas e deduplicação vulnerável à concorrência na preparação operacional |
-| C Diagnóstico validado → G3 → DOCX/PDF → arquivo → download | **FALHOU** | A rota produz uma minuta com campos contratuais fixos pendentes e não arquiva a carta; o circuito oficial pedido está incompleto |
-| D GIE360° → questionário → revisão → aprovação → link → respostas → encaminhamento | **BLOQUEADO** | Emissão e aprovação agora atómicas e SQL do portal testado; falta ensaio encadeado com identidade e dados persistidos no Supabase isolado |
-| E Gemini → resposta real → falha → recuperação | **BLOQUEADO** | Probe real bloqueada por chave/modelo/confirmação de plano gratuito e tratamento de dados ausentes neste ambiente; recuperação simulada passou |
-| F Offline → criar → fechar/reabrir → sincronizar → confirmar no Supabase | **BLOQUEADO** | SQL transaccional passou; persistência IndexedDB em browser, reabertura física e confirmação Supabase não executadas |
+| Documento_Auth_Storage_ENSAIO.pdf | 35505 | `dd2caeb07cae0cab02c3f859d45f1053821a912da24243d9ceaa72f9cf2ef6a4` |
+| Documento_Auth_Storage_ENSAIO.docx | 15623 | `dc38e5e59dd968059443938b5f12af02e68260e991e65bde636e510306f0dd33` |
+| Carta_G3_Auth_ENSAIO_MINUTA.pdf | 28136 | `b4110d4c045691cb119511b23d40ae975c0a468311fae8e22a37c6353ce7dd45` |
+| Carta_G3_Auth_ENSAIO_MINUTA.docx | 15635 | `8e53eb64de9d930cf2eda5b862293934fbbce8ed09d929a0a42e89f507590bbd` |
 
-## Registo detalhado dos ensaios
+**Estado:** FALHOU o circuito oficial completo. **Correcções necessárias:** ligar a geração G3 a snapshot imutável da baseline e termos efectivamente aprovados, arquivar ambos os formatos e respectivos hashes e disponibilizar download autorizado. A gravação `saveCommitmentBaseline` também precisa de transacção única: o erro de actualização do projecto já não é ignorado, mas as duas escritas ainda não são revertidas em conjunto.
 
-Os UUIDs indicados abaixo são constantes de testes isolados. Não são identificadores de operações realizadas na produção ou num Supabase de ensaio. Aprovações declaradas em fixtures exercitam transições; não substituem decisões humanas.
+## D — GIE360°, aprovação e encaminhamento
 
-### A — Identidade e dados
+**Rota/funções:** `/gie360`, `/gie360/login`, `gie360_save_assessment`, `gie360_provision`, `createClientDiagnosticRequest`, `issue_reviewed_diagnostic_atomic`, `/client-diagnostic/[token]`, `client_diagnostic_lookup/submit`.
 
-- Rota/função: loginAction em app/auth/actions.ts; isGIE360Client/resolveWorkspaceUser; SQL do portal GIE360°.
-- Dados: owner/manager 10000000-0000-4000-8000-000000000001, cliente …0002, terceiro …0003; tabelas locais criadas pelos testes.
-- Esperado: cliente GIE360° não herda o PCC; outro cliente não lê nem escreve dados da empresa; indisponibilidade da tabela de identidade bloqueia o acesso.
-- Real: testes locais de fronteira, leitura cruzada, escrita proibida e identidade indisponível passaram. Corrigida a regra que tratava tabela de identidade ausente como ausência de associação GIE360°.
-- Evidência: tests/pcc-access.test.ts, tests/gie360-database.test.ts, tests/gie360-import-rls.test.ts, evidence/vitest-results.json.
-- Estado: **APROVADO apenas no âmbito local testado**. Login real, refresh/expiração de sessão e leitura via Supabase: **BLOQUEADO**.
-- Necessário: backend isolado e dois utilizadores reais; confirmar 401 sem sessão, bloqueio de cliente interno, acesso autorizado e negação entre empresas via UI e REST.
+**Dados:** empresas sintéticas; sector Comércio/Agricultura; custos declarados como “não sei”; módulos autorizados; UUID de idempotência e revisão de respostas; destinatário e organização de ensaio, hashes de token e validade de sete dias.
 
-### B — Conversão e acções
+**Esperado:** cliente só acede à sua empresa; alteração concorrente de revisão é rejeitada; resposta e notificação são únicas; encaminhamento aponta ao caso original; nenhum link sem revisão explícita; falha da auditoria preserva o link anterior.
 
-- Rota/função: convert_factory_case_atomic; ensureProjectOperationalStructure; prepareProjectOperationalStructure; criação de projecto.
-- Dados: caso local 20000000-0000-4000-8000-000000000001, decisão de ensaio explícita, validação viable; projecto Gestor de Vendas em fixtures de autonomia, sem medições inventadas.
-- Esperado: falha ao ligar caso/projecto reverte projecto e decisão; repetir conversão mantém um só projecto; objectivo e entregáveis geram trabalho rastreável.
-- Real: SQL de conversão reverteu a criação com falha injectada, negou risco bloqueante e repetiu sem duplicar projecto. Código de geração de acções recuperado da recovery. O teste de conversão não cobre toda a preparação operacional nem cliques simultâneos.
-- Evidência: tests/factory-atomic.test.ts, tests/action-autonomy.test.ts, tests/project-autonomy.test.ts; evidence/vitest-results.json.
-- Estado: rollback e idempotência de conversão **APROVADOS localmente**; circuito integral **BLOQUEADO**.
-- Correcção ainda necessária: tornar criação/ligação de objectivo, entregável, acções e métrica uma operação transaccional e serializada. A comparação de títulos antes de INSERT não garante ausência de duplicados sob concorrência. Não declarar este defeito resolvido.
+**Real:** Auth, RLS, configuração, gravação/reabertura do questionário, conflito de revisão, submissão, notificação e encaminhamento passaram no backend/browser. Importação, revisão e exportação também passaram. A emissão de link e a aprovação foram reunidas numa RPC, com rollback comprovado em PGlite. A consulta real SQL de tokens negou expirados/revogados; nesse teste o contador de rate-limit foi controlado, não medido sob concorrência real. Falta a cadeia externa inteira, com revisão humana de ensaio na interface e submissão por link.
 
-### C — G3 e documentos
+**Evidência:** `integracao/validation-backend.json`, `integracao/validation-browser.json`; `operational-atomic.test.ts`, `diagnostic-expiry-database.test.ts`, `gie360-database.test.ts`.
 
-- Rota/função: approve_commitment_atomic, approveCommitmentInternally, validateCommitmentByClient; GET /api/projects/[id]/commitment-draft?format=docx|pdf; finalize_generated_deliverable; download genérico de artefactos.
-- Dados: projecto 20000000-0000-4000-8000-000000000001, baseline 30000000-0000-4000-8000-000000000001, Empresa QA Sintética, âmbito Diagnóstico sintético, custo Sem custo adicional.
-- Esperado: negar geração antes da aprovação interna; gerar formatos nativos coerentes; aprovações e auditoria não ficam parciais; carta oficial persistida e descarregável a partir do arquivo autorizado.
-- Real: 409 para rascunho sem aprovação e 401 sem sessão nos testes de rota; fixture com aprovação interna gerou DOCX ZIP nativo e PDF, ambos legíveis. Seis campos de ensaio coincidem nos dois. Inspecção visual de uma página de cada formato realizada. Teste com falha na auditoria reverteu aprovação e estado do projecto.
-- Limitação factual: as leituras da rota G3 foram substituídas por fixtures; não houve sessão real nem download HTTP autenticado em servidor. A rota commitment-draft faz render e devolve bytes, mas não grava arquivo. Partes, preço/pagamentos, cronograma e termos jurídicos são textos fixos pendentes. Estes ficheiros não são prova de carta oficial concluída.
-- Evidência: tests/commitment-document.test.ts, tests/commitment-draft-route.test.ts, tests/operational-atomic.test.ts; evidence/documents/Carta_G3_ENSAIO_SINTETICO.docx e .pdf; document-content-verification.json. O arquivo genérico tem testes próprios tests/artifact-archive.test.ts, sem comprovar que G3 o usa.
-- Estado: formatos/render e rollback **APROVADOS no âmbito local**; Carta oficial com arquivo **FALHOU**.
-- Correcção necessária: ligar G3 a snapshot imutável da baseline e termos efectivamente aprovados, arquivo persistente dos dois formatos com hashes e download autorizado. Não preencher termos em falta por inferência. saveCommitmentBaseline ainda tem duas escritas; agora acusa falha no projecto, mas ainda requer atomicidade para rollback integral.
+**Estado:** BLOQUEADO para aceitação completa. **Necessário:** executar e registar pré-visualização, aprovação interna de ensaio, link público, submissão e destino com todos os IDs; testar o contador real de rate-limit.
 
-### D — GIE360° e partilha
+## E — Gemini e recuperação
 
-- Rota/função: createClientDiagnosticRequest → issue_reviewed_diagnostic_atomic; GET /client-diagnostic/[token]; client_diagnostic_lookup/submit; gie360_save_assessment e encaminhamento ao caso original.
-- Dados: destinatário sintético, Empresa QA, contexto de ensaio, hashes a/b/c de 64 caracteres, validade de sete dias; respostas sector Agricultura/Comércio, custos Não sei, resultado Organizar a gestão.
-- Esperado: revisão explícita antes de emissão; falha ao arquivar aprovação preserva link anterior; tokens expirados/revogados não revelam questionário; resposta repetida não duplica submissão ou notificação; submissão permanece declarada.
-- Real: testes SQL executaram rollback de emissão, manutenção do link anterior, rejeição sem revisão e por terceiro; validade temporal e negação com rate-limit simulado passaram. O teste de lookup usa implementação real e uma função de rate-limit controlada: não mede o contador real sob concorrência. SQL do portal validou conflito de revisão, submissão única, encaminhamento e rollback com falha de notificação.
-- Evidência: tests/operational-atomic.test.ts, tests/diagnostic-expiry-database.test.ts, tests/diagnostic-link-validity.test.ts, tests/gie360-database.test.ts; evidence/vitest-results.json.
-- Estado: casos SQL locais **APROVADOS**; circuito UI/Auth/link público/Supabase **BLOQUEADO**.
-- Necessário: pré-visualização e aprovação feitas pelo responsável no ambiente isolado, submissão externa real, confirmação dos IDs de pedido/aprovação/resposta/caso e do contador real de rate-limit.
+**Rota/funções:** `POST /api/ai/assist`, `requestAIText`, `generateAssistWithFallback`, `scripts/test-gemini-live.ts`.
 
-### E — Gemini
+**Dados:** prompt sintético “Responde apenas OK”; vendas 80+40 MZN, dez leads, zero conversões e lucro ausente; falhas simuladas 503, timeout, 429, 403 e resposta vazia.
 
-- Rota/função: requestAIText, generateAssistWithFallback; POST /api/ai/assist; scripts/test-gemini-live.ts.
-- Dados: prompt sintético Responde apenas OK; cenário vendas 80+40 MZN, 10 leads, zero conversões e lucro ausente. Recuperação com HTTP 503, timeout, 429, 403 e conteúdo vazio simulados.
-- Esperado: resposta real útil, dados em falta preservados, falha explícita, retry/fallback limitado a fornecedores gratuitos autorizados, sem reactivar perfis desactivados.
-- Real: testes simulados de retries, API nativa, quota, timeout, endpoint hostil, custo e fallback passaram. Probe real não foi enviada por falta de configuração local. Uma primeira chamada por tsx encontrou IPC EPERM; a alternativa node --import tsx executou o probe e registou correctamente blocked.
-- Evidência: tests/gemini-provider.test.ts, tests/ai-assist-router.test.ts, tests/ai-runtime.test.ts; evidence/gemini-live.json e gemini-live.log.
-- Estado: recuperação simulada **APROVADA**; resposta real e recuperação encadeada **BLOQUEADAS**.
-- Necessário: configurar chave por mecanismo seguro no ambiente isolado, modelo disponível e plano gratuito confirmado; executar resposta, indisponibilidade controlada e nova resposta. Não copiar chaves ou respostas fictícias para o relatório.
+**Esperado:** resposta real preserva factos e ausência de informação; falha explícita; recuperação limitada a fornecedores gratuitos autorizados; nenhum perfil desactivado é reactivado pelo fallback.
 
-### F — Offline e sincronização
+**Real:** os testes simulados passaram. O probe real registou `blocked`; não foi enviada uma chamada com chave/modelo de produção, nem foi inventado texto de resposta real.
 
-- Rota/função: POST /api/offline/sync → apply_offline_item_atomic; syncOfflineQueue; public/offline-app.js; GET /api/offline/bootstrap.
-- Dados: ideia e acção sintéticas, projecto 30000000-0000-4000-8000-000000000001, operações 20000000-…0001 a …0005, alteração Próximo passo confirmado; recibo/auditoria com falha injectada.
-- Esperado: negócio e recibo confirmados na mesma transacção; retry não duplica; colisão de conteúdo ou acesso cruzado falha; dados não confirmados continuam na fila; lotes respeitam o máximo de 100.
-- Real: SQL real comprovou rollback de negócio/recibo e de intake/eventos, repetição sem duplicados, rejeição de conteúdo diferente e de outro utilizador, escrita de próximo passo e negação de proprietário/estado forjados. A rota valida dados e origem, usa whitelist e SECURITY INVOKER. Cliente e shell passaram a enviar lotes de 100 e a indicar pendências, sem mensagem falsa de conclusão.
-- Evidência: tests/offline-atomic.test.ts; código de sync e shell; evidence/vitest-results.json. As alterações de IndexedDB/lotes/mensagem só têm typecheck/lint nesta sessão; não existe prova de browser para esses comportamentos.
-- Estado: transacção SQL **APROVADA**; fechar/reabrir, persistência real, conflito entre dispositivos e confirmação Supabase **BLOQUEADOS**.
-- Necessário: executar captura sem rede num dispositivo, fechar aplicação/processo, reabrir, restaurar rede, confirmar IDs na base de ensaio, repetir sync e verificar fila vazia e ausência de duplicados.
+**Evidência:** `integracao/validation-gemini.json`, `gemini-provider.test.ts`, `ai-assist-router.test.ts` e `ai-runtime.test.ts`.
 
-## Matriz de correcções e pendências
+**Estado:** BLOQUEADO. **Necessário:** chave e modelo do Gemini no ambiente de ensaio, com configuração do plano gratuito e tratamento de dados coerente com a autorização existente; executar resposta real, indisponibilidade controlada e nova resposta. Não inserir segredos em conversa, código, PR ou provas.
 
-| Componente | Problema | Correcção proposta ou realizada | Teste e resultado | Estado |
-| --- | --- | --- | --- | --- |
-| Composição da release | QA sem funcionalidades existentes na recovery | Integradas as duas linhas, preservando arquitectura | 202 testes locais passaram | APROVADO localmente |
-| Identidade | Tabela GIE360° ausente permitia continuar como interno | Falha passa a bloquear acesso | pcc-access.test.ts | APROVADO localmente |
-| Aprovação G3 | Aprovação, projecto e evento separados | RPC SECURITY INVOKER com locks e transacção | Falha na auditoria reverte tudo | APROVADO localmente |
-| Link de diagnóstico | Revogação/criação/auditoria separadas | RPC atómica com revisão explícita | Link antigo preservado após falha | APROVADO localmente |
-| Sync offline | Negócio gravado sem recibo; intake sem eventos | RPC por operação, recibo bloqueado, whitelist e RLS | Rollback, retry e acesso cruzado passaram | APROVADO localmente |
-| Cliente offline | Mais de 100 entradas e falsa mensagem de conclusão | Lotes, retenção de entradas e mensagem de pendência | Build/typecheck/lint; browser indisponível | BLOQUEADO para aceite funcional |
-| Projectos e acções | Preparação não atómica e concorrência na deduplicação | Requer RPC para preparação operacional completa | Ainda não executado | FALHOU na revisão de código |
-| Baseline G3 | Save em duas escritas | Erro do projecto deixa de ser ignorado; rollback total pendente | Revisão de código | FALHOU na atomicidade integral |
-| Carta oficial | Minuta com termos fixos pendentes, sem arquivo G3 | Requer termos aprovados + snapshot/arquivo/download | PDF/DOCX locais válidos, circuito oficial incompleto | FALHOU |
-| Gemini | Sem configuração real isolada | Recuperação existente incorporada; falta probe real | Simulados passaram; live blocked | BLOQUEADO |
-| Segurança Supabase | Avisos de funções privilegiadas e protecção de passwords | Revisão contextual; nenhuma alteração em produção | Advisors read-only; RLS activo nas oito tabelas consultadas | BLOQUEADO para aceite integral |
-| Migrações | Produção tem histórico diferente do repositório | Reconciliar histórico/esquema antes de aplicar em ensaio | Só catálogo remoto lido | BLOQUEADO |
+## F — Offline, reabertura e confirmação
 
-## Verificações técnicas e evidências
+**Rota/funções:** `/offline.html`, `offline-app.js`, `syncOfflineQueue`, `POST /api/offline/sync`, `apply_offline_item_atomic`, `GET /api/offline/bootstrap`.
 
-- 202 testes, zero falhas; 49 ficheiros de teste. O JSON do Vitest conta suites internas de forma diferente de ficheiros. Nenhum destes totais equivale a seis circuitos E2E aprovados.
-- Typecheck: exit 0. Lint: exit 0, zero erros e cinco avisos de variáveis não utilizadas, registados no log.
-- Build de produção local: exit 0; BUILD_ID HMjQyPiuwn4lR4IJWM8uR, manifest de prerender presente. Não é um deployment.
-- UI standard e ícones: exit 0. Gate sintáctico: 12 cenários passaram; não verifica autenticidade das provas.
-- npm audit de dependências de produção: exit 0 no limiar high; zero high/critical e oito moderate, sobretudo cadeia transitiva ExcelJS/archiver/minimatch. Não foi aplicada sugestão de downgrade sem validação.
-- Advisors: quatro funções SECURITY DEFINER executáveis anonimamente e três por authenticated, mais aviso de protecção de palavras-passe comprometidas desactivada. As funções públicas de token podem ter exposição intencional; o aviso exige revisão do corpo e limites, não justifica revogação cega. Referências: https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable e https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable .
-- Catálogo consultado: RLS activo em projects, actions, project_commitment_baselines, gie360_assessments, gie360_submissions, pcc_external_share_approvals, generated_deliverable_artifacts e sync_queue. RLS activo não prova a correcção de todas as políticas.
-- Inventário estático: 21 rotas/métodos HTTP em rotas-http.csv e 83 Server Actions em funcoes-servidor.csv. Os inventários não afirmam execução de cada entrada.
+**Dados:** projecto `608623af-ba9b-4a9c-890f-0b2cf0fa286b`; ideia offline `bb97998a-e02e-4387-95a2-87e7f51ae676`; título aleatório de ensaio; browser Chromium com viewport 390×844, sem rede durante a captura.
 
-## Condições concretas para mudar o parecer
+**Esperado:** guardar sem rede, fechar página, reabrir pelo Service Worker, preservar ID/conteúdo, restabelecer rede, confirmar um registo e recibo, esvaziar fila e não duplicar ao repetir.
 
-1. Corrigir atomicidade da preparação operacional e da gravação da baseline, e concluir o arquivo específico de G3 com os termos reais aprovados.
-2. Disponibilizar backend Supabase isolado existente ou local, sem custos adicionais, com Auth/Storage e migrações reconciliadas; nenhum teste de escrita em produção.
-3. Configurar o ambiente isolado e o Gemini gratuito pelo mecanismo seguro do ambiente. Não inserir segredos no PR, relatório ou conversa.
-4. Executar A–F pelo PCC e guardar URLs, hashes, IDs de registos e versão exacta; executar casos negativos e repetir para ausência de duplicados.
-5. Validar instalação, permissões, downloads, perda de ligação e reabertura num dispositivo físico.
-6. Rever as provas e obter decisão humana explícita para a única publicação. Este PR em rascunho não autoriza merge nem lançamento.
+**Real:** todos esses passos passaram. A base confirmou `synced`, 1 linha de ideia e 0 operações pendentes. O ensaio inicial falhou numa sondagem que podia criar uma IndexedDB vazia; o teste foi corrigido para apenas observar bases existentes. Esse resultado anterior não foi convertido em aprovação sem nova execução. O SQL também comprovou rollback entre entidade e recibo e entre intake e eventos, colisão de conteúdo e negação de proprietário/estado forjados.
 
-**Decisão final desta execução: NO-GO.** Existem correcções implementadas e testes locais verificáveis, mas não existe prova de operação integral nem de Carta oficial completa.
+**Evidência:** `integracao/validation-offline-browser.json`, segundo teste em `gie360-browser-smoke.spec.ts`, `offline-atomic.test.ts` e resultados do run 64.
+
+**Estado:** APROVADO neste browser. **Limite para aceite integral:** o browser permaneceu em execução; o teste fechou/reabriu a página. Faltam instalação PWA, fecho do processo/app, reabertura e sync num telemóvel físico, além de conflitos entre dispositivos. APK é opcional, não requisito autónomo para lançar a PWA.
+
+## Correcções implementadas e riscos remanescentes
+
+| Componente | Correcção | Prova/resultado | Estado |
+| --- | --- | --- | --- |
+| Consolidação | QA e recovery integradas, sem reconstrução | Árvore exacta e 202 testes locais | APROVADO no âmbito testado |
+| Identidade | Ausência/erro da consulta GIE360° bloqueia acesso | Testes locais e fronteiras reais de cliente | APROVADO |
+| Aprovação G3 | Estado, projecto e evento na mesma transacção com locks | Falha injectada reverte tudo; RPC real executada | APROVADO no âmbito testado |
+| Partilha | Emissão, revogação anterior e aprovação numa transacção | SQL com falha preserva link anterior | APROVADO localmente; cadeia UI pendente |
+| Sync | Negócio e recibo por operação atómica, whitelist, RLS | SQL, API e browser confirmaram gravação única | APROVADO no âmbito testado |
+| Fila offline | Lotes de 100; retenção de não confirmados e mensagem de pendência | Typecheck/lint; browser validou uma entrada | Parcial: teste de mais de 100 entradas e falhas parciais ainda pendente |
+| G3 oficial | A minuta não é tomada como documento aceite | Download real e campos pendentes explicitados | FALHOU arquivo oficial completo |
+| Paginação Word genérica | Saída original preservada como evidência | Segunda página necessita de ajuste no cabeçalho/espaçamento | FALHOU QA visual final |
+| Projectos/acções | Geração existente recuperada | Preparação ainda sem transacção/serialização integral | BLOQUEADO; correcção por concluir |
+| Gemini | Recuperação gratuita incorporada | Simulados passaram, live bloqueado | BLOQUEADO |
+| Dependências | Gate moderate preservado | Oito moderate, zero high/critical na execução local | FALHOU o gate isolado |
+| Mobile físico | Sem prova fabricada | Não executado | BLOQUEADO |
+
+## Verificações técnicas e segurança
+
+202 testes locais passaram em 49 ficheiros; typecheck, build, validação de ícones e padrão UI passaram. Lint teve zero erros e cinco avisos de variáveis não utilizadas. Build local produziu BUILD_ID `HMjQyPiuwn4lR4IJWM8uR` e manifest de prerender. A execução real do runner acrescentou onze verificações do backend e dois testes no browser, sem falhas funcionais no run 64.
+
+O workflow run 64 terminou **failure** porque o gate `npm audit --audit-level=moderate` rejeitou oito vulnerabilidades moderadas na cadeia transitiva ExcelJS/archiver/minimatch. Não foi reduzido esse limiar nem aplicada uma alteração de versão maior sem validação. O CI geral, com limiar high, tem resultado próprio na adenda; não substitui o gate mais exigente do ensaio.
+
+Foram restauradas as restrições de publicação das branches de auditoria. Verificações textuais de CI foram alinhadas com a nova RPC offline e com o questionário existente, preservando marca, validade, secções e revisão antes da submissão. Estas correcções não constituem aprovação funcional automática.
+
+A leitura do catálogo remoto confirmou RLS activo nas oito tabelas críticas consultadas; isso não prova a correcção de todas as políticas. Advisors registaram funções SECURITY DEFINER acessíveis a anon/authenticated e protecção de palavras-passe comprometidas desactivada. As funções públicas de token exigem revisão contextual, não revogação cega. Referências: https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable e https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable . Nenhum ajuste foi aplicado na produção.
+
+O histórico de migrações de produção difere do repositório. As migrações novas arrancaram num Supabase descartável; antes de produção é necessário reconciliar histórico e esquema existentes, sem migrações destrutivas. A instalação limpa de ensaio não prova uma actualização segura da base operacional.
+
+Inventários incluídos: 21 rotas/métodos HTTP e 83 Server Actions. Inventário estático não significa que cada entrada foi executada.
+
+## Condições para GO
+
+1. Concluir transacções da preparação operacional e gravação de baseline; testar concorrência e recuperação sem duplicados.
+2. Concluir termos aprovados, snapshot, arquivo e download específicos de G3; os documentos de ensaio com termos pendentes não são prova de carta oficial concluída.
+3. Executar o circuito externo completo GIE360° com revisão e aprovação de ensaio, registando os IDs de todas as etapas.
+4. Obter resposta real do Gemini gratuito e provar falha/recuperação.
+5. Validar instalação e fecho/reabertura da PWA num dispositivo físico; testar fila maior que 100 e falhas parciais.
+6. Tratar as vulnerabilidades e avisos de segurança, reconciliar migrações e repetir os testes críticos sobre a versão exacta.
+7. Rever as evidências e obter autorização humana explícita para a única publicação. Nenhuma aprovação humana de produção foi concedida por estes testes.
+
+**Parecer final: NO-GO.** O progresso operacional está documentado, mas o lançamento integral ainda tem bloqueios técnicos e de aceitação.
+
+## Adenda final de CI
+
+- **CI geral 1152: SUCCESS**, https://github.com/tmucari-jpg/Project-command-center/actions/runs/41416543309 . Inclui gates textuais, PowerShell, typecheck, 202 testes, lint, audit no limiar high e build.
+- **Validação isolada 64: FAILURE**, https://github.com/tmucari-jpg/Project-command-center/actions/runs/41416543119 . Supabase descartável, build, onze checks de backend e dois testes de browser passaram. O gate de dependências no limiar moderate falhou; isso não foi ocultado pela aprovação dos ensaios funcionais.
+- Head testado: `8386f66a0cc06e0aedc47535483a1f11b877bb52`. Merge temporário de PR usado no ensaio: `d1a9047d59e268de6d650bd7e22ebc61a86daa2a`.
+- Artefacto GitHub: `13127438214`, digest `sha256:d7bb0b794163e980eb7ed9aa403f2744cb6883b7b1f202514b88a0cc95c41e91`. Os quatro ficheiros extraídos foram comparados com os hashes registados pelo ensaio.
+- A consulta final do alias de produção confirmou o mesmo deployment e SHA de main observados no início.
+- A documentação final será registada separadamente, sem alteração ao código testado ou nova publicação. Não existe aprovação humana de produção.

@@ -1,0 +1,86 @@
+{
+  "scope": "throwaway-local-only",
+  "checks": [
+    {
+      "name": "two-real-auth-sessions",
+      "status": "passed"
+    },
+    {
+      "name": "cross-user-project-isolation",
+      "status": "passed"
+    },
+    {
+      "name": "authenticated-document-generation-and-idempotency",
+      "status": "passed"
+    },
+    {
+      "name": "authenticated-pdf-docx-download-and-private-storage",
+      "status": "passed"
+    },
+    {
+      "name": "real-g3-draft-auth-approval-and-native-downloads-not-official-archive",
+      "status": "passed"
+    },
+    {
+      "name": "real-offline-api-receipt-idempotency-and-database-confirmation",
+      "status": "passed"
+    },
+    {
+      "name": "gie360-provisioning-and-product-catalog",
+      "status": "passed"
+    },
+    {
+      "name": "gie360-cross-tenant-rls-and-forbidden-write",
+      "status": "passed"
+    },
+    {
+      "name": "gie360-resume-conflict-submit-and-idempotent-notification",
+      "status": "passed"
+    },
+    {
+      "name": "gie360-cannot-open-pcc-shell-or-assistant",
+      "status": "passed"
+    },
+    {
+      "name": "gie360-import-original-review-export-and-tenant-boundary",
+      "status": "passed"
+    }
+  ],
+  "records": {
+    "projectId": "57ebe697-1b3f-4efa-926e-be0d724f8b8d",
+    "deliverableId": "89b30965-c257-4cf7-8232-41cae093c9fc",
+    "artifactVersion": "3ac9222f-af8b-466f-8ffc-1d6c424fc165",
+    "baselineId": "2bf80b8f-e0ed-4a29-810b-19d09d4a9576",
+    "offlineItemId": "0eb33e28-5bac-4239-ab8c-a0a085a4e96d"
+  },
+  "downloadedFiles": [
+    {
+      "path": "validation-artifacts/Documento_Auth_Storage_ENSAIO.pdf",
+      "sha256": "dd2caeb07cae0cab02c3f859d45f1053821a912da24243d9ceaa72f9cf2ef6a4",
+      "bytes": 35505,
+      "source": "authenticated-generic-artifact-download"
+    },
+    {
+      "path": "validation-artifacts/Documento_Auth_Storage_ENSAIO.docx",
+      "sha256": "dc38e5e59dd968059443938b5f12af02e68260e991e65bde636e510306f0dd33",
+      "bytes": 15623,
+      "source": "authenticated-generic-artifact-download"
+    },
+    {
+      "path": "validation-artifacts/Carta_G3_Auth_ENSAIO_MINUTA.pdf",
+      "sha256": "b4110d4c045691cb119511b23d40ae975c0a468311fae8e22a37c6353ce7dd45",
+      "bytes": 28136,
+      "source": "authenticated-g3-draft-not-official-archive"
+    },
+    {
+      "path": "validation-artifacts/Carta_G3_Auth_ENSAIO_MINUTA.docx",
+      "sha256": "8e53eb64de9d930cf2eda5b862293934fbbce8ed09d929a0a42e89f507590bbd",
+      "bytes": 15635,
+      "source": "authenticated-g3-draft-not-official-archive"
+    }
+  ],
+  "physicalDeviceValidated": false,
+  "realAIValidated": false,
+  "g3OfficialArchiveValidated": false,
+  "offlineBrowserPersistenceValidated": false
+}

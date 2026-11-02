@@ -1,0 +1,33 @@
+{
+  "run_id": 41416543119,
+  "files": [
+    {
+      "path": "validation-artifacts/Documento_Auth_Storage_ENSAIO.pdf",
+      "sha256": "dd2caeb07cae0cab02c3f859d45f1053821a912da24243d9ceaa72f9cf2ef6a4",
+      "verified": true
+    },
+    {
+      "path": "validation-artifacts/Documento_Auth_Storage_ENSAIO.docx",
+      "sha256": "dc38e5e59dd968059443938b5f12af02e68260e991e65bde636e510306f0dd33",
+      "verified": true
+    },
+    {
+      "path": "validation-artifacts/Carta_G3_Auth_ENSAIO_MINUTA.pdf",
+      "sha256": "b4110d4c045691cb119511b23d40ae975c0a468311fae8e22a37c6353ce7dd45",
+      "verified": true
+    },
+    {
+      "path": "validation-artifacts/Carta_G3_Auth_ENSAIO_MINUTA.docx",
+      "sha256": "8e53eb64de9d930cf2eda5b862293934fbbce8ed09d929a0a42e89f507590bbd",
+      "verified": true
+    }
+  ],
+  "same_g3_fields_in_pdf_and_docx": {
+    "Validar Carta de ensaio": true,
+    "Diagnóstico sintético controlado": true,
+    "Carta DOCX e PDF de ensaio": true,
+    "Dados sintéticos sem informação de clientes reais": true
+  },
+  "g3_official_archive_verified": false,
+  "physical_device_validated": false
+}
