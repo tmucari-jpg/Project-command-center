@@ -35,3 +35,11 @@
 - `project_commitment_baselines` continua com **zero registos**.
 - Próxima condição para testes com escrita: configurar **credenciais de base isolada para esta branch**, confirmar projecto/ref de destino e rollback; depois executar G3, GIE360° e geração de documentos num único ensaio encadeado.
 - Nenhuma migração, publicação ou escrita em tabelas de negócio foi feita nesta verificação.
+
+## Continuação do fecho acelerado — 02/11/2026
+- CI [#1144](https://github.com/tmucari-jpg/Project-command-center/actions/runs/41403054449): **success** no SHA `a15ff795315fd25e34b380cab8f6f5da80b3a2d6`.
+- Vercel Preview `dpl_6K2kv3v5JLRXycTBMATGEdZgcUcv`: **READY**, corresponde exactamente ao SHA acima, branch QA. Estar READY atesta deployment, não autenticação nem operação funcional.
+- Consulta às configurações da branch QA com valores não descodificados: não devolveu entradas Supabase exclusivas desta branch. Ligação a base isolada continua **não comprovada**.
+- Tentativa externa de abertura do Preview não forneceu resposta utilizável nesta sessão; portanto **sem prova** de smoke HTTP autenticado ou UI funcional.
+- Não se efectuou escrita em projectos/clientes reais nem qualquer migração/deploy de produção.
+- **Gate prioritário:** estabelecer URL e chave pública de Supabase **de ensaio, distintos de produção**, só para a branch QA, validar autenticação e então efectuar os circuitos G3/GIE360/Gemini com IDs e artefactos reais. Não usar variáveis de produção como substituto.
