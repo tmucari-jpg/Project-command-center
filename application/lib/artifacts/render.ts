@@ -21,7 +21,7 @@ function lines(s:ArtifactSnapshot) {
 }
 export async function renderDocument(s:ArtifactSnapshot):Promise<GeneratedFile[]> {
   const logo = await transparentArtifactLogo();
-  const brand = s.documentBrand ?? "PCC";
+  const brand = s.documentBrand === "GIE360°" ? "PCC + GIE360°" : "PCC";
   const label = s.kind === "document" ? fact(s.deliverable.title) : `${KIND_LABELS[s.kind]} - ${fact(s.project.title)}`;
   const currency = typeof s.project.currency === "string" && s.project.currency.trim() ? s.project.currency.trim() : "Moeda não definida";
   const subtitle = `RASCUNHO PARA VALIDAÇÃO | ${currency} | ${s.generatedAt.slice(0,10)} | ${s.version}`;
@@ -71,7 +71,7 @@ export async function renderDocument(s:ArtifactSnapshot):Promise<GeneratedFile[]
   return [{extension:"docx",mime:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",bytes:word},{extension:"pdf",mime:"application/pdf",bytes:pdf}];
 }
 export async function renderArtifact(s:ArtifactSnapshot):Promise<GeneratedFile[]> {
-  const brand = s.documentBrand ?? "PCC";
+  const brand = s.documentBrand === "GIE360°" ? "PCC + GIE360°" : "PCC";
   if(s.kind === "spreadsheet") {
     const {default:ExcelJS}=await import("exceljs");const w=new ExcelJS.Workbook();w.creator=brand;
     const image=w.addImage({base64:`data:image/png;base64,${(await fs.readFile(asset("pcc-logo-official.png"))).toString("base64")}`,extension:"png"});
