@@ -2,6 +2,7 @@ import { artifactInformationGaps } from "@/lib/artifacts/readiness";
 export type DocumentKind = "master_mind" | "master_plan" | "commercial_guide" | "diagnosis" | "decision" | "progress" | "closure" | "document" | "spreadsheet" | "presentation";
 export type ArtifactSnapshot = {
   version: string; generatedAt: string; kind: DocumentKind;
+  documentBrand?: "PCC" | "GIE360°";
   deliverable: Record<string, unknown>; project: Record<string, unknown>;
   sections: Array<{ title: string; rows: Array<Record<string, unknown>> }>;
   reviewedContent?: string;
