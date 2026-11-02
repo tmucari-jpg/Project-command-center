@@ -1,3 +1,4 @@
+import { buildClientStatusPreview, clientStatusFingerprint } from "@/lib/client-status-preview";
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -90,106 +91,39 @@ export type ProjectClientStatusLinkState = {
   linkId?: string;
 };
 
+export async function previewProjectClientStatus(projectId:string,publicNote:string) {
+ const id=z.string().uuid().safeParse(projectId);
+ const note=z.string().trim().max(2000).safeParse(publicNote);
+ if(!id.success||!note.success)return {ok:false as const,error:"Dados inválidos."};
+ const {supabase,user}=await requireUser();
+ try{
+  const preview=await buildClientStatusPreview(supabase,user.id,id.data,note.data);
+  return {ok:true as const,preview,fingerprint:clientStatusFingerprint(preview)};
+ }catch{return {ok:false as const,error:"Pré-visualização indisponível."};}
+}
 export async function publishProjectClientStatus(
-  _previousState: ProjectClientStatusLinkState,
-  formData: FormData,
-): Promise<ProjectClientStatusLinkState> {
-  if (formData.get("reviewed") !== "on") {
-    return { ok: false, error: "É necessária a revisão e aprovação interna antes de publicar um link externo." };
-  }
-  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
-  const publicNote = z.string().trim().max(2000).safeParse(String(formData.get("public_note") ?? ""));
-  if (!projectId.success || !publicNote.success) {
-    return { ok: false, error: "Revise os dados do acompanhamento do cliente." };
-  }
-
-  const { supabase, user } = await requireUser();
-
-  const [{ data: project, error: projectError }, { data: deliverables, error: deliverableError }, { data: metrics, error: metricError }] =
-    await Promise.all([
-      supabase
-        .from("projects")
-        .select("id,title,status,expected_result,next_action")
-        .eq("id", projectId.data)
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("deliverables")
-        .select("id,title,status,due_date,completion_criteria,artifact_url,artifact_reference,artifact_version,acceptance_status,accepted_at")
-        .eq("project_id", projectId.data)
-        .eq("user_id", user.id)
-        .neq("status", "cancelled")
-        .order("due_date", { ascending: true, nullsFirst: false }),
-      supabase
-        .from("metrics")
-        .select("id,name,unit,current_value,target_value,measurement_date")
-        .eq("project_id", projectId.data)
-        .eq("user_id", user.id)
-        .order("measurement_date", { ascending: false, nullsFirst: false }),
-    ]);
-
-  if (projectError || !project) {
-    return { ok: false, error: projectError?.message ?? "Projecto não encontrado." };
-  }
-  if (deliverableError || metricError) {
-    return { ok: false, error: deliverableError?.message ?? metricError?.message ?? "Não foi possível preparar o snapshot." };
-  }
-
-  const deliverableSnapshot = (deliverables ?? []).map((item) => ({
-    id: item.id,
-    title: item.title,
-    status: item.status,
-    due_date: item.due_date,
-    completion_criteria: item.completion_criteria,
-    acceptance_status: item.acceptance_status,
-    accepted_at: item.accepted_at,
-    artifact_version: item.artifact_version,
-    artifact_url:
-      ["accepted", "accepted_with_reservations"].includes(item.acceptance_status ?? "") && item.artifact_url
-        ? item.artifact_url
-        : null,
-    artifact_reference:
-      ["accepted", "accepted_with_reservations"].includes(item.acceptance_status ?? "") && item.artifact_reference
-        ? item.artifact_reference
-        : null,
-  }));
-
-  const latestMetricByName = new Map<string, (typeof metrics extends Array<infer T> ? T : never)>();
-  for (const metric of metrics ?? []) {
-    if (!latestMetricByName.has(metric.name)) latestMetricByName.set(metric.name, metric);
-  }
-  const metricSnapshot = Array.from(latestMetricByName.values()).map((metric) => ({
-    name: metric.name,
-    unit: metric.unit,
-    current_value: metric.current_value,
-    target_value: metric.target_value,
-    measurement_date: metric.measurement_date,
-  }));
-
-  const { token, tokenHash } = createProjectClientStatusToken();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: linkId, error: publishError } = await supabase.rpc("publish_project_client_status_atomic", {
-    p_project_id: project.id,
-    p_owner_id: user.id,
-    p_public_note: publicNote.data || null,
-    p_project_status: project.status,
-    p_expected_result: project.expected_result,
-    p_next_action: project.next_action,
-    p_deliverables: deliverableSnapshot,
-    p_kpis: metricSnapshot,
-    p_token_hash: tokenHash,
-    p_expires_at: expiresAt,
-  });
-  if (publishError || !linkId) {
-    return { ok: false, error: "Não foi possível publicar o link. O anterior permanece válido." };
-  }
-
-  revalidatePath(`/projects/${project.id}`);
-  return {
-    ok: true,
-    url: projectClientStatusPublicUrl(token),
-    linkId: linkId as string,
-  };
+ _previousState:ProjectClientStatusLinkState,formData:FormData
+):Promise<ProjectClientStatusLinkState>{
+ if(formData.get("reviewed")!=="on")return {ok:false,error:"Aprovação interna obrigatória."};
+ const id=z.string().uuid().safeParse(formData.get("project_id"));
+ const note=z.string().trim().max(2000).safeParse(String(formData.get("public_note")??""));
+ const fingerprint=z.string().regex(/^[0-9a-f]{64}$/).safeParse(formData.get("preview_fingerprint"));
+ if(!id.success||!note.success||!fingerprint.success)return {ok:false,error:"Faça a pré-visualização integral antes da partilha."};
+ const {supabase,user}=await requireUser();
+ let preview:Awaited<ReturnType<typeof buildClientStatusPreview>>;
+ try{preview=await buildClientStatusPreview(supabase,user.id,id.data,note.data);}
+ catch{return {ok:false,error:"Dados indisponíveis para confirmação."};}
+ if(clientStatusFingerprint(preview)!==fingerprint.data)return {ok:false,error:"Dados alterados. Reveja a versão antes de publicar."};
+ const {token,tokenHash}=createProjectClientStatusToken();
+ const {data,error}=await supabase.rpc("publish_project_client_status_atomic",{
+  p_project_id:id.data,p_owner_id:user.id,p_public_note:preview.public_note,
+  p_project_status:preview.project.status,p_expected_result:preview.project.expected_result,
+  p_next_action:preview.project.next_action,p_deliverables:preview.deliverables,p_kpis:preview.kpis,
+  p_token_hash:tokenHash,p_expires_at:new Date(Date.now()+7*86400000).toISOString(),
+ });
+ if(error||!data)return {ok:false,error:"Publicação não concluída. O link anterior permanece válido."};
+ revalidatePath(`/projects/${id.data}`);
+ return {ok:true,url:projectClientStatusPublicUrl(token),linkId:data as string};
 }
 
 export async function createClientDiagnosticRequest(
