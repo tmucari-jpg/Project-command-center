@@ -26,3 +26,12 @@
 - Metadados das variáveis Vercel (sem descodificar segredos): `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` existem no target **production** e em três entradas Preview restritas às branches `recovery/gie360-20261028`, `feature/autonomous-action-drafts` e `audit/pcc-identity-operational-consistency`. Não aparece entrada Preview sem restrição nem específica para a branch QA actual.
 - **Conclusão:** o Preview da branch actual não tem ligação Supabase independente confirmada. Não afirmar que está pronto para G3/GIE360° ou operações com escrita. Corrigir as variáveis no ambiente de ensaio isolado (sem copiar cegamente as credenciais de produção), verificar autenticação e fazer smoke antes de qualquer submissão.
 - Nenhum dado ou configuração de produção foi alterado nesta verificação.
+
+## Verificação de continuidade — 02/11/2026
+- CI GitHub #1143: **success**, commit `a72087931650b14fadfba085f1f16125fba36158`.
+- Metadata do Vercel filtrada pela branch `qa/integracao-g3-gie360-gemini-mobile-20261030`, sem desencriptar valores: **nenhuma variável específica devolvida**. Configuração adequada de Supabase Preview continua não comprovada; não executar escrita no Supabase operacional a partir desse Preview.
+- Projectos Supabase disponíveis: `project-command-center` e `briefing-diario-` estão activos; `tmucari-jpg's Project` e `Maana-piloto` estão inactivos. Nenhum dos restantes foi validado como ambiente de ensaio PCC; não reutilizar base de outro produto.
+- Consulta operacional sem escrita: `client_diagnostic_lookup` com hash nulo de referência (64 caracteres 0) devolveu **zero registos**. Este caso isolado **não prova** comportamento com tokens expirados nem acesso autorizado.
+- `project_commitment_baselines` continua com **zero registos**.
+- Próxima condição para testes com escrita: configurar **credenciais de base isolada para esta branch**, confirmar projecto/ref de destino e rollback; depois executar G3, GIE360° e geração de documentos num único ensaio encadeado.
+- Nenhuma migração, publicação ou escrita em tabelas de negócio foi feita nesta verificação.
