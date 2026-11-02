@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { resolveWorkspaceUser } from "@/lib/auth";
-import { renderDocument } from "@/lib/artifacts/render";
+import { renderArtifact } from "@/lib/artifacts/render";
 import type { ArtifactSnapshot } from "@/lib/artifacts/model";
 
 export const runtime = "nodejs";
@@ -60,7 +60,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     },
     sections: [{ title: `Condições propostas — baseline v${baseline.version}`, rows: [fields] }],
   };
-  const files = await renderDocument(snapshot);
+  const files = await renderArtifact(snapshot);
   const result = files.find(f => f.extension === format)!;
   const title = project.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 _-]/g, "").trim().replace(/\s+/g, "_").slice(0, 75) || "Projecto";
   return new NextResponse(new Uint8Array(result.bytes), {
