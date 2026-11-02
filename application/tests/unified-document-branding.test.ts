@@ -7,7 +7,7 @@ const g3 = readFileSync(new URL("application/app/api/projects/[id]/commitment-dr
 describe("common document renderer", () => {
  it("supports both official identities", () => {
    expect(model).toContain('documentBrand?: "PCC" | "GIE360°"');
-   expect(render).toContain('s.documentBrand ?? "PCC"');
+   expect(render).toContain('s.documentBrand === "GIE360°" ? "PCC + GIE360°" : "PCC"');
  });
  it("uses the same renderer for G3 and other deliverables", () => {
    expect(g3).toContain("renderArtifact(snapshot)");
