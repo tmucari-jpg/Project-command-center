@@ -35,7 +35,7 @@ jobs:
       - name: Guard PCC Android identity and app shell
         run: |
           test -s android-apk/app/src/main/res/drawable/pcc_icon.png
-          cmp -s application/public/icons/icon-512.png android-apk/app/src/main/res/drawable/pcc_icon.png
+          cmp -s application/public/icons/icon-maskable-512.png android-apk/app/src/main/res/drawable/pcc_icon.png
           grep -q 'android:icon="@mipmap/ic_launcher"' android-apk/app/src/main/AndroidManifest.xml
           grep -q 'android:roundIcon="@mipmap/ic_launcher_round"' android-apk/app/src/main/AndroidManifest.xml
           grep -q '@drawable/pcc_icon_foreground' android-apk/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml

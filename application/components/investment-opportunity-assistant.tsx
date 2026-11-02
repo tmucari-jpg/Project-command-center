@@ -1,4 +1,5 @@
 "use client";
+import { generateFreeAssistance } from "@/lib/free-ai-assist";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFactoryIntake } from "@/app/(protected)/mutations";
@@ -63,24 +64,7 @@ function parseOpportunities(text: string): Opportunity[] {
   }
 }
 
-async function callLocal(input: string) {
-  const response = await fetch("http://127.0.0.1:8080/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "qwen-local",
-      messages: [
-        { role: "system", content: INSTRUCTIONS },
-        { role: "user", content: input },
-      ],
-      temperature: 0.2,
-      max_tokens: 1500,
-    }),
-  });
-  if (!response.ok) throw new Error(`LOCAL_${response.status}`);
-  const body = await response.json();
-  return String(body?.choices?.[0]?.message?.content ?? "");
-}
+
 
 export function InvestmentOpportunityAssistant() {
   const [brief, setBrief] = useState<Brief>(EMPTY_BRIEF);
@@ -134,23 +118,7 @@ export function InvestmentOpportunityAssistant() {
     setMessage(null);
     setOpportunities([]);
     try {
-      let text = "";
-      const cloud = await fetch("/api/ai/assist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: profile, instructions: INSTRUCTIONS }),
-      });
-
-      if (cloud.ok) {
-        const data = await cloud.json();
-        text = String(data.text ?? "");
-      } else {
-        try {
-          text = await callLocal(profile);
-        } catch {
-          throw new Error("IA indisponível");
-        }
-      }
+      const { text } = await generateFreeAssistance(profile, INSTRUCTIONS);
 
       const parsed = parseOpportunities(text);
       if (!parsed.length) throw new Error("Resposta sem oportunidades válidas");

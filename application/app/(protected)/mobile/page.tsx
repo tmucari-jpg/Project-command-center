@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, secondaryButtonClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
+import { resolveOfficialAndroidApk } from "@/lib/android-distribution";
 
 export default async function MobileDistributionPage() {
   const { supabase, user } = await requireAdmin();
@@ -15,7 +16,7 @@ export default async function MobileDistributionPage() {
     .in("document_key", ["android_apk", "android_aab"])
     .order("created_at", { ascending: false });
 
-  const latestApk = (builds ?? []).find((item) => item.document_key === "android_apk" && item.status === "current");
+  const latestApk = await resolveOfficialAndroidApk(supabase, user.id, process.env.VERCEL_GIT_COMMIT_SHA);
   const latestAab = (builds ?? []).find((item) => item.document_key === "android_aab" && item.status === "current");
 
   return (
@@ -28,7 +29,7 @@ export default async function MobileDistributionPage() {
           <Smartphone size={18} /> App PCC existente
         </h2>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          O PCC já funciona como aplicação instalada em formato PWA. O ícone do manifest é gerado a partir do logo oficial do PCC.
+          O PCC disponibiliza instalação em formato PWA. A instalação e o funcionamento precisam de ser verificados no dispositivo e navegador utilizados. O ícone do manifest é gerado a partir do logo oficial do PCC.
           APK/AAB são canais adicionais de distribuição e não substituem a PWA.
         </p>
       </Card>
@@ -66,7 +67,7 @@ export default async function MobileDistributionPage() {
       <Card className="mt-6 p-5">
         <h2 className="inline-flex items-center gap-2 font-semibold text-[var(--cc-foreground)]"><Wifi size={18} /> PWA</h2>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Continua disponível como instalação imediata no dispositivo. Em iPhone, use Safari → Partilhar → Adicionar ao Ecrã Principal.
+          Em Android, use o botão Instalar PCC ou o menu do Chrome/Edge → Instalar aplicação. Em iPhone, use Safari → Partilhar → Adicionar ao Ecrã Principal. Confirme depois a abertura e o ícone no ecrã principal.
         </p>
         <Link href="/optimization" className={secondaryButtonClass + " mt-4"}>Ver saúde operacional</Link>
       </Card>

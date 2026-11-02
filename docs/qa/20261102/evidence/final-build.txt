@@ -1,0 +1,98 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> project-command-center@0.1.0 build
+> next build
+
+▲ Next.js 16.4.2 (Turbopack)
+✓ Running next.config.ts took 35ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.2s
+  Running TypeScript ...
+  Finished TypeScript in 12.2s ...
+  Collecting page data using 8 workers ...
+  Generating static pages using 8 workers (0/53) ...
+  Generating static pages using 8 workers (13/53)
+  Generating static pages using 8 workers (26/53)
+  Generating static pages using 8 workers (39/53)
+✓ Generating static pages using 8 workers (53/53) in 488ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /actions
+├ ƒ /activity
+├ ƒ /admin
+├ ƒ /agenda
+├ ƒ /agents
+├ ƒ /ai-providers
+├ ƒ /api/ai/assist
+├ ƒ /api/client-diagnostic/preintake
+├ ƒ /api/deliverables/[id]/generate
+├ ƒ /api/deliverables/artifacts/[id]/download
+├ ƒ /api/exports/client-diagnostic-template
+├ ƒ /api/exports/commercial-master
+├ ƒ /api/exports/investment-brief/[id]
+├ ƒ /api/mobile/android-apk
+├ ƒ /api/official-documents/[id]/download
+├ ƒ /api/official-documents/upload
+├ ƒ /api/offline/bootstrap
+├ ƒ /api/offline/sync
+├ ƒ /api/operational-readiness
+├ ƒ /api/projects/[id]/commitment-draft
+├ ƒ /auth/callback
+├ ○ /auth/forgot-password
+├ ƒ /auth/login
+├ ○ /auth/resend-confirmation
+├ ○ /auth/sign-up
+├ ○ /auth/update-password
+├ ƒ /automation
+├ ƒ /blockers
+├ ƒ /bot-ia
+├ ƒ /client-diagnostic/[token]
+├ ƒ /closure
+├ ƒ /commercial-master
+├ ƒ /dashboard
+├ ƒ /decisions
+├ ƒ /deliverables
+├ ƒ /evidence
+├ ƒ /execution-arena
+├ ƒ /factory-library
+├ ƒ /focus
+├ ƒ /gie360
+├ ƒ /gie360/api/assist
+├ ƒ /gie360/imports
+├ ƒ /gie360/imports/[id]/download
+├ ƒ /gie360/imports/[id]/review
+├ ƒ /gie360/imports/template
+├ ƒ /gie360/imports/upload
+├ ○ /gie360/login
+├ ƒ /help
+├ ƒ /ideas
+├ ƒ /intelligence
+├ ○ /manifest.webmanifest
+├ ƒ /metrics
+├ ƒ /mobile
+├ ƒ /monetization
+├ ƒ /monetization/briefing-diario
+├ ƒ /notifications
+├ ƒ /objectives
+├ ƒ /official-documents
+├ ƒ /optimization
+├ ƒ /orchestrator
+├ ƒ /products
+├ ƒ /project-factory
+├ ƒ /project-factory/[id]
+├ ƒ /project-status/[token]
+├ ƒ /projects
+├ ƒ /projects/[id]
+├ ƒ /projects/[id]/plan
+├ ƒ /security
+└ ƒ /weekly-review
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand

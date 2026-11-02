@@ -62,7 +62,10 @@
     activeProjects.filter(matches).slice(0,12).forEach(p=>{const count=openActions.filter(a=>a.project_id===p.id).length;const max=Math.max(1,...activeProjects.map(x=>openActions.filter(a=>a.project_id===x.id).length));html+=`<div><div class="itemtop"><span>${esc(p.title)}</span><b>${count}</b></div><div class="bar"><span style="width:${Math.max(count?5:0,count/max*100)}%"></span></div></div>`});
     html+=`</div></div></div><p class="small muted section">Snapshot: ${fmt(snapshot.generatedAt)}</p>`;return html
   }
-  function renderProjects(){const rows=snapshot.projects.filter(matches);return `<div class="card"><h2>Projectos</h2><p class="small muted">Todos os projectos guardados no último snapshot.</p><div class="list section">${rows.map(p=>item(p,[`Progresso ${p.progress??0}%`,p.due_date?`Prazo ${fmt(p.due_date)}`:"Sem prazo",p.next_action?`Próxima: ${p.next_action}`:""])).join("")||'<div class="empty">Sem projectos.</div>'}</div></div>`}
+  function renderProjects(){
+    const rows=snapshot.projects.filter(matches);
+    return `<div class="card"><h2>Projectos</h2><p class="small muted">Edite a próxima acção e guarde no dispositivo. A sincronização ocorre quando voltar a ter ligação.</p><div class="list section">${rows.map(p=>`<article class="item"><div class="itemtop"><h3>${esc(p.title)}</h3>${tag(p.status)}</div><div class="meta">Progresso ${esc(p.progress??0)}% · ${p.due_date?"Prazo "+fmt(p.due_date):"Sem prazo"}</div><label class="small muted" for="next-${esc(p.id)}">Próxima acção</label><textarea id="next-${esc(p.id)}" data-project-next="${esc(p.id)}" maxlength="2000" rows="2" style="box-sizing:border-box;width:100%;margin-top:6px;padding:9px;border:1px solid #a9b9b3;border-radius:8px">${esc(p.next_action||"")}</textarea><div class="row" style="margin-top:9px"><button class="button secondary small" data-save-next="${esc(p.id)}">Guardar no dispositivo</button></div></article>`).join("")||'<div class="empty">Sem projectos.</div>'}</div></div>`;
+  }
   function actionButtons(a){if(isClosed(a.status))return"";return `<div class="row" style="margin-top:9px"><button class="button secondary small" data-action="${a.id}" data-status="in_progress">Em curso</button><button class="button secondary small" data-action="${a.id}" data-status="blocked">Bloquear</button><button class="button secondary small" data-action="${a.id}" data-status="completed">Concluir</button></div>`}
   function renderActions(){const now=Date.now();const rows=snapshot.actions.filter(matches);return `<div class="card"><h2>Executar</h2><p class="small muted">Acções, prazos e bloqueios disponíveis offline.</p><div class="list section">${rows.map(a=>{const overdue=a.due_at&&!isClosed(a.status)&&new Date(a.due_at).getTime()<now;const cls=overdue?"overdue":statusClass(a.status);return `<article class="item"><div class="itemtop"><h3>${esc(a.title)}</h3><span class="tag ${cls}">${overdue?"Em atraso":esc(a.status||"Pendente")}</span></div><div class="meta">${esc(projectName(a.project_id))} · ${a.due_at?fmt(a.due_at):"Sem prazo"}</div>${actionButtons(a)}</article>`}).join("")||'<div class="empty">Sem acções.</div>'}</div><h3 class="section">Bloqueios</h3><div class="list">${snapshot.blockers.filter(matches).map(b=>item(b,[projectName(b.project_id),b.impact||"",b.resolution_due_at?fmt(b.resolution_due_at):""])).join("")||'<div class="empty">Sem bloqueios.</div>'}</div></div>`}
   function renderGeneric(title,rows,metaFn){const filtered=rows.filter(matches);return `<div class="card"><h2>${esc(title)}</h2><div class="list section">${filtered.map(r=>item(r,metaFn(r))).join("")||'<div class="empty">Sem registos.</div>'}</div></div>`}
@@ -102,13 +105,51 @@
       html=`<div class="grid two">${renderGeneric("Dependências",snapshot.dependencies,r=>[projectName(r.project_id),r.responsible||"",r.missing_key||""])}${renderGeneric("Riscos",snapshot.risks,r=>[projectName(r.project_id),r.severity||r.impact||""])}</div><div class="section">${renderGeneric("Decisões",snapshot.decisions,r=>[projectName(r.project_id),r.decision||"",r.created_at?fmt(r.created_at):""])}</div>`;
     }
     $("content").innerHTML=html;
-    document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",()=>queue("update_action_status",{action_id:btn.dataset.action,status:btn.dataset.status})));
+    document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",async()=>{
+      const row=snapshot.actions.find(x=>x.id===btn.dataset.action);
+      if(row){row.status=btn.dataset.status;await put(SNAPSHOT,snapshot,"workspace");render()}
+      await queue("update_action_status",{action_id:btn.dataset.action,status:btn.dataset.status});
+    }));
+    document.querySelectorAll("[data-save-next]").forEach(btn=>btn.addEventListener("click",async()=>{
+      const id=btn.dataset.saveNext;
+      const value=document.querySelector('[data-project-next="'+id+'"]')?.value?.trim();
+      if(!value){$("message").textContent="Escreva a próxima acção antes de guardar.";return}
+      const row=snapshot.projects.find(x=>x.id===id);
+      if(row){row.next_action=value;await put(SNAPSHOT,snapshot,"workspace")}
+      await queue("update_project_next_action",{project_id:id,next_action:value});
+      render();
+    }));
     renderQueue();
   }
   async function queue(type,payload){const item={id:uuid(),type,payload,createdAt:new Date().toISOString(),status:"pending"};await put(QUEUE,item);$("message").textContent="Guardado no dispositivo. Será sincronizado quando a ligação voltar.";$("message").className="small ok";await renderQueue();if(navigator.onLine)sync()}
   async function renderQueue(){const q=await all(QUEUE);$("queueCount").textContent=`${q.length} por sincronizar`;const metric=[...document.querySelectorAll(".metric")].find(el=>el.previousElementSibling?.textContent==="Por sincronizar");if(metric)metric.textContent=q.length}
   async function refreshSnapshot(){const r=await fetch("/api/offline/bootstrap",{credentials:"include",cache:"no-store"});if(!r.ok)return false;snapshot=await r.json();await put(SNAPSHOT,snapshot,"workspace");await put(META,true,"offlineEnabled");return true}
-  async function sync(){if(!navigator.onLine)return;const q=await all(QUEUE);if(q.length){const r=await fetch("/api/offline/sync",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({items:q})});if(r.status===401){$("message").textContent="A sessão precisa de ser renovada. Os dados continuam guardados.";return}if(!r.ok){$("message").textContent="Não foi possível sincronizar ainda.";return}const body=await r.json();for(const result of body.results){if(result.ok)await del(QUEUE,result.id);else{const item=q.find(x=>x.id===result.id);if(item)await put(QUEUE,{...item,status:"failed",error:result.error})}}}await refreshSnapshot().catch(()=>false);$("message").textContent="Sincronização concluída.";$("message").className="small ok";render()}
+  let syncing=false;
+  async function sync(){
+    if(!navigator.onLine||syncing)return;
+    syncing=true;
+    try{
+      const q=(await all(QUEUE)).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+      for(let offset=0;offset<q.length;offset+=100){
+        const batch=q.slice(offset,offset+100);
+        const r=await fetch("/api/offline/sync",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({items:batch})});
+        if(r.status===401){$("message").textContent="A sessão precisa de ser renovada. Os dados continuam guardados.";return}
+        if(!r.ok)throw new Error("SYNC_FAILED");
+        const body=await r.json();if(!Array.isArray(body.results))throw new Error("INVALID_SYNC_RESPONSE");
+        for(const result of body.results){
+          const item=batch.find(x=>x.id===result.id);if(!item)continue;
+          if(result.ok===true)await del(QUEUE,result.id);else await put(QUEUE,{...item,status:"failed",error:result.error});
+        }
+      }
+      const refreshed=await refreshSnapshot().catch(()=>false);
+      const remaining=(await all(QUEUE)).length;
+      $("message").textContent=remaining?`Sincronização incompleta: ${remaining} registo(s) continuam guardados para nova tentativa.`:refreshed?"Sincronização concluída e dados actualizados.":"Envios confirmados. Não foi possível actualizar a cópia local; tente novamente.";
+      $("message").className=remaining||!refreshed?"small":"small ok";render();
+    }catch{
+      $("message").textContent="Não foi possível concluir a sincronização. Os registos não confirmados continuam guardados.";
+      $("message").className="small";
+    }finally{syncing=false;}
+  }
   function fillCapture(){options($("captureProject"),snapshot.projects,"Sem projecto");options($("captureDeliverable"),snapshot.deliverables,"Sem entregável");options($("captureAction"),snapshot.actions.filter(a=>!isClosed(a.status)),"Seleccione uma acção")}
   function captureMode(){const t=$("captureType").value,needsAction=["create_evidence","create_blocker"].includes(t),factory=t==="create_factory_intake";$("actionField").classList.toggle("hidden",!needsAction);$("projectField").classList.toggle("hidden",needsAction||factory);$("deliverableField").classList.toggle("hidden",t!=="create_action");$("problemField").classList.toggle("hidden",!factory);$("expectedField").classList.toggle("hidden",!factory)}
   async function saveCapture(){const type=$("captureType").value,title=$("captureTitle").value.trim(),description=$("captureDescription").value.trim();if(title.length<2){$("message").textContent="Indique um título.";return}let payload={title,description,priority:"medium"};if(type==="create_action"){payload.project_id=$("captureProject").value;payload.deliverable_id=$("captureDeliverable").value}if(type==="create_idea")payload.project_id=$("captureProject").value;if(type==="create_evidence"||type==="create_blocker"){payload.action_id=$("captureAction").value;if(!payload.action_id){$("message").textContent="Seleccione uma acção.";return}}if(type==="create_evidence")payload.evidence_type="comment";if(type==="create_factory_intake"){const problem=$("captureProblem").value.trim();if(problem.length<3){$("message").textContent="Indique o problema ou oportunidade.";return}payload={title,description,problem,expected_value:$("captureExpected").value.trim(),target_user:"",project_type:"commercial",constraints:"",source:"offline_intake"}}await queue(type,payload);$("captureDialog").close();$("captureTitle").value="";$("captureDescription").value="";$("captureProblem").value="";$("captureExpected").value=""}

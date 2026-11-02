@@ -1,0 +1,84 @@
+{
+  "tests": {
+    "exit_code": 0,
+    "seconds": 14.43,
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--reporter=json",
+      "--outputFile=../evidence/vitest-results.json"
+    ],
+    "evidence": "evidence/final-tests.log"
+  },
+  "typecheck": {
+    "exit_code": 0,
+    "seconds": 10.61,
+    "command": [
+      "npm",
+      "run",
+      "typecheck"
+    ],
+    "evidence": "evidence/final-typecheck.log"
+  },
+  "lint": {
+    "exit_code": 0,
+    "seconds": 22.89,
+    "command": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "evidence": "evidence/final-lint.log"
+  },
+  "ui": {
+    "exit_code": 0,
+    "seconds": 0.34,
+    "command": [
+      "npm",
+      "run",
+      "ui:standard"
+    ],
+    "evidence": "evidence/final-ui.log"
+  },
+  "icons": {
+    "exit_code": 0,
+    "seconds": 0.91,
+    "command": [
+      "npm",
+      "run",
+      "icons:validate"
+    ],
+    "evidence": "evidence/final-icons.log"
+  },
+  "release_gate": {
+    "exit_code": 0,
+    "seconds": 3.03,
+    "command": [
+      "node",
+      "scripts/test-release-acceptance.mjs"
+    ],
+    "evidence": "evidence/final-release_gate.log"
+  },
+  "expiry_static": {
+    "exit_code": 0,
+    "seconds": 0.39,
+    "command": [
+      "node",
+      "scripts/test-diagnostic-expiry-migration.mjs"
+    ],
+    "evidence": "evidence/final-expiry_static.log"
+  },
+  "audit": {
+    "exit_code": 0,
+    "seconds": 8.41,
+    "command": [
+      "npm",
+      "audit",
+      "--omit=dev",
+      "--audit-level=high",
+      "--json"
+    ],
+    "evidence": "evidence/final-audit.log"
+  }
+}

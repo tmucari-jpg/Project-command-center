@@ -209,7 +209,7 @@ export default async function CommercialPage({
             <TextArea label="Cliente / público ideal" name="ideal_customer" />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Preço, se conhecido" name="price" type="number" step="any" />
-              <Field label="Moeda" name="currency" placeholder="MZN" />
+              <Field label="Moeda" name="currency" defaultValue="MZN" placeholder="MZN" />
             </div>
             <Field label="Canal prioritário" name="channel" placeholder="Directo, WhatsApp, parceiros..." />
             <Select label="Estado da validação comercial" name="validation_status" defaultValue="draft">
@@ -245,7 +245,7 @@ export default async function CommercialPage({
             </Select>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Valor, se conhecido" name="value" type="number" step="any" />
-              <Field label="Moeda" name="currency" placeholder="MZN" />
+              <Field label="Moeda" name="currency" defaultValue="MZN" placeholder="MZN" />
             </div>
             <TextArea label="Próxima acção" name="next_action" />
             <Field label="Data da próxima acção" name="next_action_at" type="datetime-local" />

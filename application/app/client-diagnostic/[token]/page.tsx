@@ -74,6 +74,7 @@ export default async function ClientDiagnosticPage({
         clientName={request.client_name}
         clientOrganization={request.client_organization}
         publicContext={request.public_context}
+        questionnaireVersion={request.questionnaire_version}
         expiresAt={request.expires_at}
       />
     </>

@@ -21,7 +21,6 @@ AS $function$
      or (select private.is_global_admin())
   group by l.action
   order by l.action;
-$function$
-
+$function$;
 revoke all on function public.client_diagnostic_rate_limit_summary() from public,anon;
 grant execute on function public.client_diagnostic_rate_limit_summary() to authenticated;

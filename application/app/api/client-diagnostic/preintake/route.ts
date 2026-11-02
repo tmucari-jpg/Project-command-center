@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
@@ -7,14 +8,21 @@ import {
 } from "@/lib/client-diagnostic-token";
 
 const schema = z.object({
-  intent: z.enum(["idea", "client_request", "investment", "internal_improvement", "digital_solution", "problem"]),
+  reviewed: z.literal(true),
+  intent: z.enum(["idea", "client_request", "investment", "internal_improvement", "digital_solution", "problem", "gie360"]),
   case_title: z.string().trim().min(2).max(180),
-  client_name: z.string().trim().max(200).optional().default(""),
-  client_organization: z.string().trim().max(300).optional().default(""),
+  client_name: z.string().trim().min(2).max(200),
+  client_organization: z.string().trim().min(2).max(300),
   public_context: z.string().trim().max(2000).optional().default(""),
 });
 
 const intentMeta = {
+  gie360: {
+    label: "GIE360° — Gestão Inteligente Empresarial",
+    problem: "Recolher o diagnóstico inicial da empresa para definir necessidades e preparar o questionário empresarial específico.",
+    expected: "Identificar o ponto de partida e preparar a avaliação empresarial personalizada GIE360°.",
+    projectType: "commercial" as const,
+  },
   idea: {
     label: "Ideia / projecto a avaliar",
     problem: "Recolher informação inicial para compreender e avaliar uma ideia ou projecto.",
@@ -54,6 +62,9 @@ const intentMeta = {
 };
 
 export async function POST(request: Request) {
+  if (request.headers.get("origin") !== new URL(request.url).origin) {
+    return NextResponse.json({ error: "Origem inválida." }, { status: 403 });
+  }
   try {
     const payload = schema.safeParse(await request.json());
     if (!payload.success) {
@@ -101,7 +112,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         factory_case_id: factoryCase.id,
         token_hash: tokenHash,
-        questionnaire_version: "executive-v3",
+        questionnaire_version: payload.data.intent === "gie360" ? "executive-gie360-v1" : "executive-v3",
         client_name: payload.data.client_name || null,
         client_organization: payload.data.client_organization || null,
         public_context:
@@ -124,6 +135,30 @@ export async function POST(request: Request) {
         { error: requestError?.message ?? "Não foi possível gerar o questionário." },
         { status: 500 },
       );
+    }
+
+    const material = JSON.stringify({
+      factoryCaseId: factoryCase.id,
+      clientName: payload.data.client_name,
+      clientOrganization: payload.data.client_organization,
+      publicContext: payload.data.public_context || "Este breve questionário permite-nos compreender o essencial e preparar um diagnóstico mais focado e uma próxima conversa mais objectiva.",
+      expiresAt,
+      version: payload.data.intent === "gie360" ? "executive-gie360-v1" : "executive-v3",
+    });
+    const { error: approvalError } = await supabase.from("pcc_external_share_approvals").insert({
+      request_id: diagnosticRequest.id,
+      factory_case_id: factoryCase.id,
+      manager_user_id: user.id,
+      audience_name: payload.data.client_name,
+      audience_organization: payload.data.client_organization,
+      public_context: payload.data.public_context || "Este breve questionário permite-nos compreender o essencial e preparar um diagnóstico mais focado e uma próxima conversa mais objectiva.",
+      content_sha256: createHash("sha256").update(material).digest("hex"),
+      content_version: payload.data.intent === "gie360" ? "executive-gie360-v1" : "executive-v3",
+      expires_at: expiresAt,
+    });
+    if (approvalError) {
+      await supabase.from("client_diagnostic_requests").update({ status: "revoked" }).eq("id", diagnosticRequest.id).eq("user_id", user.id);
+      return NextResponse.json({ error: "Não foi possível registar a aprovação interna. O link não foi disponibilizado." }, { status: 500 });
     }
 
     return NextResponse.json({

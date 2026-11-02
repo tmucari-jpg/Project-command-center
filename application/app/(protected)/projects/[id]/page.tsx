@@ -137,7 +137,7 @@ export default async function ProjectHubPage({
       .eq("project_id", id),
     supabase
       .from("financial_entries")
-      .select("entry_type,category,amount,currency,status")
+      .select("entry_type,category,amount,currency,status,occurred_on")
       .eq("user_id", user.id)
       .eq("project_id", id),
     supabase
@@ -159,6 +159,21 @@ export default async function ProjectHubPage({
       .eq("project_id", id)
       .order("created_at", { ascending: false }),
   ]);
+
+  // Reuse only diagnostics already converted into this project; unreviewed client answers are excluded.
+  const { data: sourceCase } = await supabase.from("project_factory_cases")
+    .select("id,problem,expected_value,constraints,governance_gate_status")
+    .eq("project_id", id).eq("user_id", user.id).maybeSingle();
+  const { data: factoryValidation } = sourceCase
+    ? await supabase.from("factory_validations")
+        .select("status,viability_status,viability_summary,conditions_to_proceed")
+        .eq("factory_case_id", sourceCase.id).eq("user_id", user.id).maybeSingle()
+    : { data: null };
+  const sourceValidated = Boolean(sourceCase?.governance_gate_status === "approved" &&
+    factoryValidation && ["viable", "conditional"].includes(factoryValidation.viability_status ?? "") &&
+    factoryValidation.status === "complete");
+  const diagnosticConditions = sourceValidated ? String(factoryValidation?.conditions_to_proceed ?? "").trim() : "";
+  const diagnosticScope = sourceValidated ? String(sourceCase?.problem ?? "").trim() : "";
 
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
   const activeDependencies = (dependencies ?? []).filter((item) =>
@@ -196,6 +211,11 @@ export default async function ProjectHubPage({
     projectCurrency: project.currency,
     commercialCurrency: commercialProfile?.currency,
   });
+  const inferredDeliverables = (deliverables ?? []).map(item => item.title).filter(Boolean).join("; ");
+  const inferredScope = diagnosticScope || (typeof project.description === "string" ? project.description.trim() : "");
+  const inferredResponsibilities = projectOwner?.full_name
+    ? `Coordenação do projecto: ${projectOwner.full_name}. Confirmar obrigações específicas antes da aprovação.`
+    : "";
   const latestBaseline = commitmentBaselines?.[0];
   const approvedBaseline = (commitmentBaselines ?? []).find((item) => item.status === "client_approved");
   const pendingChanges = (changeRequests ?? []).filter((item) => item.decision === "pending");
@@ -309,9 +329,21 @@ export default async function ProjectHubPage({
           </span>
         </div>
 
+        <div className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+          <p className="text-sm font-semibold">Carta de Compromisso / Contrato de Prestação de Serviços</p>
+          <p className="mt-1 text-sm text-[var(--cc-secondary)]">Minuta automática baseada no compromisso aprovado internamente. Não equivale a contrato assinado nem autoriza a execução. Termos ausentes são indicados para confirmação.</p>
+          {latestBaseline && ["internal_approved", "client_approved"].includes(latestBaseline.status) ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a className={secondaryButtonClass} href={`/api/projects/${project.id}/commitment-draft?format=pdf`}>Descarregar minuta PDF</a>
+              <a className={secondaryButtonClass} href={`/api/projects/${project.id}/commitment-draft?format=docx`}>Descarregar minuta Word</a>
+            </div>
+          ) : <p className="mt-2 text-sm">Para gerar a minuta, registe o compromisso e valide-o internamente.</p>}
+        </div>
+
         <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
           <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">Ver detalhes do compromisso</summary>
           <div className="border-t border-[var(--cc-border)] p-4">
+            <p className="mb-3 text-sm text-[var(--cc-secondary)]">Campos preenchidos com dados já registados: diagnóstico de origem validado (quando existente), resultado esperado, descrição do âmbito, entregáveis e responsável. Condições do diagnóstico são propostas para revisão, não exclusões contratuais aprovadas. Todos os campos são editáveis.</p>
             <form action={saveCommitmentBaseline} className="space-y-4">
               <input type="hidden" name="project_id" value={project.id} />
               <Select
@@ -325,11 +357,12 @@ export default async function ProjectHubPage({
                 <option value="restricted">Restrita · sem snapshot offline</option>
               </Select>
               <TextArea label="Resultado esperado" name="expected_result" required defaultValue={latestBaseline?.expected_result ?? project.expected_result ?? ""} />
-              <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? ""} placeholder="O que o PCC fará neste projecto." />
-              <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? ""} placeholder="Resultados concretos que o cliente receberá." />
+              <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? inferredScope} placeholder="O que o PCC fará neste projecto." />
+              <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? inferredDeliverables} placeholder="Resultados concretos que o cliente receberá." />
+              {diagnosticConditions && <p className="rounded-lg border border-[var(--cc-border)] p-3 text-sm"><strong>Condições do diagnóstico validado (para revisão):</strong> {diagnosticConditions}. Não são automaticamente exclusões contratuais.</p>}
               <TextArea label="Exclusões" name="exclusions" defaultValue={latestBaseline?.exclusions ?? ""} placeholder="O que não está incluído." />
               <div className="grid gap-4 lg:grid-cols-2">
-                <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? ""} />
+                <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? inferredResponsibilities} />
                 <TextArea label="Responsabilidades do cliente" name="client_responsibilities" defaultValue={latestBaseline?.client_responsibilities ?? ""} />
               </div>
               <TextArea

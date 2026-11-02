@@ -1,4 +1,9 @@
 import { z } from "zod";
+
+const officialCurrency = z.preprocess(
+  value => typeof value === "string" && value.trim() ? value.trim().toUpperCase() : "MZN",
+  z.string().regex(/^[A-Z]{3}$/, "Use o código ISO da moeda; MZN é a moeda oficial."),
+);
 import { EVIDENCE_TYPES, METRIC_TYPES, PRIORITIES, STATUS_OPTIONS } from "@/lib/constants";
 
 const optionalText = (max = 4000) =>
@@ -86,7 +91,7 @@ export const projectSchema = z
     due_date: optionalDate,
     progress,
     budget: optionalNumber,
-    currency: optionalText(8),
+    currency: officialCurrency,
     next_action: optionalText(500),
     notes: optionalText(),
   })
@@ -278,7 +283,7 @@ export const executionArenaTrialSchema = z.object({
     (value) => (value === "" || value === null || value === undefined ? undefined : value),
     z.coerce.number().min(0).optional(),
   ),
-  cost_currency: optionalText(8),
+  cost_currency: officialCurrency,
   human_correction_minutes: z.preprocess(
     (value) => (value === "" || value === null || value === undefined ? undefined : value),
     z.coerce.number().int().min(0).optional(),
@@ -368,7 +373,7 @@ export const commercialProfileSchema = z.object({
   offer: optionalText(6000),
   ideal_customer: optionalText(4000),
   price: optionalNumber,
-  currency: optionalText(8),
+  currency: officialCurrency,
   channel: optionalText(1000),
   validation_status: z.enum(["not_ready", "draft", "ready_to_validate", "validating", "validated"]),
 });
@@ -381,7 +386,7 @@ export const commercialLeadSchema = z.object({
   source: optionalText(500),
   stage: z.enum(["contact", "interest", "diagnosis", "demonstration", "proposal", "client", "handoff", "lost"]),
   value: optionalNumber,
-  currency: optionalText(8),
+  currency: officialCurrency,
   next_action: optionalText(1000),
   next_action_at: optionalDateTime,
   risk: optionalText(1000),
@@ -394,7 +399,7 @@ export const financialEntrySchema = z.object({
   category: optionalText(180),
   description: z.string().trim().min(2).max(1000),
   amount: z.coerce.number().finite().min(0),
-  currency: z.string().trim().min(2).max(8),
+  currency: officialCurrency,
   occurred_on: optionalDate,
   status: z.enum(["actual", "forecast", "pending"]),
   evidence_reference: optionalText(1000),

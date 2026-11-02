@@ -35,10 +35,12 @@ function result<T>(
   source: string[] = [],
   missing: string[] = [],
 ): AutofillResult<T> {
+  if (typeof value === "number" && !Number.isFinite(value)) return { value: null, state: "missing", source: [], missing: ["finite_numeric_inputs"] };
   return { value, state, source, missing };
 }
 
 export function calculateCac(acquisitionCost?: number | null, customersAcquired?: number | null) {
+  if ([acquisitionCost,customersAcquired].some(value => value != null && !Number.isFinite(value))) return result<number>(null, "missing", [], ["finite_numeric_inputs"]);
   if (acquisitionCost == null || customersAcquired == null || customersAcquired <= 0) {
     return result<number>(null, "missing", [], [
       ...(acquisitionCost == null ? ["acquisition_cost"] : []),
@@ -52,6 +54,7 @@ export function calculateCac(acquisitionCost?: number | null, customersAcquired?
 }
 
 export function calculateConversionRate(converted?: number | null, qualified?: number | null) {
+  if ([converted,qualified].some(value => value != null && !Number.isFinite(value))) return result<number>(null, "missing", [], ["finite_numeric_inputs"]);
   if (converted == null || qualified == null || qualified <= 0) {
     return result<number>(null, "missing", [], [
       ...(converted == null ? ["converted"] : []),
@@ -62,6 +65,7 @@ export function calculateConversionRate(converted?: number | null, qualified?: n
 }
 
 export function calculateArpu(revenue?: number | null, activeCustomers?: number | null) {
+  if ([revenue,activeCustomers].some(value => value != null && !Number.isFinite(value))) return result<number>(null, "missing", [], ["finite_numeric_inputs"]);
   if (revenue == null || activeCustomers == null || activeCustomers <= 0) {
     return result<number>(null, "missing", [], [
       ...(revenue == null ? ["revenue"] : []),
@@ -72,6 +76,7 @@ export function calculateArpu(revenue?: number | null, activeCustomers?: number 
 }
 
 export function calculateGrossMarginPct(revenue?: number | null, variableCost?: number | null) {
+  if ([revenue,variableCost].some(value => value != null && !Number.isFinite(value))) return result<number>(null, "missing", [], ["finite_numeric_inputs"]);
   if (revenue == null || variableCost == null || revenue <= 0) {
     return result<number>(null, "missing", [], [
       ...(revenue == null || revenue <= 0 ? ["revenue"] : []),
@@ -85,6 +90,7 @@ export function calculateGrossMarginPct(revenue?: number | null, variableCost?: 
 }
 
 export function calculatePaybackMonths(investment?: number | null, monthlyContribution?: number | null) {
+  if ([investment,monthlyContribution].some(value => value != null && !Number.isFinite(value))) return result<number>(null, "missing", [], ["finite_numeric_inputs"]);
   if (investment == null || monthlyContribution == null || monthlyContribution <= 0) {
     return result<number>(null, "missing", [], [
       ...(investment == null ? ["investment"] : []),
@@ -98,6 +104,7 @@ export function calculatePaybackMonths(investment?: number | null, monthlyContri
 }
 
 export function calculateRoiPct(totalReturn?: number | null, investment?: number | null) {
+  if ([totalReturn,investment].some(value => value != null && !Number.isFinite(value))) return result<number>(null, "missing", [], ["finite_numeric_inputs"]);
   if (totalReturn == null || investment == null || investment <= 0) {
     return result<number>(null, "missing", [], [
       ...(totalReturn == null ? ["total_return"] : []),
@@ -111,6 +118,7 @@ export function calculateRoiPct(totalReturn?: number | null, investment?: number
 }
 
 export function calculateBurnRate(cashOutflows?: number | null, cashInflows?: number | null) {
+  if ([cashOutflows,cashInflows].some(value => value != null && !Number.isFinite(value))) return result<number>(null, "missing", [], ["finite_numeric_inputs"]);
   if (cashOutflows == null || cashInflows == null) {
     return result<number>(null, "missing", [], [
       ...(cashOutflows == null ? ["cash_outflows"] : []),
@@ -126,6 +134,7 @@ export function calculateViabilityFactor(
   investment?: number | null,
   riskAdjusted?: number | null,
 ) {
+  if ([projectedRevenue, successProbability, investment, riskAdjusted].some(value => value != null && !Number.isFinite(value))) return result<number>(null, "missing", [], ["finite_numeric_inputs"]);
   const denominator = (investment ?? 0) + (riskAdjusted ?? 0);
   const missing = [
     ...(projectedRevenue == null ? ["projected_revenue"] : []),

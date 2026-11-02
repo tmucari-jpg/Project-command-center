@@ -50,7 +50,7 @@ export default async function BotIAPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Administração" title="BotIA" />
+      <PageHeader eyebrow="Administração" title="PCC IA" />
 
       <Card className="mb-6 p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -59,7 +59,7 @@ export default async function BotIAPage() {
               <Bot size={19} /> IA operacional dentro do PCC
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-              O BotIA permite escrever comandos e fazer perguntas sem sair do Project Command Center.
+              O PCC IA permite escrever comandos e fazer perguntas sem sair do Project Command Center.
               Responde com base no contexto real do projecto e, quando necessário, prepara alterações operacionais para confirmação.
             </p>
           </div>
@@ -82,7 +82,7 @@ export default async function BotIAPage() {
 
       {!projectOptions.length ? (
         <Card className="p-5">
-          <EmptyState>Não existem projectos disponíveis para o BotIA.</EmptyState>
+          <EmptyState>Não existem projectos disponíveis para o PCC IA.</EmptyState>
         </Card>
       ) : (
         <BotIAOperator projects={projectOptions} blockers={blockerOptions} />
@@ -90,14 +90,14 @@ export default async function BotIAPage() {
 
       <Card className="mt-6">
         <div className="border-b border-[var(--cc-border)] p-5">
-          <h2 className="font-semibold text-[var(--cc-foreground)]">Histórico BotIA</h2>
+          <h2 className="font-semibold text-[var(--cc-foreground)]">Histórico PCC IA</h2>
           <p className="mt-1 text-sm text-[var(--cc-secondary)]">
             Diagnósticos e alterações ficam ligados ao projecto para auditoria e continuidade.
           </p>
         </div>
         <div className="p-5">
           {!runs?.length ? (
-            <EmptyState>Ainda não existem execuções BotIA.</EmptyState>
+            <EmptyState>Ainda não existem execuções PCC IA.</EmptyState>
           ) : (
             <div className="space-y-3">
               {runs.map((run) => {

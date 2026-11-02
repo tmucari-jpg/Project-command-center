@@ -48,7 +48,8 @@ export type OfflineQueueType =
   | "create_evidence"
   | "create_blocker"
   | "create_factory_intake"
-  | "update_action_status";
+  | "update_action_status"
+  | "update_project_next_action";
 
 export type OfflineQueueItem = {
   id: string;
@@ -192,22 +193,30 @@ export async function syncOfflineQueue() {
   const queue = await getOfflineQueue();
   if (!queue.length) return { synced: 0, pending: 0 };
 
-  const response = await fetch("/api/offline/sync", {
-    method: "POST",
-    credentials: "include",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ items: queue }),
-  });
-
-  if (!response.ok) return { synced: 0, pending: queue.length };
-
-  const body = (await response.json()) as { results: Array<{ id: string; ok: boolean; error?: string }> };
-  const successful = body.results.filter((result) => result.ok).map((result) => result.id);
-  await removeQueueItems(successful);
-  await markQueueFailures(body.results);
+  let synced = 0;
+  // Keep every unacknowledged item, including across partial batches or network loss.
+  for (let offset = 0; offset < queue.length; offset += 100) {
+    const batch = queue.slice(offset, offset + 100);
+    let response: Response;
+    try {
+      response = await fetch("/api/offline/sync", {
+        method: "POST", credentials: "include", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ items: batch }),
+      });
+    } catch { break; }
+    if (!response.ok) break;
+    const body = await response.json().catch(() => null) as { results?: Array<{ id: string; ok: boolean; error?: string }> } | null;
+    if (!Array.isArray(body?.results)) break;
+    const sent = new Set(batch.map(item => item.id));
+    const results = body.results.filter(result => sent.has(result.id));
+    const successful = [...new Set(results.filter(result => result.ok === true).map(result => result.id))];
+    await removeQueueItems(successful);
+    await markQueueFailures(results);
+    synced += successful.length;
+  }
   await refreshOfflineSnapshot().catch(() => false);
   const pending = (await getOfflineQueue()).length;
-  return { synced: successful.length, pending };
+  return { synced, pending };
 }
 
 const OFFLINE_ROUTE_CACHE = "project-command-center-v6";

@@ -13,6 +13,7 @@ const initialState: ProjectClientStatusLinkState = { ok: false };
 export function ProjectClientStatusLink({ projectId }: { projectId: string }) {
   const [state, action, pending] = useActionState(publishProjectClientStatus, initialState);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -21,9 +22,15 @@ export function ProjectClientStatusLink({ projectId }: { projectId: string }) {
 
   async function copyLink() {
     if (!state.url) return;
-    await navigator.clipboard.writeText(state.url);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    setCopyError("");
+    try {
+      await navigator.clipboard.writeText(state.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+      setCopyError("O navegador não permitiu copiar. Seleccione o link apresentado e copie-o manualmente; o link continua válido.");
+    }
   }
 
   return (
@@ -49,6 +56,7 @@ export function ProjectClientStatusLink({ projectId }: { projectId: string }) {
         <div className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--cc-secondary)]">Link seguro</p>
           <p className="mt-2 break-all text-sm text-[var(--cc-foreground)]">{state.url}</p>
+          {copyError && <p role="alert" className="mt-2 text-sm text-[var(--cc-danger)]">{copyError}</p>}
           <button
             type="button"
             onClick={copyLink}

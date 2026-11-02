@@ -14,6 +14,8 @@ export function InstallAppButton({ compact = false }: { compact?: boolean }) {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [installMessage, setInstallMessage] = useState("");
 
   useEffect(() => {
     const userAgent = window.navigator.userAgent;
@@ -51,18 +53,24 @@ export function InstallAppButton({ compact = false }: { compact?: boolean }) {
   if (!isMobile && !installPrompt) return null;
 
   async function install() {
-    const isAndroid = /Android/i.test(window.navigator.userAgent);
-
-    if (isAndroid) {
-      setShowHelp(true);
-      window.location.assign("/api/mobile/android-apk?download=1");
-      return;
-    }
-
+    if (installing) return;
+    setInstallMessage("");
     if (installPrompt) {
-      await installPrompt.prompt();
-      await installPrompt.userChoice;
-      setInstallPrompt(null);
+      setInstalling(true);
+      try {
+        await installPrompt.prompt();
+        const choice = await installPrompt.userChoice;
+        if (choice.outcome === "dismissed") {
+          setInstallMessage("Instalação cancelada. Pode voltar a tentar pelo menu do navegador.");
+          setShowHelp(true);
+        }
+      } catch {
+        setInstallMessage("O navegador não abriu o instalador. Use as instruções abaixo para instalar a PWA.");
+        setShowHelp(true);
+      } finally {
+        setInstallPrompt(null);
+        setInstalling(false);
+      }
       return;
     }
 
@@ -74,11 +82,12 @@ export function InstallAppButton({ compact = false }: { compact?: boolean }) {
       <button
         type="button"
         onClick={install}
+        disabled={installing}
         aria-label="Instalar Project Command Center no dispositivo"
         className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--cc-accent)] font-semibold text-white transition hover:bg-[var(--cc-accent-strong)] ${compact ? "px-3 py-2 text-xs" : "px-3.5 py-2 text-sm"}`}
       >
         <Download size={16} />
-        <span>Instalar PCC</span>
+        <span>{installing ? "A abrir instalador…" : "Instalar PCC"}</span>
       </button>
 
       {showHelp && (
@@ -86,10 +95,11 @@ export function InstallAppButton({ compact = false }: { compact?: boolean }) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-semibold text-[var(--cc-foreground)]">Instalar Project Command Center</p>
+              {installMessage && <p role="status" className="mt-2 text-sm text-[var(--cc-secondary)]">{installMessage}</p>}
               <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
                 {isIOS
                   ? "No Safari, toque em Partilhar e escolha “Adicionar ao Ecrã Principal”. Depois toque em “Adicionar”."
-                  : "O PCC-Android.apk será descarregado como aplicação Android. Abra o ficheiro descarregado e confirme “Instalar” no instalador do Android."}
+                  : "No Chrome ou Edge, abra o menu do navegador e escolha “Instalar aplicação” ou “Adicionar ao ecrã principal”. Se a opção não aparecer, abra o PCC no navegador completo e confirme que tem ligação à Internet. A PWA não exige descarregar um APK."}
               </p>
             </div>
             <button

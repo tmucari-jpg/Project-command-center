@@ -1,32 +1,10 @@
 import { NextResponse } from "next/server";
-
-const APK_URL =
-  "https://raw.githubusercontent.com/tmucari-jpg/Project-command-center/mobile-builds/downloads/PCC-Android.apk";
-
+import { requireUser } from "@/lib/auth";
+import { resolveOfficialAndroidApk } from "@/lib/android-distribution";
 export const dynamic = "force-dynamic";
-
-export async function GET() {
-  const upstream = await fetch(APK_URL, { cache: "no-store" });
-
-  if (!upstream.ok || !upstream.body) {
-    return NextResponse.json(
-      { error: "APK indisponível" },
-      { status: 503, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-
-  const headers = new Headers({
-    "Content-Type": "application/vnd.android.package-archive",
-    "Content-Disposition": 'attachment; filename="PCC-Android.apk"',
-    "Cache-Control": "no-store, no-transform",
-    "X-Content-Type-Options": "nosniff",
-  });
-
-  const contentLength = upstream.headers.get("content-length");
-  if (contentLength) headers.set("Content-Length", contentLength);
-
-  return new Response(upstream.body, {
-    status: 200,
-    headers,
-  });
+export async function GET(request: Request) {
+  const { supabase, user } = await requireUser();
+  const build = await resolveOfficialAndroidApk(supabase, user.id, process.env.VERCEL_GIT_COMMIT_SHA);
+  if (!build) return NextResponse.json({ error: "Ainda não existe uma APK oficial com assinatura de distribuição, hash e instalação validados para esta versão. Use a instalação PWA ou peça ao administrador a validação da build em Mobile & Distribuição." }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  return NextResponse.redirect(new URL(`/api/official-documents/${build.id}/download`, request.url), 307);
 }

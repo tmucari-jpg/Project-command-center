@@ -1,0 +1,37 @@
+{
+  "scope": "synthetic route-render integration; database reads replaced with fixtures",
+  "pages": 1,
+  "fields": {
+    "Empresa QA Sintética": {
+      "docx": true,
+      "pdf": true
+    },
+    "Validar documentos de ensaio": {
+      "docx": true,
+      "pdf": true
+    },
+    "Diagnóstico sintético": {
+      "docx": true,
+      "pdf": true
+    },
+    "DOCX e PDF de ensaio": {
+      "docx": true,
+      "pdf": true
+    },
+    "Sem custo adicional": {
+      "docx": true,
+      "pdf": true
+    },
+    "Ficheiros com conteúdo coerente": {
+      "docx": true,
+      "pdf": true
+    }
+  },
+  "hashes": {
+    "pdf": "3b2b848a4a69e5aaa6d5ecd2e0b363a821ac7ee392523568b37859c1707f2b23",
+    "docx": "461a5af114f642ff92b567eb43806362bb3f8e6c5ade80b50b0dfbde5f545c09"
+  },
+  "official_ready": false,
+  "archive_verified": false,
+  "visual_review": "PDF and DOCX page rendered and inspected; readable draft, contractual information incomplete"
+}

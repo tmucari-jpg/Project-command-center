@@ -1,0 +1,57 @@
+plugins { id "com.android.application" }
+
+def gieUrl = System.getenv("GIE360_URL") ?: ""
+def parsedUrl = gieUrl ? new URI(gieUrl) : null
+if (parsedUrl == null || parsedUrl.scheme != "https" || !parsedUrl.host ||
+    parsedUrl.rawUserInfo != null || parsedUrl.rawQuery != null || parsedUrl.rawFragment != null ||
+    !(parsedUrl.port in [-1, 443]) || !(parsedUrl.rawPath in ["/gie360", "/gie360/"])) {
+    throw new GradleException("GIE360_URL must be an explicit HTTPS URL ending /gie360, without credentials, query or fragment.")
+}
+def signingNames = ["GIE360_KEYSTORE_PATH", "GIE360_KEYSTORE_PASSWORD", "GIE360_KEY_ALIAS", "GIE360_KEY_PASSWORD"]
+def signingAvailable = signingNames.every { System.getenv(it) }
+def wantsRelease = gradle.startParameter.taskNames.any { it.toLowerCase().contains("release") }
+if (wantsRelease && !signingAvailable) {
+    throw new GradleException("Release signing requires all four GIE360 signing variables; no debug-key substitution is allowed.")
+}
+
+android {
+    namespace "com.pcc.gie360"
+    compileSdk 35
+    buildFeatures { buildConfig true }
+    defaultConfig {
+        applicationId "com.pcc.gie360"
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName "1.0.0"
+        buildConfigField "String", "GIE360_URL", '"' + gieUrl + '"'
+    }
+    signingConfigs {
+        if (signingAvailable) {
+            release {
+                storeFile file(System.getenv("GIE360_KEYSTORE_PATH"))
+                storePassword System.getenv("GIE360_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("GIE360_KEY_ALIAS")
+                keyPassword System.getenv("GIE360_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        debug { debuggable true; applicationIdSuffix ".test"; versionNameSuffix "-test" }
+        release {
+            debuggable false
+            minifyEnabled false
+            if (signingAvailable) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "androidx.core:core-splashscreen:1.0.1"
+    testImplementation "junit:junit:4.13.2"
+}

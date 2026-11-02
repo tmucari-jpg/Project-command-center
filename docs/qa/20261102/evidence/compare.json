@@ -1,0 +1,130 @@
+{
+  "observed_at": "2026-11-02T08:25:44.306Z",
+  "read_only": true,
+  "result": {
+    "repository_full_name": "tmucari-jpg/Project-command-center",
+    "base": "main",
+    "head": "qa/integracao-g3-gie360-gemini-mobile-20261030",
+    "status": "ahead",
+    "ahead_by": 34,
+    "behind_by": 0,
+    "total_commits": 34,
+    "too_large": null,
+    "base_commit": {
+      "sha": "d794bdad7cba02dcb93a4095480af2ca36af7ec0",
+      "url": "https://api.github.com/repos/tmucari-jpg/Project-command-center/commits/d794bdad7cba02dcb93a4095480af2ca36af7ec0",
+      "html_url": "https://github.com/tmucari-jpg/Project-command-center/commit/d794bdad7cba02dcb93a4095480af2ca36af7ec0"
+    },
+    "merge_base_commit": {
+      "sha": "d794bdad7cba02dcb93a4095480af2ca36af7ec0",
+      "url": "https://api.github.com/repos/tmucari-jpg/Project-command-center/commits/d794bdad7cba02dcb93a4095480af2ca36af7ec0",
+      "html_url": "https://github.com/tmucari-jpg/Project-command-center/commit/d794bdad7cba02dcb93a4095480af2ca36af7ec0"
+    },
+    "files": [
+      {
+        "filename": ".github/workflows/ci.yml",
+        "status": "modified",
+        "additions": 6,
+        "deletions": 0,
+        "changes": 6,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/app/api/exports/commercial-master/route.ts",
+        "status": "modified",
+        "additions": 14,
+        "deletions": 3,
+        "changes": 17,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/app/client-diagnostic/[token]/actions.ts",
+        "status": "modified",
+        "additions": 2,
+        "deletions": 1,
+        "changes": 3,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/app/client-diagnostic/[token]/page.tsx",
+        "status": "modified",
+        "additions": 11,
+        "deletions": 8,
+        "changes": 19,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/lib/diagnostic-link-validity.ts",
+        "status": "added",
+        "additions": 5,
+        "deletions": 0,
+        "changes": 5,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/scripts/check-release-acceptance.mjs",
+        "status": "added",
+        "additions": 42,
+        "deletions": 0,
+        "changes": 42,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/scripts/test-diagnostic-expiry-migration.mjs",
+        "status": "added",
+        "additions": 8,
+        "deletions": 0,
+        "changes": 8,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/scripts/test-release-acceptance.mjs",
+        "status": "added",
+        "additions": 36,
+        "deletions": 0,
+        "changes": 36,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/scripts/validate-ui-standard.mjs",
+        "status": "modified",
+        "additions": 15,
+        "deletions": 0,
+        "changes": 15,
+        "previous_filename": null
+      },
+      {
+        "filename": "application/tests/diagnostic-link-validity.test.ts",
+        "status": "added",
+        "additions": 27,
+        "deletions": 0,
+        "changes": 27,
+        "previous_filename": null
+      },
+      {
+        "filename": "docs/QA_EVIDENCIAS_OPERACIONAIS_2026_11_02.md",
+        "status": "added",
+        "additions": 45,
+        "deletions": 0,
+        "changes": 45,
+        "previous_filename": null
+      },
+      {
+        "filename": "docs/QA_INTEGRADO_G3_GIE360_GEMINI_MOBILE_OUTUBRO_2026.md",
+        "status": "added",
+        "additions": 29,
+        "deletions": 0,
+        "changes": 29,
+        "previous_filename": null
+      },
+      {
+        "filename": "supabase/migrations/20261030162500_diagnostic_expired_tokens.sql",
+        "status": "added",
+        "additions": 20,
+        "deletions": 0,
+        "changes": 20,
+        "previous_filename": null
+      }
+    ]
+  }
+}
