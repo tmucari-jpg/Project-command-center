@@ -2824,25 +2824,6 @@ export async function approveCommitmentInternally(formData: FormData) {
   });
   if (error) fail(path, error.message);
 
-  // Reuse the existing deliverable engine; this does not approve or sign the document.
-  const { data: project, error: projectError } = await supabase.from("projects")
-    .select("title").eq("id", projectId.data).maybeSingle();
-  if (projectError || !project) fail(path, "Projecto indisponível para criação da Carta G3.");
-  const title = `Carta de Compromisso - ${project.title}`;
-  const { data: existing, error: existingError } = await supabase.from("deliverables")
-    .select("id").eq("project_id", projectId.data).eq("title", title).limit(1);
-  if (existingError) fail(path, "Não foi possível verificar o entregável G3.");
-  if (!existing?.length) {
-    const { error: createError } = await supabase.from("deliverables").insert({
-      user_id: (await requireUser()).user.id,
-      project_id: projectId.data, title, artifact_type: "document",
-      status: "pending", priority: "high", progress: 0,
-      description: "Carta G3 — minuta sujeita a revisão jurídica e aceitação expressa.",
-      completion_criteria: "Documento revisto, aceite pelas partes e arquivado.",
-    });
-    if (createError) fail(path, "Não foi possível criar o entregável G3.");
-  }
-
   revalidatePath(path);
   redirect(`${path}?commitment=internal-approved`);
 }
