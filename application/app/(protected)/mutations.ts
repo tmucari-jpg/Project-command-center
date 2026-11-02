@@ -1535,122 +1535,17 @@ async function ensureProjectOperationalStructure(
   userId: string,
   project: OperationalProjectContext,
 ) {
-  let objectiveId = project.objective_id ?? null;
-
-  if (!objectiveId) {
-    const { data: objective, error } = await supabase
-      .from("objectives")
-      .insert({
-        user_id: userId,
-        title: project.title,
-        description: project.description,
-        expected_result: project.expected_result,
-        priority: project.priority,
-        status: "draft",
-        start_date: project.start_date,
-        due_date: project.due_date,
-        progress: Number(project.progress ?? 0),
-        notes: project.notes,
-      })
-      .select("id")
-      .single();
-
-    if (error || !objective) throw new Error(error?.message ?? "Não foi possível preparar o objectivo.");
-    objectiveId = objective.id;
-
-    const { error: linkError } = await supabase
-      .from("projects")
-      .update({ objective_id: objectiveId })
-      .eq("id", project.id)
-      .eq("user_id", userId);
-
-    if (linkError) throw new Error(linkError.message);
-  }
-
-  const { data: existingDeliverables, error: deliverableReadError } = await supabase
-    .from("deliverables")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("project_id", project.id)
-    .order("created_at", { ascending: true })
-    .limit(1);
-
-  if (deliverableReadError) throw new Error(deliverableReadError.message);
-
-  let deliverableId = existingDeliverables?.[0]?.id ?? null;
-
-  if (!deliverableId && project.expected_result?.trim()) {
-    const { data: deliverable, error } = await supabase
-      .from("deliverables")
-      .insert({
-        user_id: userId,
-        project_id: project.id,
-        title: `Resultado de ${project.title}`,
-        description: project.expected_result.trim(),
-        priority: project.priority,
-        status: "pending",
-        due_date: project.due_date,
-        progress: 0,
-        completion_criteria: project.expected_result.trim(),
-      })
-      .select("id")
-      .single();
-
-    if (error || !deliverable) throw new Error(error?.message ?? "Não foi possível preparar o entregável.");
-    deliverableId = deliverable.id;
-  }
-
-  // Generate one actionable task per real deliverable, based on its objective and acceptance criterion.
-  // Existing manual work is preserved; repeated invocations must not create duplicates.
-  const [{ data: projectDeliverables, error: deliverablesError }, { data: recordedActions, error: actionsError }] = await Promise.all([
-    supabase.from("deliverables").select("id,title,description,completion_criteria,status")
-      .eq("user_id",userId).eq("project_id",project.id),
-    supabase.from("actions").select("title,deliverable_id")
-      .eq("user_id",userId).eq("project_id",project.id),
-  ]);
-  if (deliverablesError || actionsError) throw new Error(deliverablesError?.message ?? actionsError?.message);
-  const existing = new Set((recordedActions ?? []).map(item => `${item.deliverable_id ?? ""}:${String(item.title).trim().toLocaleLowerCase("pt")}`));
-  const suggested = (projectDeliverables ?? [])
-    .filter(item => item.status !== "completed" && item.status !== "cancelled")
-    .map(item => ({
-      user_id:userId, project_id:project.id, deliverable_id:item.id,
-      title:`Preparar e validar: ${item.title}`,
-      description:item.description || project.description || project.expected_result,
-      completion_criteria:item.completion_criteria || project.expected_result || "Resultado sujeito à validação do responsável",
-      priority:project.priority, status:"pending" as const, is_next_action:false,
-    }))
-    .filter(item => !existing.has(`${item.deliverable_id}:${item.title.trim().toLocaleLowerCase("pt")}`));
-  if (suggested.length) {
-    const { error } = await supabase.from("actions").insert(suggested);
-    if (error) throw new Error(error.message);
-  }
-
-  const { count: metricCount, error: metricCountError } = await supabase
-    .from("metrics")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("project_id", project.id);
-
-  if (metricCountError) throw new Error(metricCountError.message);
-
-  if ((metricCount ?? 0) === 0 && project.expected_result?.trim()) {
-    const { error } = await supabase.from("metrics").insert({
-      user_id: userId,
-      objective_id: objectiveId,
-      project_id: project.id,
-      name: `Progresso de ${project.title}`,
-      description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
-      metric_type: "custom",
-      unit: "%",
-      baseline_value: 0,
-      target_value: 100,
-      current_value: Number(project.progress ?? 0),
-    });
-    if (error) throw new Error(error.message);
-  }
-
+  // All writes for objective, deliverables, actions, and metric execute in ONE
+  // database transaction under a per-project row lock.
+  const { data, error } = await supabase.rpc("prepare_project_operational_atomic", {
+    p_project_id: project.id,
+    p_workspace_user_id: userId,
+  });
+  if (error) throw new Error("Não foi possível preparar a estrutura operacional de forma segura.");
+  const result = data as { objective_id: string; deliverable_id: string | null } | null;
+  if (!result?.objective_id) throw new Error("A preparação operacional não devolveu o objectivo.");
   await syncProjectStrategyExecutionPlan(supabase, userId, project.id);
-  return { objectiveId, deliverableId };
+  return { objectiveId: result.objective_id, deliverableId: result.deliverable_id };
 }
 
 export async function createProject(formData: FormData) {
