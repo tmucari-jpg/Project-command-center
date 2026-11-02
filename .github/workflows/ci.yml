@@ -1263,6 +1263,7 @@ jobs:
           $proxy = Get-Content "./lib/supabase/proxy.ts" -Raw
           $vercel = Get-Content "./vercel.json" -Raw
           $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+          $atomicShare = Get-Content "../supabase/migrations/20261102163000_atomic_project_client_status.sql" -Raw
 
           foreach ($token in @(
             "project_client_status_snapshots",
