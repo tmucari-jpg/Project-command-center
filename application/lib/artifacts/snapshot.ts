@@ -54,5 +54,14 @@ export async function loadArtifactSnapshot(db:SupabaseClient, userId:string, del
       sections.push({title:"Revisão do diagnóstico e informação pendente",rows:reviews.data});
     }
   }
-  return {version,generatedAt:new Date().toISOString(),kind,deliverable,project,sections,reviewedContent};
+  // GIE360° originates from a recorded assessment linked to this project's factory case.
+  // Never infer branding from a title, free-text description or a client-supplied flag.
+  let documentBrand: "PCC" | "GIE360°" = "PCC";
+  if (cases.data.length) {
+    const assessment = await db.from("gie360_assessments")
+      .select("id").in("factory_case_id", cases.data.map(item => item.id)).limit(1);
+    if (assessment.error) throw new Error("DOCUMENT_ORIGIN_LOOKUP_FAILED");
+    if (assessment.data.length) documentBrand = "GIE360°";
+  }
+  return {version,generatedAt:new Date().toISOString(),kind,documentBrand,deliverable,project,sections,reviewedContent};
 }
