@@ -8,7 +8,7 @@ vi.mock('@/lib/supabase/server',()=>({createClient:async()=>({
  from:(table:string)=>{
   const result=table==='projects'?{id:'20000000-0000-4000-8000-000000000001',title:'Empresa QA Sintética',expected_result:'Validar documentos de ensaio',currency:'MZN'}:
   [{id:'30000000-0000-4000-8000-000000000001',version:1,status:fixture.status,expected_result:'Validar documentos de ensaio',scope:'Diagnóstico sintético',exclusions:'Sem dados ou serviços de produção',deliverables_summary:'DOCX e PDF de ensaio',pcc_responsibilities:'Gerar ficheiros verificáveis',client_responsibilities:'Rever dados sintéticos',external_costs_terms:'Sem custo adicional',acceptance_terms:'Ficheiros com conteúdo coerente',security_conditions:'Sem dados pessoais reais'}];
-  const q:Record<string,unknown>={};for(const k of ['select','eq','order'])q[k]=()=>q;
+  const q:Record<string,unknown>={};for(const k of ['select','eq','in','order'])q[k]=()=>q;
   q.maybeSingle=async()=>({data:result,error:null});q.limit=async()=>({data:result,error:null});return q;
  }
 })}));
