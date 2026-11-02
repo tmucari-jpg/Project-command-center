@@ -19,3 +19,10 @@
 8. Revalidar CI, segurança e evidências por revisor independente, sem autorizar deploy até aceitação.
 
 **Critério:** não declarar produção pronta, nem fabricar respostas, documentos, aprovações ou IDs de execução. Este documento reporta verificações realizadas, não constitui aprovação.
+
+## Verificação adicional — Preview e variáveis Vercel (02/11/2026)
+- CI #1142: **success**, commit `8fdca501735e0cd49c9f8f06af1c8eb37596e2a1`.
+- Deploy Preview `dpl_3eGw2KCbaxNgmACAc7EN5FyQjyc2`: **READY** e corresponde ao SHA acima; confirma compilação/deployment, não confirma autenticação ou operação funcional.
+- Metadados das variáveis Vercel (sem descodificar segredos): `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` existem no target **production** e em três entradas Preview restritas às branches `recovery/gie360-20261028`, `feature/autonomous-action-drafts` e `audit/pcc-identity-operational-consistency`. Não aparece entrada Preview sem restrição nem específica para a branch QA actual.
+- **Conclusão:** o Preview da branch actual não tem ligação Supabase independente confirmada. Não afirmar que está pronto para G3/GIE360° ou operações com escrita. Corrigir as variáveis no ambiente de ensaio isolado (sem copiar cegamente as credenciais de produção), verificar autenticação e fazer smoke antes de qualquer submissão.
+- Nenhum dado ou configuração de produção foi alterado nesta verificação.
