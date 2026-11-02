@@ -1,5 +1,5 @@
-import { buildClientStatusPreview, clientStatusFingerprint } from "@/lib/client-status-preview";
 "use server";
+import { buildClientStatusPreview, clientStatusFingerprint } from "@/lib/client-status-preview";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
