@@ -64,7 +64,7 @@ export async function loadArtifactSnapshot(db:SupabaseClient, userId:string, del
     if (assessment.data.length) documentBrand = "GIE360°";
   }
   if (kind === "commitment") {
-    if (!/^Carta de Compromisso\b/i.test(String(deliverable.title ?? ""))) {
+    if (!String(deliverable.title ?? "").startsWith("Carta de Compromisso")) {
       throw new Error("COMMITMENT_DELIVERABLE_REQUIRED");
     }
     const baselineResult = await db.from("project_commitment_baselines")
