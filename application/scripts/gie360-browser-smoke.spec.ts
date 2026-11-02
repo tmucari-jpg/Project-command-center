@@ -117,3 +117,33 @@ test('manager associates and configures; client saves, resumes and submits real 
     expect(notifications.data).toHaveLength(1);
   } finally { await clientContext.close(); }
 });
+
+test('offline creation survives page closure and reopens before real Supabase sync without duplicates', async ({ page, context }) => {
+  const url=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!);
+  expect(url.protocol).toBe('http:');expect(['localhost','127.0.0.1']).toContain(url.hostname);expect(url.port).toBe('54321');
+  const admin=createClient(url.href,process.env.PCC_LOCAL_SERVICE_ROLE_KEY!,{auth:{persistSession:false}});
+  const publicKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+  const email=`offline-${randomUUID()}@example.test`,password=`Offline-QA-${randomUUID()}!`;
+  const created=await admin.auth.admin.createUser({email,password,email_confirm:true});expect(created.error).toBeNull();
+  const owner=createClient(url.href,publicKey,{auth:{persistSession:false}});
+  expect((await owner.auth.signInWithPassword({email,password})).error).toBeNull();
+  const project=await owner.from('projects').insert({user_id:created.data.user!.id,owner_id:created.data.user!.id,title:'Projecto offline sintético',expected_result:'Persistir e sincronizar ensaio',status:'planning',priority:'medium',progress:0,currency:'MZN'}).select('id').single();expect(project.error).toBeNull();
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/auth/login');await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Palavra-passe',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page).toHaveURL(/\/dashboard/);
+  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
+  await expect.poll(()=>page.evaluate(()=>new Promise<boolean>(resolve=>{const r=indexedDB.open('pcc-offline',1);r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains('meta')){db.close();resolve(false);return;}const q=db.transaction('meta').objectStore('meta').get('offlineEnabled');q.onsuccess=()=>{db.close();resolve(q.result===true);};q.onerror=()=>{db.close();resolve(false);};};r.onerror=()=>resolve(false);}))).toBe(true);
+  await page.goto('/offline.html');await expect(page.locator('#captureButton')).toBeVisible();
+  await context.setOffline(true);
+  const title=`Ideia offline ${randomUUID()}`;
+  await page.locator('#captureButton').click();await page.locator('#captureType').selectOption('create_idea');await page.locator('#captureProject').selectOption(project.data!.id);await page.locator('#captureTitle').fill(title);await page.locator('#saveCapture').click();
+  const readQueue=()=>new Promise<Array<{id:string;payload:{title?:string}}>>(resolve=>{const r=indexedDB.open('pcc-offline',1);r.onsuccess=()=>{const db=r.result;const q=db.transaction('queue').objectStore('queue').getAll();q.onsuccess=()=>{db.close();resolve(q.result);};q.onerror=()=>{db.close();resolve([]);};};r.onerror=()=>resolve([]);});
+  const pending=await page.evaluate(readQueue);expect(pending).toHaveLength(1);expect(pending[0].payload.title).toBe(title);const id=pending[0].id;
+  await page.close();const reopened=await context.newPage();await reopened.goto('http://localhost:3000/offline.html');await expect(reopened.locator('#captureButton')).toBeVisible();
+  const restored=await reopened.evaluate(readQueue);expect(restored).toHaveLength(1);expect(restored[0].id).toBe(id);expect(restored[0].payload.title).toBe(title);
+  await context.setOffline(false);
+  await expect.poll(async()=>{const row=await owner.from('ideas').select('id').eq('id',id);expect(row.error).toBeNull();return row.data!.length;},{timeout:30000}).toBe(1);
+  await expect.poll(async()=>{const receipt=await owner.from('sync_queue').select('status').eq('id',id).maybeSingle();expect(receipt.error).toBeNull();return receipt.data?.status;}).toBe('synced');
+  await expect.poll(async()=>(await reopened.evaluate(readQueue)).length).toBe(0);
+  await reopened.locator('#syncButton').click();const final=await owner.from('ideas').select('id').eq('id',id);expect(final.error).toBeNull();expect(final.data).toHaveLength(1);
+  const {writeFile}=await import('node:fs/promises');await writeFile('../validation-offline-browser.json',JSON.stringify({scope:'chromium-mobile-viewport-page-close-reopen-not-physical-device',status:'passed',projectId:project.data!.id,offlineItemId:id,receiptStatus:'synced',ideaRows:final.data!.length,queueRemaining:0,physicalDeviceValidated:false},null,2));
+});

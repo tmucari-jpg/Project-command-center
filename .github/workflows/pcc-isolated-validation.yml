@@ -1,7 +1,7 @@
 name: PCC isolated validation
 on:
   push:
-    branches: ['pcc-validation/**', 'consolidation/pcc-operacional-20261102']
+    branches: ['pcc-validation/**']
   pull_request:
     branches: ['main']
   workflow_dispatch:
@@ -108,7 +108,9 @@ jobs:
             validation-run.json
             validation-gemini.json
             validation-browser.json
+            validation-offline-browser.json
             validation-browser-artifacts
+            validation-artifacts
           if-no-files-found: warn
           retention-days: 7
       - name: Stop disposable backend

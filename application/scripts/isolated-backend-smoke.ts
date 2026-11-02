@@ -1,7 +1,7 @@
 import {createClient} from '@supabase/supabase-js';
 import {createServerClient} from '@supabase/ssr';
 import {randomUUID,createHash} from 'node:crypto';
-import {writeFile} from 'node:fs/promises';
+import {writeFile,mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 async function main(){
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -9,6 +9,8 @@ assert(['localhost','127.0.0.1'].includes(new URL(url).hostname)&&new URL(url).p
 const key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const admin=createClient(url,process.env.PCC_LOCAL_SERVICE_ROLE_KEY!,{auth:{persistSession:false}});
 const checks:Array<{name:string;status:string}>=[];
+const records:Record<string,unknown>={};
+const downloadedFiles:Array<{path:string;sha256:string;bytes:number;source:string}>=[];
 async function check(name:string,fn:()=>Promise<void>){await fn();checks.push({name,status:'passed'});}
 const password=`Pcc-Local-${randomUUID()}!`;
 const users=[];
@@ -34,6 +36,8 @@ try{
  const login=await session.auth.signInWithPassword({email:userInfo.data.user.email!,password});assert.ifError(login.error);
  const cookie=Array.from(cookies,([name,value])=>`${name}=${encodeURIComponent(value)}`).join('; ');
  const version=randomUUID();
+ records.projectId=project.data!.id;records.deliverableId=deliverable.data!.id;records.artifactVersion=version;
+ await mkdir('../validation-artifacts',{recursive:true});
  const endpoint=`${origin}/api/deliverables/${deliverable.data!.id}/generate`;
  await check('authenticated-document-generation-and-idempotency',async()=>{
   for(let i=0;i<2;i++){
@@ -46,6 +50,7 @@ try{
   for(const format of ['pdf','docx']){
    const r=await fetch(`${origin}/api/deliverables/artifacts/${version}/download?format=${format}`,{headers:{cookie}});assert.equal(r.status,200);
    const bytes=Buffer.from(await r.arrayBuffer());assert(bytes.length>1000);assert.equal(bytes.subarray(0,format==='pdf'?4:2).toString(),format==='pdf'?'%PDF':'PK');
+   const saved=`validation-artifacts/Documento_Auth_Storage_ENSAIO.${format}`;await writeFile('../'+saved,bytes);downloadedFiles.push({path:saved,sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,source:'authenticated-generic-artifact-download'});
   }
   const denied=await fetch(`${origin}/api/deliverables/artifacts/${version}/download`);assert.equal(denied.status,401);
   const row=await owner.client.from('generated_deliverable_artifacts').select('files').eq('id',version).single();assert.ifError(row.error);
@@ -54,6 +59,28 @@ try{
    assert.equal(createHash('sha256').update(Buffer.from(await downloaded.data!.arrayBuffer())).digest('hex'),file.sha256);
    const other=await outsider.client.storage.from('pcc-deliverable-artifacts').download(file.path);assert(other.error);
   }
+ });
+
+ await check('real-g3-draft-auth-approval-and-native-downloads-not-official-archive',async()=>{
+  const baseline=await owner.client.from('project_commitment_baselines').insert({user_id:owner.id,project_id:project.data!.id,expected_result:'Validar Carta de ensaio',scope:'Diagnóstico sintético controlado',deliverables_summary:'Carta DOCX e PDF de ensaio',acceptance_terms:'Campos e ficheiros coerentes com a baseline de ensaio',capacity_summary:'Equipa de ensaio',cost_summary:'Sem custo adicional',security_conditions:'Dados sintéticos sem informação de clientes reais',status:'draft',version:1,created_by:owner.id}).select('id').single();assert.ifError(baseline.error);records.baselineId=baseline.data!.id;
+  const draftEndpoint=`${origin}/api/projects/${project.data!.id}/commitment-draft`;
+  const unapproved=await fetch(draftEndpoint,{headers:{cookie}});assert.equal(unapproved.status,409);
+  const approved=await owner.client.rpc('approve_commitment_atomic',{p_project_id:project.data!.id,p_baseline_id:baseline.data!.id,p_client:false,p_reference:null});assert.ifError(approved.error);
+  for(const format of ['pdf','docx']){
+   const r=await fetch(draftEndpoint+'?format='+format,{headers:{cookie}});assert.equal(r.status,200);const bytes=Buffer.from(await r.arrayBuffer());assert(bytes.length>1000);
+   assert.equal(bytes.subarray(0,format==='pdf'?4:2).toString(),format==='pdf'?'%PDF':'PK');
+   const saved=`validation-artifacts/Carta_G3_Auth_ENSAIO_MINUTA.${format}`;await writeFile('../'+saved,bytes);downloadedFiles.push({path:saved,sha256:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,source:'authenticated-g3-draft-not-official-archive'});
+  }
+ });
+ await check('real-offline-api-receipt-idempotency-and-database-confirmation',async()=>{
+  const id=randomUUID();records.offlineItemId=id;
+  const body={items:[{id,type:'create_idea',payload:{title:'Ideia capturada em ensaio',project_id:project.data!.id,priority:'medium'}}]};
+  for(let i=0;i<2;i++){
+   const r=await fetch(origin+'/api/offline/sync',{method:'POST',headers:{origin,cookie,'content-type':'application/json'},body:JSON.stringify(body)});assert.equal(r.status,200);const result=await r.json();assert.equal(result.results[0].ok,true,JSON.stringify(result));
+  }
+  const ideas=await owner.client.from('ideas').select('id').eq('id',id);assert.ifError(ideas.error);assert.equal(ideas.data!.length,1);
+  const receipt=await owner.client.from('sync_queue').select('id,status').eq('id',id).single();assert.ifError(receipt.error);assert.equal(receipt.data!.status,'synced');
+  const foreign=await outsider.client.from('ideas').select('id').eq('id',id);assert.ifError(foreign.error);assert.equal(foreign.data!.length,0);
  });
 
  const clientA=users[1],clientB=users[2];
@@ -128,7 +155,7 @@ try{
  });
 
 }catch(error){checks.push({name:error instanceof Error?error.message:'unknown failure',status:'failed'});throw error;}
-finally{await writeFile('../validation-backend.json',JSON.stringify({scope:'throwaway-local-only',checks,physicalDeviceValidated:false,realAIValidated:false},null,2));}
+finally{await writeFile('../validation-backend.json',JSON.stringify({scope:'throwaway-local-only',checks,records,downloadedFiles,physicalDeviceValidated:false,realAIValidated:false,g3OfficialArchiveValidated:false,offlineBrowserPersistenceValidated:false},null,2));}
 
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

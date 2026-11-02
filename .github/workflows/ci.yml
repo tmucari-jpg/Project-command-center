@@ -342,8 +342,9 @@ jobs:
             }
           }
 
-          foreach ($token in @("create_factory_intake", "project_gate_events")) {
-            if (-not $offlineSync.Contains($token)) {
+          $offlineAtomic = Get-Content "../supabase/migrations/20261102081707_offline_atomic_sync.sql" -Raw
+          foreach ($token in @("create_factory_intake", "project_gate_events", "apply_offline_item_atomic")) {
+            if (-not $offlineSync.Contains($token) -and -not $offlineAtomic.Contains($token)) {
               Write-Error "Offline sync is missing project intake guard: $token"
               exit 1
             }
