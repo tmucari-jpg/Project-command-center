@@ -94,6 +94,9 @@ export async function publishProjectClientStatus(
   _previousState: ProjectClientStatusLinkState,
   formData: FormData,
 ): Promise<ProjectClientStatusLinkState> {
+  if (formData.get("reviewed") !== "on") {
+    return { ok: false, error: "É necessária a revisão e aprovação interna antes de publicar um link externo." };
+  }
   const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   const publicNote = z.string().trim().max(2000).safeParse(String(formData.get("public_note") ?? ""));
   if (!projectId.success || !publicNote.success) {

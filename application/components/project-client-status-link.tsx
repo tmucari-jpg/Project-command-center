@@ -14,6 +14,8 @@ export function ProjectClientStatusLink({ projectId }: { projectId: string }) {
   const [state, action, pending] = useActionState(publishProjectClientStatus, initialState);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
+  const [reviewed, setReviewed] = useState(false);
+  const [publicNote, setPublicNote] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -42,10 +44,20 @@ export function ProjectClientStatusLink({ projectId }: { projectId: string }) {
           <textarea
             className="mt-1 min-h-20 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm"
             name="public_note"
+            value={publicNote}
+            onChange={(event) => { setPublicNote(event.target.value); setReviewed(false); }}
             placeholder="Opcional. O PCC já inclui automaticamente estado, entregáveis, KPIs e próxima acção."
           />
         </label>
-        <button className={primaryButtonClass} type="submit" disabled={pending}>
+        <div className="rounded-xl border border-[#d8e2dc] bg-[#f8f6f0] p-4 text-sm">
+          <p className="font-semibold text-[#073f36]">Pré-visualização para partilha externa</p>
+          <p className="mt-2 whitespace-pre-wrap text-[#667085]">{publicNote.trim() || "Sem nota adicional. Os dados do projecto, entregáveis e métricas serão incluídos no snapshot."}</p>
+          <label className="mt-3 flex items-start gap-2 border-t border-[#d8e2dc] pt-3">
+            <input type="checkbox" name="reviewed" checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} className="mt-1" />
+            <span>Revisei os dados que serão partilhados, incluindo os entregáveis, e autorizo a emissão deste link externo.</span>
+          </label>
+        </div>
+        <button className={primaryButtonClass} type="submit" disabled={pending || !reviewed}>
           {pending ? "A publicar..." : "Publicar Status & Next Actions"}
         </button>
       </form>
