@@ -27,7 +27,7 @@ export function DeliverableGeneration({id,type,hasArtifact}:{id:string;type:stri
       <p className="text-xs text-[var(--cc-secondary)]">Usa os dados reais do projecto. Informação ausente fica explícita. A geração não aprova QA nem aceitação.</p>
       {!["spreadsheet","presentation"].includes(type)&&<label className="block text-sm">Documento
         <select value={kind} disabled={busy||Boolean(download)} onChange={e=>{setKind(e.target.value);setRequestId(null);}} className="mt-1 w-full rounded border p-2">
-          {Object.entries({document:"Documento",master_mind:"Master Mind",master_plan:"Master Plan",commercial_guide:"Guia Comercial",diagnosis:"Diagnóstico",decision:"Dossier de decisão",progress:"Progresso",closure:"Fecho"}).map(([value,label])=><option value={value} key={value}>{label}</option>)}
+          {Object.entries({document:"Documento",commitment:"Carta de Compromisso G3",master_mind:"Master Mind",master_plan:"Master Plan",commercial_guide:"Guia Comercial",diagnosis:"Diagnóstico",decision:"Dossier de decisão",progress:"Progresso",closure:"Fecho"}).map(([value,label])=><option value={value} key={value}>{label}</option>)}
         </select></label>}
       <label className="block text-sm">Conteúdo revisto a incluir (opcional)
         <textarea className="mt-1 min-h-24 w-full rounded border p-2" maxLength={50000} value={content} disabled={busy||Boolean(download)} onChange={e=>{setContent(e.target.value);setRequestId(null);}} />
