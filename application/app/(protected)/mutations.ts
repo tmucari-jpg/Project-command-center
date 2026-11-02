@@ -2777,7 +2777,7 @@ export async function saveCommitmentBaseline(formData: FormData) {
 
   if (latestError) fail(path, latestError.message);
 
-  if (latest && ["draft", "internal_approved"].includes(latest.status)) {
+  if (latest && latest.status === "draft") {
     const { error } = await supabase
       .from("project_commitment_baselines")
       .update({ ...parsed.data, status: "draft", internal_approved_at: null })
