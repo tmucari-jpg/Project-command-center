@@ -2857,6 +2857,22 @@ export async function createProjectChangeRequest(formData: FormData) {
     await ensureOwned(supabase, "project_commitment_baselines", parsed.data.baseline_id, user.id, path);
   }
 
+  const sourceDecisionId = z.string().uuid().optional().safeParse(formData.get("source_decision_id") || undefined);
+  if (!sourceDecisionId.success) fail(path, "Referência da resposta inválida.");
+  if (sourceDecisionId.data) {
+    const { data: reply, error: replyError } = await supabase.from("project_client_status_decisions")
+      .select("id,decision,respondent_name,comment").eq("id", sourceDecisionId.data)
+      .eq("project_id", parsed.data.project_id).maybeSingle();
+    if (replyError || !reply || reply.decision !== "change") fail(path, "Pedido do cliente não encontrado.");
+    const reference = `[Resposta pelo link: ${reply.id}]`;
+    const { data: previous, error: previousError } = await supabase.from("project_change_requests")
+      .select("id").eq("project_id", parsed.data.project_id).eq("user_id", user.id)
+      .ilike("description", `%${reference}%`).limit(1);
+    if (previousError) fail(path, "Não foi possível verificar pedidos anteriores.");
+    if (previous?.length) redirect(`${path}?change=existing`);
+    parsed.data.description = `${reference} ${String(reply.comment ?? "").slice(0,7000)}`.trim();
+  }
+
   const { error } = await supabase.from("project_change_requests").insert({
     ...parsed.data,
     user_id: user.id,
