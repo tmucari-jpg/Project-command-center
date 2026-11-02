@@ -130,8 +130,9 @@ test('offline creation survives page closure and reopens before real Supabase sy
   const project=await owner.from('projects').insert({user_id:created.data.user!.id,owner_id:created.data.user!.id,title:'Projecto offline sintético',expected_result:'Persistir e sincronizar ensaio',status:'planning',priority:'medium',progress:0,currency:'MZN'}).select('id').single();expect(project.error).toBeNull();
   await page.setViewportSize({width:390,height:844});
   await page.goto('/auth/login');await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Palavra-passe',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page).toHaveURL(/\/dashboard/);
+  const bootstrap=await page.request.get('/api/offline/bootstrap');expect(bootstrap.status(),await bootstrap.text()).toBe(200);
   await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
-  await expect.poll(()=>page.evaluate(()=>new Promise<boolean>(resolve=>{const r=indexedDB.open('pcc-offline',1);r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains('meta')){db.close();resolve(false);return;}const q=db.transaction('meta').objectStore('meta').get('offlineEnabled');q.onsuccess=()=>{db.close();resolve(q.result===true);};q.onerror=()=>{db.close();resolve(false);};};r.onerror=()=>resolve(false);}))).toBe(true);
+  await expect.poll(()=>page.evaluate(async()=>{if(!(await indexedDB.databases()).some(db=>db.name==='pcc-offline'))return false;return new Promise<boolean>(resolve=>{const r=indexedDB.open('pcc-offline',1);r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains('meta')){db.close();resolve(false);return;}const q=db.transaction('meta').objectStore('meta').get('offlineEnabled');q.onsuccess=()=>{db.close();resolve(q.result===true);};q.onerror=()=>{db.close();resolve(false);};};r.onerror=()=>resolve(false);});})).toBe(true);
   await page.goto('/offline.html');await expect(page.locator('#captureButton')).toBeVisible();
   await context.setOffline(true);
   const title=`Ideia offline ${randomUUID()}`;

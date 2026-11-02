@@ -511,16 +511,14 @@ jobs:
 
           foreach ($token in @(
             "/brand/pcc-logo-transparent.svg",
-            "Avalie. Decida. Execute.",
-            "Da Estratégia à Execução",
-            "Diagnóstico inicial",
-            "Validade",
-            "7 dias",
-            "O que o trouxe até nós?",
+            "Da estratégia à execução",
+            "Questionário personalizado",
+            "Link válido até",
+            "expiresAt",
             "investment_discovery",
-            "AdaptiveContext",
-            "AdaptiveFocus",
-            "Enviar respostas"
+            "purpose",
+            "Rever as respostas antes de enviar",
+            "Confirmar e enviar ao PCC"
           )) {
             if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
               Write-Error "Executive adaptive client questionnaire is missing: $token"
@@ -534,8 +532,8 @@ jobs:
           }
 
           foreach ($token in @(
-            "grid h-8 w-8 shrink-0 place-items-center rounded-full",
-            "mb-4 flex items-center gap-3"
+            "Etapa {step} / 4",
+            "Etapas do questionário"
           )) {
             if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
               Write-Error "Questionnaire numbered-section visual standard is missing: $token"
@@ -567,7 +565,7 @@ jobs:
 
           foreach ($token in @(
             "/brand/pcc-logo-transparent.svg",
-            "Email (opcional)"
+            "Email de contacto"
           )) {
             if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
               Write-Error "Client questionnaire branding/access field guard is missing: $token"
