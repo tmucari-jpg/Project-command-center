@@ -56,14 +56,16 @@ export function ClientDiagnosticQuestionnaire({
         <header className="mb-6 overflow-hidden rounded-2xl border border-[#e0e8e3] bg-white shadow-sm">
           <div className={integratedGie360 ? "border-b border-[#146453] bg-[#073f36] px-5 py-5 text-white sm:px-7" : "border-b border-[#e0e8e3] bg-[#f8f6f0] px-5 py-5 sm:px-7"}>
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <Image
-                src="/brand/pcc-logo-transparent.svg"
-                alt="Project Command Center"
-                width={230}
-                height={82}
-                className="h-auto w-[190px] sm:w-[220px]"
-                priority
-              />
+              <div className={integratedGie360 ? "rounded-xl bg-white px-3 py-2" : ""}>
+                <Image
+                  src="/brand/pcc-logo-transparent.svg"
+                  alt="Logótipo oficial PCC"
+                  width={230}
+                  height={82}
+                  className="h-auto w-[190px] sm:w-[220px]"
+                  priority
+                />
+              </div>
               <div className="text-right">
                 {integratedGie360 && <p className="mb-2 text-xl font-extrabold tracking-[0.02em] text-white">PCC <span className="text-[#c99439]">× GIE360°</span></p>}
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c99439]">
