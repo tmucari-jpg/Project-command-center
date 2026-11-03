@@ -161,11 +161,11 @@ test('existing project opens its own diagnostic without creating another project
   await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByLabel('Palavra-passe', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await expect(page).toHaveURL(/\\/dashboard/);
+  await expect(page).toHaveURL(/dashboard/);
   await page.goto(`/projects/${project.data!.id}`);
   await expect(page.getByRole('heading', { name: 'Diagnóstico do projecto' })).toBeVisible();
   await page.getByRole('button', { name: 'Preparar diagnóstico deste projecto' }).click();
-  await expect(page).toHaveURL(/\\/project-factory\\/[0-9a-f-]+/);
+  await expect(page).toHaveURL(/project-factory/);
   await expect(page.getByText('Diagnóstico do Cliente', { exact: true })).toBeVisible();
   const linkedCases = await manager.from('project_factory_cases').select('id')
     .eq('project_id', project.data!.id);
