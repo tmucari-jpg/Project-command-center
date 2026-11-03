@@ -2,11 +2,11 @@
 import { useActionState, useState } from "react";
 import { GIE360_MODULES, GIE360_QUESTIONS } from "@/lib/gie360";
 import { provisionGIE360, configureGIE360 } from "@/lib/gie360-management-actions";
-export function GIE360ProvisionForm({ cases }: { cases: { id: string; title: string }[] }) {
+export function GIE360ProvisionForm({ cases }: { cases: { id: string; title: string; reason: string; modules: string[] }[] }) {
   const [state, action, pending] = useActionState(provisionGIE360, {});
-  return <section className="rounded-xl border bg-white p-6"><h2 className="text-xl font-semibold">Associar empresa ao GIE360°</h2><p className="my-3 text-sm text-slate-600">Escolha um caso de que é proprietário e uma conta de cliente separada, já registada e com email confirmado. A associação é idempotente e não atribui permissões de gestão PCC. Pacote, preço e âmbito continuam por aprovar.</p>
-    {!cases.length ? <p>Crie ou seleccione um caso PCC antes de associar um cliente.</p> : <form action={action} className="grid gap-4 md:grid-cols-2">
-      <label className="block text-sm">Caso PCC<select aria-label="Caso PCC" name="caseId" required className="mt-2 w-full rounded-lg border p-3"><option value="">Seleccione o caso</option>{cases.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+  return <section className="rounded-xl border bg-white p-6"><h2 className="text-xl font-semibold">Associar empresa ao GIE360°</h2><p className="my-3 text-sm text-slate-600">Apenas casos com diagnóstico revisto, aceite e resultado empresarial elegível aparecem aqui. A recomendação não substitui a sua aprovação nem concede permissões de gestão PCC. A conta de cliente deve estar registada e com email confirmado.</p>
+    {!cases.length ? <p>Sem casos elegíveis. Reveja o resultado do diagnóstico em Novo projecto; não é necessário repetir questionários já recebidos.</p> : <form action={action} className="grid gap-4 md:grid-cols-2">
+      <label className="block text-sm">Caso PCC<select aria-label="Caso PCC" name="caseId" required className="mt-2 w-full rounded-lg border p-3"><option value="">Seleccione o caso</option>{cases.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label><p className="text-sm text-slate-600 md:col-span-2">Recomendações baseadas nas respostas aprovadas: {cases.map(item => <span className="block" key={item.id}><strong>{item.title}:</strong> {item.reason}</span>)}</p>
       <label className="block text-sm">Empresa<input name="name" minLength={2} maxLength={200} required className="mt-2 w-full rounded-lg border p-3" /></label>
       <label className="block text-sm">Email confirmado do cliente<input name="email" type="email" required maxLength={254} className="mt-2 w-full rounded-lg border p-3" /></label>
       <div className="flex items-end"><button disabled={pending} className="rounded-lg bg-[#073F36] px-4 py-3 text-white disabled:opacity-50">{pending ? "A associar…" : "Associar cliente e diagnóstico"}</button></div>
