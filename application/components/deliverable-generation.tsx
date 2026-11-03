@@ -2,9 +2,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { primaryButtonClass, secondaryButtonClass } from "@/components/ui";
-export function DeliverableGeneration({id,type,hasArtifact,fixedKind}:{id:string;type:string;hasArtifact:boolean;fixedKind?:"commitment"}) {
+export function DeliverableGeneration({id,type,hasArtifact}:{id:string;type:string;hasArtifact:boolean}) {
   const router=useRouter();
-  const [kind,setKind]=useState(fixedKind??(type==="spreadsheet"?"spreadsheet":type==="presentation"?"presentation":"document"));
+  const [kind,setKind]=useState(type==="spreadsheet"?"spreadsheet":type==="presentation"?"presentation":"document");
   const [content,setContent]=useState("");const [confirmed,setConfirmed]=useState(false);
   const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
   const [gaps,setGaps]=useState<Array<{field:string;cause:string;nextAction:string}>>([]);
@@ -25,7 +25,7 @@ export function DeliverableGeneration({id,type,hasArtifact,fixedKind}:{id:string
     <summary className="cursor-pointer font-semibold text-[var(--cc-accent)]">Gerar e arquivar rascunho</summary>
     <div className="mt-3 space-y-3">
       <p className="text-xs text-[var(--cc-secondary)]">Usa os dados reais do projecto. Informação ausente fica explícita. A geração não aprova QA nem aceitação.</p>
-      {!fixedKind&& !["spreadsheet","presentation"].includes(type)&&<label className="block text-sm">Documento
+      {!["spreadsheet","presentation"].includes(type)&&<label className="block text-sm">Documento
         <select value={kind} disabled={busy||Boolean(download)} onChange={e=>{setKind(e.target.value);setRequestId(null);}} className="mt-1 w-full rounded border p-2">
           {Object.entries({document:"Documento",commitment:"Carta de Compromisso G3",master_mind:"Master Mind",master_plan:"Master Plan",commercial_guide:"Guia Comercial",diagnosis:"Diagnóstico",decision:"Dossier de decisão",progress:"Progresso",closure:"Fecho"}).map(([value,label])=><option value={value} key={value}>{label}</option>)}
         </select></label>}
