@@ -129,7 +129,7 @@ export async function submitGie360Diagnostic(formData: FormData) {
     p_token_hash: tokenHash,
   });
   const request = Array.isArray(requestRows) ? requestRows[0] : null;
-  if (lookupError || !request || request.questionnaire_version !== "executive-v3-gie360") {
+  if (lookupError || !request || !["executive-v3", "executive-v3-gie360"].includes(request.questionnaire_version)) {
     redirect(`${back}?error=${encodeURIComponent("Este link não corresponde ao diagnóstico empresarial integrado.")}`);
   }
   const answers = {
