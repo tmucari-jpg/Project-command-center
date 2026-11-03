@@ -19,8 +19,8 @@ export default async function ProductsPage() {
   ] = await Promise.all([
     supabase.from("gie360_assessments").select("organization_id,status,answers").eq("status","submitted"),
     supabase.from("client_diagnostic_requests").select("id,factory_case_id,status,submitted_at")
-      .eq("user_id", user.id).in("status", ["reviewed","incorporated"])
-      .order("submitted_at", { ascending: false }).limit(250),
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }).limit(250),
   ]);
   const diagnosticIds = (diagnosticRequests ?? []).map(request => request.id);
   const [{ data: responses, error: responsesError }, { data: reviews, error: reviewsError }] = diagnosticIds.length
@@ -32,7 +32,10 @@ export default async function ProductsPage() {
   const answersById = new Map((responses ?? []).map(item => [item.request_id, item.answers]));
   const reviewsById = new Map((reviews ?? []).map(item => [item.request_id, item.review_status]));
   const eligibleCases = new Map<string, { id: string; title: string; reason: string; modules: string[] }>();
+  const seenCases = new Set<string>();
   for (const request of diagnosticRequests ?? []) {
+    if (seenCases.has(request.factory_case_id)) continue;
+    seenCases.add(request.factory_case_id);
     const decision = canAssociateFromDiagnostic({
       requestStatus: request.status,
       reviewStatus: reviewsById.get(request.id) ?? null,
