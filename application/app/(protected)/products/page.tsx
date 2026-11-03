@@ -19,7 +19,7 @@ export default async function ProductsPage() {
   ] = await Promise.all([
     supabase.from("gie360_assessments").select("organization_id,status,answers").eq("status","submitted"),
     supabase.from("client_diagnostic_requests").select("id,factory_case_id,status,submitted_at")
-      .eq("user_id", user.id)
+      .eq("user_id", user.id).neq("questionnaire_version", "gie360-v1")
       .order("created_at", { ascending: false }).limit(250),
   ]);
   const diagnosticIds = (diagnosticRequests ?? []).map(request => request.id);
