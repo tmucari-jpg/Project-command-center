@@ -93,9 +93,10 @@ export default async function Gie360Page({
                 <p className="mt-1 text-xs text-[var(--cc-secondary)]">
                   {orgById.get(item.organization_id)?.contract_approved ? "Contrato aprovado" : "Contrato ainda não aprovado"}
                 </p>
-                <Link className={secondaryButtonClass + " mt-3 inline-flex"} href={`/project-factory/${item.factory_case_id}`}>
-                  Consultar diagnóstico de origem
-                </Link>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link className={primaryButtonClass + " inline-flex"} href={`/gie360/${item.organization_id}`}>Abrir avaliação GIE360°</Link>
+                  <Link className={secondaryButtonClass + " inline-flex"} href={`/project-factory/${item.factory_case_id}`}>Ver caso PCC de origem</Link>
+                </div>
               </div>
             ))}
           </div>
