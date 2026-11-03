@@ -1419,3 +1419,22 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Install browser QA runner (temporary, no lockfile changes)
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts @playwright/test@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Browser QA — approved PCC/GIE360 form and isolated RPC submission
+        run: npx playwright test --config tests/e2e/playwright.config.mjs
+
+      - name: Upload browser QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcc-gie360-playwright-evidence
+          path: |
+            application/playwright-report/
+            application/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
