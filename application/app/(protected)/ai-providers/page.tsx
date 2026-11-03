@@ -7,6 +7,7 @@ import { Card, EmptyState } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 import { displayLabel } from "@/lib/display-label";
+import { freeAIConfigurationIssue, isFreeAIEligible } from "@/lib/ai-runtime";
 import { resolveAIExecutionState } from "@/lib/ai-provider-adapter";
 
 export default async function AIFornecedoresPage({
@@ -23,12 +24,13 @@ export default async function AIFornecedoresPage({
   ]);
 
   const error = providerError?.message ?? queueError?.message;
-  const enabledProviders = (providers ?? []).filter((provider) => provider.enabled);
+  const enabledProviders = (providers ?? []).filter(isFreeAIEligible);
   const operationalProviders = enabledProviders.filter((provider) => provider.last_health_status === "healthy");
-  const cloudQuotaBlocked = (providers ?? []).length > 0 && (providers ?? []).every(
-    (provider) => provider.mode !== "cloud" || (provider.configuration_status === "valid" && provider.availability_reason === "quota"),
+  const cloudProviders = (providers ?? []).filter((provider) => provider.mode === "cloud");
+  const cloudQuotaBlocked = cloudProviders.length > 0 && cloudProviders.every(
+    (provider) => provider.configuration_status === "valid" && provider.availability_reason === "quota",
   );
-  const executionState = resolveAIExecutionState(providers ?? []);
+  const executionState = resolveAIExecutionState((providers ?? []).filter(isFreeAIEligible));
   const queuedOperations = (queue ?? []).filter((item) => item.status !== "completed" && item.status !== "cancelled");
   const failedOperations = (queue ?? []).filter((item) => item.status === "failed" || Boolean(item.last_error));
   const capabilities = Array.from(
@@ -100,7 +102,7 @@ export default async function AIFornecedoresPage({
           O PCC deve consumir capacidades, não depender de uma ferramenta específica: pesquisa, navegação web, execução de código, diagnóstico, automação e agentes podem ser fornecidos por serviços diferentes ou por runtime local.
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
-          Regra operacional: usar IA na nuvem quando estiver saudável; se ficar indisponível, usar IA local apenas quando o endpoint local estiver validado e alcançável a partir do runtime do PCC.
+          Regra operacional: usar IA local primeiro, sem créditos de API. Gemini e Groq em plano gratuito são complementos explicitamente configurados; serviços pagos não entram no fallback.
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
           Sem provider saudável, o PCC continua a executar as funções normais baseadas em dados e regras, mas não deve simular capacidades de IA. O modo offline operacional permanece disponível após a criação do snapshot local; capacidades de IA local dependem de um endpoint local validado e acessível.
@@ -124,16 +126,16 @@ export default async function AIFornecedoresPage({
       <Card className="mb-6 border-[color-mix(in_srgb,var(--cc-warning)_32%,var(--cc-border))] bg-[color-mix(in_srgb,var(--cc-warning-soft)_72%,transparent)] p-5">
         <p className="font-semibold text-[#76551d]">
           {operationalProviders.length
-            ? `${operationalProviders.length} serviço(s) cloud operacional(is).`
+            ? `${operationalProviders.length} serviço(s) com geração validada.`
             : cloudQuotaBlocked
               ? "Configuração cloud válida; indisponível por quota."
               : "Cloud indisponível; fallback local disponível no BotIA em dispositivo compatível."}
         </p>
         <p className="mt-2 text-sm leading-6 text-[#76551d]">
           {operationalProviders.length
-            ? "O PCC pode usar as capacidades cloud abaixo, respeitando prioridade, custo e estado de saúde."
+            ? "O PCC pode usar as capacidades abaixo, com preferência local e serviços gratuitos autorizados."
             : cloudQuotaBlocked
-              ? "OpenAI/Qwen continuam configurados, mas sem quota. Isto não bloqueia o BotIA: a assistência local no dispositivo é o fallback sem quota."
+              ? "OpenAI/Qwen mantêm o histórico de configuração, mas ficam fora da política gratuita. A IA local depende de dispositivo compatível e do carregamento do modelo; o trabalho manual continua disponível."
               : "Sem cloud saudável, o PCC não simula resposta cloud; o BotIA tenta a IA Local PCC quando o dispositivo suporta WebGPU."}
         </p>
         {capabilities.length > 0 && (
@@ -154,6 +156,9 @@ export default async function AIFornecedoresPage({
         <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
           Este registo não activa a IA. O provider permanece desactivado e com health desconhecido até ser validado.
         </p>
+        <p className="mt-2 text-sm leading-6 text-[var(--cc-secondary)]">
+          Gemini requer uma chave protegida no servidor, um modelo disponível no plano gratuito e aprovação do tratamento de dados. O plano gratuito tem limites e pode usar conteúdo para melhorar produtos Google; confirme a política antes de enviar dados empresariais. Uma ligação configurada só é operacional após geração real validada.
+        </p>
         <form action={registerAIProviderProfile} className="mt-4 grid gap-4 md:grid-cols-2">
           <Select label="Provider" name="provider" defaultValue="qwen_local">
             <option value="qwen_local">Qwen local</option>
@@ -162,6 +167,7 @@ export default async function AIFornecedoresPage({
             <option value="koboldcpp_local">KoboldCPP local</option>
             <option value="openai">OpenAI</option>
             <option value="groq">Groq</option>
+            <option value="gemini">Google Gemini</option>
             <option value="huggingchat">HuggingChat</option>
             <option value="other">Outro</option>
           </Select>
@@ -221,6 +227,9 @@ export default async function AIFornecedoresPage({
                     Configuração: {provider.configuration_status === "valid" ? "válida" : provider.configuration_status === "invalid" ? "inválida" : "por validar"}
                     {provider.availability_reason === "quota" ? " · cloud sem quota" : ""}
                   </p>
+                  {freeAIConfigurationIssue(provider) && (
+                    <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">Próximo passo: {freeAIConfigurationIssue(provider)}</p>
+                  )}
                   {provider.last_health_message && (
                     <p className="mt-2 text-xs leading-5 text-[var(--cc-secondary)]">
                       Diagnóstico: {provider.last_health_message}

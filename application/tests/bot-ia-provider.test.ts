@@ -43,12 +43,7 @@ describe("BotIA provider failover", () => {
       .mockResolvedValueOnce({
         ok: false,
         status: 429,
-        text: async () => "no credits",
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 429,
-        text: async () => "no credits",
+        json: async () => ({ error: { code: "insufficient_quota", message: "no credits" } }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -84,8 +79,8 @@ describe("BotIA provider failover", () => {
       expect.objectContaining({ provider: "openai", status: "failed" }),
       expect.objectContaining({ provider: "qwen_cloud", status: "passed" }),
     ]);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(String(fetchMock.mock.calls[2]?.[0])).toContain("/chat/completions");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/chat/completions");
     const openAIInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
     const openAIBody = JSON.parse(String(openAIInit.body));
     expect(openAIBody.reasoning_effort).toBe("none");

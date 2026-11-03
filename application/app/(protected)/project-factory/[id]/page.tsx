@@ -299,6 +299,23 @@ export default async function FactoryCasePage({
         }
       />
 
+      {factoryCase.source === "questionnaire_preintake_gie360" && (
+        <Card className="mb-5 p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#146453]">Encaminhamento confirmado · GIE360°</p>
+          <h2 className="mt-2 font-semibold text-[#073f36]">Diagnóstico empresarial</h2>
+          <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+            Este caso foi iniciado pela opção GIE360°. As respostas do cliente são recebidas aqui para revisão;
+            a associação da empresa e o segundo diagnóstico prosseguem no GIE360°, depois de validar a informação inicial.
+          </p>
+          <Link href="/products" className={secondaryButtonClass}>Continuar no GIE360°</Link>
+        </Card>
+      )}
+      {factoryCase.source?.startsWith("questionnaire_preintake_") && factoryCase.source !== "questionnaire_preintake_gie360" && (
+        <Card className="mb-5 p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#146453]">Encaminhamento confirmado · Projectos PCC</p>
+          <p className="mt-2 text-sm text-[var(--cc-secondary)]">Este diagnóstico segue o percurso de Projectos PCC e permanece sujeito à revisão interna antes de qualquer partilha externa.</p>
+        </Card>
+      )}
       <ClientDiagnosticCaseAlert
         alert={caseDiagnosticAlert}
         factoryCaseId={factoryCase.id}

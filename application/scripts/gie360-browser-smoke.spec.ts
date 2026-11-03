@@ -1,0 +1,231 @@
+import { test, expect } from '@playwright/test';
+import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'node:crypto';
+
+test('manager associates and configures; client saves, resumes and submits real questionnaire', async ({ page, browser }, testInfo) => {
+  const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!);
+  expect(url.protocol).toBe('http:');
+  expect(['localhost', '127.0.0.1']).toContain(url.hostname);
+  expect(url.port).toBe('54321');
+  const admin = createClient(url.href, process.env.PCC_LOCAL_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+  const publicKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+  const suffix = randomUUID();
+  const password = `Browser-only-${randomUUID()}!`;
+  const ownerEmail = `browser-owner-${suffix}@example.test`;
+  const clientEmail = `browser-client-${suffix}@example.test`;
+  const caseTitle = `Browser case ${suffix}`;
+  const organizationName = `Empresa UI ${suffix}`;
+  for (const email of [ownerEmail, clientEmail]) {
+    const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+    expect(created.error).toBeNull();
+  }
+  const manager = createClient(url.href, publicKey, { auth: { persistSession: false } });
+  const login = await manager.auth.signInWithPassword({ email: ownerEmail, password });
+  expect(login.error).toBeNull();
+  const ownerId = login.data.user!.id;
+  const factory = await manager.from('project_factory_cases').insert({ user_id: ownerId, title: caseTitle, problem: 'Synthetic browser validation', project_type: 'commercial' }).select('id').single();
+  expect(factory.error).toBeNull();
+  // Synthetic diagnostic: actual answers and internal acceptance are required.
+  // A mere submitted status must NOT make the PCC case eligible for GIE360°.
+  const initialRequest = await admin.from('client_diagnostic_requests').insert({ user_id: ownerId, factory_case_id: factory.data!.id, token_hash: randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', ''), questionnaire_version: 'client-diagnostic-v1', status: 'submitted', expires_at: new Date(Date.now() + 86400000).toISOString() }).select('id').single();
+  expect(initialRequest.error).toBeNull();
+  const diagnosticResponse = await admin.from('client_diagnostic_responses').insert({
+    request_id: initialRequest.data!.id, respondent_name: 'Responsável sintético', respondent_role: 'Gestor',
+    respondent_email: clientEmail,
+    answers: { respondent_type: 'organization', request_nature: 'organization_solution',
+      context: 'A empresa precisa de organizar cobranças e clientes',
+      focus: 'sales: Sem controlo definido; cash: Frequentemente',
+      desired_result: 'Melhorar tesouraria e a gestão de propostas' }
+  });
+  expect(diagnosticResponse.error).toBeNull();
+  const diagnosticReview = await admin.from('client_diagnostic_reviews').insert({
+    request_id: initialRequest.data!.id, user_id: ownerId,
+    review_status: 'accepted', review_notes: 'Resultado revisto e aceite para o GIE360°'
+  });
+  expect(diagnosticReview.error).toBeNull();
+  const reviewStatus = await admin.from('client_diagnostic_requests').update({
+    status: 'reviewed', reviewed_at: new Date().toISOString()
+  }).eq('id', initialRequest.data!.id);
+  expect(reviewStatus.error).toBeNull();
+
+  await page.goto('/auth/login');
+  await page.getByLabel('Email', { exact: true }).fill(ownerEmail);
+  await page.getByLabel('Palavra-passe', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+  await page.goto('/products');
+  await expect(page.getByRole('heading', { name: 'GIE360°', exact: true })).toBeVisible();
+  const caseField=page.getByLabel('Caso PCC', { exact: true });
+  await expect(caseField, `GIE360 products form absent. Page excerpt: ${(await page.locator('body').innerText()).slice(0,1600)}`).toBeVisible({timeout:10000});
+  await caseField.selectOption(factory.data!.id);
+  await page.getByLabel('Empresa', { exact: true }).fill(organizationName);
+  await page.getByLabel('Email confirmado do cliente', { exact: true }).fill(clientEmail);
+  await page.getByRole('button', { name: 'Associar cliente e diagnóstico', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Empresa associada ao GIE360° com base no diagnóstico aprovado' })).toBeVisible();
+  const organization = await manager.from('gie360_organizations').select('id,package_code,approved_modules,ai_cloud_authorized').eq('name', organizationName).single();
+  expect(organization.error).toBeNull();
+  await expect(page.getByText('Diagnóstico GIE360° pendente')).toBeVisible();
+
+  const clientContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  try {
+    const client = await clientContext.newPage();
+    await client.goto('http://localhost:3000/gie360/login');
+    await client.getByLabel('Email', { exact: true }).fill(clientEmail);
+    await client.getByLabel('Palavra-passe', { exact: true }).fill(password);
+    await client.getByLabel('Email', { exact: true }).focus();
+    await client.keyboard.press('Tab');
+    await expect(client.getByLabel('Palavra-passe', { exact: true })).toBeFocused();
+    await client.getByRole('button', { name: 'Entrar no GIE360°', exact: true }).click();
+    await expect(client).toHaveURL('http://localhost:3000/gie360');
+    await expect(client.getByRole('heading', { name: organizationName, exact: true })).toBeVisible();
+    await client.getByLabel('Qual é o sector de actividade?').fill('Comércio sintético');
+    await client.getByLabel('Qual é a dimensão da empresa?').fill('5 trabalhadores declarados');
+    await client.getByLabel('Há quanto tempo está em actividade?').fill('2 anos declarados');
+    await client.getByLabel('Que sistemas de gestão utiliza?').fill('Folha de cálculo');
+    await client.getByRole('button', { name: 'Guardar progresso', exact: true }).click();
+    await expect(client.getByRole('status')).toContainText('Progresso guardado no servidor');
+    await client.reload();
+    await expect(client.getByLabel('Qual é o sector de actividade?')).toHaveValue('Comércio sintético');
+    await expect(client.getByLabel('Qual é a dimensão da empresa?')).toHaveValue('5 trabalhadores declarados');
+    await client.getByRole('button', { name: 'Guardar e continuar', exact: true }).click();
+    await client.getByLabel('Que problemas pretende resolver?').fill('Organizar cobranças');
+    await client.getByLabel('Como acompanha propostas e oportunidades?').fill('Registo manual');
+    await client.getByLabel('Existem atrasos de cobranças?').fill('Não disponível');
+    await client.getByLabel('Conhece os custos e a sua origem?').fill('Não sei');
+    await client.getByRole('button', { name: 'Guardar e continuar', exact: true }).click();
+    await client.getByLabel('Como está organizada a contabilidade?').fill('Contabilista externo');
+    await client.getByLabel('Que documentos e dados estão disponíveis?').fill('CSV de vendas de teste');
+    await client.getByLabel('Que resultado pretende alcançar?').fill('Identificar informação por completar');
+    await client.getByLabel('Qual é o horizonte pretendido?').fill('A confirmar pelo gestor');
+    await expect(client.getByRole('button', { name: 'Enviar respostas ao PCC', exact: true })).toBeDisabled();
+    await client.getByRole('checkbox', { name: /Confirmo o envio destas respostas/ }).check();
+    await client.screenshot({ path: testInfo.outputPath('client-mobile-before-submit.png'), fullPage: true });
+    const width = await client.evaluate(() => ({ content: document.documentElement.scrollWidth, viewport: window.innerWidth }));
+    expect(width.content).toBeLessThanOrEqual(width.viewport + 1);
+    await client.getByRole('button', { name: 'Enviar respostas ao PCC', exact: true }).click();
+    await expect(client.getByText('Submetido · validação pendente', { exact: true })).toBeVisible();
+    await client.reload();
+    await expect(client.getByRole('status')).toContainText('Respostas recebidas e ligadas ao mesmo caso');
+    await expect(client.getByText('Informação a completar ou confirmar: 2', { exact: true })).toBeVisible();
+    await client.screenshot({ path: testInfo.outputPath('client-mobile-submitted.png'), fullPage: true });
+    // Only after the client submits their GIE360 assessment may the manager approve scope.
+    await page.reload();
+    const settings = page.locator('form').filter({ has: page.getByRole('heading', { name: `Âmbito de ${organizationName}`, exact: true }) });
+    await expect(settings).toBeVisible();
+    await settings.getByLabel('Pacote acordado', { exact: true }).selectOption('gie360-enterprise');
+    await settings.getByLabel('Dados e validação', { exact: true }).check();
+    await settings.getByLabel(/Referência do acordo aprovado/).fill('SYNTHETIC-UI-PILOT-ONLY');
+    await settings.getByRole('checkbox', { name: /Revisei o diagnóstico recebido/ }).check();
+    await settings.getByRole('button', { name: 'Registar âmbito e autorização', exact: true }).click();
+    await expect(settings.getByRole('status')).toContainText('Pacote, âmbito e autorização de IA registados');
+    await page.screenshot({ path: testInfo.outputPath('manager-gie360.png'), fullPage: true });
+    const configured = await manager.from('gie360_organizations').select('package_code,approved_modules,ai_cloud_authorized').eq('id', organization.data!.id).single();
+    expect(configured.error).toBeNull();
+    expect(configured.data!.package_code).toBe('gie360-enterprise');
+    expect(configured.data!.approved_modules).toContain('data');
+    expect(configured.data!.ai_cloud_authorized).toBe(false);
+    await client.goto('http://localhost:3000/dashboard');
+    await expect(client).toHaveURL('http://localhost:3000/gie360');
+    const assessment = await manager.from('gie360_assessments').select('status,answers,revision').eq('organization_id', organization.data!.id).single();
+    expect(assessment.error).toBeNull();
+    expect(assessment.data!.status).toBe('submitted');
+    expect(Object.keys(assessment.data!.answers)).toHaveLength(12);
+    expect(assessment.data!.answers.costs).toBe('Não sei');
+    const notifications = await manager.from('notifications').select('id').eq('type', 'gie360_submission').eq('related_entity_id', factory.data!.id);
+    expect(notifications.error).toBeNull();
+    expect(notifications.data).toHaveLength(1);
+  } finally { await clientContext.close(); }
+});
+
+test('existing project opens its own diagnostic without creating another project', async ({ page }) => {
+  const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!);
+  expect(url.protocol).toBe('http:');
+  expect(['localhost', '127.0.0.1']).toContain(url.hostname);
+  expect(url.port).toBe('54321');
+  const admin = createClient(url.href, process.env.PCC_LOCAL_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+  const email = `existing-project-${randomUUID()}@example.test`;
+  const password = `Existing-project-${randomUUID()}!`;
+  const createdUser = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(createdUser.error).toBeNull();
+  const ownerId = createdUser.data.user!.id;
+  const manager = createClient(url.href, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false } });
+  expect((await manager.auth.signInWithPassword({ email, password })).error).toBeNull();
+  const project = await manager.from('projects').insert({
+    user_id: ownerId, owner_id: ownerId, title: 'Projecto com diagnóstico existente',
+    expected_result: 'Determinar necessidades empresariais', status: 'planning', priority: 'medium',
+    progress: 0, currency: 'MZN'
+  }).select('id').single();
+  expect(project.error).toBeNull();
+
+  await page.goto('/auth/login');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Palavra-passe', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page).toHaveURL(/dashboard/);
+  await page.goto(`/projects/${project.data!.id}`);
+  await expect(page.getByRole('heading', { name: 'Diagnóstico do projecto' })).toBeVisible();
+  await page.getByRole('button', { name: 'Preparar diagnóstico deste projecto' }).click();
+  await expect(page).toHaveURL(/project-factory/);
+  await expect(page.getByText('Diagnóstico do Cliente', { exact: true })).toBeVisible();
+  const review = page.getByRole('checkbox', { name: /Revisei destinatário, organização e conteúdo/ });
+  const generate = page.getByRole('button', { name: 'Validar informação antes de gerar' });
+  await expect(generate).toBeDisabled();
+  await page.getByRole('textbox', { name: 'Contacto do cliente', exact: true }).fill('Contacto de ensaio');
+  await review.check();
+  await expect(review).toBeChecked();
+  await expect(page.getByRole('button', { name: 'Gerar questionário' })).toBeEnabled();
+  await page.getByRole('textbox', { name: 'Contacto do cliente', exact: true }).fill('Contacto alterado');
+  await expect(review).not.toBeChecked();
+  await expect(generate).toBeDisabled();
+  await page.getByRole('textbox', { name: 'Organização', exact: true }).fill('Empresa teste partilha');
+  await page.getByRole('textbox', { name: /Número WhatsApp do destinatário/ }).fill('+258 84 123 4567');
+  await review.check();
+  await page.getByRole('button', { name: 'Gerar questionário', exact: true }).click();
+  await expect(page.getByText('Link do questionário', { exact: true })).toBeVisible();
+  const whatsappLink = page.getByRole('link', { name: 'Abrir WhatsApp para enviar' });
+  await expect(whatsappLink).toHaveAttribute('href', /wa\.me\/258841234567\?text=/);
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Descarregar link (.txt)' }).click();
+  const downloaded = await downloadPromise;
+  expect(downloaded.suggestedFilename()).toMatch(/^PCC-link-diagnostico-.*\.txt$/);
+  const linkedCases = await manager.from('project_factory_cases').select('id')
+    .eq('project_id', project.data!.id);
+  expect(linkedCases.error).toBeNull();
+  expect(linkedCases.data).toHaveLength(1);
+  const projects = await manager.from('projects').select('id').eq('user_id', ownerId);
+  expect(projects.error).toBeNull();
+  expect(projects.data).toHaveLength(1);
+  await page.goto(`/projects/${project.data!.id}`);
+  await expect(page.getByRole('link', { name: 'Abrir diagnóstico e gerar questionário' })).toBeVisible();
+});
+
+test('offline creation survives page closure and reopens before real Supabase sync without duplicates', async ({ page, context }) => {
+  const url=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!);
+  expect(url.protocol).toBe('http:');expect(['localhost','127.0.0.1']).toContain(url.hostname);expect(url.port).toBe('54321');
+  const admin=createClient(url.href,process.env.PCC_LOCAL_SERVICE_ROLE_KEY!,{auth:{persistSession:false}});
+  const publicKey=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+  const email=`offline-${randomUUID()}@example.test`,password=`Offline-QA-${randomUUID()}!`;
+  const created=await admin.auth.admin.createUser({email,password,email_confirm:true});expect(created.error).toBeNull();
+  const owner=createClient(url.href,publicKey,{auth:{persistSession:false}});
+  expect((await owner.auth.signInWithPassword({email,password})).error).toBeNull();
+  const project=await owner.from('projects').insert({user_id:created.data.user!.id,owner_id:created.data.user!.id,title:'Projecto offline sintético',expected_result:'Persistir e sincronizar ensaio',status:'planning',priority:'medium',progress:0,currency:'MZN'}).select('id').single();expect(project.error).toBeNull();
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/auth/login');await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Palavra-passe',{exact:true}).fill(password);await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page).toHaveURL(/\/dashboard/);
+  const bootstrap=await page.request.get('/api/offline/bootstrap');expect(bootstrap.status(),await bootstrap.text()).toBe(200);
+  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
+  await expect.poll(()=>page.evaluate(async()=>{if(!(await indexedDB.databases()).some(db=>db.name==='pcc-offline'))return false;return new Promise<boolean>(resolve=>{const r=indexedDB.open('pcc-offline',1);r.onsuccess=()=>{const db=r.result;if(!db.objectStoreNames.contains('meta')){db.close();resolve(false);return;}const q=db.transaction('meta').objectStore('meta').get('offlineEnabled');q.onsuccess=()=>{db.close();resolve(q.result===true);};q.onerror=()=>{db.close();resolve(false);};};r.onerror=()=>resolve(false);});})).toBe(true);
+  await page.goto('/offline.html');await expect(page.locator('#captureButton')).toBeVisible();
+  await context.setOffline(true);
+  const title=`Ideia offline ${randomUUID()}`;
+  await page.locator('#captureButton').click();await page.locator('#captureType').selectOption('create_idea');await page.locator('#captureProject').selectOption(project.data!.id);await page.locator('#captureTitle').fill(title);await page.locator('#saveCapture').click();
+  const readQueue=()=>new Promise<Array<{id:string;payload:{title?:string}}>>(resolve=>{const r=indexedDB.open('pcc-offline',1);r.onsuccess=()=>{const db=r.result;const q=db.transaction('queue').objectStore('queue').getAll();q.onsuccess=()=>{db.close();resolve(q.result);};q.onerror=()=>{db.close();resolve([]);};};r.onerror=()=>resolve([]);});
+  const pending=await page.evaluate(readQueue);expect(pending).toHaveLength(1);expect(pending[0].payload.title).toBe(title);const id=pending[0].id;
+  await page.close();const reopened=await context.newPage();await reopened.goto('http://localhost:3000/offline.html');await expect(reopened.locator('#captureButton')).toBeVisible();
+  const restored=await reopened.evaluate(readQueue);expect(restored).toHaveLength(1);expect(restored[0].id).toBe(id);expect(restored[0].payload.title).toBe(title);
+  await context.setOffline(false);
+  await expect.poll(async()=>{const row=await owner.from('ideas').select('id').eq('id',id);expect(row.error).toBeNull();return row.data!.length;},{timeout:30000}).toBe(1);
+  await expect.poll(async()=>{const receipt=await owner.from('sync_queue').select('status').eq('id',id).maybeSingle();expect(receipt.error).toBeNull();return receipt.data?.status;}).toBe('synced');
+  await expect.poll(async()=>(await reopened.evaluate(readQueue)).length).toBe(0);
+  await reopened.locator('#syncButton').click();const final=await owner.from('ideas').select('id').eq('id',id);expect(final.error).toBeNull();expect(final.data).toHaveLength(1);
+  const {writeFile}=await import('node:fs/promises');await writeFile('../validation-offline-browser.json',JSON.stringify({scope:'chromium-mobile-viewport-page-close-reopen-not-physical-device',status:'passed',projectId:project.data!.id,offlineItemId:id,receiptStatus:'synced',ideaRows:final.data!.length,queueRemaining:0,physicalDeviceValidated:false},null,2));
+});

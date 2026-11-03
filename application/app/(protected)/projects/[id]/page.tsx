@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { openExistingProjectDiagnostic } from "@/app/(protected)/existing-project-diagnostic-actions";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, CalendarCheck2, CheckSquare2, CircleDollarSign, GitBranch, Home, PackageCheck, ShieldCheck, TriangleAlert, UserRoundCheck } from "lucide-react";
 import {
@@ -60,6 +61,7 @@ export default async function ProjectHubPage({
     { data: commercialProfile },
     { data: commitmentBaselines },
     { data: changeRequests },
+    { data: clientLinkDecisions },
   ] = await Promise.all([
     supabase
       .from("actions")
@@ -137,7 +139,7 @@ export default async function ProjectHubPage({
       .eq("project_id", id),
     supabase
       .from("financial_entries")
-      .select("entry_type,category,amount,currency,status")
+      .select("entry_type,category,amount,currency,status,occurred_on")
       .eq("user_id", user.id)
       .eq("project_id", id),
     supabase
@@ -158,7 +160,26 @@ export default async function ProjectHubPage({
       .eq("user_id", user.id)
       .eq("project_id", id)
       .order("created_at", { ascending: false }),
+    supabase.from("project_client_status_decisions")
+      .select("id,decision,respondent_name,comment,created_at")
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }).limit(20),
   ]);
+
+  // Reuse only diagnostics already converted into this project; unreviewed client answers are excluded.
+  const { data: sourceCase } = await supabase.from("project_factory_cases")
+    .select("id,problem,expected_value,constraints,governance_gate_status")
+    .eq("project_id", id).eq("user_id", user.id).maybeSingle();
+  const { data: factoryValidation } = sourceCase
+    ? await supabase.from("factory_validations")
+        .select("status,viability_status,viability_summary,conditions_to_proceed")
+        .eq("factory_case_id", sourceCase.id).eq("user_id", user.id).maybeSingle()
+    : { data: null };
+  const sourceValidated = Boolean(sourceCase?.governance_gate_status === "approved" &&
+    factoryValidation && ["viable", "conditional"].includes(factoryValidation.viability_status ?? "") &&
+    factoryValidation.status === "complete");
+  const diagnosticConditions = sourceValidated ? String(factoryValidation?.conditions_to_proceed ?? "").trim() : "";
+  const diagnosticScope = sourceValidated ? String(sourceCase?.problem ?? "").trim() : "";
 
   const openBlockers = (blockers ?? []).filter((item) => item.status !== "resolved" && item.status !== "ignored");
   const activeDependencies = (dependencies ?? []).filter((item) =>
@@ -196,6 +217,11 @@ export default async function ProjectHubPage({
     projectCurrency: project.currency,
     commercialCurrency: commercialProfile?.currency,
   });
+  const inferredDeliverables = (deliverables ?? []).map(item => item.title).filter(Boolean).join("; ");
+  const inferredScope = diagnosticScope || (typeof project.description === "string" ? project.description.trim() : "");
+  const inferredResponsibilities = projectOwner?.full_name
+    ? `Coordenação do projecto: ${projectOwner.full_name}. Confirmar obrigações específicas antes da aprovação.`
+    : "";
   const latestBaseline = commitmentBaselines?.[0];
   const approvedBaseline = (commitmentBaselines ?? []).find((item) => item.status === "client_approved");
   const pendingChanges = (changeRequests ?? []).filter((item) => item.decision === "pending");
@@ -248,6 +274,25 @@ export default async function ProjectHubPage({
       />
 
       <Card className="mb-6 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Diagnóstico do projecto</h2>
+        <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+          Envie o diagnóstico deste projecto existente ao cliente para identificar necessidades e decidir
+          o encaminhamento para Projectos PCC ou GIE360°. O projecto não é duplicado e nenhuma
+          partilha acontece sem pré-visualização e aprovação interna.
+        </p>
+        {sourceCase ? (
+          <Link className={primaryButtonClass + " mt-4 inline-flex"} href={`/project-factory/${sourceCase.id}`}>
+            Abrir diagnóstico e gerar questionário
+          </Link>
+        ) : (
+          <form action={openExistingProjectDiagnostic} className="mt-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <button className={primaryButtonClass}>Preparar diagnóstico deste projecto</button>
+          </form>
+        )}
+      </Card>
+
+      <Card className="mb-6 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--cc-secondary)]">Onde estamos</p>
@@ -295,6 +340,31 @@ export default async function ProjectHubPage({
           </summary>
           <div className="mt-4">
             <ProjectClientStatusLink projectId={project.id} />
+            <div className="mt-5 border-t border-[var(--cc-border)] pt-4">
+              <h3 className="text-sm font-semibold">Respostas recebidas pelo link</h3>
+              <p className="mt-1 text-sm text-[var(--cc-secondary)]">As respostas ficam registadas para revisão interna; não concluem nem aprovam automaticamente documentos.</p>
+              {clientLinkDecisions?.length ? (
+                <ul className="mt-3 space-y-3">
+                  {clientLinkDecisions.map((reply) => (
+                    <li key={reply.id} className="rounded-lg border border-[var(--cc-border)] p-3 text-sm">
+                      <p className="font-semibold">{reply.respondent_name} · {reply.decision === "approve" ? "Aprovou os próximos passos" : reply.decision === "change" ? "Solicitou alteração" : "Pediu esclarecimento"}</p>
+                      {reply.comment && <p className="mt-1 whitespace-pre-wrap">{reply.comment}</p>}
+                      {reply.decision === "change" && (
+                        <form action={createProjectChangeRequest} className="mt-3">
+                          <input type="hidden" name="project_id" value={project.id} />
+                          {approvedBaseline && <input type="hidden" name="baseline_id" value={approvedBaseline.id} />}
+                          <input type="hidden" name="source_decision_id" value={reply.id} />
+                          <input type="hidden" name="title" value="Revisão solicitada pelo cliente" />
+                          <input type="hidden" name="description" value={`Pedido recebido pelo link (referência ${reply.id}); cliente: ${reply.respondent_name}. ${reply.comment ?? "Sem comentário adicional."}`} />
+                          <button className={secondaryButtonClass} type="submit">Abrir pedido de revisão interna</button>
+                        </form>
+                      )}
+                      <p className="mt-1 text-xs text-[var(--cc-secondary)]">{formatDateTime(reply.created_at)}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="mt-2 text-sm text-[var(--cc-secondary)]">Nenhuma resposta registada.</p>}
+            </div>
           </div>
         </details>
       </Card>
@@ -309,9 +379,21 @@ export default async function ProjectHubPage({
           </span>
         </div>
 
+        <div className="mt-4 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+          <p className="text-sm font-semibold">Carta de Compromisso / Contrato de Prestação de Serviços</p>
+          <p className="mt-1 text-sm text-[var(--cc-secondary)]">Minuta automática baseada no compromisso aprovado internamente. Não equivale a contrato assinado nem autoriza a execução. Termos ausentes são indicados para confirmação.</p>
+          {latestBaseline && ["internal_approved", "client_approved"].includes(latestBaseline.status) ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a className={secondaryButtonClass} href={`/api/projects/${project.id}/commitment-draft?format=pdf`}>Descarregar minuta PDF</a>
+              <a className={secondaryButtonClass} href={`/api/projects/${project.id}/commitment-draft?format=docx`}>Descarregar minuta Word</a>
+            </div>
+          ) : <p className="mt-2 text-sm">Para gerar a minuta, registe o compromisso e valide-o internamente.</p>}
+        </div>
+
         <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
           <summary className="cursor-pointer list-none p-4 text-sm font-semibold text-[var(--cc-accent)]">Ver detalhes do compromisso</summary>
           <div className="border-t border-[var(--cc-border)] p-4">
+            <p className="mb-3 text-sm text-[var(--cc-secondary)]">Campos preenchidos com dados já registados: diagnóstico de origem validado (quando existente), resultado esperado, descrição do âmbito, entregáveis e responsável. Condições do diagnóstico são propostas para revisão, não exclusões contratuais aprovadas. Todos os campos são editáveis.</p>
             <form action={saveCommitmentBaseline} className="space-y-4">
               <input type="hidden" name="project_id" value={project.id} />
               <Select
@@ -325,11 +407,12 @@ export default async function ProjectHubPage({
                 <option value="restricted">Restrita · sem snapshot offline</option>
               </Select>
               <TextArea label="Resultado esperado" name="expected_result" required defaultValue={latestBaseline?.expected_result ?? project.expected_result ?? ""} />
-              <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? ""} placeholder="O que o PCC fará neste projecto." />
-              <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? ""} placeholder="Resultados concretos que o cliente receberá." />
+              <TextArea label="Âmbito" name="scope" required defaultValue={latestBaseline?.scope ?? inferredScope} placeholder="O que o PCC fará neste projecto." />
+              <TextArea label="Entregáveis previstos" name="deliverables_summary" required defaultValue={latestBaseline?.deliverables_summary ?? inferredDeliverables} placeholder="Resultados concretos que o cliente receberá." />
+              {diagnosticConditions && <p className="rounded-lg border border-[var(--cc-border)] p-3 text-sm"><strong>Condições do diagnóstico validado (para revisão):</strong> {diagnosticConditions}. Não são automaticamente exclusões contratuais.</p>}
               <TextArea label="Exclusões" name="exclusions" defaultValue={latestBaseline?.exclusions ?? ""} placeholder="O que não está incluído." />
               <div className="grid gap-4 lg:grid-cols-2">
-                <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? ""} />
+                <TextArea label="Responsabilidades do PCC" name="pcc_responsibilities" defaultValue={latestBaseline?.pcc_responsibilities ?? inferredResponsibilities} />
                 <TextArea label="Responsabilidades do cliente" name="client_responsibilities" defaultValue={latestBaseline?.client_responsibilities ?? ""} />
               </div>
               <TextArea

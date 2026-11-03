@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> project-command-center@0.1.0 ui:standard
+> node scripts/validate-ui-standard.mjs
+
+PCC UI standard: OK (marca oficial + pt-MZ/ENG + autenticação).

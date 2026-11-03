@@ -1,0 +1,22 @@
+rota,metodo,ficheiro,observacao
+/api/ai/assist,GET,application/app/api/ai/assist/route.ts,Inventário estático; não constitui teste HTTP
+/api/ai/assist,POST,application/app/api/ai/assist/route.ts,Inventário estático; não constitui teste HTTP
+/api/client-diagnostic/preintake,POST,application/app/api/client-diagnostic/preintake/route.ts,Inventário estático; não constitui teste HTTP
+/api/deliverables/[id]/generate,POST,application/app/api/deliverables/[id]/generate/route.ts,Inventário estático; não constitui teste HTTP
+/api/deliverables/artifacts/[id]/download,GET,application/app/api/deliverables/artifacts/[id]/download/route.ts,Inventário estático; não constitui teste HTTP
+/api/exports/client-diagnostic-template,GET,application/app/api/exports/client-diagnostic-template/route.ts,Inventário estático; não constitui teste HTTP
+/api/exports/commercial-master,GET,application/app/api/exports/commercial-master/route.ts,Inventário estático; não constitui teste HTTP
+/api/exports/investment-brief/[id],GET,application/app/api/exports/investment-brief/[id]/route.ts,Inventário estático; não constitui teste HTTP
+/api/mobile/android-apk,GET,application/app/api/mobile/android-apk/route.ts,Inventário estático; não constitui teste HTTP
+/api/official-documents/[id]/download,GET,application/app/api/official-documents/[id]/download/route.ts,Inventário estático; não constitui teste HTTP
+/api/official-documents/upload,POST,application/app/api/official-documents/upload/route.ts,Inventário estático; não constitui teste HTTP
+/api/offline/bootstrap,GET,application/app/api/offline/bootstrap/route.ts,Inventário estático; não constitui teste HTTP
+/api/offline/sync,POST,application/app/api/offline/sync/route.ts,Inventário estático; não constitui teste HTTP
+/api/operational-readiness,POST,application/app/api/operational-readiness/route.ts,Inventário estático; não constitui teste HTTP
+/api/projects/[id]/commitment-draft,GET,application/app/api/projects/[id]/commitment-draft/route.ts,Inventário estático; não constitui teste HTTP
+/auth/callback,GET,application/app/auth/callback/route.ts,Inventário estático; não constitui teste HTTP
+/gie360/api/assist,POST,application/app/gie360/api/assist/route.ts,Inventário estático; não constitui teste HTTP
+/gie360/imports/[id]/download,GET,application/app/gie360/imports/[id]/download/route.ts,Inventário estático; não constitui teste HTTP
+/gie360/imports/[id]/review,POST,application/app/gie360/imports/[id]/review/route.ts,Inventário estático; não constitui teste HTTP
+/gie360/imports/template,GET,application/app/gie360/imports/template/route.ts,Inventário estático; não constitui teste HTTP
+/gie360/imports/upload,POST,application/app/gie360/imports/upload/route.ts,Inventário estático; não constitui teste HTTP

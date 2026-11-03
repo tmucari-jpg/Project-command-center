@@ -190,20 +190,8 @@ jobs:
             }
           }
 
-      - name: Validate BotIA-aligned OpenAI health check
-        shell: pwsh
-        run: |
-          $health = Get-Content "../application/lib/ai-provider-health.ts" -Raw
-          foreach ($token in @(
-            "/chat/completions",
-            "mesmo endpoint usado pelo BotIA",
-            "providerMessage"
-          )) {
-            if (-not $health.Contains($token)) {
-              Write-Error "Missing BotIA-aligned OpenAI health guard: $token"
-              exit 1
-            }
-          }
+      - name: Validate shared AI transport and free-only policy
+        run: npx vitest run tests/ai-runtime.test.ts tests/ai-provider-health.test.ts
 
       - name: Validate BotIA provider failover guards
         shell: pwsh
@@ -354,8 +342,9 @@ jobs:
             }
           }
 
-          foreach ($token in @("create_factory_intake", "project_gate_events")) {
-            if (-not $offlineSync.Contains($token)) {
+          $offlineAtomic = Get-Content "../supabase/migrations/20261102081707_offline_atomic_sync.sql" -Raw
+          foreach ($token in @("create_factory_intake", "project_gate_events", "apply_offline_item_atomic")) {
+            if (-not $offlineSync.Contains($token) -and -not $offlineAtomic.Contains($token)) {
               Write-Error "Offline sync is missing project intake guard: $token"
               exit 1
             }
@@ -386,14 +375,14 @@ jobs:
             }
           }
 
-          foreach ($token in @("generateAssistWithFallback", 'fallback: "deterministic"')) {
+          foreach ($token in @("generateAssistWithFallback", 'fallback: "local_or_manual"')) {
             if (-not $assistRoute.Contains($token)) {
               Write-Error "Central AI assist route is missing: $token"
               exit 1
             }
           }
 
-          foreach ($token in @("ai_provider_profiles", '.eq("mode", "cloud")', "validateAIProviderHealth", "QWEN_API_KEY", "OPENAI_API_KEY")) {
+          foreach ($token in @("ai_provider_profiles", "isFreeAIEligible", "requestAIText")) {
             if (-not $assistRouter.Contains($token)) {
               Write-Error "AI provider router is missing: $token"
               exit 1
@@ -425,6 +414,7 @@ jobs:
           $investmentModel = Get-Content "./lib/investment-discovery.ts" -Raw
           $factoryCasePage = Get-Content -LiteralPath "./app/(protected)/project-factory/[id]/page.tsx" -Raw
           $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+          $atomicShare = Get-Content "../supabase/migrations/20261102163000_atomic_project_client_status.sql" -Raw
           $investmentExport = Get-Content -LiteralPath "./app/api/exports/investment-brief/[id]/route.ts" -Raw
           $investmentMigration = Get-Content "../supabase/migrations/20261024140500_investment_discovery_briefs.sql" -Raw
 
@@ -522,16 +512,14 @@ jobs:
 
           foreach ($token in @(
             "/brand/pcc-logo-transparent.svg",
-            "Avalie. Decida. Execute.",
-            "Da Estratégia à Execução",
-            "Diagnóstico inicial",
-            "Validade",
-            "7 dias",
-            "O que o trouxe até nós?",
+            "Da estratégia à execução",
+            "Questionário personalizado",
+            "Link válido até",
+            "expiresAt",
             "investment_discovery",
-            "AdaptiveContext",
-            "AdaptiveFocus",
-            "Enviar respostas"
+            "purpose",
+            "Rever as respostas antes de enviar",
+            "Confirmar e enviar ao PCC"
           )) {
             if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
               Write-Error "Executive adaptive client questionnaire is missing: $token"
@@ -545,8 +533,8 @@ jobs:
           }
 
           foreach ($token in @(
-            "grid h-8 w-8 shrink-0 place-items-center rounded-full",
-            "mb-4 flex items-center gap-3"
+            "Etapa {step} / 4",
+            "Etapas do questionário"
           )) {
             if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
               Write-Error "Questionnaire numbered-section visual standard is missing: $token"
@@ -578,7 +566,7 @@ jobs:
 
           foreach ($token in @(
             "/brand/pcc-logo-transparent.svg",
-            "Email (opcional)"
+            "Email de contacto"
           )) {
             if (-not $clientDiagnosticQuestionnaire.Contains($token)) {
               Write-Error "Client questionnaire branding/access field guard is missing: $token"
@@ -1146,7 +1134,7 @@ jobs:
       - name: Validate operational health and official document guards
         shell: pwsh
         run: |
-          $health = Get-Content "./lib/ai-provider-health.ts" -Raw
+          $health = (Get-Content "./lib/ai-provider-health.ts" -Raw) + (Get-Content "./lib/ai-runtime.ts" -Raw)
           $assist = Get-Content "./lib/ai-assist-router.ts" -Raw
           $botProvider = Get-Content "./lib/bot-ia-provider.ts" -Raw
           $aiPage = Get-Content "./app/(protected)/ai-providers/page.tsx" -Raw
@@ -1275,6 +1263,7 @@ jobs:
           $proxy = Get-Content "./lib/supabase/proxy.ts" -Raw
           $vercel = Get-Content "./vercel.json" -Raw
           $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+          $atomicShare = Get-Content "../supabase/migrations/20261102163000_atomic_project_client_status.sql" -Raw
 
           foreach ($token in @(
             "project_client_status_snapshots",
@@ -1295,11 +1284,25 @@ jobs:
           foreach ($token in @(
             "publishProjectClientStatus",
             "projectClientStatusPublicUrl",
-            "project_client_status_snapshots",
-            "project_client_status_links"
+            "publish_project_client_status_atomic",
+            "clientStatusFingerprint"
           )) {
             if (-not $mutations.Contains($token)) {
               Write-Error "Client status publication flow is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "snapshot_id uuid references public.project_client_status_snapshots(id)",
+            "for update",
+            "status='revoked'",
+            "returning id into v_link",
+            "private.is_global_admin()",
+            "project_client_status_lookup"
+          )) {
+            if (-not $atomicShare.Contains($token)) {
+              Write-Error "Atomic client share migration is missing: $token"
               exit 1
             }
           }
@@ -1362,6 +1365,12 @@ jobs:
             Write-Error "Public client status page must not read internal project tables directly."
             exit 1
           }
+
+      - name: Verify release acceptance gate behavior
+        run: node scripts/test-release-acceptance.mjs
+
+      - name: Verify diagnostic token expiry migration
+        run: node scripts/test-diagnostic-expiry-migration.mjs
 
       - name: Typecheck
         run: npm run typecheck

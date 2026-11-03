@@ -1,4 +1,11 @@
 export const PCC_DOCUMENT_STANDARDS = {
+  master_plan: {
+    key: "master_plan", label: "Master Plan", workstream: "governance", artifact_type: "document",
+    applicability: "Plano de execução, entregáveis, gates e critérios de fecho.",
+    buildTitle: (title: string) => `Master Plan — ${title}`,
+    buildDescription: (title: string) => `Plano operativo de ${title}, com responsáveis, evidência, riscos e validação.`,
+    completion_criteria: "Ficheiro real, acessível, versionado e validado no template oficial PCC.",
+  },
   master_mind: {
     key: "master_mind",
     label: "Master Mind",

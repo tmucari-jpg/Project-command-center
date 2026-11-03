@@ -1,0 +1,53 @@
+import { it, expect } from 'vitest';
+import { PGlite } from '@electric-sql/pglite';
+import { readFile } from 'node:fs/promises';
+const owner='10000000-0000-4000-8000-000000000001',other='10000000-0000-4000-8000-000000000002';
+const item='20000000-0000-4000-8000-000000000001',project='30000000-0000-4000-8000-000000000001';
+it('commits offline data and receipt together, rolls back injected failure, rejects cross-user access and conflicting retries',async()=>{
+ const db=new PGlite();
+ try{
+ await db.exec(`create role anon;create role authenticated;create schema auth;
+ create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ grant usage on schema auth to authenticated;
+ create table projects(id uuid primary key,user_id uuid,next_action text);
+ create table deliverables(id uuid primary key,user_id uuid,project_id uuid);
+ create table actions(id uuid primary key,user_id uuid,project_id uuid,deliverable_id uuid,title text,description text,priority text,due_at timestamptz,estimated_minutes integer,completion_criteria text,status text,is_next_action boolean);
+ create table ideas(id uuid primary key,user_id uuid,project_id uuid,title text,status text,priority text,description text,source text,potential text,next_decision text);
+ create table evidence(id uuid primary key,user_id uuid,project_id uuid,deliverable_id uuid,action_id uuid,title text,description text,evidence_type text,url text);
+ create table blockers(id uuid primary key,user_id uuid,project_id uuid,deliverable_id uuid,action_id uuid,title text,description text,impact text,responsible text,resolution_due_at timestamptz,status text);
+ create table project_factory_cases(id uuid primary key,user_id uuid,title text,description text,problem text,project_type text,target_user text,expected_value text,constraints text,source text,stage text,competitive_intelligence_required boolean,governance_gate text,governance_gate_status text,g1_completed_at timestamptz);
+ create table project_gate_events(user_id uuid,factory_case_id uuid,gate text,event_type text,rationale text,created_by uuid);
+ create table sync_queue(id uuid primary key,user_id uuid,entity_type text,entity_id uuid,operation text,payload jsonb,status text,attempts integer,project_id uuid,synced_at timestamptz);
+ grant select,insert,update on all tables in schema public to authenticated;
+ alter table sync_queue enable row level security;
+ create policy own_receipts on sync_queue for all to authenticated using(user_id=auth.uid()) with check(user_id=auth.uid());
+ insert into projects values('${project}','${owner}','Antes');
+ set request.jwt.claim.sub='${owner}';`);
+ await db.exec(await readFile('../supabase/migrations/20261102081707_offline_atomic_sync.sql','utf8'));
+ await db.exec('set role authenticated');
+ const payload={title:'Ideia sintética',priority:'medium',project_id:project};
+ const apply=(type='create_idea',p:Record<string,unknown>=payload,id=item)=>db.query('select apply_offline_item_atomic($1,$2,$3)',[id,type,JSON.stringify(p)]);
+ await db.exec(`reset role;create function reject_receipt() returns trigger language plpgsql as $$begin if new.status='synced' then raise exception 'Injected receipt failure';end if;return new;end;$$;
+ create trigger reject_receipt before update on sync_queue for each row execute function reject_receipt();set role authenticated;`);
+ await expect(apply()).rejects.toThrow('Injected receipt failure');
+ expect((await db.query('select * from ideas')).rows).toHaveLength(0);expect((await db.query('select * from sync_queue')).rows).toHaveLength(0);
+ await db.exec('reset role;drop trigger reject_receipt on sync_queue;set role authenticated');
+ await apply();await apply();expect((await db.query('select * from ideas')).rows).toHaveLength(1);
+ await expect(apply('create_idea',{...payload,title:'Conteúdo diferente'})).rejects.toThrow('content conflict');
+ await db.exec(`set request.jwt.claim.sub='${other}'`);await expect(apply()).rejects.toThrow('Receipt inaccessible');
+ await expect(apply('update_project_next_action',{project_id:project,next_action:'Alteração proibida'},'20000000-0000-4000-8000-000000000002')).rejects.toThrow('Project inaccessible');
+ await db.exec(`set request.jwt.claim.sub='${owner}'`);
+ await apply('update_project_next_action',{project_id:project,next_action:'Próximo passo confirmado'},'20000000-0000-4000-8000-000000000003');
+ expect((await db.query('select next_action from projects')).rows[0]).toEqual({next_action:'Próximo passo confirmado'});
+ // A payload cannot forge ownership or declare a new action completed.
+ await apply('create_action',{project_id:project,title:'Acção sintética',priority:'medium',user_id:other,status:'completed'},'20000000-0000-4000-8000-000000000004');
+ expect((await db.query('select user_id,status from actions')).rows[0]).toEqual({user_id:owner,status:'pending'});
+ const factory={title:'Intake sintético',problem:'Organizar execução',project_type:'commercial'};
+ const fid='20000000-0000-4000-8000-000000000005';
+ await db.exec(`reset role;create function reject_gate() returns trigger language plpgsql as $$begin raise exception 'Injected gate failure';end;$$;create trigger reject_gate before insert on project_gate_events for each row execute function reject_gate();set role authenticated;`);
+ await expect(apply('create_factory_intake',factory,fid)).rejects.toThrow('Injected gate failure');expect((await db.query('select * from project_factory_cases')).rows).toHaveLength(0);
+ await db.exec('reset role;drop trigger reject_gate on project_gate_events;set role authenticated');
+ await apply('create_factory_intake',factory,fid);await apply('create_factory_intake',factory,fid);
+ expect((await db.query('select * from project_gate_events')).rows).toHaveLength(2);
+ }finally{await db.close();}
+},30000);

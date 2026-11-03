@@ -1,0 +1,14 @@
+TypeError: Invalid URL
+    at new URL (node:internal/url:895:25)
+    at main (/workspace/scratch/814320a05577/pcc/application/scripts/isolated-backend-smoke.ts:8:43)
+    at assert (/workspace/scratch/814320a05577/pcc/application/scripts/isolated-backend-smoke.ts:134:1)
+    at Object.<anonymous> (/workspace/scratch/814320a05577/pcc/application/scripts/isolated-backend-smoke.ts:134:63)
+    at Module._compile (node:internal/modules/cjs/loader:1929:14)
+    at Object.transformer (/workspace/scratch/814320a05577/pcc/application/node_modules/tsx/dist/register-B1c7OH6V.cjs:22:2188)
+    at Module.load (node:internal/modules/cjs/loader:1651:32)
+    at Module._load (node:internal/modules/cjs/loader:1443:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)
+    at loadCJSModuleWithModuleLoad (node:internal/modules/esm/translators:372:15) {
+  code: 'ERR_INVALID_URL',
+  input: 'undefined'
+}

@@ -1,0 +1,10 @@
+{
+  "observed_at": "2026-11-02T08:25:43.685Z",
+  "read_only": true,
+  "result": [
+    {
+      "type": "text",
+      "text": "{\n  \"result\": {\n    \"deployment\": {\n      \"id\": \"dpl_AB1cRHZU1wuAu8j7QHzA8J2fxwhY\",\n      \"name\": \"project-command-center\",\n      \"url\": \"project-command-center-f18a55vqe-amsoluction1.vercel.app\",\n      \"type\": \"LAMBDAS\",\n      \"state\": \"READY\",\n      \"createdAt\": 1793272729164,\n      \"creator\": {\n        \"uid\": \"0WZfXLslBmQMhRR8UsoZC3xY\",\n        \"username\": \"amsol\"\n      },\n      \"project\": {\n        \"id\": \"prj_hgFy1l9hPerUK4wiq5pAdHWCrqiK\",\n        \"name\": \"project-command-center\",\n        \"framework\": \"nextjs\"\n      },\n      \"meta\": {\n        \"githubCommitRef\": \"main\",\n        \"githubCommitSha\": \"d794bdad7cba02dcb93a4095480af2ca36af7ec0\",\n        \"githubCommitMessage\": \"Corrigir gate Android sem alterar aplicação\",\n        \"githubRepo\": \"Project-command-center\",\n        \"githubOrg\": \"tmucari-jpg\"\n      },\n      \"alias\": [\n        \"project-command-center-seven-xi.vercel.app\",\n        \"project-command-center-amsoluction1.vercel.app\",\n        \"project-command-center-git-main-amsoluction1.vercel.app\"\n      ],\n      \"target\": \"production\",\n      \"regions\": [\n        \"iad1\"\n      ],\n      \"buildingAt\": 1793272730148,\n      \"ready\": 1793272788087,\n      \"readyState\": \"READY\",\n      \"source\": \"redeploy\",\n      \"aliasError\": null\n    }\n  }\n}"
+    }
+  ]
+}

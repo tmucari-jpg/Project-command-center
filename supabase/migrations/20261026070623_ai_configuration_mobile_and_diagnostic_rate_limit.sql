@@ -81,8 +81,7 @@ begin
 
   return v_attempts <= p_limit;
 end;
-$function$
-
+$function$;
 revoke all on function private.consume_client_diagnostic_rate_limit(uuid,text,integer,integer) from public,anon,authenticated;
 
 CREATE OR REPLACE FUNCTION public.client_diagnostic_lookup(p_token_hash text)
@@ -142,8 +141,7 @@ begin
     and r.status <> 'revoked'
   limit 1;
 end;
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.client_diagnostic_submit(p_token_hash text, p_respondent_name text, p_respondent_role text, p_respondent_email text, p_answers jsonb)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -287,8 +285,7 @@ exception
   when unique_violation then
     return false;
 end;
-$function$
-
+$function$;
 revoke all on function public.client_diagnostic_lookup(text) from public;
 revoke all on function public.client_diagnostic_submit(text,text,text,text,jsonb) from public;
 grant execute on function public.client_diagnostic_lookup(text) to anon;

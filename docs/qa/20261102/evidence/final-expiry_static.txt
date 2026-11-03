@@ -1,0 +1,1 @@
+QA diagnostic expiry migration: verificações estáticas passaram; teste no Supabase de ensaio ainda requerido.

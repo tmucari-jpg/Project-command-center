@@ -1,0 +1,20 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> project-command-center@0.1.0 lint
+> eslint .
+
+
+/workspace/scratch/814320a05577/pcc/application/app/(protected)/commercial-master/page.tsx
+  38:13  warning  'giePackages' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  38:33  warning  'giePackagesError' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/workspace/scratch/814320a05577/pcc/application/app/(protected)/mutations.ts
+  1109:25  warning  '_payloadJson' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/workspace/scratch/814320a05577/pcc/application/app/api/exports/commercial-master/route.ts
+  19:10  warning  'text' is defined but never used  @typescript-eslint/no-unused-vars
+
+/workspace/scratch/814320a05577/pcc/application/app/client-diagnostic/[token]/actions.ts
+  65:21  warning  '_reviewed' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (0 errors, 5 warnings)

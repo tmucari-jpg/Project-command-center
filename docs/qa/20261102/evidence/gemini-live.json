@@ -1,0 +1,18 @@
+{
+  "scope": "synthetic-real-gemini-only",
+  "status": "blocked",
+  "checks": [
+    {
+      "name": "real-gemini-generation",
+      "status": "blocked",
+      "reason": "server key missing; model missing; free-tier and data-processing configuration not confirmed"
+    }
+  ],
+  "model": null,
+  "realAIValidated": false,
+  "limitations": [
+    "This bounded probe does not guarantee provider availability or all Portuguese responses.",
+    "Business indicators remain deterministic and require approved evidence.",
+    "Physical PWA/APK validation is separate."
+  ]
+}

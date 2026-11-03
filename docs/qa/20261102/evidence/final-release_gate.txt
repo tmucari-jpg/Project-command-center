@@ -1,0 +1,1 @@
+PCC release gate: 12 cenários sintácticos aprovados; conteúdo das provas NÃO verificado.

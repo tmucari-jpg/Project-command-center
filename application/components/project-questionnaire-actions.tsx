@@ -9,7 +9,8 @@ type Intent =
   | "investment"
   | "internal_improvement"
   | "digital_solution"
-  | "problem";
+  | "problem"
+  | "gie360";
 
 type Generated = {
   url: string;
@@ -35,9 +36,13 @@ export function ProjectQuestionnaireActions({
   const [generated, setGenerated] = useState<Generated | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState("");
   const [error, setError] = useState("");
+  const [approved, setApproved] = useState(false);
 
   async function generate() {
+    if (!approved) { setError("Revise e aprove a pré-visualização."); return; }
+    if (!clientName.trim() || !clientOrganization.trim()) { setError("Identifique o destinatário e a organização antes de aprovar."); return; }
     if (!caseTitle.trim()) {
       setError("Indique um nome para identificar este caso.");
       return;
@@ -56,6 +61,7 @@ export function ProjectQuestionnaireActions({
           client_name: clientName,
           client_organization: clientOrganization,
           public_context: publicContext,
+          reviewed: approved,
         }),
       });
 
@@ -85,9 +91,15 @@ export function ProjectQuestionnaireActions({
 
   async function copyLink() {
     if (!generated?.url) return;
-    await navigator.clipboard.writeText(generated.url);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    setCopyError("");
+    try {
+      await navigator.clipboard.writeText(generated.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+      setCopyError("O navegador não permitiu copiar. Seleccione o link apresentado e copie-o manualmente; o link continua válido.");
+    }
   }
 
   return (
@@ -132,7 +144,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={caseTitle}
-                onChange={(event) => setCaseTitle(event.target.value)}
+                onChange={(event) => { setCaseTitle(event.target.value); setApproved(false); }}
                 placeholder="Ex.: Diagnóstico comercial — Cliente X"
               />
             </label>
@@ -141,8 +153,8 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={clientName}
-                onChange={(event) => setClientName(event.target.value)}
-                placeholder="Opcional"
+                onChange={(event) => { setClientName(event.target.value); setApproved(false); }}
+                placeholder="Obrigatório"
               />
             </label>
             <label className="block text-sm font-medium text-[#142825]">
@@ -150,7 +162,7 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={clientOrganization}
-                onChange={(event) => setClientOrganization(event.target.value)}
+                onChange={(event) => { setClientOrganization(event.target.value); setApproved(false); }}
                 placeholder="Opcional"
               />
             </label>
@@ -159,12 +171,20 @@ export function ProjectQuestionnaireActions({
               <input
                 className={"mt-1 " + fieldClass}
                 value={publicContext}
-                onChange={(event) => setPublicContext(event.target.value)}
+                onChange={(event) => { setPublicContext(event.target.value); setApproved(false); }}
                 placeholder="Opcional"
               />
             </label>
           </div>
 
+          <div className="mt-4 rounded-xl border border-[#c9dbd4] bg-white p-4 text-sm">
+            <p className="font-semibold text-[#073f36]">Pré-visualização para validação interna</p>
+            <p className="mt-2">Finalidade: {intentLabel}</p>
+            <p>Cliente: {clientName || "Por identificar"}</p>
+            <p>Empresa: {clientOrganization || "Por identificar"}</p>
+            <p className="mt-2 whitespace-pre-wrap">Mensagem: {publicContext || "Diagnóstico inicial personalizado."}</p>
+            <label className="mt-3 flex items-start gap-2"><input type="checkbox" checked={approved} onChange={event => setApproved(event.target.checked)} />Aprovo a informação apresentada para partilha com este cliente.</label>
+          </div>
           {error && (
             <p className="mt-3 rounded-lg border border-[#ead2d2] bg-white px-3 py-2 text-sm text-[#8a3e3e]">
               {error}
@@ -176,7 +196,7 @@ export function ProjectQuestionnaireActions({
               className="rounded-[var(--cc-radius-md)] bg-[#073f36] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
               type="button"
               onClick={generate}
-              disabled={loading}
+              disabled={loading || !approved}
             >
               {loading ? "A gerar..." : "Gerar link seguro"}
             </button>
@@ -188,6 +208,7 @@ export function ProjectQuestionnaireActions({
       {generated && (
         <div className="mt-5 rounded-xl border border-[#b9d0c7] bg-white p-4">
           <p className="text-sm font-semibold text-[#073f36]">Questionário pronto para enviar</p>
+          {copyError && <p role="alert" className="mt-2 text-sm text-[var(--cc-danger)]">{copyError}</p>}
           <p className="mt-1 text-xs text-[#667085]">
             Válido até {new Date(generated.expiresAt).toLocaleDateString("pt-PT")}.
           </p>
