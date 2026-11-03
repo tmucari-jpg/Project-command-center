@@ -14,8 +14,8 @@ export async function provisionGIE360(_previous: { error?: string; success?: str
   // diagnostic against its actual answers under this authenticated owner.
   const { data: requests, error: requestsError } = await supabase.from("client_diagnostic_requests")
     .select("id,status,submitted_at").eq("factory_case_id", parsed.data.caseId)
-    .eq("user_id", authUser.id).in("status",["reviewed","incorporated"])
-    .order("submitted_at",{ascending:false}).limit(30);
+    .eq("user_id", authUser.id)
+    .order("created_at",{ascending:false}).limit(1);
   if (requestsError) return { error: "Não foi possível confirmar o diagnóstico revisto." };
   const ids = (requests ?? []).map(item => item.id);
   if (!ids.length) return { error: "É necessária revisão e aceitação interna do diagnóstico antes de associar a empresa." };
