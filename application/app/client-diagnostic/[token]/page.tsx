@@ -41,7 +41,7 @@ export default async function ClientDiagnosticPage({
     return <PublicMessage title="Questionário indisponível" body="O link não é válido ou deixou de estar disponível." />;
   }
 
-  if (query.submitted || ["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
+  if (["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
     return (
       <PublicMessage
         title="Resposta recebida"
@@ -72,6 +72,7 @@ export default async function ClientDiagnosticPage({
         clientOrganization={request.client_organization}
         publicContext={request.public_context}
         expiresAt={request.expires_at}
+        integratedGie360={request.questionnaire_version === "executive-v3-gie360"}
       />
     </>
   );
