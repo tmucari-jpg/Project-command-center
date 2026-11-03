@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 import { submitClientDiagnostic } from "@/app/client-diagnostic/[token]/actions";
 import { primaryButtonClass } from "@/components/ui";
 
@@ -37,12 +38,14 @@ export function ClientDiagnosticQuestionnaire({
   clientOrganization,
   publicContext,
   expiresAt,
+  integratedGie360 = false,
 }: {
   token: string;
   clientName?: string | null;
   clientOrganization?: string | null;
   publicContext?: string | null;
   expiresAt: string;
+  integratedGie360?: boolean;
 }) {
   const [respondentType, setRespondentType] = useState("");
   const [nature, setNature] = useState<Nature | "">("");
@@ -51,30 +54,33 @@ export function ClientDiagnosticQuestionnaire({
     <main className="min-h-screen bg-[#f8f6f0] px-4 py-8 text-[#142825] sm:py-12">
       <div className="mx-auto max-w-3xl">
         <header className="mb-6 overflow-hidden rounded-2xl border border-[#e0e8e3] bg-white shadow-sm">
-          <div className="border-b border-[#e0e8e3] bg-[#f8f6f0] px-5 py-5 sm:px-7">
+          <div className={integratedGie360 ? "border-b border-[#146453] bg-[#073f36] px-5 py-5 text-white sm:px-7" : "border-b border-[#e0e8e3] bg-[#f8f6f0] px-5 py-5 sm:px-7"}>
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <Image
-                src="/brand/pcc-logo-transparent.svg"
-                alt="Project Command Center"
-                width={230}
-                height={82}
-                className="h-auto w-[190px] sm:w-[220px]"
-                priority
-              />
+              <div className={integratedGie360 ? "rounded-xl bg-white px-3 py-2" : ""}>
+                <Image
+                  src="/brand/pcc-logo-transparent.svg"
+                  alt="Logótipo oficial PCC"
+                  width={230}
+                  height={82}
+                  className="h-auto w-[190px] sm:w-[220px]"
+                  priority
+                />
+              </div>
               <div className="text-right">
+                {integratedGie360 && <p className="mb-2 text-xl font-extrabold tracking-[0.02em] text-white">PCC <span className="text-[#c99439]">× GIE360°</span></p>}
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c99439]">
                   Avalie. Decida. Execute.
                 </p>
-                <p className="mt-1 text-xs text-[#5f6c68]">Da Estratégia à Execução</p>
+                <p className={integratedGie360 ? "mt-1 text-xs text-[#e1eae5]" : "mt-1 text-xs text-[#5f6c68]"}>Da Estratégia à Execução</p>
               </div>
             </div>
           </div>
           <div className="px-5 py-5 sm:px-7 sm:py-6">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#146453]">
-              Questionário Executivo
+              {integratedGie360 ? "Questionário empresarial personalizado · PCC × GIE360°" : "Questionário Executivo"}
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-[#073f36] sm:text-3xl">
-              Diagnóstico inicial
+              {integratedGie360 ? "Compreender a empresa antes de recomendar soluções" : "Diagnóstico inicial"}
             </h1>
             <div className="mt-3 h-0.5 w-14 bg-[#c99439]" />
             <p className="mt-4 text-sm leading-6 text-[#4f625d]">
@@ -233,10 +239,24 @@ export function ClientDiagnosticQuestionnaire({
             />
           </Block>
 
-          <div className="flex justify-end pt-1">
-            <button className={primaryButtonClass} type="submit">
-              Enviar respostas
-            </button>
+          <section aria-labelledby="review-title" className="rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#146453]">
+              Etapa final · Revisão e envio
+            </p>
+            <h2 id="review-title" className="mt-2 text-lg font-semibold text-[#073f36]">Confirmar e enviar respostas</h2>
+            <p className="mt-2 text-sm leading-6 text-[#4f625d]">
+              Reveja as informações anteriores. As respostas serão associadas ao diagnóstico do caso no PCC
+              e analisadas pela equipa responsável. O envio não equivale à aprovação de dados ou resultados.
+            </p>
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-[#eef5f1] p-4 text-sm text-[#17322d]">
+              <input type="checkbox" name="consent" value="confirmed" required className="mt-1 h-4 w-4 shrink-0 accent-[#073f36]" />
+              <span>Confirmo que as respostas podem ser enviadas para análise no âmbito do diagnóstico PCC/GIE360°, quando aplicável.</span>
+            </label>
+            <div className="mt-5 flex justify-end"><SubmitDiagnosticButton /></div>
+          </section>
+          <div className="sticky bottom-0 z-20 -mx-2 rounded-t-xl border border-[#dce5df] bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(7,63,54,0.08)] backdrop-blur sm:hidden">
+            <p className="mb-2 text-center text-xs text-[#4f625d]">Envie após rever e confirmar as respostas.</p>
+            <SubmitDiagnosticButton fullWidth />
           </div>
         </form>
 
@@ -478,5 +498,19 @@ function Multi({ name, options, details }: { name: string; options: string[]; de
         aria-label={`${details} — detalhes adicionais`}
       />
     </>
+  );
+}
+
+function SubmitDiagnosticButton({ fullWidth = false }: { fullWidth?: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      className={primaryButtonClass + (fullWidth ? " w-full" : "")}
+      type="submit"
+      disabled={pending}
+      aria-disabled={pending}
+    >
+      {pending ? "A enviar respostas…" : "Enviar respostas"}
+    </button>
   );
 }

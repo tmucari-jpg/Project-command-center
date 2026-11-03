@@ -7,6 +7,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 
 const responseSchema = z.object({
   token: z.string().trim().regex(/^[A-Za-z0-9_-]{43,200}$/),
+  consent: z.literal("confirmed"),
   respondent_type: z.string().trim().min(2).max(80),
   respondent_name: z.string().trim().min(2).max(200),
   respondent_role: z.string().trim().max(200).optional().default(""),
@@ -42,6 +43,7 @@ export async function submitClientDiagnostic(formData: FormData) {
 
   const parsed = responseSchema.safeParse({
     token,
+    consent: String(formData.get("consent") ?? ""),
     respondent_type: String(formData.get("respondent_type") ?? "").trim(),
     respondent_name: String(formData.get("respondent_name") ?? "").trim(),
     respondent_role: String(formData.get("respondent_role") ?? "").trim(),
@@ -60,7 +62,7 @@ export async function submitClientDiagnostic(formData: FormData) {
     redirect(`${back}?error=${encodeURIComponent("Preencha os campos essenciais antes de enviar.")}`);
   }
 
-  const { token: rawToken, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
+  const { token: rawToken, consent, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
   const supabase = createPublicClient();
   const tokenHash = hashClientDiagnosticToken(rawToken);
 
@@ -76,5 +78,90 @@ export async function submitClientDiagnostic(formData: FormData) {
     redirect(`${back}?error=${encodeURIComponent("Este questionário já foi respondido, expirou ou deixou de estar disponível.")}`);
   }
 
+  redirect(`${back}?submitted=1`);
+}
+
+const gie360Schema = z.object({
+  token: z.string().trim().regex(/^[A-Za-z0-9_-]{43,200}$/),
+  consent: z.literal("confirmed"),
+  respondent_name: z.string().trim().min(2).max(200),
+  empresa: z.string().trim().min(2).max(300),
+  email: z.string().trim().email().max(320),
+  sector: z.enum(["Comércio", "Serviços", "Indústria", "Outro"]),
+  necessidades: z.array(z.enum([
+    "Vendas e clientes", "Cobranças e tesouraria", "Custos e operações", "Gestão e indicadores",
+  ])).min(1),
+  crm: z.string().trim().max(100),
+  cobrancas: z.string().trim().max(100),
+  custos: z.string().trim().max(100),
+  indicadores: z.string().trim().max(100),
+  dados: z.array(z.string().trim().max(100)).max(10),
+  objectivo: z.string().trim().max(6000),
+  prazo: z.string().trim().max(100),
+});
+
+export async function submitGie360Diagnostic(formData: FormData) {
+  const token = String(formData.get("token") ?? "").trim();
+  const back = `/client-diagnostic/${encodeURIComponent(token)}`;
+  const values = gie360Schema.safeParse({
+    token,
+    consent: String(formData.get("consent") ?? ""),
+    respondent_name: String(formData.get("respondent_name") ?? ""),
+    empresa: String(formData.get("empresa") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    sector: String(formData.get("sector") ?? ""),
+    necessidades: formData.getAll("necessidades").map(String),
+    crm: String(formData.get("crm") ?? ""),
+    cobrancas: String(formData.get("cobrancas") ?? ""),
+    custos: String(formData.get("custos") ?? ""),
+    indicadores: String(formData.get("indicadores") ?? ""),
+    dados: formData.getAll("dados").map(String),
+    objectivo: String(formData.get("objectivo") ?? ""),
+    prazo: String(formData.get("prazo") ?? "Por definir"),
+  });
+  if (!values.success) {
+    redirect(`${back}?error=${encodeURIComponent("Revise a identificação, seleccione pelo menos uma necessidade e confirme o envio.")}`);
+  }
+  const { token: rawToken, consent, respondent_name, email, ...details } = values.data;
+  const supabase = createPublicClient();
+  const tokenHash = hashClientDiagnosticToken(rawToken);
+  const { data: requestRows, error: lookupError } = await supabase.rpc("client_diagnostic_lookup", {
+    p_token_hash: tokenHash,
+  });
+  const request = Array.isArray(requestRows) ? requestRows[0] : null;
+  if (lookupError || !request || !["executive-v3", "executive-v3-gie360"].includes(request.questionnaire_version)) {
+    redirect(`${back}?error=${encodeURIComponent("Este link não corresponde ao diagnóstico empresarial integrado.")}`);
+  }
+  const answers = {
+    respondent_type: "organization",
+    organization: details.empresa,
+    request_nature: "organization_solution",
+    context: details.necessidades.join("; "),
+    focus: [details.crm, details.cobrancas, details.custos, details.indicadores].filter(Boolean).join("; "),
+    desired_result: details.objectivo,
+    conditions: details.dados.join("; "),
+    deadline_urgency: details.prazo,
+    success_criteria: details.objectivo,
+    sector: details.sector,
+    necessidades: details.necessidades,
+    crm: details.crm,
+    cobrancas: details.cobrancas,
+    custos: details.custos,
+    indicadores: details.indicadores,
+    dados: details.dados,
+    objectivo: details.objectivo,
+    prazo: details.prazo,
+    questionnaire_mode: "gie360",
+  };
+  const { data, error } = await supabase.rpc("client_diagnostic_submit", {
+    p_token_hash: tokenHash,
+    p_respondent_name: respondent_name,
+    p_respondent_role: "",
+    p_respondent_email: email,
+    p_answers: answers,
+  });
+  if (error || data !== true) {
+    redirect(`${back}?error=${encodeURIComponent("Não foi possível enviar. O link pode ter expirado ou já ter sido respondido.")}`);
+  }
   redirect(`${back}?submitted=1`);
 }

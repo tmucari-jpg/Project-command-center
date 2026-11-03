@@ -59,6 +59,14 @@ export function ClientDiagnosticLinkGenerator({
           />
         </label>
         <label className="block text-sm font-medium text-[var(--cc-foreground)] md:col-span-2">
+          Identidade do diagnóstico
+          <select name="brand_scope" defaultValue="pcc" className="mt-1 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm">
+            <option value="pcc">PCC</option>
+            <option value="pcc_gie360">PCC × GIE360° (integrado)</option>
+          </select>
+          <span className="mt-1 block text-xs text-[var(--cc-secondary)]">Mantém um único caso e encaminha as respostas para revisão no PCC.</span>
+        </label>
+        <label className="block text-sm font-medium text-[var(--cc-foreground)] md:col-span-2">
           Mensagem / contexto visível para o cliente
           <textarea
             className="mt-1 min-h-20 w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] px-3 py-2.5 text-sm"

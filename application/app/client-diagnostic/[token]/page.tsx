@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { ClientDiagnosticQuestionnaire } from "@/components/client-diagnostic-questionnaire";
+import { ClientDiagnosticGie360Questionnaire } from "@/components/client-diagnostic-gie360-questionnaire";
 import { createPublicClient } from "@/lib/supabase/public";
 
 function hashToken(token: string) {
@@ -41,7 +41,7 @@ export default async function ClientDiagnosticPage({
     return <PublicMessage title="Questionário indisponível" body="O link não é válido ou deixou de estar disponível." />;
   }
 
-  if (query.submitted || ["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
+  if (["submitted", "analyzing", "reviewed", "incorporated", "clarification_needed"].includes(request.status)) {
     return (
       <PublicMessage
         title="Resposta recebida"
@@ -59,22 +59,18 @@ export default async function ClientDiagnosticPage({
     );
   }
 
-  return (
-    <>
-      {query.error && (
-        <div className="fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 rounded-xl border border-[#e3caca] bg-white p-4 text-sm text-[#7b3131] shadow-lg">
-          {query.error}
-        </div>
-      )}
-      <ClientDiagnosticQuestionnaire
-        token={token}
-        clientName={request.client_name}
-        clientOrganization={request.client_organization}
-        publicContext={request.public_context}
-        expiresAt={request.expires_at}
-      />
-    </>
-  );
+  // Both active questionnaire versions use the approved four-step layout.
+  // The original token and request remain unchanged; the explicit integrated
+  // version controls PCC × GIE360° branding.
+  return <ClientDiagnosticGie360Questionnaire
+    token={token}
+    clientName={request.client_name}
+    clientOrganization={request.client_organization}
+    publicContext={request.public_context}
+    expiresAt={request.expires_at}
+    integratedGie360={request.questionnaire_version === "executive-v3-gie360"}
+    error={query.error}
+  />;
 }
 
 function PublicMessage({ title, body }: { title: string; body: string }) {
