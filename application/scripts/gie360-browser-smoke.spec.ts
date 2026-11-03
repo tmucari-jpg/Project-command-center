@@ -170,11 +170,11 @@ test('existing project opens its own diagnostic without creating another project
   const review = page.getByRole('checkbox', { name: /Revisei destinatário, organização e conteúdo/ });
   const generate = page.getByRole('button', { name: 'Validar informação antes de gerar' });
   await expect(generate).toBeDisabled();
-  await page.getByText('Contacto do cliente').locator('..').locator('input').fill('Contacto de ensaio');
+  await page.getByRole('textbox', { name: 'Contacto do cliente', exact: true }).fill('Contacto de ensaio');
   await review.check();
   await expect(review).toBeChecked();
   await expect(page.getByRole('button', { name: 'Gerar questionário' })).toBeEnabled();
-  await page.getByText('Contacto do cliente').locator('..').locator('input').fill('Contacto alterado');
+  await page.getByRole('textbox', { name: 'Contacto do cliente', exact: true }).fill('Contacto alterado');
   await expect(review).not.toBeChecked();
   await expect(generate).toBeDisabled();
   const linkedCases = await manager.from('project_factory_cases').select('id')
