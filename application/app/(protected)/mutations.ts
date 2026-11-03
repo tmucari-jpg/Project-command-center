@@ -225,8 +225,9 @@ export async function createClientDiagnosticRequest(
   const clientName = z.string().trim().max(200).safeParse(String(formData.get("client_name") ?? ""));
   const clientOrganization = z.string().trim().max(300).safeParse(String(formData.get("client_organization") ?? ""));
   const publicContext = z.string().trim().max(2000).safeParse(String(formData.get("public_context") ?? ""));
+  const brandScope = z.enum(["pcc", "pcc_gie360"]).safeParse(String(formData.get("brand_scope") ?? "pcc"));
 
-  if (!factoryCaseId.success || !clientName.success || !clientOrganization.success || !publicContext.success) {
+  if (!factoryCaseId.success || !clientName.success || !clientOrganization.success || !publicContext.success || !brandScope.success) {
     return { ok: false, error: "Revise os dados do pedido de diagnóstico." };
   }
 
@@ -260,7 +261,7 @@ export async function createClientDiagnosticRequest(
       user_id: user.id,
       factory_case_id: factoryCase.id,
       token_hash: tokenHash,
-      questionnaire_version: "executive-v3",
+      questionnaire_version: brandScope.data === "pcc_gie360" ? "executive-v3-gie360" : "executive-v3",
       client_name: clientName.data || null,
       client_organization: clientOrganization.data || null,
       public_context: publicContext.data || null,
