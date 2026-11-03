@@ -177,6 +177,17 @@ test('existing project opens its own diagnostic without creating another project
   await page.getByRole('textbox', { name: 'Contacto do cliente', exact: true }).fill('Contacto alterado');
   await expect(review).not.toBeChecked();
   await expect(generate).toBeDisabled();
+  await page.getByRole('textbox', { name: 'Organização', exact: true }).fill('Empresa teste partilha');
+  await page.getByRole('textbox', { name: /Número WhatsApp do destinatário/ }).fill('+258 84 123 4567');
+  await review.check();
+  await page.getByRole('button', { name: 'Gerar questionário', exact: true }).click();
+  await expect(page.getByText('Link do questionário', { exact: true })).toBeVisible();
+  const whatsappLink = page.getByRole('link', { name: 'Abrir WhatsApp para enviar' });
+  await expect(whatsappLink).toHaveAttribute('href', /wa\.me\/258841234567\?text=/);
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Descarregar link (.txt)' }).click();
+  const downloaded = await downloadPromise;
+  expect(downloaded.suggestedFilename()).toMatch(/^PCC-link-diagnostico-.*\.txt$/);
   const linkedCases = await manager.from('project_factory_cases').select('id')
     .eq('project_id', project.data!.id);
   expect(linkedCases.error).toBeNull();
