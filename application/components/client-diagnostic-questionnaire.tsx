@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 import { submitClientDiagnostic } from "@/app/client-diagnostic/[token]/actions";
 import { primaryButtonClass } from "@/components/ui";
 
@@ -233,10 +234,24 @@ export function ClientDiagnosticQuestionnaire({
             />
           </Block>
 
-          <div className="flex justify-end pt-1">
-            <button className={primaryButtonClass} type="submit">
-              Enviar respostas
-            </button>
+          <section aria-labelledby="review-title" className="rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#146453]">
+              Etapa final · Revisão e envio
+            </p>
+            <h2 id="review-title" className="mt-2 text-lg font-semibold text-[#073f36]">Confirmar e enviar respostas</h2>
+            <p className="mt-2 text-sm leading-6 text-[#4f625d]">
+              Reveja as informações anteriores. As respostas serão associadas ao diagnóstico do caso no PCC
+              e analisadas pela equipa responsável. O envio não equivale à aprovação de dados ou resultados.
+            </p>
+            <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-[#eef5f1] p-4 text-sm text-[#17322d]">
+              <input type="checkbox" name="consent" value="confirmed" required className="mt-1 h-4 w-4 shrink-0 accent-[#073f36]" />
+              <span>Confirmo que as respostas podem ser enviadas para análise no âmbito do diagnóstico PCC/GIE360°, quando aplicável.</span>
+            </label>
+            <div className="mt-5 flex justify-end"><SubmitDiagnosticButton /></div>
+          </section>
+          <div className="sticky bottom-0 z-20 -mx-2 rounded-t-xl border border-[#dce5df] bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(7,63,54,0.08)] backdrop-blur sm:hidden">
+            <p className="mb-2 text-center text-xs text-[#4f625d]">Envie após rever e confirmar as respostas.</p>
+            <SubmitDiagnosticButton fullWidth />
           </div>
         </form>
 
@@ -478,5 +493,19 @@ function Multi({ name, options, details }: { name: string; options: string[]; de
         aria-label={`${details} — detalhes adicionais`}
       />
     </>
+  );
+}
+
+function SubmitDiagnosticButton({ fullWidth = false }: { fullWidth?: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      className={primaryButtonClass + (fullWidth ? " w-full" : "")}
+      type="submit"
+      disabled={pending}
+      aria-disabled={pending}
+    >
+      {pending ? "A enviar respostas…" : "Enviar respostas"}
+    </button>
   );
 }
