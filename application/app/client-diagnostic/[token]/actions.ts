@@ -7,6 +7,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 
 const responseSchema = z.object({
   token: z.string().trim().regex(/^[A-Za-z0-9_-]{43,200}$/),
+  consent: z.literal("confirmed"),
   respondent_type: z.string().trim().min(2).max(80),
   respondent_name: z.string().trim().min(2).max(200),
   respondent_role: z.string().trim().max(200).optional().default(""),
@@ -42,6 +43,7 @@ export async function submitClientDiagnostic(formData: FormData) {
 
   const parsed = responseSchema.safeParse({
     token,
+    consent: String(formData.get("consent") ?? ""),
     respondent_type: String(formData.get("respondent_type") ?? "").trim(),
     respondent_name: String(formData.get("respondent_name") ?? "").trim(),
     respondent_role: String(formData.get("respondent_role") ?? "").trim(),
@@ -60,7 +62,7 @@ export async function submitClientDiagnostic(formData: FormData) {
     redirect(`${back}?error=${encodeURIComponent("Preencha os campos essenciais antes de enviar.")}`);
   }
 
-  const { token: rawToken, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
+  const { token: rawToken, consent, respondent_name, respondent_role, respondent_email, ...answers } = parsed.data;
   const supabase = createPublicClient();
   const tokenHash = hashClientDiagnosticToken(rawToken);
 
