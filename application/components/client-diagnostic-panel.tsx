@@ -106,11 +106,17 @@ export function ClientDiagnosticPanel({
         )}
       </div>
 
-      {!request ? (
-        <div className="mt-5">
-          <ClientDiagnosticLinkGenerator factoryCaseId={factoryCaseId} />
-        </div>
-      ) : (
+      <div className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+        <h3 className="mb-2 font-semibold text-[var(--cc-foreground)]">Gerar e partilhar link do diagnóstico</h3>
+        <ClientDiagnosticLinkGenerator
+          factoryCaseId={factoryCaseId}
+          defaultClientName={request?.client_name ?? ""}
+          defaultOrganization={request?.client_organization ?? ""}
+          defaultContext={request?.public_context ?? ""}
+          buttonLabel={request ? "Gerar nova solicitação" : "Gerar questionário"}
+        />
+      </div>
+      {request && (
         <div className="mt-5 space-y-5">
           <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             {request.client_organization && <Meta label="Organização" value={request.client_organization} />}
@@ -232,38 +238,12 @@ export function ClientDiagnosticPanel({
                   <button className={primaryButtonClass} type="submit">Incorporar no diagnóstico</button>
                 </form>
               )}
-
-              {review?.review_status === "clarification_needed" && (
-                <div className="border-t border-[var(--cc-border)] pt-5">
-                  <ClientDiagnosticLinkGenerator
-                    factoryCaseId={factoryCaseId}
-                    defaultClientName={request.client_name ?? ""}
-                    defaultOrganization={request.client_organization ?? ""}
-                    defaultContext={review.review_notes ?? "Precisamos de alguns esclarecimentos adicionais para concluir o diagnóstico."}
-                  />
-                </div>
-              )}
             </>
           ) : (
             <p className="text-sm text-[var(--cc-secondary)]">
               O questionário ainda não foi respondido.
             </p>
           )}
-
-          <details className="border-t border-[var(--cc-border)] pt-5">
-            <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
-              Mais opções do diagnóstico
-            </summary>
-            <div className="mt-4">
-              <ClientDiagnosticLinkGenerator
-                factoryCaseId={factoryCaseId}
-                defaultClientName={request.client_name ?? ""}
-                defaultOrganization={request.client_organization ?? ""}
-                defaultContext={request.public_context ?? ""}
-                buttonLabel="Gerar nova solicitação"
-              />
-            </div>
-          </details>
         </div>
       )}
 
