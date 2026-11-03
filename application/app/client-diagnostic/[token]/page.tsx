@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { ClientDiagnosticQuestionnaire } from "@/components/client-diagnostic-questionnaire";
+import { ClientDiagnosticGie360Questionnaire } from "@/components/client-diagnostic-gie360-questionnaire";
 import { createPublicClient } from "@/lib/supabase/public";
 
 function hashToken(token: string) {
@@ -57,6 +58,17 @@ export default async function ClientDiagnosticPage({
         body="Este questionário tinha validade de 7 dias. Contacte a equipa responsável para receber uma nova solicitação."
       />
     );
+  }
+
+  if (request.questionnaire_version === "executive-v3-gie360") {
+    return <ClientDiagnosticGie360Questionnaire
+      token={token}
+      clientName={request.client_name}
+      clientOrganization={request.client_organization}
+      publicContext={request.public_context}
+      expiresAt={request.expires_at}
+      error={query.error}
+    />;
   }
 
   return (
