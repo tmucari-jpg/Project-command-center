@@ -107,7 +107,7 @@ export function ClientDiagnosticPanel({
       </div>
 
       <div className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
-        <h3 className="mb-2 font-semibold text-[var(--cc-foreground)]">Gerar e partilhar link do diagnóstico</h3>
+        <h3 className="mb-2 font-semibold text-[var(--cc-foreground)]">Mais opções do diagnóstico — gerar e partilhar link</h3>
         <ClientDiagnosticLinkGenerator
           factoryCaseId={factoryCaseId}
           defaultClientName={request?.client_name ?? ""}
