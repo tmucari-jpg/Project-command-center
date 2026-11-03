@@ -49,7 +49,7 @@ export function ClientDiagnosticLinkGenerator({
 
   return (
     <div className="space-y-4">
-      <form action={action} onChange={(event) => { const data = new FormData(event.currentTarget); setPreview({ contact: String(data.get("client_name") ?? ""), organization: String(data.get("client_organization") ?? ""), context: String(data.get("public_context") ?? "") }); setReviewed(false); }} className="grid gap-4 md:grid-cols-2">
+      <form action={action} onChange={(event) => { if ((event.target as HTMLInputElement).name === "reviewed") return; const data = new FormData(event.currentTarget); setPreview({ contact: String(data.get("client_name") ?? ""), organization: String(data.get("client_organization") ?? ""), context: String(data.get("public_context") ?? "") }); setReviewed(false); }} className="grid gap-4 md:grid-cols-2">
         <input type="hidden" name="factory_case_id" value={factoryCaseId} />
         <label className="block text-sm font-medium text-[var(--cc-foreground)]">
           Contacto do cliente
