@@ -2875,9 +2875,11 @@ export async function createProjectChangeRequest(formData: FormData) {
 
   const { error } = await supabase.from("project_change_requests").insert({
     ...parsed.data,
+    source_client_decision_id: sourceDecisionId.data ?? null,
     user_id: user.id,
     created_by: authUser.id,
   });
+  if (error?.code === "23505" && sourceDecisionId.data) redirect(`${path}?change=existing`);
   if (error) fail(path, error.message);
 
   revalidatePath(path);
