@@ -30,13 +30,14 @@ function SendButton() {
   </button>;
 }
 
-export function ClientDiagnosticGie360Questionnaire({ token, clientName, clientOrganization, publicContext, expiresAt, error }: {
+export function ClientDiagnosticGie360Questionnaire({ token, clientName, clientOrganization, publicContext, expiresAt, error, integratedGie360 = false }: {
   token: string;
   clientName?: string | null;
   clientOrganization?: string | null;
   publicContext?: string | null;
   expiresAt: string;
   error?: string | null;
+  integratedGie360?: boolean;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [preview, setPreview] = useState("");
@@ -58,14 +59,14 @@ export function ClientDiagnosticGie360Questionnaire({ token, clientName, clientO
   return <main className={styles.page}>
     <div className={styles.main}>
       <header className={styles.header}>
-        <div className={styles.brand}>PCC <b>× GIE360°</b></div>
-        <div className={styles.subtitle}>Da estratégia à execução · Gestão Inteligente Empresarial</div>
+        <div className={styles.brand}>PCC {integratedGie360 && <b>× GIE360°</b>}</div>
+        <div className={styles.subtitle}>Da estratégia à execução{integratedGie360 ? " · Gestão Inteligente Empresarial" : ""}</div>
         <span className={styles.flag}>QUESTIONÁRIO EMPRESARIAL PERSONALIZADO</span>
       </header>
       <section className={styles.hero}>
         <p className={styles.step}>Questionário empresarial personalizado · versão aprovada</p>
         <h1>Compreender a empresa antes de recomendar soluções</h1>
-        <p>Este questionário permite identificar necessidades, obstáculos e prioridades da empresa, para orientar um diagnóstico GIE360° e definir apenas os módulos relevantes. Não é uma auditoria nem uma aprovação automática.</p>
+        <p>Este questionário permite identificar necessidades, obstáculos e prioridades da empresa, para orientar um diagnóstico {integratedGie360 ? "GIE360°" : "PCC"} e definir apenas os módulos relevantes. Não é uma auditoria nem uma aprovação automática.</p>
         <div className={styles.note}><strong>O que acontece às respostas?</strong> Serão associadas ao diagnóstico inicial do caso PCC, revistas pelo gestor e utilizadas para preparar o âmbito de trabalho. Nenhuma informação será divulgada sem aprovação.</div>
         <p className={styles.muted}>Destinatário: {clientOrganization || clientName || "Empresa convidada"} · Validade até {new Date(expiresAt).toLocaleDateString("pt-PT")}</p>
         {publicContext && <p>{publicContext}</p>}
@@ -155,7 +156,7 @@ export function ClientDiagnosticGie360Questionnaire({ token, clientName, clientO
           <div className={styles.review}>
             <p><strong>Critérios de qualidade</strong></p>
             <p>Identificação do respondente · necessidades seleccionadas · questões condicionais adequadas · dados por confirmar · finalidade claramente explicada.</p>
-            <label><input name="consent" type="checkbox" value="confirmed" required /> Confirmo que estas respostas podem ser enviadas para análise no PCC/GIE360°.</label>
+            <label><input name="consent" type="checkbox" value="confirmed" required /> Confirmo que estas respostas podem ser enviadas para análise no {integratedGie360 ? "PCC/GIE360°" : "PCC"}.</label>
           </div>
           <div className={styles.buttons}>
             <button type="button" onClick={previewAnswers} className={styles.button + " " + styles.secondary}>Pré-visualizar respostas</button>
@@ -164,7 +165,7 @@ export function ClientDiagnosticGie360Questionnaire({ token, clientName, clientO
           {preview && <pre className={styles.out} aria-label="Pré-visualização das respostas">{preview}</pre>}
         </section>
       </form>
-      <footer className={styles.footer}>PCC × GIE360° · Questionário empresarial · Outubro de 2026</footer>
+      <footer className={styles.footer}>{integratedGie360 ? "PCC × GIE360°" : "PCC"} · Questionário empresarial · Outubro de 2026</footer>
     </div>
   </main>;
 }
