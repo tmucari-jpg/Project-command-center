@@ -38,12 +38,14 @@ export function ClientDiagnosticQuestionnaire({
   clientOrganization,
   publicContext,
   expiresAt,
+  integratedGie360 = false,
 }: {
   token: string;
   clientName?: string | null;
   clientOrganization?: string | null;
   publicContext?: string | null;
   expiresAt: string;
+  integratedGie360?: boolean;
 }) {
   const [respondentType, setRespondentType] = useState("");
   const [nature, setNature] = useState<Nature | "">("");
@@ -52,7 +54,7 @@ export function ClientDiagnosticQuestionnaire({
     <main className="min-h-screen bg-[#f8f6f0] px-4 py-8 text-[#142825] sm:py-12">
       <div className="mx-auto max-w-3xl">
         <header className="mb-6 overflow-hidden rounded-2xl border border-[#e0e8e3] bg-white shadow-sm">
-          <div className="border-b border-[#e0e8e3] bg-[#f8f6f0] px-5 py-5 sm:px-7">
+          <div className={integratedGie360 ? "border-b border-[#146453] bg-[#073f36] px-5 py-5 text-white sm:px-7" : "border-b border-[#e0e8e3] bg-[#f8f6f0] px-5 py-5 sm:px-7"}>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <Image
                 src="/brand/pcc-logo-transparent.svg"
@@ -63,19 +65,20 @@ export function ClientDiagnosticQuestionnaire({
                 priority
               />
               <div className="text-right">
+                {integratedGie360 && <p className="mb-2 text-xl font-extrabold tracking-[0.02em] text-white">PCC <span className="text-[#c99439]">× GIE360°</span></p>}
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c99439]">
                   Avalie. Decida. Execute.
                 </p>
-                <p className="mt-1 text-xs text-[#5f6c68]">Da Estratégia à Execução</p>
+                <p className={integratedGie360 ? "mt-1 text-xs text-[#e1eae5]" : "mt-1 text-xs text-[#5f6c68]"}>Da Estratégia à Execução</p>
               </div>
             </div>
           </div>
           <div className="px-5 py-5 sm:px-7 sm:py-6">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#146453]">
-              Questionário Executivo
+              {integratedGie360 ? "Questionário empresarial personalizado · PCC × GIE360°" : "Questionário Executivo"}
             </p>
             <h1 className="mt-2 text-2xl font-semibold text-[#073f36] sm:text-3xl">
-              Diagnóstico inicial
+              {integratedGie360 ? "Compreender a empresa antes de recomendar soluções" : "Diagnóstico inicial"}
             </h1>
             <div className="mt-3 h-0.5 w-14 bg-[#c99439]" />
             <p className="mt-4 text-sm leading-6 text-[#4f625d]">
