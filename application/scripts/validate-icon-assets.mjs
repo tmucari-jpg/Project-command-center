@@ -20,4 +20,6 @@ for (const file of ['pcc-app-icon-v2.svg','pcc-app-icon-maskable-v2.svg']) {
 const android = fs.readFileSync(path.join(root,'../android-apk/app/src/main/res/drawable/pcc_icon.png'));
 PNG.sync.read(android, { checkCRC: true });
 if (!android.equals(fs.readFileSync(path.join(root,'public/icons/icon-maskable-512.png')))) throw new Error('Android icon mismatch');
+const foreground = fs.readFileSync(path.join(root,'../android-apk/app/src/main/res/drawable/pcc_icon_foreground.xml'),'utf8');
+if (!foreground.includes('@drawable/pcc_icon') || foreground.includes('android:inset')) throw new Error('Android launcher foreground must use the official icon without double inset');
 console.log('PCC icon assets: OK (CRC, full decode, dimensions, official source, Android parity).');
