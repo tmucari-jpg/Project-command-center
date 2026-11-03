@@ -7,15 +7,16 @@ export default defineConfig({
   testDir: "./",
   testMatch: "*.spec.mjs",
   fullyParallel: false,
+  outputDir: appRoot + "/test-results",
   workers: 1,
   retries: 0,
   timeout: 60_000,
-  reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
+  reporter: [["list"], ["html", { open: "never", outputFolder: appRoot + "/playwright-report" }]],
   use: {
     ...devices["Desktop Chrome"],
     baseURL: "http://127.0.0.1:3100",
-    trace: "retain-on-failure",
-    screenshot: "only-on-failure",
+    trace: "on",
+    screenshot: "on",
   },
   webServer: [
     {
