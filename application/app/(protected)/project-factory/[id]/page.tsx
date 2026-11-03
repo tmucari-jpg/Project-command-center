@@ -121,6 +121,9 @@ export default async function FactoryCasePage({
       .select("id,client_name,client_organization,public_context,status,expires_at,opened_at,submitted_at,reviewed_at,incorporated_at,triage_missing_information,triage_points_to_confirm,triaged_at")
       .eq("factory_case_id", factoryCase.id)
       .eq("user_id", user.id)
+      // GIE360 creates a separate assessment request. Never let it replace
+      // the original, already validated PCC diagnostic in this case panel.
+      .in("questionnaire_version", ["executive-v3", "executive-v3-gie360"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
