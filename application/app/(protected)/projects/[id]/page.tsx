@@ -17,6 +17,7 @@ import {
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
 import { ProjectClientStatusLink } from "@/components/project-client-status-link";
+import { DeliverableGeneration } from "@/components/deliverable-generation";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, EmptyState, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -222,6 +223,8 @@ export default async function ProjectHubPage({
     ? `Coordenação do projecto: ${projectOwner.full_name}. Confirmar obrigações específicas antes da aprovação.`
     : "";
   const latestBaseline = commitmentBaselines?.[0];
+  const g3Deliverable = (deliverables ?? []).find((item) => item.title === `Carta de Compromisso - ${project.title}`);
+  const latestApprovedCommitment = (commitmentBaselines ?? []).find((item) => ["internal_approved", "client_approved"].includes(item.status));
   const approvedBaseline = (commitmentBaselines ?? []).find((item) => item.status === "client_approved");
   const pendingChanges = (changeRequests ?? []).filter((item) => item.decision === "pending");
   const autofillStateLabel: Record<string, string> = {
@@ -368,6 +371,16 @@ export default async function ProjectHubPage({
               <a className={secondaryButtonClass} href={`/api/projects/${project.id}/commitment-draft?format=docx`}>Descarregar minuta Word</a>
             </div>
           ) : <p className="mt-2 text-sm">Para gerar a minuta, registe o compromisso e valide-o internamente.</p>}
+          {latestApprovedCommitment && g3Deliverable && (
+            <div className="mt-4 border-t border-[var(--cc-border)] pt-3">
+              <p className="text-sm font-semibold">Gerar e arquivar Carta G3 (Word e PDF)</p>
+              <p className="mt-1 text-xs text-[var(--cc-secondary)]">Usa a baseline aprovada e guarda nova versão no arquivo do entregável. Não constitui assinatura nem aceitação do cliente.</p>
+              <DeliverableGeneration id={g3Deliverable.id} type={g3Deliverable.artifact_type ?? "document"} hasArtifact={Boolean(g3Deliverable.artifact_url || g3Deliverable.artifact_reference)} fixedKind="commitment" />
+            </div>
+          )}
+          {latestApprovedCommitment && !g3Deliverable && (
+            <p className="mt-3 text-sm text-[var(--cc-secondary)]">O entregável G3 ainda não está associado ao projecto. A associação é criada pela transacção de aprovação após a migração correspondente.</p>
+          )}
         </div>
 
         <details className="mt-5 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)]">
