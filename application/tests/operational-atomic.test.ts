@@ -60,3 +60,18 @@ it('keeps the original link valid when share audit fails and denies unreviewed i
  expect((await db.query('select * from pcc_external_share_approvals')).rows).toHaveLength(1);
  }finally{await db.close();}
 },30000);
+
+it("enforces one change request per client link decision at the database layer",async()=>{
+ const db=new PGlite();
+ const response="40000000-0000-4000-8000-000000000001";
+ try{
+  await db.exec(`create table public.project_client_status_decisions(id uuid primary key);
+    create table public.project_change_requests(id uuid primary key, description text);
+    insert into public.project_client_status_decisions values('${response}');`);
+  await db.exec(await readFile("../supabase/migrations/20261103090000_unique_client_change_request_source.sql","utf8"));
+  await db.query("insert into public.project_change_requests(id,description,source_client_decision_id) values($1,$2,$3)",["50000000-0000-4000-8000-000000000001","Original",response]);
+  await expect(db.query("insert into public.project_change_requests(id,description,source_client_decision_id) values($1,$2,$3)",["50000000-0000-4000-8000-000000000002","Duplicado",response])).rejects.toThrow();
+  expect((await db.query("select id from public.project_change_requests")).rows).toHaveLength(1);
+  await expect(db.query("insert into public.project_change_requests(id,description,source_client_decision_id) values($1,$2,$3)",["50000000-0000-4000-8000-000000000003","Resposta inexistente","40000000-0000-4000-8000-000000000002"])).rejects.toThrow();
+ }finally{await db.close();}
+},30000);
