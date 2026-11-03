@@ -14,7 +14,7 @@ export async function provisionGIE360(_previous: { error?: string; success?: str
   // diagnostic against its actual answers under this authenticated owner.
   const { data: requests, error: requestsError } = await supabase.from("client_diagnostic_requests")
     .select("id,status,submitted_at").eq("factory_case_id", parsed.data.caseId)
-    .eq("user_id", authUser.id)
+    .eq("user_id", authUser.id).neq("questionnaire_version", "gie360-v1")
     .order("created_at",{ascending:false}).limit(1);
   if (requestsError) return { error: "Não foi possível confirmar o diagnóstico revisto." };
   const ids = (requests ?? []).map(item => item.id);
