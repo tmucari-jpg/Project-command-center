@@ -312,6 +312,18 @@ export default async function FactoryCasePage({
         externalSources={clientDiagnosticExternalSources}
       />
 
+      {clientDiagnosticResponse && (
+        <div className="mt-4 rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+          <p className="text-sm font-semibold text-[var(--cc-foreground)]">Encaminhamento para GIE360°</p>
+          <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+            A resposta já está associada a este caso. Reveja e aceite a informação antes de activar a avaliação GIE360°. O caso PCC original permanece intacto.
+          </p>
+          <Link href="/gie360" className={secondaryButtonClass + " mt-3 inline-flex"}>
+            Abrir GIE360°
+          </Link>
+        </div>
+      )}
+
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
         <Card className="p-5">
           <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Contexto do projecto</h2>
