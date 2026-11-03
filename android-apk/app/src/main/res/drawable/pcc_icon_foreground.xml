@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/pcc_icon"
-    android:inset="12%" />
+<!-- The PCC official icon PNG already contains its own proportional safe margins.
+     Applying another inset shrinks the visible logo on Android home screens. -->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@drawable/pcc_icon"
+    android:gravity="center" />
