@@ -502,6 +502,9 @@ jobs:
 
           $clientDiagnosticPublic = Get-Content -LiteralPath "./app/client-diagnostic/[token]/page.tsx" -Raw
           $clientDiagnosticQuestionnaire = Get-Content "./components/client-diagnostic-questionnaire.tsx" -Raw
+          $approvedGie360Questionnaire = Get-Content "./components/client-diagnostic-gie360-questionnaire.tsx" -Raw
+          $approvedGie360Styles = Get-Content "./components/client-diagnostic-gie360.module.css" -Raw
+          $diagnosticPublicActions = Get-Content -LiteralPath "./app/client-diagnostic/[token]/actions.ts" -Raw
           $supabaseProxy = Get-Content "./lib/supabase/proxy.ts" -Raw
           $clientDiagnosticPanel = Get-Content "./components/client-diagnostic-panel.tsx" -Raw
           $clientDiagnosticGenerator = Get-Content "./components/client-diagnostic-link-generator.tsx" -Raw
@@ -539,8 +542,47 @@ jobs:
             }
           }
 
-          if (-not $clientDiagnosticPublic.Contains("ClientDiagnosticQuestionnaire")) {
-            Write-Error "Public client diagnostic route must render the executive questionnaire."
+          if (-not $clientDiagnosticPublic.Contains("ClientDiagnosticGie360Questionnaire")) {
+            Write-Error "Public diagnostic route must render the approved four-stage questionnaire."
+            exit 1
+          }
+
+          foreach ($token in @(
+            'questionnaire_version === "executive-v3-gie360"',
+            'ClientDiagnosticGie360Questionnaire',
+            'integratedGie360='
+          )) {
+            if (-not $clientDiagnosticPublic.Contains($token)) {
+              Write-Error "Public diagnostic route lost the approved layout or scoped branding: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            'Etapa 1 / 4',
+            'Etapa 2 / 4',
+            'Etapa 3 / 4',
+            'Etapa 4 / 4',
+            'submitGie360Diagnostic',
+            'Pré-visualizar respostas',
+            'Enviar respostas ao PCC',
+            'consent'
+          )) {
+            if (-not $approvedGie360Questionnaire.Contains($token)) {
+              Write-Error "Approved PCC/GIE360 questionnaire is missing a required functional element: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @("--green:#073f36", "--gold:#c99439", "--cream:#f8f6f0", ".panel", ".header")) {
+            if (-not $approvedGie360Styles.Contains($token)) {
+              Write-Error "Validated PCC/GIE360 visual standard missing: $token"
+              exit 1
+            }
+          }
+
+          if (-not $diagnosticPublicActions.Contains('["executive-v3", "executive-v3-gie360"]')) {
+            Write-Error "Existing diagnostic links must remain usable with the approved questionnaire."
             exit 1
           }
 
