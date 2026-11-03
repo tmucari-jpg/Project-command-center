@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { openExistingProjectDiagnostic } from "@/app/(protected)/existing-project-diagnostic-actions";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3, CalendarCheck2, CheckSquare2, CircleDollarSign, GitBranch, Home, PackageCheck, ShieldCheck, TriangleAlert, UserRoundCheck } from "lucide-react";
 import {
@@ -271,6 +272,25 @@ export default async function ProjectHubPage({
         eyebrow="Projecto"
         title={project.title}
       />
+
+      <Card className="mb-6 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Diagnóstico do projecto</h2>
+        <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+          Envie o diagnóstico deste projecto existente ao cliente para identificar necessidades e decidir
+          o encaminhamento para Projectos PCC ou GIE360°. O projecto não é duplicado e nenhuma
+          partilha acontece sem pré-visualização e aprovação interna.
+        </p>
+        {sourceCase ? (
+          <Link className={primaryButtonClass + " mt-4 inline-flex"} href={`/project-factory/${sourceCase.id}`}>
+            Abrir diagnóstico e gerar questionário
+          </Link>
+        ) : (
+          <form action={openExistingProjectDiagnostic} className="mt-4">
+            <input type="hidden" name="project_id" value={project.id} />
+            <button className={primaryButtonClass}>Preparar diagnóstico deste projecto</button>
+          </form>
+        )}
+      </Card>
 
       <Card className="mb-6 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
