@@ -69,3 +69,56 @@ test("Existing executive-v3 link uses approved layout on mobile without regenera
   const state = await (await request.get(MOCK + "/__qa/state")).json();
   expect(state.legacy.submitted).toBeNull();
 });
+
+test("Approved HTML reference: desktop and mobile visual structure is preserved", async ({ page }, testInfo) => {
+  const { readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const referenceHtml = readFileSync(
+    fileURLToPath(new URL("./fixtures/Modelo_Questionario_GIE360_Validacao.html", import.meta.url)),
+    "utf8",
+  );
+  for (const view of [{ width: 1280, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(view);
+    const reference = await page.context().newPage();
+    await reference.setViewportSize(view);
+    await reference.setContent(referenceHtml, { waitUntil: "load" });
+    await page.goto("/client-diagnostic/" + INTEGRATED);
+
+    const measure = async (target, selectors) => target.evaluate((s) => {
+      const header = document.querySelector(s.header);
+      const hero = document.querySelector(s.hero);
+      const panel = document.querySelector(s.panel);
+      if (!header || !hero || !panel) throw new Error("Approved visual structure missing");
+      const hs = getComputedStyle(header);
+      const ps = getComputedStyle(panel);
+      const h = header.getBoundingClientRect();
+      const he = hero.getBoundingClientRect();
+      const pa = panel.getBoundingClientRect();
+      return {
+        background: hs.backgroundColor,
+        headerPadding: hs.paddingTop,
+        headerRadius: hs.borderTopLeftRadius,
+        panelRadius: ps.borderTopLeftRadius,
+        panelBackground: ps.backgroundColor,
+        headerX: h.x,
+        headerWidth: h.width,
+        heroWidth: he.width,
+        panelWidth: pa.width,
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    }, selectors);
+
+    const ref = await measure(reference, { header: "header", hero: ".hero", panel: ".panel" });
+    const actual = await measure(page, { header: "main > div > header", hero: "main > div > section", panel: "form > section" });
+    for (const key of ["background", "headerPadding", "headerRadius", "panelRadius", "panelBackground"]) {
+      expect(actual[key], key + " differs from approved HTML at " + view.width).toBe(ref[key]);
+    }
+    for (const key of ["headerX", "headerWidth", "heroWidth", "panelWidth"]) {
+      expect(Math.abs(actual[key] - ref[key]), key + " differs from approved HTML at " + view.width).toBeLessThanOrEqual(3);
+    }
+    expect(actual.overflow, "horizontal overflow on " + view.width).toBeLessThanOrEqual(1);
+    await reference.screenshot({ path: testInfo.outputPath("approved-reference-" + view.width + ".png"), fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath("pcc-operational-" + view.width + ".png"), fullPage: true });
+    await reference.close();
+  }
+});
