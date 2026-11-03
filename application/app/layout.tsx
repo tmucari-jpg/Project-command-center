@@ -7,14 +7,14 @@ export const metadata: Metadata = {
   title: { default: "Project Command Center", template: "%s · Project Command Center" },
   description: "Centro de execução de projectos com foco em resultados, evidência e próxima acção.",
   applicationName: "Project Command Center",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.webmanifest?v=20261103",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Project Command Center" },
   icons: {
     icon: [
-      { url: "/icons/icon-192.png?v=20261028", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png?v=20261028", sizes: "512x512", type: "image/png" },
+      { url: "/icons/icon-192.png?v=20261103", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png?v=20261103", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-touch-icon.png?v=20261028", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png?v=20261103", type: "image/png" }],
   },
 };
 
