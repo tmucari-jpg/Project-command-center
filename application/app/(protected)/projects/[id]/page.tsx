@@ -60,6 +60,7 @@ export default async function ProjectHubPage({
     { data: commercialProfile },
     { data: commitmentBaselines },
     { data: changeRequests },
+    { data: clientLinkDecisions },
   ] = await Promise.all([
     supabase
       .from("actions")
@@ -158,6 +159,10 @@ export default async function ProjectHubPage({
       .eq("user_id", user.id)
       .eq("project_id", id)
       .order("created_at", { ascending: false }),
+    supabase.from("project_client_status_decisions")
+      .select("id,decision,respondent_name,comment,created_at")
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }).limit(20),
   ]);
 
   // Reuse only diagnostics already converted into this project; unreviewed client answers are excluded.
@@ -315,6 +320,31 @@ export default async function ProjectHubPage({
           </summary>
           <div className="mt-4">
             <ProjectClientStatusLink projectId={project.id} />
+            <div className="mt-5 border-t border-[var(--cc-border)] pt-4">
+              <h3 className="text-sm font-semibold">Respostas recebidas pelo link</h3>
+              <p className="mt-1 text-sm text-[var(--cc-secondary)]">As respostas ficam registadas para revisão interna; não concluem nem aprovam automaticamente documentos.</p>
+              {clientLinkDecisions?.length ? (
+                <ul className="mt-3 space-y-3">
+                  {clientLinkDecisions.map((reply) => (
+                    <li key={reply.id} className="rounded-lg border border-[var(--cc-border)] p-3 text-sm">
+                      <p className="font-semibold">{reply.respondent_name} · {reply.decision === "approve" ? "Aprovou os próximos passos" : reply.decision === "change" ? "Solicitou alteração" : "Pediu esclarecimento"}</p>
+                      {reply.comment && <p className="mt-1 whitespace-pre-wrap">{reply.comment}</p>}
+                      {reply.decision === "change" && (
+                        <form action={createProjectChangeRequest} className="mt-3">
+                          <input type="hidden" name="project_id" value={project.id} />
+                          {approvedBaseline && <input type="hidden" name="baseline_id" value={approvedBaseline.id} />}
+                          <input type="hidden" name="source_decision_id" value={reply.id} />
+                          <input type="hidden" name="title" value="Revisão solicitada pelo cliente" />
+                          <input type="hidden" name="description" value={`Pedido recebido pelo link (referência ${reply.id}); cliente: ${reply.respondent_name}. ${reply.comment ?? "Sem comentário adicional."}`} />
+                          <button className={secondaryButtonClass} type="submit">Abrir pedido de revisão interna</button>
+                        </form>
+                      )}
+                      <p className="mt-1 text-xs text-[var(--cc-secondary)]">{formatDateTime(reply.created_at)}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="mt-2 text-sm text-[var(--cc-secondary)]">Nenhuma resposta registada.</p>}
+            </div>
           </div>
         </details>
       </Card>

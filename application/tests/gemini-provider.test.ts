@@ -37,10 +37,23 @@ describe("Gemini within the PCC runtime", () => {
     expect(init.redirect).toBe("error");
     expect(JSON.parse(String(init.body))).toEqual({ model: "configured-free-model", messages: [{ role: "system", content: "Não inventar factos" }, { role: "user", content: "Contexto aprovado" }], max_tokens: 300 });
   });
-  it("validates health through real generation with space for model reasoning", async () => {
-    const fetch = vi.fn().mockResolvedValue(response("OK")); vi.stubGlobal("fetch", fetch);
+  it("validates Gemini health through Google's native API with bounded latency", async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      candidates: [{ content: { parts: [{ text: "OK" }] } }],
+    }), { status: 200 })); vi.stubGlobal("fetch", fetch);
     expect((await validateAIProviderHealth(profile)).status).toBe("healthy");
-    expect(JSON.parse(String(fetch.mock.calls[0][1].body)).max_tokens).toBe(64);
+    expect(String(fetch.mock.calls[0][0])).toContain("/models/configured-free-model:generateContent");
+    const init = fetch.mock.calls[0][1] as RequestInit;
+    expect(init.headers).toMatchObject({ "x-goog-api-key": "synthetic-test-key" });
+    expect(JSON.parse(String(init.body)).generationConfig.maxOutputTokens).toBe(256);
+  });
+  it("reports native health 503 without enabling the provider", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: { status: "UNAVAILABLE", message: "Temporarily unavailable" },
+    }), { status: 503 })));
+    const result = await validateAIProviderHealth(profile);
+    expect(result.status).toBe("degraded");
+    expect(result.message).toContain("503");
   });
   it("retries a transient 503 and accepts the subsequent Gemini response", async () => {
     const fetch = vi.fn()

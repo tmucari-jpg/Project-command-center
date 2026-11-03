@@ -60,3 +60,57 @@ it('keeps the original link valid when share audit fails and denies unreviewed i
  expect((await db.query('select * from pcc_external_share_approvals')).rows).toHaveLength(1);
  }finally{await db.close();}
 },30000);
+
+it("enforces one change request per client link decision at the database layer",async()=>{
+ const db=new PGlite();
+ const response="40000000-0000-4000-8000-000000000001";
+ try{
+  await db.exec(`create table public.project_client_status_decisions(id uuid primary key);
+    create table public.project_change_requests(id uuid primary key, description text);
+    insert into public.project_client_status_decisions values('${response}');`);
+  await db.exec(await readFile("../supabase/migrations/20261103090000_unique_client_change_request_source.sql","utf8"));
+  await db.query("insert into public.project_change_requests(id,description,source_client_decision_id) values($1,$2,$3)",["50000000-0000-4000-8000-000000000001","Original",response]);
+  await expect(db.query("insert into public.project_change_requests(id,description,source_client_decision_id) values($1,$2,$3)",["50000000-0000-4000-8000-000000000002","Duplicado",response])).rejects.toThrow();
+  expect((await db.query("select id from public.project_change_requests")).rows).toHaveLength(1);
+  await expect(db.query("insert into public.project_change_requests(id,description,source_client_decision_id) values($1,$2,$3)",["50000000-0000-4000-8000-000000000003","Resposta inexistente","40000000-0000-4000-8000-000000000002"])).rejects.toThrow();
+ }finally{await db.close();}
+},30000);
+
+
+it("atomically creates a new G3 revision or rolls back the client change decision",async()=>{
+ const db=new PGlite();
+ const req="40000000-0000-4000-8000-000000000001";
+ try{
+  await db.exec(`create role anon;create role authenticated;create schema auth;create schema private;
+  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+  create function private.is_global_admin() returns boolean language sql stable as $$select false$$;
+  grant usage on schema auth,private to authenticated;
+  create table projects(id uuid primary key,user_id uuid,governance_gate text,governance_gate_status text,status text);
+  create table project_change_requests(id uuid primary key,user_id uuid,project_id uuid,decision text default 'pending',decision_rationale text,decided_at timestamptz);
+  create table project_commitment_baselines(
+   id uuid primary key default gen_random_uuid(),user_id uuid,project_id uuid,version integer,
+   information_classification text default 'internal',expected_result text,scope text,exclusions text,
+   deliverables_summary text,pcc_responsibilities text,client_responsibilities text,
+   external_costs_terms text,acceptance_terms text,security_conditions text,
+   capacity_summary text,cost_summary text,status text,created_by uuid);
+  grant select,insert,update on all tables in schema public to authenticated;
+  insert into projects values('${project}','${owner}','g4_execution','ready','active');
+  insert into project_change_requests(id,user_id,project_id,decision) values('${req}','${owner}','${project}','pending');
+  insert into project_commitment_baselines(id,user_id,project_id,version,expected_result,scope,deliverables_summary,acceptance_terms,status)
+    values('${baseline}','${owner}','${project}',1,'Resultado aprovado','Âmbito aprovado','Entregáveis aprovados','Aceitação','client_approved');
+  set request.jwt.claim.sub='${owner}';`);
+  await db.exec(await readFile("../supabase/migrations/20261103091500_atomic_change_request_decision.sql","utf8"));
+  await db.exec("set role authenticated");
+  const decide=()=>db.query("select public.decide_project_change_request_atomic($1,$2,'approved','Alteração analisada')",[project,req]);
+  await db.exec("reset role; create function fail_revision() returns trigger language plpgsql as $$ begin raise exception 'revision failure injected'; end $$; create trigger fail_revision before insert on project_commitment_baselines for each row execute function fail_revision(); set role authenticated");
+  await expect(decide()).rejects.toThrow("revision failure injected");
+  expect((await db.query("select decision from project_change_requests")).rows[0]).toEqual({decision:"pending"});
+  expect((await db.query("select status from projects")).rows[0]).toEqual({status:"active"});
+  await db.exec("reset role; drop trigger fail_revision on project_commitment_baselines; set role authenticated");
+  await decide();
+  expect((await db.query("select version,status from project_commitment_baselines order by version")).rows).toEqual([{version:1,status:"client_approved"},{version:2,status:"draft"}]);
+  expect((await db.query("select decision from project_change_requests")).rows[0]).toEqual({decision:"approved"});
+  await expect(decide()).rejects.toThrow("CHANGE_REQUEST_ALREADY_DECIDED");
+  expect((await db.query("select count(*)::integer as n from project_commitment_baselines")).rows[0]).toEqual({n:2});
+ } finally {await db.close();}
+},30000);

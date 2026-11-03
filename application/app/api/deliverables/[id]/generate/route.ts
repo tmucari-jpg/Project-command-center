@@ -8,7 +8,7 @@ import { artifactInformationGaps } from "@/lib/artifacts/readiness";
 import { verifyArchivedBytes } from "@/lib/artifacts/integrity";
 import { renderArtifact } from "@/lib/artifacts/render";
 export const runtime="nodejs";
-const schema=z.object({ requestId:z.string().uuid().optional(),kind:z.enum(["master_mind","master_plan","commercial_guide","diagnosis","decision","progress","closure","document","spreadsheet","presentation"]),reviewedContent:z.string().trim().max(50000).optional(),confirmNewVersion:z.boolean().default(false) });
+const schema=z.object({ requestId:z.string().uuid().optional(),kind:z.enum(["master_mind","master_plan","commercial_guide","diagnosis","decision","progress","closure","document","commitment","spreadsheet","presentation"]),reviewedContent:z.string().trim().max(50000).optional(),confirmNewVersion:z.boolean().default(false) });
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}) {
   if(process.env.PCC_ARTIFACT_GENERATION_ENABLED!=="true")return NextResponse.json({error:"Geração ainda não activada neste ambiente de testes."},{status:503});
   if(request.headers.get("origin")!==new URL(request.url).origin)return NextResponse.json({error:"Origem inválida."},{status:403});
@@ -25,6 +25,23 @@ export async function POST(request:Request,{params}:{params:Promise<{id:string}>
     if(prior.data.deliverable_id!==id)return NextResponse.json({error:"Pedido já utilizado noutro entregável."},{status:409});
     const priorSnapshot=prior.data.source_snapshot as Awaited<ReturnType<typeof loadArtifactSnapshot>>;
     if(prior.data.document_kind!==body.data.kind || priorSnapshot.reviewedContent!==body.data.reviewedContent)return NextResponse.json({error:"A referência pertence a outro conteúdo; inicie uma nova versão."},{status:409});
+    // Reuse is permitted only when every archived file still exists and matches its recorded checksum.
+    const priorFiles = prior.data.files as Record<string,{path:string;sha256:string;mime:string;size:number}>;
+    const archive = db.storage.from("pcc-deliverable-artifacts");
+    for (const [extension, file] of Object.entries(priorFiles)) {
+      if (!["docx","pdf","xlsx","pptx"].includes(extension)
+          || !file.path.startsWith(`${user.id}/${id}/${version}/`)
+          || !Number.isSafeInteger(file.size) || file.size > 20*1024*1024) {
+        return NextResponse.json({error:"ARCHIVE_INTEGRITY_FAILED"},{status:409});
+      }
+      const archived = await archive.download(file.path);
+      if (archived.error || !archived.data) return NextResponse.json({error:"ARCHIVE_FILE_UNAVAILABLE"},{status:503});
+      try {
+        verifyArchivedBytes(new Uint8Array(await archived.data.arrayBuffer()),file);
+      } catch {
+        return NextResponse.json({error:"ARCHIVE_INTEGRITY_FAILED"},{status:409});
+      }
+    }
     return NextResponse.json({informationGaps:artifactInformationGaps(priorSnapshot),formats:Object.keys(prior.data.files),id:version,download:`/api/deliverables/artifacts/${version}/download`,reused:true});
   }
   try {

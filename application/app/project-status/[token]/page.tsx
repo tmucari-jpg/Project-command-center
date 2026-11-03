@@ -157,6 +157,15 @@ export default async function ProjectStatusPage({
         <section className="rounded-2xl border border-[#dce5df] bg-white p-5 shadow-sm sm:p-7">
           <h2 className="text-lg font-semibold text-[#073f36]">Validação do cliente</h2>
           <form action={submitProjectClientStatusDecision} className="mt-4 space-y-4">
+            {deliverables.length > 0 && (
+              <label className="block text-sm font-medium text-[#073f36]">
+                Entregável a que se refere a resposta
+                <select name="deliverable_id" defaultValue="" className="mt-1 w-full rounded-xl border border-[#dce5df] bg-white px-3 py-2.5 text-sm">
+                  <option value="">Acompanhamento geral do projecto</option>
+                  {deliverables.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
+                </select>
+              </label>
+            )}
             <input type="hidden" name="token" value={token} />
             <label className="block text-sm font-medium text-[#073f36]">
               Nome
@@ -167,7 +176,7 @@ export default async function ProjectStatusPage({
               />
             </label>
             <label className="block text-sm font-medium text-[#073f36]">
-              Comentário, se necessário
+              Comentário ou alterações solicitadas, se necessário
               <textarea className="mt-1 min-h-24 w-full rounded-xl border border-[#dce5df] px-3 py-2.5 text-sm" name="comment" />
             </label>
             <div className="flex flex-wrap gap-2">

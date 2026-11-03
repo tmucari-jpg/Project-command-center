@@ -1,4 +1,5 @@
 "use server";
+import { buildClientStatusPreview, clientStatusFingerprint } from "@/lib/client-status-preview";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -90,132 +91,39 @@ export type ProjectClientStatusLinkState = {
   linkId?: string;
 };
 
+export async function previewProjectClientStatus(projectId:string,publicNote:string) {
+ const id=z.string().uuid().safeParse(projectId);
+ const note=z.string().trim().max(2000).safeParse(publicNote);
+ if(!id.success||!note.success)return {ok:false as const,error:"Dados inválidos."};
+ const {supabase,user}=await requireUser();
+ try{
+  const preview=await buildClientStatusPreview(supabase,user.id,id.data,note.data);
+  return {ok:true as const,preview,fingerprint:clientStatusFingerprint(preview)};
+ }catch{return {ok:false as const,error:"Pré-visualização indisponível."};}
+}
 export async function publishProjectClientStatus(
-  _previousState: ProjectClientStatusLinkState,
-  formData: FormData,
-): Promise<ProjectClientStatusLinkState> {
-  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
-  const publicNote = z.string().trim().max(2000).safeParse(String(formData.get("public_note") ?? ""));
-  if (!projectId.success || !publicNote.success) {
-    return { ok: false, error: "Revise os dados do acompanhamento do cliente." };
-  }
-
-  const { supabase, user } = await requireUser();
-
-  const [{ data: project, error: projectError }, { data: deliverables, error: deliverableError }, { data: metrics, error: metricError }] =
-    await Promise.all([
-      supabase
-        .from("projects")
-        .select("id,title,status,expected_result,next_action")
-        .eq("id", projectId.data)
-        .eq("user_id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("deliverables")
-        .select("id,title,status,due_date,completion_criteria,artifact_url,artifact_reference,artifact_version,acceptance_status,accepted_at")
-        .eq("project_id", projectId.data)
-        .eq("user_id", user.id)
-        .neq("status", "cancelled")
-        .order("due_date", { ascending: true, nullsFirst: false }),
-      supabase
-        .from("metrics")
-        .select("id,name,unit,current_value,target_value,measurement_date")
-        .eq("project_id", projectId.data)
-        .eq("user_id", user.id)
-        .order("measurement_date", { ascending: false, nullsFirst: false }),
-    ]);
-
-  if (projectError || !project) {
-    return { ok: false, error: projectError?.message ?? "Projecto não encontrado." };
-  }
-  if (deliverableError || metricError) {
-    return { ok: false, error: deliverableError?.message ?? metricError?.message ?? "Não foi possível preparar o snapshot." };
-  }
-
-  const { data: latestSnapshot } = await supabase
-    .from("project_client_status_snapshots")
-    .select("version")
-    .eq("project_id", project.id)
-    .eq("user_id", user.id)
-    .order("version", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const deliverableSnapshot = (deliverables ?? []).map((item) => ({
-    id: item.id,
-    title: item.title,
-    status: item.status,
-    due_date: item.due_date,
-    completion_criteria: item.completion_criteria,
-    acceptance_status: item.acceptance_status,
-    accepted_at: item.accepted_at,
-    artifact_version: item.artifact_version,
-    artifact_url:
-      ["accepted", "accepted_with_reservations"].includes(item.acceptance_status ?? "") && item.artifact_url
-        ? item.artifact_url
-        : null,
-    artifact_reference:
-      ["accepted", "accepted_with_reservations"].includes(item.acceptance_status ?? "") && item.artifact_reference
-        ? item.artifact_reference
-        : null,
-  }));
-
-  const latestMetricByName = new Map<string, (typeof metrics extends Array<infer T> ? T : never)>();
-  for (const metric of metrics ?? []) {
-    if (!latestMetricByName.has(metric.name)) latestMetricByName.set(metric.name, metric);
-  }
-  const metricSnapshot = Array.from(latestMetricByName.values()).map((metric) => ({
-    name: metric.name,
-    unit: metric.unit,
-    current_value: metric.current_value,
-    target_value: metric.target_value,
-    measurement_date: metric.measurement_date,
-  }));
-
-  const { error: snapshotError } = await supabase.from("project_client_status_snapshots").insert({
-    user_id: user.id,
-    project_id: project.id,
-    version: Number(latestSnapshot?.version ?? 0) + 1,
-    public_note: publicNote.data || null,
-    project_status: project.status,
-    expected_result: project.expected_result,
-    next_action: project.next_action,
-    deliverables: deliverableSnapshot,
-    kpis: metricSnapshot,
-  });
-
-  if (snapshotError) return { ok: false, error: snapshotError.message };
-
-  const { error: revokeError } = await supabase
-    .from("project_client_status_links")
-    .update({ status: "revoked" })
-    .eq("project_id", project.id)
-    .eq("user_id", user.id)
-    .in("status", ["active", "opened"]);
-
-  if (revokeError) return { ok: false, error: revokeError.message };
-
-  const { token, tokenHash } = createProjectClientStatusToken();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: link, error: linkError } = await supabase
-    .from("project_client_status_links")
-    .insert({
-      user_id: user.id,
-      project_id: project.id,
-      token_hash: tokenHash,
-      expires_at: expiresAt,
-    })
-    .select("id")
-    .single();
-
-  if (linkError || !link) return { ok: false, error: linkError?.message ?? "Não foi possível gerar o link." };
-
-  revalidatePath(`/projects/${project.id}`);
-  return {
-    ok: true,
-    url: projectClientStatusPublicUrl(token),
-    linkId: link.id,
-  };
+ _previousState:ProjectClientStatusLinkState,formData:FormData
+):Promise<ProjectClientStatusLinkState>{
+ if(formData.get("reviewed")!=="on")return {ok:false,error:"Aprovação interna obrigatória."};
+ const id=z.string().uuid().safeParse(formData.get("project_id"));
+ const note=z.string().trim().max(2000).safeParse(String(formData.get("public_note")??""));
+ const fingerprint=z.string().regex(/^[0-9a-f]{64}$/).safeParse(formData.get("preview_fingerprint"));
+ if(!id.success||!note.success||!fingerprint.success)return {ok:false,error:"Faça a pré-visualização integral antes da partilha."};
+ const {supabase,user}=await requireUser();
+ let preview:Awaited<ReturnType<typeof buildClientStatusPreview>>;
+ try{preview=await buildClientStatusPreview(supabase,user.id,id.data,note.data);}
+ catch{return {ok:false,error:"Dados indisponíveis para confirmação."};}
+ if(clientStatusFingerprint(preview)!==fingerprint.data)return {ok:false,error:"Dados alterados. Reveja a versão antes de publicar."};
+ const {token,tokenHash}=createProjectClientStatusToken();
+ const {data,error}=await supabase.rpc("publish_project_client_status_atomic",{
+  p_project_id:id.data,p_owner_id:user.id,p_public_note:preview.public_note,
+  p_project_status:preview.project.status,p_expected_result:preview.project.expected_result,
+  p_next_action:preview.project.next_action,p_deliverables:preview.deliverables,p_kpis:preview.kpis,
+  p_token_hash:tokenHash,p_expires_at:new Date(Date.now()+7*86400000).toISOString(),
+ });
+ if(error||!data)return {ok:false,error:"Publicação não concluída. O link anterior permanece válido."};
+ revalidatePath(`/projects/${id.data}`);
+ return {ok:true,url:projectClientStatusPublicUrl(token),linkId:data as string};
 }
 
 export async function createClientDiagnosticRequest(
@@ -1535,122 +1443,17 @@ async function ensureProjectOperationalStructure(
   userId: string,
   project: OperationalProjectContext,
 ) {
-  let objectiveId = project.objective_id ?? null;
-
-  if (!objectiveId) {
-    const { data: objective, error } = await supabase
-      .from("objectives")
-      .insert({
-        user_id: userId,
-        title: project.title,
-        description: project.description,
-        expected_result: project.expected_result,
-        priority: project.priority,
-        status: "draft",
-        start_date: project.start_date,
-        due_date: project.due_date,
-        progress: Number(project.progress ?? 0),
-        notes: project.notes,
-      })
-      .select("id")
-      .single();
-
-    if (error || !objective) throw new Error(error?.message ?? "Não foi possível preparar o objectivo.");
-    objectiveId = objective.id;
-
-    const { error: linkError } = await supabase
-      .from("projects")
-      .update({ objective_id: objectiveId })
-      .eq("id", project.id)
-      .eq("user_id", userId);
-
-    if (linkError) throw new Error(linkError.message);
-  }
-
-  const { data: existingDeliverables, error: deliverableReadError } = await supabase
-    .from("deliverables")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("project_id", project.id)
-    .order("created_at", { ascending: true })
-    .limit(1);
-
-  if (deliverableReadError) throw new Error(deliverableReadError.message);
-
-  let deliverableId = existingDeliverables?.[0]?.id ?? null;
-
-  if (!deliverableId && project.expected_result?.trim()) {
-    const { data: deliverable, error } = await supabase
-      .from("deliverables")
-      .insert({
-        user_id: userId,
-        project_id: project.id,
-        title: `Resultado de ${project.title}`,
-        description: project.expected_result.trim(),
-        priority: project.priority,
-        status: "pending",
-        due_date: project.due_date,
-        progress: 0,
-        completion_criteria: project.expected_result.trim(),
-      })
-      .select("id")
-      .single();
-
-    if (error || !deliverable) throw new Error(error?.message ?? "Não foi possível preparar o entregável.");
-    deliverableId = deliverable.id;
-  }
-
-  // Generate one actionable task per real deliverable, based on its objective and acceptance criterion.
-  // Existing manual work is preserved; repeated invocations must not create duplicates.
-  const [{ data: projectDeliverables, error: deliverablesError }, { data: recordedActions, error: actionsError }] = await Promise.all([
-    supabase.from("deliverables").select("id,title,description,completion_criteria,status")
-      .eq("user_id",userId).eq("project_id",project.id),
-    supabase.from("actions").select("title,deliverable_id")
-      .eq("user_id",userId).eq("project_id",project.id),
-  ]);
-  if (deliverablesError || actionsError) throw new Error(deliverablesError?.message ?? actionsError?.message);
-  const existing = new Set((recordedActions ?? []).map(item => `${item.deliverable_id ?? ""}:${String(item.title).trim().toLocaleLowerCase("pt")}`));
-  const suggested = (projectDeliverables ?? [])
-    .filter(item => item.status !== "completed" && item.status !== "cancelled")
-    .map(item => ({
-      user_id:userId, project_id:project.id, deliverable_id:item.id,
-      title:`Preparar e validar: ${item.title}`,
-      description:item.description || project.description || project.expected_result,
-      completion_criteria:item.completion_criteria || project.expected_result || "Resultado sujeito à validação do responsável",
-      priority:project.priority, status:"pending" as const, is_next_action:false,
-    }))
-    .filter(item => !existing.has(`${item.deliverable_id}:${item.title.trim().toLocaleLowerCase("pt")}`));
-  if (suggested.length) {
-    const { error } = await supabase.from("actions").insert(suggested);
-    if (error) throw new Error(error.message);
-  }
-
-  const { count: metricCount, error: metricCountError } = await supabase
-    .from("metrics")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("project_id", project.id);
-
-  if (metricCountError) throw new Error(metricCountError.message);
-
-  if ((metricCount ?? 0) === 0 && project.expected_result?.trim()) {
-    const { error } = await supabase.from("metrics").insert({
-      user_id: userId,
-      objective_id: objectiveId,
-      project_id: project.id,
-      name: `Progresso de ${project.title}`,
-      description: `Mede o avanço do projecto face ao resultado esperado: ${project.expected_result.trim()}`,
-      metric_type: "custom",
-      unit: "%",
-      baseline_value: 0,
-      target_value: 100,
-      current_value: Number(project.progress ?? 0),
-    });
-    if (error) throw new Error(error.message);
-  }
-
+  // All writes for objective, deliverables, actions, and metric execute in ONE
+  // database transaction under a per-project row lock.
+  const { data, error } = await supabase.rpc("prepare_project_operational_atomic", {
+    p_project_id: project.id,
+    p_workspace_user_id: userId,
+  });
+  if (error) throw new Error("Não foi possível preparar a estrutura operacional de forma segura.");
+  const result = data as { objective_id: string; deliverable_id: string | null } | null;
+  if (!result?.objective_id) throw new Error("A preparação operacional não devolveu o objectivo.");
   await syncProjectStrategyExecutionPlan(supabase, userId, project.id);
-  return { objectiveId, deliverableId };
+  return { objectiveId: result.objective_id, deliverableId: result.deliverable_id };
 }
 
 export async function createProject(formData: FormData) {
@@ -2974,7 +2777,7 @@ export async function saveCommitmentBaseline(formData: FormData) {
 
   if (latestError) fail(path, latestError.message);
 
-  if (latest && ["draft", "internal_approved"].includes(latest.status)) {
+  if (latest && latest.status === "draft") {
     const { error } = await supabase
       .from("project_commitment_baselines")
       .update({ ...parsed.data, status: "draft", internal_approved_at: null })
@@ -3054,11 +2857,29 @@ export async function createProjectChangeRequest(formData: FormData) {
     await ensureOwned(supabase, "project_commitment_baselines", parsed.data.baseline_id, user.id, path);
   }
 
+  const sourceDecisionId = z.string().uuid().optional().safeParse(formData.get("source_decision_id") || undefined);
+  if (!sourceDecisionId.success) fail(path, "Referência da resposta inválida.");
+  if (sourceDecisionId.data) {
+    const { data: reply, error: replyError } = await supabase.from("project_client_status_decisions")
+      .select("id,decision,respondent_name,comment").eq("id", sourceDecisionId.data)
+      .eq("project_id", parsed.data.project_id).maybeSingle();
+    if (replyError || !reply || reply.decision !== "change") fail(path, "Pedido do cliente não encontrado.");
+    const reference = `[Resposta pelo link: ${reply.id}]`;
+    const { data: previous, error: previousError } = await supabase.from("project_change_requests")
+      .select("id").eq("project_id", parsed.data.project_id).eq("user_id", user.id)
+      .ilike("description", `%${reference}%`).limit(1);
+    if (previousError) fail(path, "Não foi possível verificar pedidos anteriores.");
+    if (previous?.length) redirect(`${path}?change=existing`);
+    parsed.data.description = `${reference} ${String(reply.comment ?? "").slice(0,7000)}`.trim();
+  }
+
   const { error } = await supabase.from("project_change_requests").insert({
     ...parsed.data,
+    source_client_decision_id: sourceDecisionId.data ?? null,
     user_id: user.id,
     created_by: authUser.id,
   });
+  if (error?.code === "23505" && sourceDecisionId.data) redirect(`${path}?change=existing`);
   if (error) fail(path, error.message);
 
   revalidatePath(path);
@@ -3075,54 +2896,14 @@ export async function decideProjectChangeRequest(formData: FormData) {
   }
 
   const path = `/projects/${projectId.data}`;
-  const { supabase, user } = await requireUser();
-  const { error } = await supabase
-    .from("project_change_requests")
-    .update({
-      decision: decision.data,
-      decision_rationale: rationale.data,
-      decided_at: new Date().toISOString(),
-    })
-    .eq("id", requestId.data)
-    .eq("project_id", projectId.data)
-    .eq("user_id", user.id);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("decide_project_change_request_atomic", {
+    p_project_id: projectId.data,
+    p_request_id: requestId.data,
+    p_decision: decision.data,
+    p_rationale: rationale.data,
+  });
   if (error) fail(path, error.message);
-
-  if (decision.data === "approved") {
-    const { data: currentBaseline, error: baselineError } = await supabase
-      .from("project_commitment_baselines")
-      .select("version,expected_result,scope,exclusions,deliverables_summary,pcc_responsibilities,client_responsibilities,external_costs_terms,acceptance_terms,security_conditions,capacity_summary,cost_summary")
-      .eq("project_id", projectId.data)
-      .eq("user_id", user.id)
-      .eq("status", "client_approved")
-      .order("version", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (baselineError) fail(path, baselineError.message);
-    if (!currentBaseline) fail(path, "Não existe baseline aprovada para rever.");
-
-    const { version, ...baselineContent } = currentBaseline;
-    const { error: cloneError } = await supabase.from("project_commitment_baselines").insert({
-      ...baselineContent,
-      project_id: projectId.data,
-      user_id: user.id,
-      version: Number(version) + 1,
-      status: "draft",
-    });
-    if (cloneError) fail(path, cloneError.message);
-
-    await supabase
-      .from("projects")
-      .update({
-        governance_gate: "g3_planning",
-        governance_gate_status: "in_progress",
-        status: "on_hold",
-      })
-      .eq("id", projectId.data)
-      .eq("user_id", user.id);
-  }
-
   revalidatePath(path);
   redirect(`${path}?change=decided`);
 }

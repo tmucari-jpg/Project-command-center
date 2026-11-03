@@ -98,6 +98,17 @@ async function requestGeminiNative(model: string, key: string, input: string, in
   if (!output) throw new AIRequestError(502,"empty_response","Gemini native returned empty output");
   return output;
 }
+/**
+ * Health checks use Google's native API directly. This avoids the compatibility
+ * gateway that previously returned 503/timeouts during Gemini activation.
+ * Credentials and free-tier guards remain server-side in aiRuntime().
+ */
+export async function requestGeminiHealthText(p: RuntimeProfile, input: string, timeoutMs = 12_000) {
+  if (p.provider !== "gemini") throw new Error("GEMINI_HEALTH_ONLY");
+  const runtime = aiRuntime(p);
+  return requestGeminiNative(runtime.model, runtime.apiKey!, input, undefined, timeoutMs, 256);
+}
+
 export async function requestAIText(p: RuntimeProfile, input: string, instructions?: string, timeoutMs = 12_000, maxTokens = 1800) {
   const r = aiRuntime(p);
   const send = () => fetch(r.url, {

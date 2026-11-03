@@ -1,4 +1,4 @@
-const CACHE_NAME = "project-command-center-v11";
+const CACHE_NAME = "project-command-center-v12";
 const STATIC_ASSETS = [
   "/offline.html",
   "/offline-app.js",
@@ -60,6 +60,13 @@ self.addEventListener("fetch", (event) => {
   if (cacheFirst) {
     event.respondWith(
       caches.match(event.request).then(async (cached) => {
+        // Brand/icon assets are refreshed from the network when online; cached copy remains for offline use.
+        if (url.pathname.startsWith("/icons/") || url.pathname === "/manifest.webmanifest") {
+          try {
+            const response = await fetch(event.request, { cache: "no-store" });
+            return cacheSuccessful(event.request, response);
+          } catch { if (cached) return cached; }
+        }
         if (cached) return cached;
         try {
           const response = await fetch(event.request);

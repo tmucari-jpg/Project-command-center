@@ -54,5 +54,43 @@ export async function loadArtifactSnapshot(db:SupabaseClient, userId:string, del
       sections.push({title:"Revisão do diagnóstico e informação pendente",rows:reviews.data});
     }
   }
-  return {version,generatedAt:new Date().toISOString(),kind,deliverable,project,sections,reviewedContent};
+  // GIE360° originates from a recorded assessment linked to this project's factory case.
+  // Never infer branding from a title, free-text description or a client-supplied flag.
+  let documentBrand: "PCC" | "GIE360°" = "PCC";
+  if (cases.data.length) {
+    const assessment = await db.from("gie360_assessments")
+      .select("id").in("factory_case_id", cases.data.map(item => item.id)).limit(1);
+    if (assessment.error) throw new Error("DOCUMENT_ORIGIN_LOOKUP_FAILED");
+    if (assessment.data.length) documentBrand = "GIE360°";
+  }
+  if (kind === "commitment") {
+    if (!String(deliverable.title ?? "").startsWith("Carta de Compromisso")) {
+      throw new Error("COMMITMENT_DELIVERABLE_REQUIRED");
+    }
+    const baselineResult = await db.from("project_commitment_baselines")
+      .select("id,version,status,expected_result,scope,exclusions,deliverables_summary,pcc_responsibilities,client_responsibilities,external_costs_terms,acceptance_terms,security_conditions,client_validation_reference")
+      .eq("project_id",project.id).eq("user_id",userId)
+      .in("status",["internal_approved","client_approved"])
+      .order("version",{ascending:false}).limit(1).maybeSingle();
+    if (baselineResult.error || !baselineResult.data ||
+        !["internal_approved","client_approved"].includes(baselineResult.data.status)) {
+      throw new Error("COMMITMENT_BASELINE_NOT_APPROVED");
+    }
+    const baseline = baselineResult.data;
+    sections.unshift({title:`Carta de Compromisso G3 — baseline v${baseline.version} (minuta não assinada)`,rows:[{
+      "Identificação das partes":"PENDENTE DE CONFIRMAÇÃO",
+      "Resultado esperado":baseline.expected_result ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Objecto e âmbito":baseline.scope ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Exclusões":baseline.exclusions ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Entregáveis":baseline.deliverables_summary ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Responsabilidades PCC":baseline.pcc_responsibilities ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Responsabilidades cliente":baseline.client_responsibilities ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Custos externos":baseline.external_costs_terms ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Critérios de aceitação":baseline.acceptance_terms ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Segurança":baseline.security_conditions ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Referência de validação":baseline.client_validation_reference ?? "PENDENTE DE CONFIRMAÇÃO",
+      "Preço, impostos e assinatura":"PENDENTE DE REVISÃO E ACEITAÇÃO EXPRESSA",
+    }]});
+  }
+  return {version,generatedAt:new Date().toISOString(),kind,documentBrand,deliverable,project,sections,reviewedContent};
 }

@@ -414,6 +414,7 @@ jobs:
           $investmentModel = Get-Content "./lib/investment-discovery.ts" -Raw
           $factoryCasePage = Get-Content -LiteralPath "./app/(protected)/project-factory/[id]/page.tsx" -Raw
           $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+          $atomicShare = Get-Content "../supabase/migrations/20261102163000_atomic_project_client_status.sql" -Raw
           $investmentExport = Get-Content -LiteralPath "./app/api/exports/investment-brief/[id]/route.ts" -Raw
           $investmentMigration = Get-Content "../supabase/migrations/20261024140500_investment_discovery_briefs.sql" -Raw
 
@@ -1262,6 +1263,7 @@ jobs:
           $proxy = Get-Content "./lib/supabase/proxy.ts" -Raw
           $vercel = Get-Content "./vercel.json" -Raw
           $mutations = Get-Content "./app/(protected)/mutations.ts" -Raw
+          $atomicShare = Get-Content "../supabase/migrations/20261102163000_atomic_project_client_status.sql" -Raw
 
           foreach ($token in @(
             "project_client_status_snapshots",
@@ -1282,11 +1284,25 @@ jobs:
           foreach ($token in @(
             "publishProjectClientStatus",
             "projectClientStatusPublicUrl",
-            "project_client_status_snapshots",
-            "project_client_status_links"
+            "publish_project_client_status_atomic",
+            "clientStatusFingerprint"
           )) {
             if (-not $mutations.Contains($token)) {
               Write-Error "Client status publication flow is missing: $token"
+              exit 1
+            }
+          }
+
+          foreach ($token in @(
+            "snapshot_id uuid references public.project_client_status_snapshots(id)",
+            "for update",
+            "status='revoked'",
+            "returning id into v_link",
+            "private.is_global_admin()",
+            "project_client_status_lookup"
+          )) {
+            if (-not $atomicShare.Contains($token)) {
+              Write-Error "Atomic client share migration is missing: $token"
               exit 1
             }
           }

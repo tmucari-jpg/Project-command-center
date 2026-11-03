@@ -120,7 +120,8 @@
       "audit/questionnaire-visual-rules-20261024": false,
       "audit/operational-full-20261026": false,
       "pcc-validation/**": false,
-      "consolidation/pcc-operacional-20261102": false
+      "consolidation/pcc-operacional-20261102": false,
+      "fix/pcc-operational-atomicity-20261102": false
     }
   }
 }
