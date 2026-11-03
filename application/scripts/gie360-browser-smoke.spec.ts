@@ -25,9 +25,28 @@ test('manager associates and configures; client saves, resumes and submits real 
   const ownerId = login.data.user!.id;
   const factory = await manager.from('project_factory_cases').insert({ user_id: ownerId, title: caseTitle, problem: 'Synthetic browser validation', project_type: 'commercial' }).select('id').single();
   expect(factory.error).toBeNull();
-  // Synthetic initial PCC diagnostic already received: prerequisite for GIE360 association.
-  const initialRequest = await admin.from('client_diagnostic_requests').insert({ user_id: ownerId, factory_case_id: factory.data!.id, token_hash: randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', ''), questionnaire_version: 'client-diagnostic-v1', status: 'submitted', expires_at: new Date(Date.now() + 86400000).toISOString() });
+  // Synthetic diagnostic: actual answers and internal acceptance are required.
+  // A mere submitted status must NOT make the PCC case eligible for GIE360°.
+  const initialRequest = await admin.from('client_diagnostic_requests').insert({ user_id: ownerId, factory_case_id: factory.data!.id, token_hash: randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', ''), questionnaire_version: 'client-diagnostic-v1', status: 'submitted', expires_at: new Date(Date.now() + 86400000).toISOString() }).select('id').single();
   expect(initialRequest.error).toBeNull();
+  const diagnosticResponse = await admin.from('client_diagnostic_responses').insert({
+    request_id: initialRequest.data!.id, respondent_name: 'Responsável sintético', respondent_role: 'Gestor',
+    respondent_email: clientEmail,
+    answers: { respondent_type: 'organization', request_nature: 'organization_solution',
+      context: 'A empresa precisa de organizar cobranças e clientes',
+      focus: 'sales: Sem controlo definido; cash: Frequentemente',
+      desired_result: 'Melhorar tesouraria e a gestão de propostas' }
+  });
+  expect(diagnosticResponse.error).toBeNull();
+  const diagnosticReview = await admin.from('client_diagnostic_reviews').insert({
+    request_id: initialRequest.data!.id, user_id: ownerId,
+    review_status: 'accepted', review_notes: 'Resultado revisto e aceite para o GIE360°'
+  });
+  expect(diagnosticReview.error).toBeNull();
+  const reviewStatus = await admin.from('client_diagnostic_requests').update({
+    status: 'reviewed', reviewed_at: new Date().toISOString()
+  }).eq('id', initialRequest.data!.id);
+  expect(reviewStatus.error).toBeNull();
 
   await page.goto('/auth/login');
   await page.getByLabel('Email', { exact: true }).fill(ownerEmail);
@@ -42,7 +61,7 @@ test('manager associates and configures; client saves, resumes and submits real 
   await page.getByLabel('Empresa', { exact: true }).fill(organizationName);
   await page.getByLabel('Email confirmado do cliente', { exact: true }).fill(clientEmail);
   await page.getByRole('button', { name: 'Associar cliente e diagnóstico', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Empresa e diagnóstico associados ao caso' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Empresa associada ao GIE360° com base no diagnóstico aprovado' })).toBeVisible();
   const organization = await manager.from('gie360_organizations').select('id,package_code,approved_modules,ai_cloud_authorized').eq('name', organizationName).single();
   expect(organization.error).toBeNull();
   await expect(page.getByText('Diagnóstico GIE360° pendente')).toBeVisible();
