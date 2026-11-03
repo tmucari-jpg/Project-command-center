@@ -137,6 +137,47 @@ test('manager associates and configures; client saves, resumes and submits real 
   } finally { await clientContext.close(); }
 });
 
+test('existing project opens its own diagnostic without creating another project', async ({ page }) => {
+  const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!);
+  expect(url.protocol).toBe('http:');
+  expect(['localhost', '127.0.0.1']).toContain(url.hostname);
+  expect(url.port).toBe('54321');
+  const admin = createClient(url.href, process.env.PCC_LOCAL_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+  const email = `existing-project-${randomUUID()}@example.test`;
+  const password = `Existing-project-${randomUUID()}!`;
+  const createdUser = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  expect(createdUser.error).toBeNull();
+  const ownerId = createdUser.data.user!.id;
+  const manager = createClient(url.href, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false } });
+  expect((await manager.auth.signInWithPassword({ email, password })).error).toBeNull();
+  const project = await manager.from('projects').insert({
+    user_id: ownerId, owner_id: ownerId, title: 'Projecto com diagnóstico existente',
+    expected_result: 'Determinar necessidades empresariais', status: 'planning', priority: 'medium',
+    progress: 0, currency: 'MZN'
+  }).select('id').single();
+  expect(project.error).toBeNull();
+
+  await page.goto('/auth/login');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Palavra-passe', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page).toHaveURL(/dashboard/);
+  await page.goto(`/projects/${project.data!.id}`);
+  await expect(page.getByRole('heading', { name: 'Diagnóstico do projecto' })).toBeVisible();
+  await page.getByRole('button', { name: 'Preparar diagnóstico deste projecto' }).click();
+  await expect(page).toHaveURL(/project-factory/);
+  await expect(page.getByText('Diagnóstico do Cliente', { exact: true })).toBeVisible();
+  const linkedCases = await manager.from('project_factory_cases').select('id')
+    .eq('project_id', project.data!.id);
+  expect(linkedCases.error).toBeNull();
+  expect(linkedCases.data).toHaveLength(1);
+  const projects = await manager.from('projects').select('id').eq('user_id', ownerId);
+  expect(projects.error).toBeNull();
+  expect(projects.data).toHaveLength(1);
+  await page.goto(`/projects/${project.data!.id}`);
+  await expect(page.getByRole('link', { name: 'Abrir diagnóstico e gerar questionário' })).toBeVisible();
+});
+
 test('offline creation survives page closure and reopens before real Supabase sync without duplicates', async ({ page, context }) => {
   const url=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!);
   expect(url.protocol).toBe('http:');expect(['localhost','127.0.0.1']).toContain(url.hostname);expect(url.port).toBe('54321');
