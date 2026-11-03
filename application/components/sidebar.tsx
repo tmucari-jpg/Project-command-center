@@ -83,7 +83,7 @@ export function MobileNav({ notificationCount }: { notificationCount: number }) 
     { href: "/dashboard", label: "Início", icon: Gauge },
     { href: "/project-factory", label: "Novo", icon: Factory },
     { href: "/projects", label: "Projectos", icon: FolderKanban },
-    { href: "/products", label: "Produtos", icon: Boxes },
+    { href: "/products", label: "GIE360°", icon: Boxes },
     { href: "/notifications", label: notificationCount > 0 ? `Alertas ${notificationCount > 99 ? "99+" : notificationCount}` : "Alertas", icon: Bell },
   ];
 
