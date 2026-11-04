@@ -55,8 +55,6 @@ export default async function Gie360AssessmentPage({
       <p className="mb-5 text-sm text-[var(--cc-secondary)]">
         Avaliações ligadas ao diagnóstico PCC. As informações declaradas continuam sujeitas a revisão e aprovação.
       </p>
-      <Gie360ShareAccess organizationId={organization.id} />
-      <div className="mt-5" />
       <Card className="p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Situação da organização</h2>
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
@@ -117,6 +115,7 @@ export default async function Gie360AssessmentPage({
               <p className="mt-1 text-sm text-[var(--cc-secondary)]">
                 {item.status === "awaiting_scope" ? "Aguarda âmbito e contrato aprovados" : item.status === "active" ? "Em execução" : item.status}
               </p>
+              <div className="mt-4"><Gie360ShareAccess projectId={item.id} /></div>
               <p className="mt-2 text-xs text-[var(--cc-secondary)]">Origem: diagnóstico do PCC preservado para auditoria.</p>
               <dl className="mt-3 space-y-2 text-sm">
                 {Object.entries(item.diagnostic_summary ?? {}).filter(([key]) =>

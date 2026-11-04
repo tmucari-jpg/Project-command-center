@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 
-export function Gie360ShareAccess({ organizationId }: { organizationId: string }) {
+export function Gie360ShareAccess({ projectId }: { projectId: string }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(false);
-  const relativePath = `/gie-client/${organizationId}`;
+  const relativePath = `/gie-client/${projectId}`;
 
   async function copyLink() {
     try {
@@ -20,7 +20,7 @@ export function Gie360ShareAccess({ organizationId }: { organizationId: string }
 
   return (
     <section className="rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-5">
-      <h2 className="text-lg font-semibold">Acompanhamento pelo cliente</h2>
+      <h2 className="text-lg font-semibold">Link de acompanhamento deste projecto</h2>
       <p className="mt-2 text-sm text-[var(--cc-secondary)]">
         Partilhe o acesso independente GIE360° com o cliente. O cliente acompanha projectos,
         tarefas, evidências e avaliações apenas da sua empresa. Não vê o PCC administrativo.
@@ -28,11 +28,11 @@ export function Gie360ShareAccess({ organizationId }: { organizationId: string }
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={copyLink}
           className="rounded-lg bg-[#073f36] px-4 py-2 text-sm font-semibold text-white">
-          Copiar link do cliente
+          Copiar link do projecto
         </button>
         <a href={relativePath} target="_blank" rel="noopener noreferrer"
           className="rounded-lg border border-[var(--cc-border)] px-4 py-2 text-sm font-semibold">
-          Abrir portal do cliente
+          Abrir acompanhamento
         </a>
       </div>
       {copied && <p role="status" className="mt-2 text-sm">Link copiado. Já pode partilhá-lo com o cliente.</p>}
