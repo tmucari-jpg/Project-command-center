@@ -1,13 +1,10 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
-import { resolveWorkspaceUser } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 export async function GET(request:Request,{params}:{params:Promise<{id:string}>}) {
   const {id}=await params;if(!z.string().uuid().safeParse(id).success)return NextResponse.json({error:"ID inválido."},{status:400});
-  const db=await createClient();const auth=await db.auth.getUser();
-  if(auth.error||!auth.data.user)return NextResponse.json({error:"Sessão necessária."},{status:401});
-  const user=await resolveWorkspaceUser(db,auth.data.user);
+  const { supabase: db, user }=await requireUser();
   const {data,error}=await db.from("generated_deliverable_artifacts").select("files,source_snapshot").eq("id",id).eq("user_id",user.id).maybeSingle();
   if(error||!data)return NextResponse.json({error:"Arquivo não encontrado."},{status:404});
   const files=data.files as Record<string,{path:string;sha256:string;mime:string}>;
