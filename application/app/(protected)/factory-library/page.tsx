@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { updateProjectDeliverableDocumentLink } from "@/app/(protected)/projects/[id]/library/actions";
 import { approveFactoryLibraryItem, createFactoryLibraryItem } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
@@ -80,18 +79,6 @@ export default async function FactoryLibraryPage({
                       {item.working_edit_url && <a className={secondaryButtonClass} href={item.working_edit_url} target="_blank" rel="noopener noreferrer">Editar documento (gestor)</a>}
                       {item.artifact_url && <a className={secondaryButtonClass} href={item.artifact_url} target="_blank" rel="noopener noreferrer">Abrir link de entrega</a>}
                     </div>
-                    {!locked && <details className="mt-3">
-                      <summary className="cursor-pointer text-sm font-semibold">Actualizar link privado de edição</summary>
-                      <form className="mt-2 space-y-2" action={updateProjectDeliverableDocumentLink}>
-                        <input type="hidden" name="project_id" value={project.id}/>
-                        <input type="hidden" name="deliverable_id" value={item.id}/>
-                        <label className="block text-sm">Link privado HTTPS do documento
-                          <input className="mt-1 w-full rounded-lg border border-[var(--cc-border)] p-2" type="url" name="working_edit_url" maxLength={2048} required defaultValue={item.working_edit_url ?? ""}/>
-                        </label>
-                        <input type="hidden" name="artifact_reference" value={item.artifact_reference ?? ""}/>
-                        <button type="submit" className={secondaryButtonClass}>Guardar ligação</button>
-                      </form>
-                    </details>}
                     {locked && <p className="mt-2 text-xs text-[var(--cc-secondary)]">Versão protegida após aceitação.</p>}
                   </div>;
                 })}
