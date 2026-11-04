@@ -75,7 +75,7 @@ export async function createGie360Assessment(formData: FormData) {
   if (transferError || !gieProjectId) {
     redirect(back + "?error=" + encodeURIComponent("A avaliação existe, mas o encaminhamento ainda não foi concluído. Volte a tentar sem criar outro diagnóstico."));
   }
-  redirect(`/gie360/${organizationId}?handoff=${gieProjectId}`);
+  redirect(`/gie360/project/${gieProjectId}?handoff=created`);
 }
 
 
@@ -112,6 +112,14 @@ export async function configureGie360Scope(formData: FormData) {
     p_contract_reference: contract_reference,
   });
   if (error || !data) redirect(back + "?error=" + encodeURIComponent("O âmbito não foi aprovado. Confirme contrato, pacote e módulos permitidos."));
+  const returnId = z.string().uuid().safeParse(formData.get("return_project_id"));
+  if (returnId.success) {
+    const { data: linkedProject } = await supabase.from("gie360_projects")
+      .select("id").eq("id", returnId.data)
+      .eq("organization_id", organization_id)
+      .eq("manager_user_id", user.id).maybeSingle();
+    if (linkedProject) redirect("/gie360/project/" + linkedProject.id + "?scope=approved");
+  }
   redirect(back + "?scope=approved");
 }
 
@@ -120,7 +128,8 @@ export async function activateGie360Project(formData: FormData) {
   const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   const explicitlyApproved = formData.get("explicitly_approved") === "on";
   if (!projectId.success || !explicitlyApproved) {
-    redirect("/gie360?error=" + encodeURIComponent("É necessária uma aprovação explícita para activar a execução GIE360°."));
+    const destination = projectId.success ? "/gie360/project/" + projectId.data : "/gie360";
+    redirect(destination + "?error=" + encodeURIComponent("É necessária uma aprovação explícita para activar a execução GIE360°."));
   }
   const { supabase, user } = await requireUser();
   const { data: project, error: projectError } = await supabase
@@ -130,14 +139,14 @@ export async function activateGie360Project(formData: FormData) {
     .eq("manager_user_id", user.id)
     .maybeSingle();
   if (projectError || !project) redirect("/gie360?error=" + encodeURIComponent("Projecto GIE360° não autorizado."));
-  const back = "/gie360/" + project.organization_id;
+  const back = "/gie360/project/" + project.id;
   const { data, error } = await supabase.rpc("gie360_activate_project", {
     p_project_id: project.id,
   });
   if (error || !data) {
     redirect(back + "?error=" + encodeURIComponent("A execução não foi activada: confirme contrato e âmbito aprovados."));
   }
-  redirect(back + "?project=activated");
+  redirect("/gie360/project/" + project.id + "?project=activated");
 }
 
 
@@ -148,13 +157,16 @@ export async function createGie360WorkItem(formData: FormData) {
     title: z.string().trim().min(5).max(240),
     completion_criterion: z.string().trim().min(5).max(1000),
   }).safeParse(Object.fromEntries(formData));
-  if (!parsed.success) redirect("/gie360?error=" + encodeURIComponent("Defina módulo, tarefa e critério de conclusão."));
+  if (!parsed.success) {
+    const id = z.string().uuid().safeParse(formData.get("project_id"));
+    redirect((id.success ? "/gie360/project/" + id.data : "/gie360") + "?error=" + encodeURIComponent("Defina módulo, tarefa e critério de conclusão."));
+  }
   const { supabase, user } = await requireUser();
   const { data: project } = await supabase.from("gie360_projects")
     .select("organization_id").eq("id", parsed.data.project_id)
     .eq("manager_user_id", user.id).maybeSingle();
   if (!project) redirect("/gie360?error=" + encodeURIComponent("Projecto não autorizado."));
-  const back = "/gie360/" + project.organization_id;
+  const back = "/gie360/project/" + parsed.data.project_id;
   const { data, error } = await supabase.rpc("gie360_create_work_item", {
     p_project_id: parsed.data.project_id,
     p_module: parsed.data.module_code,
@@ -162,7 +174,7 @@ export async function createGie360WorkItem(formData: FormData) {
     p_completion_criterion: parsed.data.completion_criterion,
   });
   if (error || !data) redirect(back + "?error=" + encodeURIComponent("Módulo ou projecto ainda não autorizado para execução."));
-  redirect(back + "?work=created");
+  redirect("/gie360/project/" + parsed.data.project_id + "?work=created");
 }
 
 export async function progressGie360WorkItem(formData: FormData) {
@@ -172,19 +184,20 @@ export async function progressGie360WorkItem(formData: FormData) {
     evidence_reference: z.string().trim().max(1000),
   }).safeParse(Object.fromEntries(formData));
   if (!parsed.success || (parsed.data.status === "completed" && parsed.data.evidence_reference.length < 5)) {
-    redirect("/gie360?error=" + encodeURIComponent("Para concluir uma tarefa, indique a referência da evidência."));
+    const id = z.string().uuid().safeParse(formData.get("project_id"));
+    redirect((id.success ? "/gie360/project/" + id.data : "/gie360") + "?error=" + encodeURIComponent("Para concluir uma tarefa, indique a referência da evidência."));
   }
   const { supabase, user } = await requireUser();
   const { data: item } = await supabase.from("gie360_work_items")
-    .select("organization_id").eq("id", parsed.data.work_item_id)
+    .select("organization_id,project_id").eq("id", parsed.data.work_item_id)
     .eq("manager_user_id", user.id).maybeSingle();
   if (!item) redirect("/gie360?error=" + encodeURIComponent("Tarefa não autorizada."));
-  const back = "/gie360/" + item.organization_id;
+  const back = "/gie360/project/" + item.project_id;
   const { data, error } = await supabase.rpc("gie360_progress_work_item", {
     p_work_item_id: parsed.data.work_item_id,
     p_status: parsed.data.status,
     p_evidence_reference: parsed.data.evidence_reference || null,
   });
   if (error || !data) redirect(back + "?error=" + encodeURIComponent("Não foi possível actualizar a tarefa com a evidência indicada."));
-  redirect(back + "?work=updated");
+  redirect("/gie360/project/" + item.project_id + "?work=updated");
 }
