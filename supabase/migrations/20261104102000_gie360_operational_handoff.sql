@@ -98,8 +98,19 @@ BEGIN
         'success_criteria',v_answers->'success_criteria'
       )),
       v_title,'awaiting_scope')
+  ON CONFLICT (factory_case_id) DO NOTHING
   RETURNING id INTO v_result;
 
+  -- A parallel request must reuse the same project instead of creating a
+  -- duplicate or returning an avoidable unique-key error.
+  IF v_result IS NULL THEN
+    SELECT * INTO v_existing FROM public.gie360_projects
+      WHERE factory_case_id=p_case_id;
+    IF v_existing.id IS NULL OR v_existing.organization_id <> p_organization_id THEN
+      RAISE EXCEPTION 'GIE360_CASE_ALREADY_TRANSFERRED';
+    END IF;
+    RETURN v_existing.id;
+  END IF;
   RETURN v_result;
 END;
 $fn$;
