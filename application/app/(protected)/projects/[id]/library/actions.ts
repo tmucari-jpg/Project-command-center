@@ -10,12 +10,12 @@ export async function updateProjectDeliverableDocumentLink(formData: FormData) {
   const deliverableId = z.string().uuid().safeParse(formData.get("deliverable_id"));
   const artifactUrl = z.string().trim().url().max(2048)
     .refine(value => value.startsWith("https://"), "Use um link HTTPS.")
-    .safeParse(formData.get("artifact_url"));
+    .safeParse(formData.get("working_edit_url"));
   const reference = z.string().trim().max(240).safeParse(formData.get("artifact_reference") ?? "");
 
   const back = projectId.success ? `/projects/${projectId.data}/library` : "/projects";
   if (!projectId.success || !deliverableId.success || !artifactUrl.success || !reference.success) {
-    redirect(back + "?error=" + encodeURIComponent("Indique um link HTTPS válido e a referência do entregável."));
+    redirect(back + "?error=" + encodeURIComponent("Indique um link HTTPS de edição válido e a referência do entregável."));
   }
 
   const { supabase,user } = await requireUser();
@@ -34,7 +34,7 @@ export async function updateProjectDeliverableDocumentLink(formData: FormData) {
   }
 
   const { error: updateError } = await supabase.from("deliverables")
-    .update({artifact_url:artifactUrl.data,artifact_reference:reference.data || null})
+    .update({working_edit_url:artifactUrl.data,artifact_reference:reference.data || null})
     .eq("id",deliverableId.data).eq("project_id",projectId.data)
     .eq("user_id",user.id)
     .neq("status","completed")
