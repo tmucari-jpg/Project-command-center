@@ -29,7 +29,7 @@ export default async function ProjectDocumentLibrary({
       <Link className="underline" href={`/projects/${project.id}`}>{project.title}</Link>
       <span className="mx-2">/</span>Biblioteca documental
     </nav>
-    <PageHeader eyebrow="Arquivo por projecto" title="Biblioteca documental"/>
+    <PageHeader eyebrow="Documentos do projecto" title="Biblioteca documental"/>
     <Card className="mt-5 p-5">
       <h2 className="text-lg font-semibold">Arquivo ligado aos entregáveis</h2>
       <p className="mt-2 text-sm text-[var(--cc-secondary)]">
