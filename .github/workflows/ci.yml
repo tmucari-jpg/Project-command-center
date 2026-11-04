@@ -13,6 +13,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  diagnostic-atomic-db:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-test-only
+          POSTGRES_DB: pcc_diagnostic_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pcc_diagnostic_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify diagnostic renewal in disposable PostgreSQL
+        working-directory: application
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGDATABASE: pcc_diagnostic_ci
+          PGUSER: postgres
+          PGPASSWORD: isolated-test-only
+        run: bash scripts/test-atomic-diagnostic-renewal.sh
+
   application:
     runs-on: ubuntu-latest
     defaults:
