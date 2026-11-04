@@ -20,10 +20,10 @@ export default async function ProjectDocumentLibrary({
 
   const { data: deliverables, error } = await supabase
     .from("deliverables")
-    .select("id,title,artifact_type,artifact_url,artifact_reference,artifact_version,status,acceptance_status,completion_criteria")
+    .select("id,title,artifact_type,artifact_url,working_edit_url,artifact_reference,artifact_version,status,acceptance_status,completion_criteria")
     .eq("user_id",user.id).eq("project_id",project.id).order("created_at",{ascending:true});
 
-  const withLinks = (deliverables ?? []).filter(item => Boolean(item.artifact_url));
+  const withLinks = (deliverables ?? []).filter(item => Boolean(item.artifact_url || item.working_edit_url));
   return <>
     <nav className="mb-4 text-sm text-[var(--cc-secondary)]">
       <Link className="underline" href={`/projects/${project.id}`}>{project.title}</Link>
@@ -35,7 +35,7 @@ export default async function ProjectDocumentLibrary({
       <p className="mt-2 text-sm text-[var(--cc-secondary)]">
         Cada link pertence a um entregável deste projecto. Os documentos de trabalho podem
         ficar no serviço de origem, onde o gestor os edita. O PCC guarda apenas a referência,
-        sem duplicar o ficheiro. Um link de edição não é um link de partilha com o cliente.
+        sem duplicar o ficheiro. O link privado de edição nunca é publicado ao cliente; só o link de entrega autorizado pode ser partilhado.
       </p>
       <p className="mt-3 text-sm">{withLinks.length} de {(deliverables??[]).length} entregáveis com link associado.</p>
       {notices.saved && <p role="status" className="mt-3 text-sm">Referência do entregável actualizada.</p>}
@@ -51,17 +51,18 @@ export default async function ProjectDocumentLibrary({
             <h2 className="font-semibold">{item.title}</h2>
             <p className="mt-1 text-sm text-[var(--cc-secondary)]">{item.artifact_type ?? "Documento"} · {item.artifact_version ? `Versão ${item.artifact_version}` : "Sem versão registada"} · {locked ? "Versão protegida" : "Em preparação"}</p>
           </div>
-          {item.artifact_url && <a className={secondaryButtonClass} href={item.artifact_url} target="_blank" rel="noopener noreferrer">Abrir documento associado</a>}
+          {item.working_edit_url && <a className={secondaryButtonClass} href={item.working_edit_url} target="_blank" rel="noopener noreferrer">Editar documento (gestor)</a>}
+          {item.artifact_url && <a className={secondaryButtonClass} href={item.artifact_url} target="_blank" rel="noopener noreferrer">Abrir link de entrega</a>}
         </div>
         <p className="mt-3 text-sm text-[var(--cc-secondary)]">Referência: {item.artifact_reference || "Não registada"}</p>
-        {!item.artifact_url && <p className="mt-2 text-sm text-[var(--cc-secondary)]">Ainda não existe link de documento associado a este entregável.</p>}
+        {!item.working_edit_url && !item.artifact_url && <p className="mt-2 text-sm text-[var(--cc-secondary)]">Ainda não existe link de documento associado a este entregável.</p>}
         {!locked ? <details className="mt-4 border-t border-[var(--cc-border)] pt-3">
-          <summary className="cursor-pointer text-sm font-semibold">Associar ou actualizar link de trabalho</summary>
+          <summary className="cursor-pointer text-sm font-semibold">Associar ou actualizar link privado de edição</summary>
           <form action={updateProjectDeliverableDocumentLink} className="mt-3 space-y-3">
             <input type="hidden" name="project_id" value={project.id}/>
             <input type="hidden" name="deliverable_id" value={item.id}/>
-            <label className="block text-sm font-medium">Link HTTPS do documento editável
-              <input type="url" name="artifact_url" required maxLength={2048} defaultValue={item.artifact_url ?? ""} placeholder="https://..." className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2"/>
+            <label className="block text-sm font-medium">Link privado HTTPS para edição pelo gestor
+              <input type="url" name="working_edit_url" required maxLength={2048} defaultValue={item.working_edit_url ?? ""} placeholder="https://..." className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2"/>
             </label>
             <label className="block text-sm font-medium">Referência / versão do documento
               <input name="artifact_reference" maxLength={240} defaultValue={item.artifact_reference ?? ""} className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2"/>
