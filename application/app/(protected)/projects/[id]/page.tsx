@@ -286,6 +286,7 @@ export default async function ProjectHubPage({
 
         <div className="mt-5 flex flex-wrap gap-2">
           <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>Ver entregáveis</Link>
+          <Link className={secondaryButtonClass} href={`/projects/${project.id}/library`}>Biblioteca documental</Link>
           <Link className={secondaryButtonClass} href={`/metrics?project_id=${project.id}`}>Ver KPI / resultados</Link>
         </div>
 
