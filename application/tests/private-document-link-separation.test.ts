@@ -9,7 +9,7 @@ const b=mutation.indexOf("export async function createClientDiagnosticRequest(",
 const publication=mutation.slice(a,b);
 const publicPage=source("app/project-status/[token]/page.tsx");
 const action=source("app/(protected)/projects/[id]/library/actions.ts");
-const page=source("app/(protected)/projects/[id]/library/page.tsx");
+const page=source("app/(protected)/factory-library/page.tsx");
 const migration=source("../supabase/migrations/20261104140000_deliverable_private_working_edit_url.sql");
 
 describe("Manager editable document links are never used for customer delivery",()=>{
