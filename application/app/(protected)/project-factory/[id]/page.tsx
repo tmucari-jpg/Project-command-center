@@ -93,6 +93,35 @@ export default async function FactoryCasePage({
 
   if (!factoryCase) notFound();
 
+  // Once GIE360 owns the operational assessment, the Project Factory case
+  // becomes a read-only provenance record, not a competing work area.
+  const { data: gieHandoff, error: gieHandoffError } = await supabase
+    .from("gie360_assessments")
+    .select("organization_id")
+    .eq("factory_case_id", factoryCase.id)
+    .limit(1)
+    .maybeSingle();
+  if (gieHandoffError) {
+    return <p role="alert" className="p-6 text-red-700">Não foi possível verificar o encaminhamento GIE360°. Nenhuma alteração é permitida nesta situação.</p>;
+  }
+  if (gieHandoff) {
+    return (
+      <>
+        <PageHeader eyebrow="PCC · Rastreabilidade" title={factoryCase.title} />
+        <Card className="mt-5 p-5 sm:p-6">
+          <h2 className="text-lg font-semibold">Encaminhado para GIE360°</h2>
+          <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+            O caso original permanece arquivado para governação, mas a execução do serviço passou para o GIE360°.
+            Não deve ser novamente tratado no Project Factory.
+          </p>
+          <Link href={`/gie360/${gieHandoff.organization_id}`} className={primaryButtonClass + " mt-4 inline-flex"}>
+            Continuar no projecto GIE360°
+          </Link>
+        </Card>
+      </>
+    );
+  }
+
   if (factoryCase.source === "adaptive_investment") {
     return (
       <>
