@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { Gie360Assistant } from "@/components/gie360-assistant";
+import { configureGie360Scope } from "../actions";
 
 export default async function Gie360AssessmentPage({
   params,
@@ -16,7 +17,7 @@ export default async function Gie360AssessmentPage({
 
   const { data: organization, error: organizationError } = await supabase
     .from("gie360_organizations")
-    .select("id,name,company_profile,contract_approved,approved_modules,ai_cloud_authorized")
+    .select("id,name,company_profile,contract_approved,approved_modules,ai_cloud_authorized,package_code,contract_reference")
     .eq("id", id)
     .eq("manager_user_id", user.id)
     .maybeSingle();
@@ -34,6 +35,13 @@ export default async function Gie360AssessmentPage({
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false });
 
+  const { data: packages, error: packageError } = await supabase
+    .from("pcc_product_packages")
+    .select("code,modules")
+    .eq("product_code", "gie360")
+    .order("code", { ascending: true });
+  const modulesAvailable = Array.from(new Set((packages ?? []).flatMap((item) => item.modules ?? []))).sort();
+
   return (
     <>
       <PageHeader eyebrow="GIE360° / Organização" title={organization.name} />
@@ -49,6 +57,40 @@ export default async function Gie360AssessmentPage({
             <dd className="font-medium">{(organization.approved_modules ?? []).length ? organization.approved_modules.join(", ") : "Ainda não definidos"}</dd>
           </div>
         </dl>
+      </Card>
+      <Card className="mt-5 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold">Aprovar âmbito e módulos GIE360°</h2>
+        <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+          A escolha confirma um contrato real e define os módulos autorizados; o sistema valida o pacote antes de permitir o uso da IA. Nenhum preço ou contrato é inventado.
+        </p>
+        {packageError ? <p role="alert" className="mt-3 text-sm text-red-700">Não foi possível consultar os pacotes definidos.</p> :
+          <form action={configureGie360Scope} className="mt-4 space-y-4">
+            <input type="hidden" name="organization_id" value={organization.id}/>
+            <label className="block text-sm font-medium">Pacote contratado
+              <select name="package_code" required defaultValue={organization.package_code ?? ""} className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2.5">
+                <option value="" disabled>Seleccione o pacote aprovado</option>
+                {(packages ?? []).map(item=><option key={item.code} value={item.code}>{item.code}</option>)}
+              </select>
+            </label>
+            <fieldset className="grid gap-2 sm:grid-cols-2">
+              <legend className="mb-2 text-sm font-semibold">Módulos expressamente autorizados</legend>
+              {modulesAvailable.map(module=><label key={module} className="flex gap-2 text-sm">
+                <input type="checkbox" name="approved_modules" value={module} defaultChecked={organization.approved_modules.includes(module)}/>
+                {module}
+              </label>)}
+            </fieldset>
+            <label className="block text-sm font-medium">Referência de contrato assinado
+              <input name="contract_reference" required minLength={3} maxLength={500} defaultValue={organization.contract_reference ?? ""}
+                className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2.5" />
+            </label>
+            <label className="flex gap-2 text-sm"><input type="checkbox" name="ai_cloud_authorized" defaultChecked={organization.ai_cloud_authorized}/>
+              Autorizar expressamente tratamento IA na nuvem, apenas no âmbito contratado
+            </label>
+            <label className="flex gap-2 text-sm font-semibold"><input type="checkbox" name="explicitly_approved" required />
+              Confirmo que contrato, pacote e módulos foram aprovados pelo gestor
+            </label>
+            <button type="submit" className="rounded-lg bg-[#073f36] px-4 py-2 text-sm font-semibold text-white">Guardar âmbito aprovado</button>
+          </form>}
       </Card>
       <Card className="mt-5 p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Projectos GIE360°</h2>
