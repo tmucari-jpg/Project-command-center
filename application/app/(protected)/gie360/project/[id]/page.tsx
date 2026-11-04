@@ -119,6 +119,7 @@ export default async function GieProjectPage({
         {item.evidence_reference && <p className="mt-2 text-sm">Evidência: {item.evidence_reference}</p>}
         {started && item.status!=="completed" && <form className="mt-3 space-y-3" action={progressGie360WorkItem}>
           <input type="hidden" name="work_item_id" value={item.id}/>
+          <input type="hidden" name="project_id" value={project.id}/>
           <label className="block text-sm font-medium">Actualizar estado
             <select name="status" defaultValue={item.status==="blocked"?"blocked":"in_progress"} className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2">
               <option value="in_progress">Em curso</option>
