@@ -128,7 +128,8 @@ export async function activateGie360Project(formData: FormData) {
   const projectId = z.string().uuid().safeParse(formData.get("project_id"));
   const explicitlyApproved = formData.get("explicitly_approved") === "on";
   if (!projectId.success || !explicitlyApproved) {
-    redirect("/gie360?error=" + encodeURIComponent("É necessária uma aprovação explícita para activar a execução GIE360°."));
+    const destination = projectId.success ? "/gie360/project/" + projectId.data : "/gie360";
+    redirect(destination + "?error=" + encodeURIComponent("É necessária uma aprovação explícita para activar a execução GIE360°."));
   }
   const { supabase, user } = await requireUser();
   const { data: project, error: projectError } = await supabase
@@ -156,7 +157,10 @@ export async function createGie360WorkItem(formData: FormData) {
     title: z.string().trim().min(5).max(240),
     completion_criterion: z.string().trim().min(5).max(1000),
   }).safeParse(Object.fromEntries(formData));
-  if (!parsed.success) redirect("/gie360?error=" + encodeURIComponent("Defina módulo, tarefa e critério de conclusão."));
+  if (!parsed.success) {
+    const id = z.string().uuid().safeParse(formData.get("project_id"));
+    redirect((id.success ? "/gie360/project/" + id.data : "/gie360") + "?error=" + encodeURIComponent("Defina módulo, tarefa e critério de conclusão."));
+  }
   const { supabase, user } = await requireUser();
   const { data: project } = await supabase.from("gie360_projects")
     .select("organization_id").eq("id", parsed.data.project_id)
@@ -180,7 +184,8 @@ export async function progressGie360WorkItem(formData: FormData) {
     evidence_reference: z.string().trim().max(1000),
   }).safeParse(Object.fromEntries(formData));
   if (!parsed.success || (parsed.data.status === "completed" && parsed.data.evidence_reference.length < 5)) {
-    redirect("/gie360?error=" + encodeURIComponent("Para concluir uma tarefa, indique a referência da evidência."));
+    const id = z.string().uuid().safeParse(formData.get("project_id"));
+    redirect((id.success ? "/gie360/project/" + id.data : "/gie360") + "?error=" + encodeURIComponent("Para concluir uma tarefa, indique a referência da evidência."));
   }
   const { supabase, user } = await requireUser();
   const { data: item } = await supabase.from("gie360_work_items")
