@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { Gie360Assistant } from "@/components/gie360-assistant";
 
 export default async function GieClientOrganization({params}: {params: Promise<{id:string}>}) {
   const {id} = await params;
@@ -53,6 +54,10 @@ export default async function GieClientOrganization({params}: {params: Promise<{
             </div>
           ) : <p className="mt-3 text-sm text-[#63716c]">Nenhuma avaliação disponível.</p>}
       </section>
+      {organization.contract_approved && organization.ai_cloud_authorized &&
+        organization.approved_modules.includes("ai") && (
+          <Gie360Assistant organizationId={organization.id} clientMode />
+        )}
       <p className="text-xs text-[#63716c]">As decisões de âmbito e as acções com custos exigem autorização. Os dados do PCC administrativo não são acessíveis neste portal.</p>
     </div>
   );
