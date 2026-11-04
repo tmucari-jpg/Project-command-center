@@ -22,6 +22,15 @@
 | V01 | P0 custos | Dois projectos Vercel foram ligados ao mesmo repositório | Manter previews/builds automáticos ignorados; apenas **project-command-center** recebe a publicação final autorizada | Um único deployment novo no alvo principal, sem rebuild secundário |
 | V02 | P0 aceite | Regra do utilizador: uma única validação humana final | Verificar somente mudanças e percurso GIE360° + download P06 + link diagnóstico + acompanhamento | Aceitação real registada por gestor, com evidência e discrepâncias delimitadas |
 
+## Regra de arquivo documental por projecto — sem recriar modelos
+
+- Cada documento de trabalho referenciado por URL **pertence a um entregável existente** (`deliverables.project_id` + `deliverables.id`), com título, versão, referência e estado de aceitação.
+- A **Biblioteca documental do projecto** (`/projects/[id]/library`) é a vista consolidada dos entregáveis e respectivos links; não constitui um repositório paralelo nem duplica os ficheiros na base.
+- O gestor autenticado pode inserir ou actualizar o link HTTPS de documentos ainda não aprovados directamente no entregável. Entregáveis aceites ou concluídos continuam bloqueados; novas versões seguem as regras já aprovadas.
+- O serviço externo onde o documento está alojado gere a **permissão efectiva de edição**. O PCC não deve assumir que a existência de URL dá direitos de edição.
+- O cliente recebe apenas um **link controlado de acompanhamento**, gerado pelos mecanismos PCC/GIE360° já aprovados. Links internos de edição não são publicados directamente no portal.
+- Master Mind, Master Plan, Guia Comercial e documentos PCC + GIE360° mantêm o modelo de saída e as versões **já validados**, sem reformatação nem recriação.
+
 ## Ordem técnica do fecho final
 
 1. **Congelar diferencial** PR #126 (sem alterar o que já funcionava), CI verde e análise de segurança, esquema e permissões.
