@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { Gie360Assistant } from "@/components/gie360-assistant";
-import { activateGie360Project, configureGie360Scope } from "../actions";
+import { activateGie360Project, configureGie360Scope, createGie360WorkItem, progressGie360WorkItem } from "../actions";
 
 export default async function Gie360AssessmentPage({
   params,
@@ -32,6 +32,12 @@ export default async function Gie360AssessmentPage({
   const { data: operationalProjects, error: projectError } = await supabase
     .from("gie360_projects")
     .select("id,title,status,created_at,factory_case_id,diagnostic_summary")
+    .eq("organization_id", organization.id)
+    .order("created_at", { ascending: false });
+
+  const { data: workItems, error: workError } = await supabase
+    .from("gie360_work_items")
+    .select("id,project_id,module_code,title,completion_criterion,status,evidence_reference")
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false });
 
@@ -97,6 +103,7 @@ export default async function Gie360AssessmentPage({
         <p className="mt-2 text-sm text-[var(--cc-secondary)]">
           A execução especializada é gerida aqui. O caso original permanece apenas como referência de governação no PCC.
         </p>
+        {workError && <p role="alert" className="mt-3 text-sm text-red-700">Não foi possível consultar tarefas GIE360°.</p>}
         {projectError && <p role="alert" className="mt-3 text-sm text-red-700">Não foi possível consultar os projectos GIE360°.</p>}
         {!projectError && !operationalProjects?.length &&
           <p className="mt-3 text-sm text-[var(--cc-secondary)]">Nenhum projecto transferido. A decisão de encaminhamento deve ser aprovada no PCC.</p>}
@@ -116,6 +123,46 @@ export default async function Gie360AssessmentPage({
                     <dd className="whitespace-pre-wrap text-[var(--cc-secondary)]">{String(value ?? "Por confirmar")}</dd></div>
                 ))}
               </dl>
+              {item.status === "active" && (
+                <form action={createGie360WorkItem} className="mt-4 space-y-3 rounded-lg border border-[var(--cc-border)] p-3">
+                  <p className="text-sm font-semibold">Nova tarefa de execução GIE360°</p>
+                  <input type="hidden" name="project_id" value={item.id}/>
+                  <label className="block text-sm">Módulo autorizado
+                    <select required name="module_code" defaultValue="" className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2">
+                      <option value="" disabled>Seleccione o módulo</option>
+                      {organization.approved_modules.map((module: string) =>
+                        <option key={module} value={module}>{module}</option>)}
+                    </select>
+                  </label>
+                  <label className="block text-sm">Acção
+                    <input name="title" required minLength={5} maxLength={240} className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2"/>
+                  </label>
+                  <label className="block text-sm">Critério verificável de conclusão
+                    <textarea name="completion_criterion" required minLength={5} maxLength={1000} className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2"/>
+                  </label>
+                  <button type="submit" className="rounded-lg bg-[#073f36] px-4 py-2 text-sm font-semibold text-white">Criar tarefa no GIE360°</button>
+                </form>
+              )}
+              {(workItems ?? []).filter((work) => work.project_id === item.id).map((work) => (
+                <div key={work.id} className="mt-3 rounded-lg border border-[var(--cc-border)] p-3">
+                  <p className="font-semibold">{work.title}</p>
+                  <p className="mt-1 text-sm text-[var(--cc-secondary)]">{work.module_code} · {work.status}</p>
+                  <p className="mt-1 text-sm">Critério: {work.completion_criterion}</p>
+                  {work.evidence_reference && <p className="mt-1 text-xs">Evidência declarada: {work.evidence_reference}</p>}
+                  {item.status === "active" && work.status !== "completed" && (
+                    <form action={progressGie360WorkItem} className="mt-3 space-y-2">
+                      <input type="hidden" name="work_item_id" value={work.id}/>
+                      <select name="status" required defaultValue="in_progress" className="rounded-lg border border-[var(--cc-border)] p-2 text-sm">
+                        <option value="in_progress">Em execução</option>
+                        <option value="blocked">Bloqueada</option>
+                        <option value="completed">Concluída (com referência da evidência)</option>
+                      </select>
+                      <input name="evidence_reference" maxLength={1000} placeholder="Referência verificável da evidência se concluída" className="block w-full rounded-lg border border-[var(--cc-border)] p-2 text-sm"/>
+                      <button type="submit" className="rounded-lg border border-[var(--cc-border)] px-3 py-2 text-sm">Guardar evolução</button>
+                    </form>
+                  )}
+                </div>
+              ))}
               {item.status === "awaiting_scope" && (
                 <form action={activateGie360Project} className="mt-4 space-y-2">
                   <input type="hidden" name="project_id" value={item.id}/>
