@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export function Gie360Assistant({ organizationId }: { organizationId: string }) {
+export function Gie360Assistant({ organizationId, clientMode = false }: { organizationId: string; clientMode?: boolean }) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [pending, setPending] = useState(false);
@@ -12,7 +12,7 @@ export function Gie360Assistant({ organizationId }: { organizationId: string }) 
     setPending(true);
     setAnswer("");
     try {
-      const response = await fetch("/api/gie360/assist", {
+      const response = await fetch(clientMode ? "/api/gie360/client-assist" : "/api/gie360/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organization_id: organizationId, question }),
