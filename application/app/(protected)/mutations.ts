@@ -222,33 +222,24 @@ export async function createClientDiagnosticRequest(
   const { token, tokenHash } = createClientDiagnosticToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { error: revokeError } = await supabase
-    .from("client_diagnostic_requests")
-    .update({ status: "revoked" })
-    .eq("factory_case_id", factoryCase.id)
-    .eq("user_id", user.id)
-    .in("status", ["active", "opened"]);
+  // Atomic issuance: if a new link cannot be recorded, the previous one
+  // stays valid. The RPC preserves both approved questionnaire variants.
+  const { data: requestId, error: issueError } = await supabase.rpc(
+    "issue_client_diagnostic_request_atomic",
+    {
+      p_owner_id: user.id,
+      p_case_id: factoryCase.id,
+      p_token_hash: tokenHash,
+      p_questionnaire_version: brandScope.data === "pcc_gie360" ? "executive-v3-gie360" : "executive-v3",
+      p_client_name: clientName.data || null,
+      p_client_organization: clientOrganization.data || null,
+      p_public_context: publicContext.data || null,
+      p_expires_at: expiresAt,
+    },
+  );
 
-  if (revokeError) return { ok: false, error: revokeError.message };
-
-  const { data: request, error } = await supabase
-    .from("client_diagnostic_requests")
-    .insert({
-      user_id: user.id,
-      factory_case_id: factoryCase.id,
-      token_hash: tokenHash,
-      questionnaire_version: brandScope.data === "pcc_gie360" ? "executive-v3-gie360" : "executive-v3",
-      client_name: clientName.data || null,
-      client_organization: clientOrganization.data || null,
-      public_context: publicContext.data || null,
-      status: "active",
-      expires_at: expiresAt,
-    })
-    .select("id")
-    .single();
-
-  if (error || !request) {
-    return { ok: false, error: error?.message ?? "Não foi possível gerar o questionário." };
+  if (issueError || !requestId) {
+    return { ok: false, error: "Não foi possível renovar o questionário. O link anterior permanece válido." };
   }
 
   revalidatePath(`/project-factory/${factoryCase.id}`);
@@ -256,7 +247,7 @@ export async function createClientDiagnosticRequest(
   return {
     ok: true,
     url: clientDiagnosticPublicUrl(token),
-    requestId: request.id,
+    requestId: String(requestId),
   };
 }
 
