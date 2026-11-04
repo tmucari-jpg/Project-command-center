@@ -129,3 +129,36 @@ AS $fn$ SELECT private.gie360_activate_project(p_project_id); $fn$;
 REVOKE ALL ON FUNCTION private.gie360_activate_project(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.gie360_activate_project(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.gie360_activate_project(uuid) TO authenticated;
+
+-- Log the actual outcome of a reserved GIE360° AI request without making
+-- the provider registry or PCC administrative data accessible to clients.
+CREATE OR REPLACE FUNCTION private.gie360_finish_ai_request(
+  p_request_id uuid, p_status text, p_provider text DEFAULT NULL, p_error_code text DEFAULT NULL
+) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $fn$
+DECLARE v_id uuid;
+BEGIN
+  IF auth.uid() IS NULL OR p_status NOT IN ('completed','failed') OR
+     length(coalesce(p_provider,''))>80 OR length(coalesce(p_error_code,''))>120 THEN
+    RAISE EXCEPTION 'GIE360_INVALID_AI_RESULT';
+  END IF;
+  UPDATE public.gie360_ai_requests r
+    SET status=p_status,
+        provider=nullif(trim(p_provider),''),
+        error_code=nullif(trim(p_error_code),'')
+    WHERE r.id=p_request_id
+      AND r.user_id=auth.uid()
+      AND r.status='reserved'
+      AND private.gie360_can_access(r.organization_id)
+    RETURNING r.id INTO v_id;
+  RETURN v_id IS NOT NULL;
+END;
+$fn$;
+CREATE OR REPLACE FUNCTION public.gie360_finish_ai_request(
+  p_request_id uuid, p_status text, p_provider text DEFAULT NULL, p_error_code text DEFAULT NULL
+) RETURNS boolean LANGUAGE sql SET search_path TO ''
+AS $fn$ SELECT private.gie360_finish_ai_request(p_request_id,p_status,p_provider,p_error_code); $fn$;
+REVOKE ALL ON FUNCTION private.gie360_finish_ai_request(uuid,text,text,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.gie360_finish_ai_request(uuid,text,text,text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.gie360_finish_ai_request(uuid,text,text,text) TO authenticated;
