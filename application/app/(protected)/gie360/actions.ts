@@ -114,3 +114,28 @@ export async function configureGie360Scope(formData: FormData) {
   if (error || !data) redirect(back + "?error=" + encodeURIComponent("O âmbito não foi aprovado. Confirme contrato, pacote e módulos permitidos."));
   redirect(back + "?scope=approved");
 }
+
+
+export async function activateGie360Project(formData: FormData) {
+  const projectId = z.string().uuid().safeParse(formData.get("project_id"));
+  const explicitlyApproved = formData.get("explicitly_approved") === "on";
+  if (!projectId.success || !explicitlyApproved) {
+    redirect("/gie360?error=" + encodeURIComponent("É necessária uma aprovação explícita para activar a execução GIE360°."));
+  }
+  const { supabase, user } = await requireUser();
+  const { data: project, error: projectError } = await supabase
+    .from("gie360_projects")
+    .select("id,organization_id,manager_user_id")
+    .eq("id", projectId.data)
+    .eq("manager_user_id", user.id)
+    .maybeSingle();
+  if (projectError || !project) redirect("/gie360?error=" + encodeURIComponent("Projecto GIE360° não autorizado."));
+  const back = "/gie360/" + project.organization_id;
+  const { data, error } = await supabase.rpc("gie360_activate_project", {
+    p_project_id: project.id,
+  });
+  if (error || !data) {
+    redirect(back + "?error=" + encodeURIComponent("A execução não foi activada: confirme contrato e âmbito aprovados."));
+  }
+  redirect(back + "?project=activated");
+}
