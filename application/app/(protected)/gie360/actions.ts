@@ -75,7 +75,7 @@ export async function createGie360Assessment(formData: FormData) {
   if (transferError || !gieProjectId) {
     redirect(back + "?error=" + encodeURIComponent("A avaliação existe, mas o encaminhamento ainda não foi concluído. Volte a tentar sem criar outro diagnóstico."));
   }
-  redirect(`/gie360/${organizationId}?handoff=${gieProjectId}`);
+  redirect(`/gie360/project/${gieProjectId}?handoff=created`);
 }
 
 
@@ -137,7 +137,7 @@ export async function activateGie360Project(formData: FormData) {
   if (error || !data) {
     redirect(back + "?error=" + encodeURIComponent("A execução não foi activada: confirme contrato e âmbito aprovados."));
   }
-  redirect(back + "?project=activated");
+  redirect("/gie360/project/" + project.id + "?project=activated");
 }
 
 
@@ -162,7 +162,7 @@ export async function createGie360WorkItem(formData: FormData) {
     p_completion_criterion: parsed.data.completion_criterion,
   });
   if (error || !data) redirect(back + "?error=" + encodeURIComponent("Módulo ou projecto ainda não autorizado para execução."));
-  redirect(back + "?work=created");
+  redirect("/gie360/project/" + parsed.data.project_id + "?work=created");
 }
 
 export async function progressGie360WorkItem(formData: FormData) {
@@ -176,7 +176,7 @@ export async function progressGie360WorkItem(formData: FormData) {
   }
   const { supabase, user } = await requireUser();
   const { data: item } = await supabase.from("gie360_work_items")
-    .select("organization_id").eq("id", parsed.data.work_item_id)
+    .select("organization_id,project_id").eq("id", parsed.data.work_item_id)
     .eq("manager_user_id", user.id).maybeSingle();
   if (!item) redirect("/gie360?error=" + encodeURIComponent("Tarefa não autorizada."));
   const back = "/gie360/" + item.organization_id;
@@ -186,5 +186,5 @@ export async function progressGie360WorkItem(formData: FormData) {
     p_evidence_reference: parsed.data.evidence_reference || null,
   });
   if (error || !data) redirect(back + "?error=" + encodeURIComponent("Não foi possível actualizar a tarefa com a evidência indicada."));
-  redirect(back + "?work=updated");
+  redirect("/gie360/project/" + item.project_id + "?work=updated");
 }
