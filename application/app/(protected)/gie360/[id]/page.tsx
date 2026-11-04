@@ -31,7 +31,7 @@ export default async function Gie360AssessmentPage({
 
   const { data: operationalProjects, error: projectError } = await supabase
     .from("gie360_projects")
-    .select("id,title,status,created_at,factory_case_id")
+    .select("id,title,status,created_at,factory_case_id,diagnostic_summary")
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false });
 
@@ -108,6 +108,14 @@ export default async function Gie360AssessmentPage({
                 {item.status === "awaiting_scope" ? "Aguarda âmbito e contrato aprovados" : item.status === "active" ? "Em execução" : item.status}
               </p>
               <p className="mt-2 text-xs text-[var(--cc-secondary)]">Origem: diagnóstico do PCC preservado para auditoria.</p>
+              <dl className="mt-3 space-y-2 text-sm">
+                {Object.entries(item.diagnostic_summary ?? {}).filter(([key]) =>
+                  ["context","focus","desired_result","conditions","deadline_urgency","success_criteria"].includes(key),
+                ).map(([key,value]) => (
+                  <div key={key}><dt className="font-semibold">{key.replaceAll("_"," ")}</dt>
+                    <dd className="whitespace-pre-wrap text-[var(--cc-secondary)]">{String(value ?? "Por confirmar")}</dd></div>
+                ))}
+              </dl>
               {item.status === "awaiting_scope" && (
                 <form action={activateGie360Project} className="mt-4 space-y-2">
                   <input type="hidden" name="project_id" value={item.id}/>
