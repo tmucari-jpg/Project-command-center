@@ -57,8 +57,20 @@ export async function POST(request: Request) {
         assessment_status: assessments?.[0]?.status ?? "unknown",
       },
     });
+    await supabase.rpc("gie360_finish_ai_request", {
+      p_request_id: reservationId,
+      p_status: "completed",
+      p_provider: "gemini",
+      p_error_code: null,
+    });
     return NextResponse.json(result);
   } catch {
+    await supabase.rpc("gie360_finish_ai_request", {
+      p_request_id: reservationId,
+      p_status: "failed",
+      p_provider: "gemini",
+      p_error_code: "GIE360_AI_PROVIDER_UNAVAILABLE",
+    });
     return NextResponse.json({
       error: "gie360_ai_unavailable",
       fallback: "Continue a análise manual; nenhuma alteração foi aplicada.",
