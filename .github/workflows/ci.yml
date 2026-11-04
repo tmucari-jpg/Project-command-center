@@ -1359,8 +1359,7 @@ jobs:
           foreach ($token in @(
             "publishProjectClientStatus",
             "projectClientStatusPublicUrl",
-            "project_client_status_snapshots",
-            "project_client_status_links"
+            "publish_project_client_status_atomic"
           )) {
             if (-not $mutations.Contains($token)) {
               Write-Error "Client status publication flow is missing: $token"
