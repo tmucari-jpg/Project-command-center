@@ -22,6 +22,9 @@ export default async function GieClientOrganization({params}: {params: Promise<{
   const {data: projects, error: projectError} = await supabase.from("gie360_projects")
     .select("id,title,status,created_at,diagnostic_summary")
     .eq("organization_id",id).order("created_at",{ascending:false});
+  const {data: workItems, error: workError} = await supabase.from("gie360_work_items")
+    .select("id,project_id,module_code,title,completion_criterion,status,evidence_reference")
+    .eq("organization_id",id).order("created_at",{ascending:false});
   return (
     <div className="space-y-5">
       <Link href="/gie-client" className="text-sm underline">Empresas</Link>
@@ -47,6 +50,23 @@ export default async function GieClientOrganization({params}: {params: Promise<{
               </div>
             </div>)}
           </div> : <p className="mt-3 text-sm text-[#63716c]">Nenhum projecto transferido para esta empresa.</p>}
+      </section>
+      <section className="rounded-2xl border border-[#d0ded6] bg-white p-5">
+        <h2 className="font-semibold">Execução e evidências GIE360°</h2>
+        <p className="mt-1 text-sm text-[#63716c]">Acompanhamento dos trabalhos aprovados, sem acesso administrativo ao PCC.</p>
+        {workError ? <p role="alert" className="mt-3 text-sm text-red-700">Não foi possível carregar os trabalhos.</p> :
+          workItems?.length ? (
+            <div className="mt-3 space-y-3">
+              {workItems.map(work => (
+                <div key={work.id} className="rounded-lg border border-[#d0ded6] p-3 text-sm">
+                  <p className="font-semibold">{work.title}</p>
+                  <p className="mt-1 text-[#63716c]">Módulo {work.module_code} · Estado: {work.status}</p>
+                  <p className="mt-1">Critério de conclusão: {work.completion_criterion}</p>
+                  {work.evidence_reference && <p className="mt-1 text-[#63716c]">Referência de evidência: {work.evidence_reference}</p>}
+                </div>
+              ))}
+            </div>
+          ) : <p className="mt-3 text-sm text-[#63716c]">Ainda não existem tarefas de execução registadas.</p>}
       </section>
       <section className="rounded-2xl border border-[#d0ded6] bg-white p-5">
         <h2 className="font-semibold">Avaliações empresariais</h2>
