@@ -25,8 +25,8 @@
 ## Regra de arquivo documental por projecto — sem recriar modelos
 
 - Cada documento de trabalho referenciado por URL **pertence a um entregável existente** (`deliverables.project_id` + `deliverables.id`), com título, versão, referência e estado de aceitação.
-- A **Biblioteca documental do projecto** (`/projects/[id]/library`) é a vista consolidada dos entregáveis e respectivos links; não constitui um repositório paralelo nem duplica os ficheiros na base.
-- O gestor autenticado pode inserir ou actualizar o link HTTPS de documentos ainda não aprovados directamente no entregável. Entregáveis aceites ou concluídos continuam bloqueados; novas versões seguem as regras já aprovadas.
+- A **Biblioteca existente** (`/factory-library`) apresenta a secção documental agrupada e filtrável por projecto. Apresenta apenas referências documentais e links, sem voltar a listar critérios, decisões e estados dos entregáveis nem criar repositórios paralelos.
+- O gestor autenticado associa o link HTTPS privado directamente no entregável; a Biblioteca limita-se a mostrar o índice dos documentos do respectivo projecto. Entregáveis aceites ou concluídos continuam bloqueados; novas versões seguem as regras já aprovadas.
 - O serviço externo onde o documento está alojado gere a **permissão efectiva de edição**. O PCC não deve assumir que a existência de URL dá direitos de edição.
 - O cliente recebe apenas um **link controlado de acompanhamento**, gerado pelos mecanismos PCC/GIE360° já aprovados. Links internos de edição não são publicados directamente no portal.
 - Master Mind, Master Plan, Guia Comercial e documentos PCC + GIE360° mantêm o modelo de saída e as versões **já validados**, sem reformatação nem recriação.
