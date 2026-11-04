@@ -13,9 +13,9 @@ export async function updateProjectDeliverableDocumentLink(formData: FormData) {
     .safeParse(formData.get("working_edit_url"));
   const reference = z.string().trim().max(240).safeParse(formData.get("artifact_reference") ?? "");
 
-  const back = projectId.success ? `/projects/${projectId.data}/library` : "/projects";
+  const back = projectId.success ? `/factory-library?project_id=${projectId.data}` : "/projects";
   if (!projectId.success || !deliverableId.success || !artifactUrl.success || !reference.success) {
-    redirect(back + "?error=" + encodeURIComponent("Indique um link HTTPS de edição válido e a referência do entregável."));
+    redirect(back + (projectId.success ? "&error=" : "?error=") + encodeURIComponent("Indique um link HTTPS de edição válido e a referência do entregável."));
   }
 
   const { supabase,user } = await requireUser();
@@ -45,5 +45,5 @@ export async function updateProjectDeliverableDocumentLink(formData: FormData) {
   }
   revalidatePath(back);
   revalidatePath(`/deliverables`);
-  redirect(back+"?saved=1");
+  redirect(back+"&saved=1");
 }
