@@ -130,7 +130,7 @@ export async function activateGie360Project(formData: FormData) {
     .eq("manager_user_id", user.id)
     .maybeSingle();
   if (projectError || !project) redirect("/gie360?error=" + encodeURIComponent("Projecto GIE360° não autorizado."));
-  const back = "/gie360/" + project.organization_id;
+  const back = "/gie360/project/" + project.id;
   const { data, error } = await supabase.rpc("gie360_activate_project", {
     p_project_id: project.id,
   });
@@ -154,7 +154,7 @@ export async function createGie360WorkItem(formData: FormData) {
     .select("organization_id").eq("id", parsed.data.project_id)
     .eq("manager_user_id", user.id).maybeSingle();
   if (!project) redirect("/gie360?error=" + encodeURIComponent("Projecto não autorizado."));
-  const back = "/gie360/" + project.organization_id;
+  const back = "/gie360/project/" + parsed.data.project_id;
   const { data, error } = await supabase.rpc("gie360_create_work_item", {
     p_project_id: parsed.data.project_id,
     p_module: parsed.data.module_code,
@@ -179,7 +179,7 @@ export async function progressGie360WorkItem(formData: FormData) {
     .select("organization_id,project_id").eq("id", parsed.data.work_item_id)
     .eq("manager_user_id", user.id).maybeSingle();
   if (!item) redirect("/gie360?error=" + encodeURIComponent("Tarefa não autorizada."));
-  const back = "/gie360/" + item.organization_id;
+  const back = "/gie360/project/" + item.project_id;
   const { data, error } = await supabase.rpc("gie360_progress_work_item", {
     p_work_item_id: parsed.data.work_item_id,
     p_status: parsed.data.status,
