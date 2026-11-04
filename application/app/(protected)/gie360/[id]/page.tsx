@@ -28,6 +28,12 @@ export default async function Gie360AssessmentPage({
     .eq("organization_id", organization.id)
     .order("updated_at", { ascending: false });
 
+  const { data: operationalProjects, error: projectError } = await supabase
+    .from("gie360_projects")
+    .select("id,title,status,created_at,factory_case_id")
+    .eq("organization_id", organization.id)
+    .order("created_at", { ascending: false });
+
   return (
     <>
       <PageHeader eyebrow="GIE360° / Organização" title={organization.name} />
@@ -43,6 +49,26 @@ export default async function Gie360AssessmentPage({
             <dd className="font-medium">{(organization.approved_modules ?? []).length ? organization.approved_modules.join(", ") : "Ainda não definidos"}</dd>
           </div>
         </dl>
+      </Card>
+      <Card className="mt-5 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold">Projectos GIE360°</h2>
+        <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+          A execução especializada é gerida aqui. O caso original permanece apenas como referência de governação no PCC.
+        </p>
+        {projectError && <p role="alert" className="mt-3 text-sm text-red-700">Não foi possível consultar os projectos GIE360°.</p>}
+        {!projectError && !operationalProjects?.length &&
+          <p className="mt-3 text-sm text-[var(--cc-secondary)]">Nenhum projecto transferido. A decisão de encaminhamento deve ser aprovada no PCC.</p>}
+        <div className="mt-4 space-y-3">
+          {(operationalProjects ?? []).map((item) => (
+            <div key={item.id} className="rounded-lg border border-[var(--cc-border)] p-4">
+              <p className="font-semibold">{item.title}</p>
+              <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+                {item.status === "awaiting_scope" ? "Aguarda âmbito e contrato aprovados" : item.status === "active" ? "Em execução" : item.status}
+              </p>
+              <p className="mt-2 text-xs text-[var(--cc-secondary)]">Origem: diagnóstico do PCC preservado para auditoria.</p>
+            </div>
+          ))}
+        </div>
       </Card>
       <Card className="mt-5 p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Avaliações e projectos associados</h2>
