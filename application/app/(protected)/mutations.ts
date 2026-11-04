@@ -125,10 +125,10 @@ export async function publishProjectClientStatus(
     ]);
 
   if (projectError || !project) {
-    return { ok: false, error: projectError?.message ?? "Projecto não encontrado." };
+    return { ok: false, error: "Não foi possível verificar o projecto para publicação." };
   }
   if (deliverableError || metricError) {
-    return { ok: false, error: deliverableError?.message ?? metricError?.message ?? "Não foi possível preparar o snapshot." };
+    return { ok: false, error: "Não foi possível preparar o acompanhamento para partilha." };
   }
 
   const deliverableSnapshot = (deliverables ?? []).map((item) => ({
@@ -216,7 +216,7 @@ export async function createClientDiagnosticRequest(
     .maybeSingle();
 
   if (caseError || !factoryCase) {
-    return { ok: false, error: caseError?.message ?? "Caso não encontrado." };
+    return { ok: false, error: "Não foi possível verificar o caso para o diagnóstico." };
   }
 
   const { token, tokenHash } = createClientDiagnosticToken();
