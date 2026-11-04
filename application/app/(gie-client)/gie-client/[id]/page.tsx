@@ -18,7 +18,7 @@ export default async function GieClientProject({params}: {params: Promise<{id:st
 
   const supabase = await createClient();
   const {data:{user}} = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/gie-login?next="+encodeURIComponent("/gie-client/"+id));
 
   const {data: project, error: projectError} = await supabase
     .from("gie360_projects")
