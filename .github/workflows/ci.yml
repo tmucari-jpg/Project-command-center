@@ -104,7 +104,8 @@ jobs:
         run: |
           $scripts = @(
             "../scripts/RUN_PCC_SMOKE.ps1",
-            "../scripts/FULL_SMOKE_POWERSHELL.ps1"
+            "../scripts/FULL_SMOKE_POWERSHELL.ps1",
+            "../scripts/ACCEPT_PCC_READONLY.ps1"
           )
           foreach ($script in $scripts) {
             $tokens = $null
