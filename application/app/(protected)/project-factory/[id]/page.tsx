@@ -121,6 +121,9 @@ export default async function FactoryCasePage({
       .select("id,client_name,client_organization,public_context,status,expires_at,opened_at,submitted_at,reviewed_at,incorporated_at,triage_missing_information,triage_points_to_confirm,triaged_at")
       .eq("factory_case_id", factoryCase.id)
       .eq("user_id", user.id)
+      // GIE360 creates a separate assessment request. Never let it replace
+      // the original, already validated PCC diagnostic in this case panel.
+      .in("questionnaire_version", ["executive-v3", "executive-v3-gie360"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -311,6 +314,18 @@ export default async function FactoryCasePage({
         review={clientDiagnosticReview}
         externalSources={clientDiagnosticExternalSources}
       />
+
+      {clientDiagnosticResponse && (
+        <div className="mt-4 rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-4">
+          <p className="text-sm font-semibold text-[var(--cc-foreground)]">Encaminhamento para GIE360°</p>
+          <p className="mt-1 text-sm text-[var(--cc-secondary)]">
+            A resposta já está associada a este caso. Reveja e aceite a informação antes de activar a avaliação GIE360°. O caso PCC original permanece intacto.
+          </p>
+          <Link href="/gie360" className={secondaryButtonClass + " mt-3 inline-flex"}>
+            Abrir GIE360°
+          </Link>
+        </div>
+      )}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
         <Card className="p-5">
