@@ -7,7 +7,13 @@ export function RegisterServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
 
     const register = () => {
-      navigator.serviceWorker.register("/sw.js").catch(() => {
+      // The enterprise portal has its own scoped worker. Never register the
+      // PCC offline worker for a GIE-only client session.
+      const gieClient = window.location.pathname.startsWith("/gie-client");
+      navigator.serviceWorker.register(
+        gieClient ? "/gie360-sw.js" : "/sw.js",
+        gieClient ? { scope: "/gie-client/" } : undefined,
+      ).catch(() => {
         // The web app continues to work normally if registration is unavailable.
       });
     };
