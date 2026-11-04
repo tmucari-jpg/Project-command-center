@@ -12,7 +12,7 @@ describe("Project document library is a deliverable index, not duplicate storage
     expect(page).toContain('.eq("user_id",user.id)');
     expect(page).toContain('.from("deliverables")');
     expect(page).toContain("item.project_id === project.id");
-    expect(hub).toContain('/projects/${project.id}/library');
+    expect(hub).toContain('/factory-library?project_id=${project.id}');
     const redirectPage=readFileSync(join(process.cwd(),"app/(protected)/projects/[id]/library/page.tsx"),"utf8");
     expect(redirectPage).toContain("/factory-library?project_id=");
   });
