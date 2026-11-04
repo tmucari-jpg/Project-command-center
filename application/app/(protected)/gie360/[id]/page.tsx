@@ -8,10 +8,13 @@ import { configureGie360Scope } from "../actions";
 
 export default async function Gie360AssessmentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ project?: string; scope?: string; error?: string }>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) notFound();
   const { supabase, user } = await requireUser();
 
@@ -41,6 +44,7 @@ export default async function Gie360AssessmentPage({
     .eq("product_code", "gie360")
     .order("code", { ascending: true });
   const modulesAvailable = Array.from(new Set((packages ?? []).flatMap((item) => item.modules ?? []))).sort();
+  const returnProject = (operationalProjects ?? []).find(project => project.id === query.project);
 
   return (
     <>
@@ -48,6 +52,9 @@ export default async function Gie360AssessmentPage({
       <p className="mb-5 text-sm text-[var(--cc-secondary)]">
         Avaliações ligadas ao diagnóstico PCC. As informações declaradas continuam sujeitas a revisão e aprovação.
       </p>
+      {query.error && <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">{query.error}</p>}
+      {query.scope==="approved" && <p role="status" className="mb-4 text-sm">Âmbito aprovado. Abra o projecto para continuar a activação.</p>}
+      {returnProject && <Link className={secondaryButtonClass+" mb-4 inline-flex"} href={`/gie360/project/${returnProject.id}`}>Voltar ao projecto {returnProject.title}</Link>}
       <Card className="p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Situação da organização</h2>
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
@@ -66,6 +73,8 @@ export default async function Gie360AssessmentPage({
         {packageError ? <p role="alert" className="mt-3 text-sm text-red-700">Não foi possível consultar os pacotes definidos.</p> :
           <form action={configureGie360Scope} className="mt-4 space-y-4">
             <input type="hidden" name="organization_id" value={organization.id}/>
+            {returnProject && <input type="hidden" name="return_project_id" value={returnProject.id}/>}
+
             <label className="block text-sm font-medium">Pacote contratado
               <select name="package_code" required defaultValue={organization.package_code ?? ""} className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2.5">
                 <option value="" disabled>Seleccione o pacote aprovado</option>
