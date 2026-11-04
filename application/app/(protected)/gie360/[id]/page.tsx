@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Card, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
+import { Gie360Assistant } from "@/components/gie360-assistant";
 
 export default async function Gie360AssessmentPage({
   params,
@@ -60,6 +61,7 @@ export default async function Gie360AssessmentPage({
           ))}
         </div>
       </Card>
+      <Gie360Assistant organizationId={organization.id} />
       <Link href="/gie360" className={secondaryButtonClass + " mt-5 inline-flex"}>Voltar ao GIE360°</Link>
     </>
   );
