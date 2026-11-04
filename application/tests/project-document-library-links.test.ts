@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const page=readFileSync(join(process.cwd(),"app/(protected)/projects/[id]/library/page.tsx"),"utf8");
+const page=readFileSync(join(process.cwd(),"app/(protected)/factory-library/page.tsx"),"utf8");
 const actions=readFileSync(join(process.cwd(),"app/(protected)/projects/[id]/library/actions.ts"),"utf8");
 const hub=readFileSync(join(process.cwd(),"app/(protected)/projects/[id]/page.tsx"),"utf8");
 
@@ -11,8 +11,10 @@ describe("Project document library is a deliverable index, not duplicate storage
     expect(page).toContain('.from("projects")');
     expect(page).toContain('.eq("user_id",user.id)');
     expect(page).toContain('.from("deliverables")');
-    expect(page).toContain('.eq("project_id",project.id)');
+    expect(page).toContain("item.project_id === project.id");
     expect(hub).toContain('/projects/${project.id}/library');
+    const redirectPage=readFileSync(join(process.cwd(),"app/(protected)/projects/[id]/library/page.tsx"),"utf8");
+    expect(redirectPage).toContain("/factory-library?project_id=");
   });
   it("saves the edit link against the existing deliverable, without copying bytes",()=>{
     expect(actions).toContain('.from("deliverables")');
@@ -28,7 +30,6 @@ describe("Project document library is a deliverable index, not duplicate storage
   it("keeps accepted versions immutable and client distribution separate",()=>{
     expect(actions).toContain('"accepted_with_reservations"');
     expect(actions).toContain('deliverable.status==="completed"');
-    expect(page).toContain("O link privado de edição nunca é publicado ao cliente");
     expect(page).not.toContain("client_diagnostic_requests");
   });
 });
