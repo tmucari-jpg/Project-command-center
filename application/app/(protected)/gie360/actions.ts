@@ -33,10 +33,6 @@ export async function createGie360Assessment(formData: FormData) {
   if (caseError || !factoryCase || existingError || requestError) {
     redirect(back + "?error=" + encodeURIComponent("Não foi possível verificar a associação deste caso PCC."));
   }
-  if (existing?.length) {
-    redirect(back + "?notice=" + encodeURIComponent("Este caso já está associado a uma avaliação GIE360°. Não foi criado um duplicado."));
-  }
-
   // The original PCC decision is authoritative. A reviewed request can also
   // have "clarification_needed" or a subsequently rejected scope: check the
   // actual recorded approval, not just its generic status.
@@ -54,16 +50,30 @@ export async function createGie360Assessment(formData: FormData) {
     redirect(back + "?error=" + encodeURIComponent("O encaminhamento exige decisão de aceitação total ou parcial registada no diagnóstico PCC."));
   }
 
-  const { data: organizationId, error } = await supabase.rpc("gie360_provision", {
-    p_case_id: case_id,
-    p_client_email: client_email,
-    p_name: organization_name,
-    p_profile: {},
-  });
-
-  if (error || !organizationId) {
-    // Do not disclose whether a specific email exists in the authentication table.
-    redirect(back + "?error=" + encodeURIComponent("Não foi possível activar o GIE360°. Confirme que o cliente tem uma conta própria validada, distinta da conta gestora PCC."));
+  // Reuse a provisioned organization if the previous attempt created the
+  // assessment but could not yet complete the handoff. No duplicate case.
+  let organizationId: string | null = existing?.[0]?.organization_id ?? null;
+  if (!organizationId) {
+    const provision = await supabase.rpc("gie360_provision", {
+      p_case_id: case_id,
+      p_client_email: client_email,
+      p_name: organization_name,
+      p_profile: {},
+    });
+    if (provision.error || !provision.data) {
+      redirect(back + "?error=" + encodeURIComponent("Não foi possível activar o GIE360°. Confirme que o cliente tem uma conta própria validada, distinta da conta gestora PCC."));
+    }
+    organizationId = String(provision.data);
   }
-  redirect(back + "?created=" + encodeURIComponent(organizationId));
+
+  // A distinct GIE project owns execution. Its source case remains PCC audit
+  // history only, and the transaction is idempotent for this factory case.
+  const { data: gieProjectId, error: transferError } = await supabase.rpc(
+    "gie360_transfer_approved_case",
+    { p_case_id: case_id, p_organization_id: organizationId },
+  );
+  if (transferError || !gieProjectId) {
+    redirect(back + "?error=" + encodeURIComponent("A avaliação existe, mas o encaminhamento ainda não foi concluído. Volte a tentar sem criar outro diagnóstico."));
+  }
+  redirect(`/gie360/${organizationId}?handoff=${gieProjectId}`);
 }
