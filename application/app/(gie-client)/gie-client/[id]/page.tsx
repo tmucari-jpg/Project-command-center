@@ -20,7 +20,7 @@ export default async function GieClientOrganization({params}: {params: Promise<{
     .select("id,status,questionnaire_version,revision,submitted_at")
     .eq("organization_id",id).order("updated_at",{ascending:false});
   const {data: projects, error: projectError} = await supabase.from("gie360_projects")
-    .select("id,title,status,created_at")
+    .select("id,title,status,created_at,diagnostic_summary")
     .eq("organization_id",id).order("created_at",{ascending:false});
   return (
     <div className="space-y-5">
@@ -39,6 +39,12 @@ export default async function GieClientOrganization({params}: {params: Promise<{
             {projects.map(project => <div key={project.id} className="rounded-lg border border-[#d0ded6] p-3">
               <h3 className="font-semibold">{project.title}</h3>
               <p className="mt-1 text-sm text-[#63716c]">{project.status === "awaiting_scope" ? "Âmbito por aprovar" : project.status}</p>
+              <div className="mt-3 text-sm text-[#63716c]">
+                <p className="font-semibold">Informação do diagnóstico de origem — declarada, por validar</p>
+                {Object.entries(project.diagnostic_summary ?? {}).filter(([key]) =>
+                  ["context","focus","desired_result","conditions","deadline_urgency","success_criteria"].includes(key),
+                ).map(([key,value])=><p key={key} className="mt-1"><strong>{key.replaceAll("_"," ")}:</strong> {String(value ?? "Por confirmar")}</p>)}
+              </div>
             </div>)}
           </div> : <p className="mt-3 text-sm text-[#63716c]">Nenhum projecto transferido para esta empresa.</p>}
       </section>
