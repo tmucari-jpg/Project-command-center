@@ -38,7 +38,7 @@ export async function updateProjectDeliverableDocumentLink(formData: FormData) {
     .eq("id",deliverableId.data).eq("project_id",projectId.data)
     .eq("user_id",user.id)
     .neq("status","completed")
-    .not("acceptance_status","in", '("accepted","accepted_with_reservations")');
+    .or("acceptance_status.is.null,acceptance_status.not.in.(accepted,accepted_with_reservations)");
 
   if (updateError) {
     redirect(back + "?error=" + encodeURIComponent("Não foi possível guardar o link neste entregável."));
