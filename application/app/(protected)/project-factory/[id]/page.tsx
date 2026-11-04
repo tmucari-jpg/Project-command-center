@@ -105,6 +105,9 @@ export default async function FactoryCasePage({
     return <p role="alert" className="p-6 text-red-700">Não foi possível verificar o encaminhamento GIE360°. Nenhuma alteração é permitida nesta situação.</p>;
   }
   if (gieHandoff) {
+    const { data: assignedProject } = await supabase.from("gie360_projects")
+      .select("id").eq("factory_case_id", factoryCase.id)
+      .eq("organization_id", gieHandoff.organization_id).eq("manager_user_id", user.id).maybeSingle();
     return (
       <>
         <PageHeader eyebrow="PCC · Rastreabilidade" title={factoryCase.title} />
@@ -114,8 +117,8 @@ export default async function FactoryCasePage({
             O caso original permanece arquivado para governação, mas a execução do serviço passou para o GIE360°.
             Não deve ser novamente tratado no Project Factory.
           </p>
-          <Link href={`/gie360/${gieHandoff.organization_id}`} className={primaryButtonClass + " mt-4 inline-flex"}>
-            Continuar no projecto GIE360°
+          <Link href={assignedProject ? `/gie360/project/${assignedProject.id}` : `/gie360/${gieHandoff.organization_id}`} className={primaryButtonClass + " mt-4 inline-flex"}>
+            {assignedProject ? "Continuar no projecto GIE360°" : "Concluir encaminhamento GIE360°"}
           </Link>
         </Card>
       </>
