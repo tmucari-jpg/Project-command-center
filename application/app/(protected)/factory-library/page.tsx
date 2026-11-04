@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { updateProjectDeliverableDocumentLink } from "@/app/(protected)/projects/[id]/library/actions";
 import { approveFactoryLibraryItem, createFactoryLibraryItem } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { FlashMessage } from "@/components/flash-message";
@@ -18,7 +20,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default async function FactoryLibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; created?: string; approved?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; approved?: string; saved?: string; project_id?: string }>;
 }) {
   const params = await searchParams;
   const { supabase, user } = await requireAdmin();
@@ -29,6 +31,16 @@ export default async function FactoryLibraryPage({
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  const [{ data: projects, error: projectError }, { data: deliverables, error: deliverablesError }] = await Promise.all([
+    supabase.from("projects").select("id,title").eq("user_id", user.id).order("title", { ascending: true }),
+    supabase.from("deliverables").select("id,project_id,title,status,acceptance_status,artifact_url,working_edit_url,artifact_reference,artifact_version")
+      .eq("user_id", user.id).order("created_at", { ascending: true }),
+  ]);
+  const selectedProjects = params.project_id
+    ? (projects ?? []).filter(project => project.id === params.project_id)
+    : (projects ?? []);
+  const documentCount = (deliverables ?? []).filter(item => Boolean(item.working_edit_url || item.artifact_url)).length;
 
   return (
     <>
@@ -41,6 +53,54 @@ export default async function FactoryLibraryPage({
         created={params.created ?? params.approved}
         message={params.approved ? "Activo aprovado para reutilização." : "Activo adicionado à biblioteca."}
       />
+
+      <Card className="mb-6 p-5">
+        <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Documentos por projecto</h2>
+        <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+          Os entregáveis são geridos nos projectos. Aqui ficam apenas os seus documentos e ligações,
+          organizados por projecto, sem repetir critérios, estados de execução ou guardar cópias.
+        </p>
+        <p className="mt-2 text-sm text-[var(--cc-secondary)]">{documentCount} documentos ligados aos entregáveis.</p>
+        {params.project_id && <Link href="/factory-library" className={secondaryButtonClass}>Ver todos os projectos</Link>}
+        {params.saved && <p role="status" className="mt-3 text-sm">Ligação documental guardada no entregável.</p>}
+        {(projectError || deliverablesError) && <p role="alert" className="mt-3 text-sm text-[var(--cc-danger)]">Não foi possível carregar o índice documental.</p>}
+        {!projectError && !deliverablesError && !selectedProjects.length && <p className="mt-3 text-sm">Ainda não existem projectos com documentos disponíveis.</p>}
+        <div className="mt-4 space-y-3">
+          {selectedProjects.map(project => {
+            const documents = (deliverables ?? []).filter(item => item.project_id === project.id && Boolean(item.working_edit_url || item.artifact_url));
+            return <details key={project.id} open={params.project_id === project.id} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-4">
+              <summary className="cursor-pointer font-semibold">{project.title} · {documents.length} documento(s)</summary>
+              <div className="mt-3 space-y-3">
+                {!documents.length && <p className="text-sm text-[var(--cc-secondary)]">Sem documentos associados. Os entregáveis continuam disponíveis no projecto.</p>}
+                {documents.map(item => {
+                  const locked = item.status === "completed" || ["accepted", "accepted_with_reservations"].includes(item.acceptance_status ?? "");
+                  return <div key={item.id} className="rounded-lg border border-[var(--cc-border)] p-3">
+                    <p className="text-sm font-semibold">{item.title} {item.artifact_version ? `· v${item.artifact_version}` : ""}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {item.working_edit_url && <a className={secondaryButtonClass} href={item.working_edit_url} target="_blank" rel="noopener noreferrer">Editar documento (gestor)</a>}
+                      {item.artifact_url && <a className={secondaryButtonClass} href={item.artifact_url} target="_blank" rel="noopener noreferrer">Abrir link de entrega</a>}
+                    </div>
+                    {!locked && <details className="mt-3">
+                      <summary className="cursor-pointer text-sm font-semibold">Actualizar link privado de edição</summary>
+                      <form className="mt-2 space-y-2" action={updateProjectDeliverableDocumentLink}>
+                        <input type="hidden" name="project_id" value={project.id}/>
+                        <input type="hidden" name="deliverable_id" value={item.id}/>
+                        <label className="block text-sm">Link privado HTTPS do documento
+                          <input className="mt-1 w-full rounded-lg border border-[var(--cc-border)] p-2" type="url" name="working_edit_url" maxLength={2048} required defaultValue={item.working_edit_url ?? ""}/>
+                        </label>
+                        <input type="hidden" name="artifact_reference" value={item.artifact_reference ?? ""}/>
+                        <button type="submit" className={secondaryButtonClass}>Guardar ligação</button>
+                      </form>
+                    </details>}
+                    {locked && <p className="mt-2 text-xs text-[var(--cc-secondary)]">Versão protegida após aceitação.</p>}
+                  </div>;
+                })}
+                <Link className={secondaryButtonClass} href={`/deliverables?project_id=${project.id}`}>Gerir entregáveis no projecto</Link>
+              </div>
+            </details>;
+          })}
+        </div>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
         <Card className="p-5">
