@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.gie360_projects (
   factory_case_id uuid NOT NULL REFERENCES public.project_factory_cases(id),
   source_request_id uuid NOT NULL REFERENCES public.client_diagnostic_requests(id),
   manager_user_id uuid NOT NULL REFERENCES public.profiles(id),
+  diagnostic_summary jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(diagnostic_summary) = 'object'),
   title text NOT NULL CHECK (length(trim(title)) BETWEEN 2 AND 240),
   status text NOT NULL DEFAULT 'awaiting_scope'
     CHECK (status IN ('awaiting_scope','active','paused','completed')),
@@ -30,6 +31,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $fn$
 DECLARE
   v_request uuid;
+  v_answers jsonb;
+  v_review_status text;
   v_title text;
   v_existing public.gie360_projects%rowtype;
   v_result uuid;
@@ -52,7 +55,7 @@ BEGIN
     RAISE EXCEPTION 'GIE360_ORGANIZATION_CASE_MISMATCH';
   END IF;
 
-  SELECT r.id INTO v_request
+  SELECT r.id, a.answers, v.review_status INTO v_request, v_answers, v_review_status
     FROM public.client_diagnostic_requests r
     JOIN public.client_diagnostic_reviews v ON v.request_id=r.id
     JOIN public.client_diagnostic_responses a ON a.request_id=r.id
@@ -80,9 +83,21 @@ BEGIN
   END IF;
 
   INSERT INTO public.gie360_projects
-    (organization_id,factory_case_id,source_request_id,manager_user_id,title,status)
+    (organization_id,factory_case_id,source_request_id,manager_user_id,diagnostic_summary,title,status)
   VALUES
-    (p_organization_id,p_case_id,v_request,auth.uid(),v_title,'awaiting_scope')
+    (p_organization_id,p_case_id,v_request,auth.uid(),
+      jsonb_strip_nulls(jsonb_build_object(
+        'source','pcc_approved_diagnostic',
+        'validation_status','declared',
+        'review_status',v_review_status,
+        'context',v_answers->'context',
+        'focus',v_answers->'focus',
+        'desired_result',v_answers->'desired_result',
+        'conditions',v_answers->'conditions',
+        'deadline_urgency',v_answers->'deadline_urgency',
+        'success_criteria',v_answers->'success_criteria'
+      )),
+      v_title,'awaiting_scope')
   RETURNING id INTO v_result;
 
   RETURN v_result;
