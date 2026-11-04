@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { Gie360Assistant } from "@/components/gie360-assistant";
+import { Gie360ShareAccess } from "@/components/gie360-share-access";
 import { activateGie360Project, configureGie360Scope, createGie360WorkItem, progressGie360WorkItem } from "../actions";
 
 export default async function Gie360AssessmentPage({
@@ -54,6 +55,8 @@ export default async function Gie360AssessmentPage({
       <p className="mb-5 text-sm text-[var(--cc-secondary)]">
         Avaliações ligadas ao diagnóstico PCC. As informações declaradas continuam sujeitas a revisão e aprovação.
       </p>
+      <Gie360ShareAccess organizationId={organization.id} />
+      <div className="mt-5" />
       <Card className="p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Situação da organização</h2>
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
