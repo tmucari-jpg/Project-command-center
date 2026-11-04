@@ -31,7 +31,7 @@ export default async function ProjectDocumentLibrary({
     </nav>
     <PageHeader eyebrow="Documentos do projecto" title="Biblioteca documental"/>
     <Card className="mt-5 p-5">
-      <h2 className="text-lg font-semibold">Arquivo ligado aos entregáveis</h2>
+      <h2 className="text-lg font-semibold">Documentos ligados aos entregáveis</h2>
       <p className="mt-2 text-sm text-[var(--cc-secondary)]">
         Cada link pertence a um entregável deste projecto. Os documentos de trabalho podem
         ficar no serviço de origem, onde o gestor os edita. O PCC guarda apenas a referência,
