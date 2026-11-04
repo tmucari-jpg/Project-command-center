@@ -19,13 +19,16 @@ describe("Project document library is a deliverable index, not duplicate storage
     expect(actions).toContain('.eq("project_id",projectId.data)');
     expect(actions).toContain('.eq("user_id",user.id)');
     expect(actions).toContain("https://");
-    expect(actions).toContain("artifact_url:artifactUrl.data");
+    expect(actions).toContain("working_edit_url:artifactUrl.data");
+    expect(actions).not.toContain("artifact_url:artifactUrl.data");
+    expect(page).toContain("Editar documento (gestor)");
+    expect(page).toContain("Abrir link de entrega");
     expect(actions).not.toContain(".storage.");
   });
   it("keeps accepted versions immutable and client distribution separate",()=>{
     expect(actions).toContain('"accepted_with_reservations"');
     expect(actions).toContain('deliverable.status==="completed"');
-    expect(page).toContain('Um link de edição não é um link de partilha com o cliente');
+    expect(page).toContain("O link privado de edição nunca é publicado ao cliente");
     expect(page).not.toContain("client_diagnostic_requests");
   });
 });
