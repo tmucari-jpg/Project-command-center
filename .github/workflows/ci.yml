@@ -41,6 +41,15 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: isolated-test-only
         run: bash scripts/test-atomic-diagnostic-renewal.sh
+      - name: Verify private manager links and client delivery RLS
+        working-directory: application
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGDATABASE: pcc_diagnostic_ci
+          PGUSER: postgres
+          PGPASSWORD: isolated-test-only
+        run: bash scripts/test-private-document-link-migration.sh
 
   application:
     runs-on: ubuntu-latest
