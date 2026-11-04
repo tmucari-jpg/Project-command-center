@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { Gie360Assistant } from "@/components/gie360-assistant";
-import { configureGie360Scope } from "../actions";
+import { activateGie360Project, configureGie360Scope } from "../actions";
 
 export default async function Gie360AssessmentPage({
   params,
@@ -108,6 +108,18 @@ export default async function Gie360AssessmentPage({
                 {item.status === "awaiting_scope" ? "Aguarda âmbito e contrato aprovados" : item.status === "active" ? "Em execução" : item.status}
               </p>
               <p className="mt-2 text-xs text-[var(--cc-secondary)]">Origem: diagnóstico do PCC preservado para auditoria.</p>
+              {item.status === "awaiting_scope" && (
+                <form action={activateGie360Project} className="mt-4 space-y-2">
+                  <input type="hidden" name="project_id" value={item.id}/>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input name="explicitly_approved" type="checkbox" required/>
+                    Confirmo contrato e âmbito aprovados para iniciar a execução
+                  </label>
+                  <button className="rounded-lg bg-[#073f36] px-4 py-2 text-sm font-semibold text-white" type="submit">
+                    Activar execução GIE360°
+                  </button>
+                </form>
+              )}
             </div>
           ))}
         </div>
