@@ -9,7 +9,7 @@ const hub=readFileSync(join(process.cwd(),"app/(protected)/projects/[id]/page.ts
 describe("Project document library is a deliverable index, not duplicate storage",()=>{
   it("only presents documents belonging to the user's project",()=>{
     expect(page).toContain('.from("projects")');
-    expect(page).toContain('.eq("user_id",user.id)');
+    expect(page).toContain('.eq("user_id", user.id)');
     expect(page).toContain('.from("deliverables")');
     expect(page).toContain("item.project_id === project.id");
     expect(hub).toContain('/factory-library?project_id=${project.id}');
