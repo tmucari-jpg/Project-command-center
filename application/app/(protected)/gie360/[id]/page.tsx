@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
-import { Card, secondaryButtonClass } from "@/components/ui";
+import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { Gie360Assistant } from "@/components/gie360-assistant";
 import { configureGie360Scope } from "../actions";
