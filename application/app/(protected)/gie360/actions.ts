@@ -77,3 +77,40 @@ export async function createGie360Assessment(formData: FormData) {
   }
   redirect(`/gie360/${organizationId}?handoff=${gieProjectId}`);
 }
+
+
+const scopeSchema = z.object({
+  organization_id: z.string().uuid(),
+  package_code: z.string().trim().min(3).max(100),
+  contract_reference: z.string().trim().min(3).max(500),
+  approved_modules: z.array(z.string().trim().min(1).max(80)).min(1).max(30),
+  ai_cloud_authorized: z.boolean(),
+  explicitly_approved: z.literal(true),
+});
+
+export async function configureGie360Scope(formData: FormData) {
+  const parsed = scopeSchema.safeParse({
+    organization_id: formData.get("organization_id"),
+    package_code: formData.get("package_code"),
+    contract_reference: formData.get("contract_reference"),
+    approved_modules: formData.getAll("approved_modules"),
+    ai_cloud_authorized: formData.get("ai_cloud_authorized") === "on",
+    explicitly_approved: formData.get("explicitly_approved") === "on",
+  });
+  if (!parsed.success) redirect("/gie360?error=" + encodeURIComponent("Defina o contrato e confirme expressamente os módulos autorizados."));
+  const { supabase, user } = await requireUser();
+  const { organization_id, package_code, contract_reference, approved_modules, ai_cloud_authorized } = parsed.data;
+  const back = "/gie360/" + organization_id;
+  const { data: organization } = await supabase.from("gie360_organizations")
+    .select("id").eq("id", organization_id).eq("manager_user_id", user.id).maybeSingle();
+  if (!organization) redirect("/gie360?error=" + encodeURIComponent("Organização não autorizada."));
+  const { data, error } = await supabase.rpc("gie360_configure_organization", {
+    p_organization_id: organization_id,
+    p_package_code: package_code,
+    p_approved_modules: approved_modules,
+    p_ai_cloud_authorized: ai_cloud_authorized,
+    p_contract_reference: contract_reference,
+  });
+  if (error || !data) redirect(back + "?error=" + encodeURIComponent("O âmbito não foi aprovado. Confirme contrato, pacote e módulos permitidos."));
+  redirect(back + "?scope=approved");
+}
