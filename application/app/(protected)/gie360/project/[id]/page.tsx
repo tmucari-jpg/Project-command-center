@@ -21,7 +21,7 @@ export default async function GieProjectPage({
   params,searchParams,
 }:{
   params:Promise<{id:string}>;
-  searchParams:Promise<{error?:string;project?:string;work?:string;handoff?:string}>;
+  searchParams:Promise<{error?:string;project?:string;work?:string;handoff?:string;scope?:string}>;
 }) {
   const {id}=await params;
   const notices=await searchParams;
@@ -76,11 +76,12 @@ export default async function GieProjectPage({
         <li className="rounded-lg border border-[var(--cc-border)] p-3"><strong>4. Cliente</strong><p className="mt-1 text-[var(--cc-secondary)]">Acompanhamento por link próprio</p></li>
       </ol>
       {notices.error && <p role="alert" className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">{notices.error}</p>}
+      {notices.scope==="approved" && <p role="status" className="mt-4 text-sm">Âmbito aprovado. Confirme agora a activação da execução, se estiver autorizada.</p>}
       {notices.project==="activated" && <p role="status" className="mt-4 text-sm">Execução activada. Pode registar as actividades do projecto abaixo.</p>}
       {notices.work && <p role="status" className="mt-4 text-sm">{notices.work==="created"?"Tarefa registada no projecto.":"Evolução da tarefa guardada."}</p>}
       {!ready && project.status==="awaiting_scope" && <>
         <p className="mt-4 text-sm"><strong>Próximo passo:</strong> confirmar o contrato e os módulos deste projecto. Só depois poderá activar a execução.</p>
-        <Link className={primaryButtonClass+" mt-3 inline-flex"} href={`/gie360/${organization.id}`}>Aprovar âmbito na organização</Link>
+        <Link className={primaryButtonClass+" mt-3 inline-flex"} href={`/gie360/${organization.id}?project=${project.id}`}>Aprovar âmbito na organização</Link>
       </>}
       {ready && project.status==="awaiting_scope" && <form className="mt-4 space-y-3" action={activateGie360Project}>
         <input type="hidden" name="project_id" value={project.id}/>
@@ -152,7 +153,7 @@ export default async function GieProjectPage({
 
     {project.status!=="awaiting_scope" ? <div className="mt-5"><Gie360ShareAccess projectId={project.id}/></div> : <Card className="mt-5 p-5"><h2 className="font-semibold">Acompanhamento do cliente</h2><p className="mt-2 text-sm text-[var(--cc-secondary)]">O link de acompanhamento fica disponível após a activação autorizada do projecto.</p></Card>}
     <div className="mt-5 flex flex-wrap gap-3">
-      <Link className={secondaryButtonClass} href={`/gie360/${organization.id}`}>Ver organização e contrato</Link>
+      <Link className={secondaryButtonClass} href={`/gie360/${organization.id}?project=${project.id}`}>Ver organização e contrato</Link>
       <Link className={secondaryButtonClass} href="/gie360">Ver lista de projectos GIE360°</Link>
     </div>
   </>;
