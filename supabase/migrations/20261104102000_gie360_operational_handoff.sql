@@ -188,3 +188,93 @@ AS $fn$ SELECT private.gie360_finish_ai_request(p_request_id,p_status,p_provider
 REVOKE ALL ON FUNCTION private.gie360_finish_ai_request(uuid,text,text,text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.gie360_finish_ai_request(uuid,text,text,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.gie360_finish_ai_request(uuid,text,text,text) TO authenticated;
+
+-- Specialist execution items exist ONLY in GIE360°, not PCC Project Factory.
+CREATE TABLE IF NOT EXISTS public.gie360_work_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL REFERENCES public.gie360_organizations(id),
+  project_id uuid NOT NULL REFERENCES public.gie360_projects(id),
+  module_code text NOT NULL,
+  title text NOT NULL CHECK (length(trim(title)) BETWEEN 5 AND 240),
+  completion_criterion text NOT NULL CHECK (length(trim(completion_criterion)) BETWEEN 5 AND 1000),
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open','in_progress','blocked','completed')),
+  evidence_reference text,
+  manager_user_id uuid NOT NULL REFERENCES public.profiles(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS gie360_work_items_project_idx ON public.gie360_work_items(project_id);
+ALTER TABLE public.gie360_work_items ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.gie360_work_items FROM PUBLIC, anon;
+GRANT SELECT ON TABLE public.gie360_work_items TO authenticated;
+DROP POLICY IF EXISTS gie360_work_items_read ON public.gie360_work_items;
+CREATE POLICY gie360_work_items_read ON public.gie360_work_items
+  FOR SELECT TO authenticated
+  USING (private.gie360_can_access(organization_id));
+
+CREATE OR REPLACE FUNCTION private.gie360_create_work_item(
+  p_project_id uuid, p_module text, p_title text, p_completion_criterion text
+) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $fn$
+DECLARE v_id uuid; v_org uuid;
+BEGIN
+  IF auth.uid() IS NULL OR length(trim(coalesce(p_title,''))) NOT BETWEEN 5 AND 240
+     OR length(trim(coalesce(p_completion_criterion,''))) NOT BETWEEN 5 AND 1000 THEN
+    RAISE EXCEPTION 'GIE360_INVALID_WORK_ITEM';
+  END IF;
+  SELECT p.organization_id INTO v_org FROM public.gie360_projects p
+    JOIN public.gie360_organizations o ON o.id=p.organization_id
+    WHERE p.id=p_project_id AND p.status='active'
+      AND p.manager_user_id=auth.uid() AND o.manager_user_id=auth.uid()
+      AND o.contract_approved AND p_module=ANY(o.approved_modules);
+  IF v_org IS NULL THEN RAISE EXCEPTION 'GIE360_MODULE_OR_PROJECT_NOT_APPROVED'; END IF;
+  INSERT INTO public.gie360_work_items
+    (organization_id,project_id,module_code,title,completion_criterion,manager_user_id)
+  VALUES (v_org,p_project_id,p_module,trim(p_title),trim(p_completion_criterion),auth.uid())
+  RETURNING id INTO v_id;
+  RETURN v_id;
+END;
+$fn$;
+CREATE OR REPLACE FUNCTION public.gie360_create_work_item(
+  p_project_id uuid,p_module text,p_title text,p_completion_criterion text
+) RETURNS uuid LANGUAGE sql SET search_path TO ''
+AS $fn$ SELECT private.gie360_create_work_item(p_project_id,p_module,p_title,p_completion_criterion); $fn$;
+REVOKE ALL ON FUNCTION private.gie360_create_work_item(uuid,text,text,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.gie360_create_work_item(uuid,text,text,text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.gie360_create_work_item(uuid,text,text,text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION private.gie360_progress_work_item(
+  p_work_item_id uuid,p_status text,p_evidence_reference text DEFAULT NULL
+) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $fn$
+DECLARE v_item public.gie360_work_items%rowtype;
+BEGIN
+  IF auth.uid() IS NULL OR p_status NOT IN ('in_progress','blocked','completed') THEN
+    RAISE EXCEPTION 'GIE360_INVALID_WORK_ITEM_STATUS';
+  END IF;
+  SELECT w.* INTO v_item FROM public.gie360_work_items w
+    JOIN public.gie360_projects p ON p.id=w.project_id
+    JOIN public.gie360_organizations o ON o.id=w.organization_id
+    WHERE w.id=p_work_item_id AND w.manager_user_id=auth.uid()
+      AND p.status='active' AND o.manager_user_id=auth.uid()
+    FOR UPDATE OF w;
+  IF v_item.id IS NULL THEN RAISE EXCEPTION 'GIE360_WORK_ITEM_NOT_AUTHORIZED'; END IF;
+  IF p_status='completed' AND length(trim(coalesce(p_evidence_reference,'')))<5 THEN
+    RAISE EXCEPTION 'GIE360_EVIDENCE_REFERENCE_REQUIRED';
+  END IF;
+  IF p_status='completed' AND length(trim(coalesce(p_evidence_reference,'')))>1000 THEN
+    RAISE EXCEPTION 'GIE360_EVIDENCE_TOO_LONG';
+  END IF;
+  UPDATE public.gie360_work_items SET status=p_status,
+    evidence_reference=CASE WHEN p_status='completed' THEN trim(p_evidence_reference) ELSE evidence_reference END,
+    updated_at=now() WHERE id=v_item.id;
+  RETURN true;
+END;
+$fn$;
+CREATE OR REPLACE FUNCTION public.gie360_progress_work_item(
+  p_work_item_id uuid,p_status text,p_evidence_reference text DEFAULT NULL
+) RETURNS boolean LANGUAGE sql SET search_path TO ''
+AS $fn$ SELECT private.gie360_progress_work_item(p_work_item_id,p_status,p_evidence_reference); $fn$;
+REVOKE ALL ON FUNCTION private.gie360_progress_work_item(uuid,text,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.gie360_progress_work_item(uuid,text,text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.gie360_progress_work_item(uuid,text,text) TO authenticated;
