@@ -86,10 +86,20 @@ export default async function ProjectsPage({
     }
   }
 
-  const analysisCases = (factoryCases ?? []).filter(
+  // The transferred GIE service no longer belongs in the factory's
+  // operational queues; the original case remains available as provenance.
+  const { data: gieTransferred } = await supabase
+    .from("gie360_projects")
+    .select("factory_case_id")
+    .eq("manager_user_id", user.id);
+  const transferredCaseIds = new Set((gieTransferred ?? []).map((row) => row.factory_case_id));
+  const factoryOperationalCases = (factoryCases ?? []).filter(
+    (item) => !transferredCaseIds.has(item.id),
+  );
+  const analysisCases = factoryOperationalCases.filter(
     (item) => !["converted_to_project", "killed"].includes(item.stage),
   );
-  const closedCases = (factoryCases ?? []).filter((item) => item.stage === "killed");
+  const closedCases = factoryOperationalCases.filter((item) => item.stage === "killed");
   const activeProjects = (projects ?? []).filter(
     (project) => !["completed", "cancelled"].includes(project.status),
   );
@@ -98,7 +108,7 @@ export default async function ProjectsPage({
   );
 
   const tabs = [
-    { value: "all", label: "Todos", count: (projects?.length ?? 0) + (factoryCases?.length ?? 0) },
+    { value: "all", label: "Todos", count: (projects?.length ?? 0) + factoryOperationalCases.length },
     { value: "active", label: "Em aberto", count: activeProjects.length },
     { value: "analysis", label: "Em análise", count: analysisCases.length },
     { value: "closed", label: "Não seguiram / fechados", count: closedCases.length + closedProjects.length },
