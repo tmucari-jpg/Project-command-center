@@ -12,7 +12,7 @@ const statusLabels:Record<string,string>={
 export default async function GieClientHome() {
   const supabase = await createClient();
   const {data:{user}} = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/gie-login");
 
   const {data: memberships,error:membershipError} = await supabase
     .from("gie360_memberships").select("organization_id").eq("client_user_id",user.id);
