@@ -112,6 +112,14 @@ export async function configureGie360Scope(formData: FormData) {
     p_contract_reference: contract_reference,
   });
   if (error || !data) redirect(back + "?error=" + encodeURIComponent("O âmbito não foi aprovado. Confirme contrato, pacote e módulos permitidos."));
+  const returnId = z.string().uuid().safeParse(formData.get("return_project_id"));
+  if (returnId.success) {
+    const { data: linkedProject } = await supabase.from("gie360_projects")
+      .select("id").eq("id", returnId.data)
+      .eq("organization_id", organization_id)
+      .eq("manager_user_id", user.id).maybeSingle();
+    if (linkedProject) redirect("/gie360/project/" + linkedProject.id + "?scope=approved");
+  }
   redirect(back + "?scope=approved");
 }
 
