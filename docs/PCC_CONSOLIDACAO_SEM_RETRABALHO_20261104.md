@@ -15,13 +15,19 @@
 
 **Evidência necessária antes de aprovar:** CI e verificação isolada da assinatura RPC e das permissões. Nenhuma publicação real foi feita.
 
-## Defeito 2 — Renovação do link do diagnóstico (confirmado, ainda sem correcção)
+## Defeito 2 — Renovação do link do diagnóstico (correcção preparada; migração pendente)
 
-**Evidência:** `createClientDiagnosticRequest` revoga pedidos antigos antes de gravar o novo; uma falha no segundo passo pode invalidar prematuramente o link anterior.
+**Defeito comprovado:** a rotina anterior revogava pedidos `active/opened` antes de gravar o novo; uma falha intermédia podia deixar o cliente sem acesso.
 
-**Função de base existente:** `issue_reviewed_diagnostic_atomic`. **Não reutilizar cegamente.** Requer `p_reviewed=true`, titular efectivo `auth.uid()`, `p_name`, `p_organization` não vazios, `p_content_sha256` válido, cria registo de autorização de partilha e emite exclusivamente a variante `executive-v3`. O fluxo actual permite também `executive-v3-gie360` e não exige todos estes campos.
+**Solução mínima:** função `issue_client_diagnostic_request_atomic` em `supabase/migrations/20261104123000_atomic_client_diagnostic_renewal.sql`, **apenas versionada; não aplicada ao Supabase em produção**. Usa `SECURITY INVOKER`, o RLS existente, controlo explícito do utilizador e delegação administrativa já prevista na política, bloqueio `FOR UPDATE` do caso e revogação + inserção na mesma transacção. Um erro da inserção causa rollback e preserva o link anterior.
 
-**Decisão:** preservar os circuitos aprovados e projectar uma correcção transaccional de emissão que mantenha exactamente os dois formatos, a autorização humana e o comportamento dos clientes. Rever primeiro regras e RLS, depois testar a função em base isolada, antes de qualquer migração de produção. **Não considerar este ponto resolvido.**
+**Compatibilidade preservada:** versões `executive-v3` e `executive-v3-gie360`, nomes e organizações opcionais, contexto do cliente, validade de 7 dias e estados `submitted/analyzing/reviewed` intocados. O registo de revisão humana, a triagem e o encaminhamento GIE360° continuam independentes; nenhuma aprovação é inferida ou simulada.
+
+**Gate obrigatório antes da publicação única:** aplicar a migração no alvo autorizado antes do código que invoca a nova função, confirmar RLS/permissões, executar ensaio isolado de sucesso, falha transaccional e duas renovações concorrentes. Se não for possível criar ambiente isolado, **não declarar a operação aprovada nem activar a nova rotina em produção**.
+
+## CI e custos
+
+O CI antigo exigia referências directas às duas tabelas no `mutations.ts`, contrariando a nova publicação transaccional. O gate foi adaptado para procurar a função transaccional existente; os testes adicionais protegem a ausência de revogação separada. Todas as alterações permanecem no PR #126 em rascunho, sem merges, novos deployments ou escritas na base operacional.
 
 ## Fora do âmbito
 
