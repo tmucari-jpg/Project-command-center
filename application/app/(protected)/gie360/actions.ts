@@ -27,7 +27,7 @@ export async function createGie360Assessment(formData: FormData) {
   const [{ data: factoryCase, error: caseError }, { data: existing, error: existingError }, { data: requests, error: requestError }] = await Promise.all([
     supabase.from("project_factory_cases").select("id").eq("id", case_id).eq("user_id", user.id).maybeSingle(),
     supabase.from("gie360_assessments").select("organization_id").eq("factory_case_id", case_id).limit(1),
-    supabase.from("client_diagnostic_requests").select("status,submitted_at").eq("factory_case_id", case_id).eq("user_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("client_diagnostic_requests").select("id,status,submitted_at,questionnaire_version").eq("factory_case_id", case_id).eq("user_id", user.id).in("questionnaire_version", ["executive-v3", "executive-v3-gie360"]).order("created_at", { ascending: false }),
   ]);
 
   if (caseError || !factoryCase || existingError || requestError) {
@@ -37,10 +37,21 @@ export async function createGie360Assessment(formData: FormData) {
     redirect(back + "?notice=" + encodeURIComponent("Este caso já está associado a uma avaliação GIE360°. Não foi criado um duplicado."));
   }
 
-  // An approved/reviewed client response is the gateway to GIE360°, not a
-  // draft or unreviewed diagnostic. Keep the existing PCC approval path intact.
-  if (!requests?.some((request) => request.submitted_at && ["reviewed", "incorporated"].includes(request.status))) {
-    redirect(back + "?error=" + encodeURIComponent("Reveja e aceite a resposta do cliente no caso PCC antes de activar o GIE360°."));
+  // The original PCC decision is authoritative. A reviewed request can also
+  // have "clarification_needed" or a subsequently rejected scope: check the
+  // actual recorded approval, not just its generic status.
+  const candidates = (requests ?? []).filter((request) =>
+    request.submitted_at && ["reviewed", "incorporated"].includes(request.status),
+  );
+  const { data: reviews, error: reviewError } = await supabase
+    .from("client_diagnostic_reviews")
+    .select("request_id,review_status")
+    .eq("user_id", user.id)
+    .in("request_id", candidates.length ? candidates.map((request) => request.id) : ["00000000-0000-0000-0000-000000000000"]);
+  if (reviewError || !reviews?.some((review) =>
+    ["accepted", "partially_accepted"].includes(review.review_status)
+  )) {
+    redirect(back + "?error=" + encodeURIComponent("O encaminhamento exige decisão de aceitação total ou parcial registada no diagnóstico PCC."));
   }
 
   const { data: organizationId, error } = await supabase.rpc("gie360_provision", {
