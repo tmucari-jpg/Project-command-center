@@ -5,7 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "GIE360° — Área do Cliente",
+  applicationName: "GIE360°",
   description: "Gestão Inteligente Empresarial: acesso reservado à empresa.",
+  manifest: "/gie360.webmanifest",
+  icons: { icon: [{ url: "/gie360-icon.svg", type: "image/svg+xml" }] },
+  appleWebApp: { capable: true, title: "GIE360°", statusBarStyle: "default" },
 };
 
 export default async function Gie360ClientLayout({ children }: { children: React.ReactNode }) {
