@@ -139,3 +139,52 @@ export async function activateGie360Project(formData: FormData) {
   }
   redirect(back + "?project=activated");
 }
+
+
+export async function createGie360WorkItem(formData: FormData) {
+  const parsed = z.object({
+    project_id: z.string().uuid(),
+    module_code: z.string().trim().min(1).max(80),
+    title: z.string().trim().min(5).max(240),
+    completion_criterion: z.string().trim().min(5).max(1000),
+  }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect("/gie360?error=" + encodeURIComponent("Defina módulo, tarefa e critério de conclusão."));
+  const { supabase, user } = await requireUser();
+  const { data: project } = await supabase.from("gie360_projects")
+    .select("organization_id").eq("id", parsed.data.project_id)
+    .eq("manager_user_id", user.id).maybeSingle();
+  if (!project) redirect("/gie360?error=" + encodeURIComponent("Projecto não autorizado."));
+  const back = "/gie360/" + project.organization_id;
+  const { data, error } = await supabase.rpc("gie360_create_work_item", {
+    p_project_id: parsed.data.project_id,
+    p_module: parsed.data.module_code,
+    p_title: parsed.data.title,
+    p_completion_criterion: parsed.data.completion_criterion,
+  });
+  if (error || !data) redirect(back + "?error=" + encodeURIComponent("Módulo ou projecto ainda não autorizado para execução."));
+  redirect(back + "?work=created");
+}
+
+export async function progressGie360WorkItem(formData: FormData) {
+  const parsed = z.object({
+    work_item_id: z.string().uuid(),
+    status: z.enum(["in_progress", "blocked", "completed"]),
+    evidence_reference: z.string().trim().max(1000),
+  }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success || (parsed.data.status === "completed" && parsed.data.evidence_reference.length < 5)) {
+    redirect("/gie360?error=" + encodeURIComponent("Para concluir uma tarefa, indique a referência da evidência."));
+  }
+  const { supabase, user } = await requireUser();
+  const { data: item } = await supabase.from("gie360_work_items")
+    .select("organization_id").eq("id", parsed.data.work_item_id)
+    .eq("manager_user_id", user.id).maybeSingle();
+  if (!item) redirect("/gie360?error=" + encodeURIComponent("Tarefa não autorizada."));
+  const back = "/gie360/" + item.organization_id;
+  const { data, error } = await supabase.rpc("gie360_progress_work_item", {
+    p_work_item_id: parsed.data.work_item_id,
+    p_status: parsed.data.status,
+    p_evidence_reference: parsed.data.evidence_reference || null,
+  });
+  if (error || !data) redirect(back + "?error=" + encodeURIComponent("Não foi possível actualizar a tarefa com a evidência indicada."));
+  redirect(back + "?work=updated");
+}
