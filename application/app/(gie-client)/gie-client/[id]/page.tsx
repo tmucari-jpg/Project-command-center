@@ -18,6 +18,9 @@ export default async function GieClientOrganization({params}: {params: Promise<{
   const {data: assessments, error: assessmentError} = await supabase.from("gie360_assessments")
     .select("id,status,questionnaire_version,revision,submitted_at")
     .eq("organization_id",id).order("updated_at",{ascending:false});
+  const {data: projects, error: projectError} = await supabase.from("gie360_projects")
+    .select("id,title,status,created_at")
+    .eq("organization_id",id).order("created_at",{ascending:false});
   return (
     <div className="space-y-5">
       <Link href="/gie-client" className="text-sm underline">Empresas</Link>
@@ -27,6 +30,16 @@ export default async function GieClientOrganization({params}: {params: Promise<{
         <p className="mt-2 text-sm">{organization.contract_approved ? "Contrato aprovado" : "Contrato por aprovar"} · {organization.package_code ?? "Por definir"}</p>
         <p className="mt-2 text-sm">Módulos autorizados: {organization.approved_modules?.length ? organization.approved_modules.join(", ") : "Nenhum aprovado"}</p>
         <p className="mt-2 text-sm">IA na nuvem: {organization.ai_cloud_authorized ? "Autorizada" : "Não autorizada"}</p>
+      </section>
+      <section className="rounded-2xl border border-[#d0ded6] bg-white p-5">
+        <h2 className="font-semibold">Projectos da empresa</h2>
+        {projectError ? <p role="alert">Não foi possível carregar os projectos.</p> :
+          projects?.length ? <div className="mt-3 space-y-3">
+            {projects.map(project => <div key={project.id} className="rounded-lg border border-[#d0ded6] p-3">
+              <h3 className="font-semibold">{project.title}</h3>
+              <p className="mt-1 text-sm text-[#63716c]">{project.status === "awaiting_scope" ? "Âmbito por aprovar" : project.status}</p>
+            </div>)}
+          </div> : <p className="mt-3 text-sm text-[#63716c]">Nenhum projecto transferido para esta empresa.</p>}
       </section>
       <section className="rounded-2xl border border-[#d0ded6] bg-white p-5">
         <h2 className="font-semibold">Avaliações empresariais</h2>
