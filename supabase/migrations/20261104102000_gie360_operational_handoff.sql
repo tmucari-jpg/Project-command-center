@@ -96,3 +96,36 @@ AS $fn$ SELECT private.gie360_transfer_approved_case(p_case_id,p_organization_id
 REVOKE ALL ON FUNCTION private.gie360_transfer_approved_case(uuid,uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.gie360_transfer_approved_case(uuid,uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.gie360_transfer_approved_case(uuid,uuid) TO authenticated;
+
+-- An explicit manager approval activates the GIE project after the contract
+-- and approved module scope exist. No automatic activation on handoff.
+CREATE OR REPLACE FUNCTION private.gie360_activate_project(p_project_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $fn$
+DECLARE v_project public.gie360_projects%rowtype;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'GIE360_AUTH_REQUIRED'; END IF;
+  SELECT p.* INTO v_project FROM public.gie360_projects p
+    JOIN public.gie360_organizations o ON o.id=p.organization_id
+    WHERE p.id=p_project_id AND p.manager_user_id=auth.uid()
+      AND o.manager_user_id=auth.uid()
+      AND o.contract_approved AND o.package_code IS NOT NULL
+      AND cardinality(o.approved_modules)>0
+    FOR UPDATE OF p;
+  IF v_project.id IS NULL THEN RAISE EXCEPTION 'GIE360_SCOPE_NOT_APPROVED'; END IF;
+  IF v_project.status NOT IN ('awaiting_scope','active') THEN
+    RAISE EXCEPTION 'GIE360_PROJECT_NOT_ACTIVATABLE';
+  END IF;
+  UPDATE public.gie360_projects SET status='active',updated_at=now()
+    WHERE id=v_project.id AND status='awaiting_scope';
+  RETURN v_project.id;
+END;
+$fn$;
+
+CREATE OR REPLACE FUNCTION public.gie360_activate_project(p_project_id uuid)
+RETURNS uuid LANGUAGE sql SET search_path TO ''
+AS $fn$ SELECT private.gie360_activate_project(p_project_id); $fn$;
+REVOKE ALL ON FUNCTION private.gie360_activate_project(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.gie360_activate_project(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.gie360_activate_project(uuid) TO authenticated;
