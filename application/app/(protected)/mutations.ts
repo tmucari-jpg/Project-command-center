@@ -125,20 +125,11 @@ export async function publishProjectClientStatus(
     ]);
 
   if (projectError || !project) {
-    return { ok: false, error: projectError?.message ?? "Projecto não encontrado." };
+    return { ok: false, error: "Não foi possível verificar o projecto para publicação." };
   }
   if (deliverableError || metricError) {
-    return { ok: false, error: deliverableError?.message ?? metricError?.message ?? "Não foi possível preparar o snapshot." };
+    return { ok: false, error: "Não foi possível preparar o acompanhamento para partilha." };
   }
-
-  const { data: latestSnapshot } = await supabase
-    .from("project_client_status_snapshots")
-    .select("version")
-    .eq("project_id", project.id)
-    .eq("user_id", user.id)
-    .order("version", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   const deliverableSnapshot = (deliverables ?? []).map((item) => ({
     id: item.id,
@@ -171,49 +162,34 @@ export async function publishProjectClientStatus(
     measurement_date: metric.measurement_date,
   }));
 
-  const { error: snapshotError } = await supabase.from("project_client_status_snapshots").insert({
-    user_id: user.id,
-    project_id: project.id,
-    version: Number(latestSnapshot?.version ?? 0) + 1,
-    public_note: publicNote.data || null,
-    project_status: project.status,
-    expected_result: project.expected_result,
-    next_action: project.next_action,
-    deliverables: deliverableSnapshot,
-    kpis: metricSnapshot,
-  });
-
-  if (snapshotError) return { ok: false, error: snapshotError.message };
-
-  const { error: revokeError } = await supabase
-    .from("project_client_status_links")
-    .update({ status: "revoked" })
-    .eq("project_id", project.id)
-    .eq("user_id", user.id)
-    .in("status", ["active", "opened"]);
-
-  if (revokeError) return { ok: false, error: revokeError.message };
-
+  // One existing database transaction creates the snapshot, revokes the old
+  // link and issues its replacement. Any failure rolls back all three steps.
   const { token, tokenHash } = createProjectClientStatusToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: link, error: linkError } = await supabase
-    .from("project_client_status_links")
-    .insert({
-      user_id: user.id,
-      project_id: project.id,
-      token_hash: tokenHash,
-      expires_at: expiresAt,
-    })
-    .select("id")
-    .single();
-
-  if (linkError || !link) return { ok: false, error: linkError?.message ?? "Não foi possível gerar o link." };
+  const { data: linkId, error: publicationError } = await supabase.rpc(
+    "publish_project_client_status_atomic",
+    {
+      p_project_id: project.id,
+      p_owner_id: user.id,
+      p_public_note: publicNote.data || null,
+      p_project_status: project.status,
+      p_expected_result: project.expected_result,
+      p_next_action: project.next_action,
+      p_deliverables: deliverableSnapshot,
+      p_kpis: metricSnapshot,
+      p_token_hash: tokenHash,
+      p_expires_at: expiresAt,
+    },
+  );
+  if (publicationError || !linkId) {
+    return { ok: false, error: "Não foi possível publicar o acompanhamento. O link anterior foi preservado." };
+  }
 
   revalidatePath(`/projects/${project.id}`);
   return {
     ok: true,
     url: projectClientStatusPublicUrl(token),
-    linkId: link.id,
+    linkId: String(linkId),
   };
 }
 
@@ -240,39 +216,30 @@ export async function createClientDiagnosticRequest(
     .maybeSingle();
 
   if (caseError || !factoryCase) {
-    return { ok: false, error: caseError?.message ?? "Caso não encontrado." };
+    return { ok: false, error: "Não foi possível verificar o caso para o diagnóstico." };
   }
 
   const { token, tokenHash } = createClientDiagnosticToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { error: revokeError } = await supabase
-    .from("client_diagnostic_requests")
-    .update({ status: "revoked" })
-    .eq("factory_case_id", factoryCase.id)
-    .eq("user_id", user.id)
-    .in("status", ["active", "opened"]);
+  // Atomic issuance: if a new link cannot be recorded, the previous one
+  // stays valid. The RPC preserves both approved questionnaire variants.
+  const { data: requestId, error: issueError } = await supabase.rpc(
+    "issue_client_diagnostic_request_atomic",
+    {
+      p_owner_id: user.id,
+      p_case_id: factoryCase.id,
+      p_token_hash: tokenHash,
+      p_questionnaire_version: brandScope.data === "pcc_gie360" ? "executive-v3-gie360" : "executive-v3",
+      p_client_name: clientName.data || null,
+      p_client_organization: clientOrganization.data || null,
+      p_public_context: publicContext.data || null,
+      p_expires_at: expiresAt,
+    },
+  );
 
-  if (revokeError) return { ok: false, error: revokeError.message };
-
-  const { data: request, error } = await supabase
-    .from("client_diagnostic_requests")
-    .insert({
-      user_id: user.id,
-      factory_case_id: factoryCase.id,
-      token_hash: tokenHash,
-      questionnaire_version: brandScope.data === "pcc_gie360" ? "executive-v3-gie360" : "executive-v3",
-      client_name: clientName.data || null,
-      client_organization: clientOrganization.data || null,
-      public_context: publicContext.data || null,
-      status: "active",
-      expires_at: expiresAt,
-    })
-    .select("id")
-    .single();
-
-  if (error || !request) {
-    return { ok: false, error: error?.message ?? "Não foi possível gerar o questionário." };
+  if (issueError || !requestId) {
+    return { ok: false, error: "Não foi possível renovar o questionário. O link anterior permanece válido." };
   }
 
   revalidatePath(`/project-factory/${factoryCase.id}`);
@@ -280,7 +247,7 @@ export async function createClientDiagnosticRequest(
   return {
     ok: true,
     url: clientDiagnosticPublicUrl(token),
-    requestId: request.id,
+    requestId: String(requestId),
   };
 }
 

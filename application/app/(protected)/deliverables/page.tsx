@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { updateProjectDeliverableDocumentLink } from "@/app/(protected)/projects/[id]/library/actions";
 import { createDeliverable, recordDeliverableAcceptance, recordDeliverableQA } from "@/app/(protected)/mutations";
 import { Field, Select, TextArea } from "@/components/form-fields";
 import { PageHeader } from "@/components/page-header";
@@ -144,6 +145,21 @@ export default async function DeliverablesPage({
                             Abrir entregável{item.artifact_version ? ` · v${item.artifact_version}` : ""}
                           </a>
                         </div>
+                      )}
+
+                      {item.status !== "completed" && !["accepted","accepted_with_reservations"].includes(item.acceptance_status ?? "") && (
+                        <details className="mt-4 border-t border-[var(--cc-border)] pt-4">
+                          <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">Associar documento de trabalho</summary>
+                          <form action={updateProjectDeliverableDocumentLink} className="mt-3 space-y-3">
+                            <input type="hidden" name="project_id" value={project.id}/>
+                            <input type="hidden" name="deliverable_id" value={item.id}/>
+                            <input type="hidden" name="artifact_reference" value={item.artifact_reference ?? ""}/>
+                            <label className="block text-sm font-medium">Link privado HTTPS para edição pelo gestor
+                              <input className="mt-1 block w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] p-2" type="url" name="working_edit_url" required maxLength={2048} placeholder="https://..."/>
+                            </label>
+                            <button className={secondaryButtonClass} type="submit">Guardar e associar à Biblioteca</button>
+                          </form>
+                        </details>
                       )}
 
                       <details className="mt-4 border-t border-[var(--cc-border)] pt-4">
