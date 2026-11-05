@@ -131,6 +131,7 @@ export default async function GieProjectPage({
         <Link className={secondaryButtonClass+" inline-flex"} href={`/project-factory/${project.factory_case_id}`}>Consultar diagnóstico original</Link>
         <Link className={secondaryButtonClass+" inline-flex"} href={`/gie360/${organization.id}?project=${project.id}`}>Gerir contrato e módulos</Link>
         <a className={secondaryButtonClass+" inline-flex"} href="#modulos-gie360">Ir para os módulos</a>
+        <Link className={secondaryButtonClass+" inline-flex"} href={`/gie360/project/${project.id}/client-preview`}>Ver a página do cliente</Link>
         <a className={secondaryButtonClass+" inline-flex"} href="#partilha-gie360">Partilha com cliente</a>
       </div>
     </Card>
@@ -238,6 +239,9 @@ export default async function GieProjectPage({
         ? <Gie360ShareAccess projectId={project.id}/>
         : <Card className="p-5">
             <h2 className="font-semibold">Acompanhamento do cliente</h2>
+            <Link className={secondaryButtonClass+" mt-3 inline-flex"} href={`/gie360/project/${project.id}/client-preview`}>
+              Pré-visualizar acompanhamento como gestor
+            </Link>
             <p className="mt-2 text-sm text-[var(--cc-secondary)]">
               O link só fica disponível após a activação autorizada. O cliente precisa de uma conta associada à organização
               para abrir o portal; copiar o link não concede permissões.
