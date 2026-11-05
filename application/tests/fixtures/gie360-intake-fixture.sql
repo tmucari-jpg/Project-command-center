@@ -1,6 +1,4 @@
 \set ON_ERROR_STOP on
-CREATE ROLE authenticated;
-CREATE ROLE anon;
 CREATE SCHEMA auth;
 CREATE SCHEMA private;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE
