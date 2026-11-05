@@ -79,6 +79,67 @@ export async function createGie360Assessment(formData: FormData) {
 }
 
 
+// Sends a Supabase-authenticated access link to a genuine prospective client.
+// This does not approve a diagnosis, create an organization, or authorize AI.
+export async function inviteGie360Client(formData: FormData) {
+  const parsed = z.object({
+    case_id: z.string().uuid(),
+    client_email: z.string().trim().email().max(254),
+  }).safeParse({
+    case_id: formData.get("case_id"),
+    client_email: formData.get("client_email"),
+  });
+  const back = "/gie360";
+  if (!parsed.success) redirect(back + "?error=" + encodeURIComponent("Indique um email válido para convidar o cliente."));
+  const { case_id, client_email } = parsed.data;
+  const { supabase, user } = await requireUser();
+  if (client_email.toLowerCase() === (user.email ?? "").toLowerCase()) {
+    redirect(back + "?error=" + encodeURIComponent("O cliente deve usar uma conta distinta da conta gestora PCC."));
+  }
+
+  const { data: ownedCase, error: caseError } = await supabase.from("project_factory_cases")
+    .select("id").eq("id", case_id).eq("user_id", user.id).maybeSingle();
+  if (caseError || !ownedCase) redirect(back + "?error=" + encodeURIComponent("Caso PCC não autorizado."));
+
+  const { data: requests, error: requestsError } = await supabase.from("client_diagnostic_requests")
+    .select("id").eq("user_id", user.id).eq("factory_case_id", case_id)
+    .not("submitted_at", "is", null).in("status", ["reviewed", "incorporated"]);
+  if (requestsError || !requests?.length) {
+    redirect(back + "?error=" + encodeURIComponent("É necessário rever e aceitar o diagnóstico antes de convidar um cliente."));
+  }
+  const { data: accepted, error: reviewError } = await supabase.from("client_diagnostic_reviews")
+    .select("request_id").eq("user_id", user.id)
+    .in("request_id", requests.map((request) => request.id))
+    .in("review_status", ["accepted", "partially_accepted"]).limit(1);
+  if (reviewError || !accepted?.length) {
+    redirect(back + "?error=" + encodeURIComponent("A aceitação real do diagnóstico ainda não está registada."));
+  }
+
+  // Uses the existing Supabase Auth email provider and its built-in email throttling.
+  // No service_role key, plaintext password, invented consent or automatic project activation.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://project-command-center-amsoluction1.vercel.app";
+  let origin: string;
+  try {
+    const site = new URL(siteUrl);
+    if (site.protocol !== "https:") throw new Error("HTTPS required");
+    origin = site.origin;
+  } catch {
+    redirect(back + "?error=" + encodeURIComponent("O endereço público do PCC não está correctamente configurado."));
+  }
+  const { error } = await supabase.auth.signInWithOtp({
+    email: client_email,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: origin + "/auth/callback?next=/dashboard",
+    },
+  });
+  if (error) {
+    redirect(back + "?error=" + encodeURIComponent("Não foi possível solicitar o email de acesso. Verifique a configuração de email e tente novamente mais tarde."));
+  }
+  redirect(back + "?notice=" + encodeURIComponent("Foi solicitado um email de acesso para o cliente. Após confirmação, volte a este caso e associe a conta ao GIE360°. O envio não equivale a uma aprovação do projecto."));
+}
+
+
 const scopeSchema = z.object({
   organization_id: z.string().uuid(),
   package_code: z.string().trim().min(3).max(100),
