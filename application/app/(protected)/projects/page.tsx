@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { ClientDiagnosticAlerts, type ClientDiagnosticAlertRow } from "@/components/client-diagnostic-alerts";
+import { ClientDiagnosticTracker, type ClientDiagnosticTrackingRow } from "@/components/client-diagnostic-tracker";
 import { Card, EmptyState, secondaryButtonClass } from "@/components/ui";
 import { StatusBadge } from "@/components/status-badge";
 import { requireUser } from "@/lib/auth";
@@ -40,6 +42,8 @@ export default async function ProjectsPage({
     { data: blockers },
     { data: actions },
     { data: factoryCases, error: factoryError },
+    { data: diagnosticRequests },
+    { data: unreadDiagnosticAlerts },
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -62,7 +66,49 @@ export default async function ProjectsPage({
       .select("id,title,problem,stage,project_type,created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("client_diagnostic_requests")
+      .select("factory_case_id,client_name,client_organization,status,expires_at,created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("notifications")
+      .select("id,title,message,related_entity_id,created_at")
+      .eq("user_id", user.id)
+      .eq("type", "client_diagnostic_response")
+      .eq("related_entity_type", "project_factory_case")
+      .is("read_at", null)
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
+
+  const latestDiagnosticByCase = new Map<string, NonNullable<typeof diagnosticRequests>[number]>();
+  const requestCounts = new Map<string,number>();
+  for (const request of diagnosticRequests ?? []) {
+    requestCounts.set(request.factory_case_id, (requestCounts.get(request.factory_case_id) ?? 0) + 1);
+    if (!latestDiagnosticByCase.has(request.factory_case_id)) {
+      latestDiagnosticByCase.set(request.factory_case_id,request);
+    }
+  }
+  const diagnosticCaseIds = [...latestDiagnosticByCase.keys()];
+  const missingTitles = diagnosticCaseIds.filter(caseId => !(factoryCases ?? []).some(item => item.id === caseId));
+  const extraCases = missingTitles.length
+    ? await supabase.from("project_factory_cases").select("id,title").eq("user_id",user.id).in("id",missingTitles)
+    : {data:[] as Array<{id:string;title:string}>};
+  const diagnosticCaseTitles = new Map([...(factoryCases ?? []),...(extraCases.data ?? [])].map(item => [item.id,item.title]));
+  const diagnosticRows: ClientDiagnosticTrackingRow[] = [...latestDiagnosticByCase.values()]
+    .map(request => ({
+      factory_case_id:request.factory_case_id,
+      title:diagnosticCaseTitles.get(request.factory_case_id) ?? "Caso PCC",
+      client_name:request.client_name,
+      client_organization:request.client_organization,
+      status:request.status,
+      expires_at:request.expires_at,
+      created_at:request.created_at,
+      request_count:requestCounts.get(request.factory_case_id) ?? 1,
+    }))
+    .sort((a,b) => b.created_at.localeCompare(a.created_at));
+  const diagnosticAlerts = (unreadDiagnosticAlerts??[]) as ClientDiagnosticAlertRow[];
 
   const now = new Date();
   const blockerCounts = new Map<string, number>();
@@ -148,6 +194,8 @@ export default async function ProjectsPage({
       </div>
 
       <div className="space-y-5">
+        <ClientDiagnosticAlerts alerts={diagnosticAlerts} />
+        <ClientDiagnosticTracker rows={diagnosticRows} />
         {showAnalysis && (
           <Card>
             <div className="border-b border-[var(--cc-border)] p-5">
