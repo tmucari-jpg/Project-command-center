@@ -187,7 +187,7 @@ export default async function GieProjectPage({
                 <label className="block text-sm">Resultado verificável
                   <textarea name="completion_criterion" minLength={5} maxLength={1000} required className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2"/>
                 </label>
-                <button className={primaryButtonClass} type="submit">Registar acção no módulo</button>
+                <button className={primaryButtonClass} type="submit">Criar actividade neste projecto</button>
               </form>}
             </section>;
           })}
