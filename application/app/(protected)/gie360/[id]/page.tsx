@@ -5,6 +5,7 @@ import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui"
 import { requireUser } from "@/lib/auth";
 import { Gie360Assistant } from "@/components/gie360-assistant";
 import { configureGie360Scope } from "../actions";
+import { recommendGie360Package } from "@/lib/gie360-package-recommendation";
 
 export default async function Gie360AssessmentPage({
   params,
@@ -45,6 +46,15 @@ export default async function Gie360AssessmentPage({
     .order("code", { ascending: true });
   const modulesAvailable = Array.from(new Set((packages ?? []).flatMap((item) => item.modules ?? []))).sort();
   const returnProject = (operationalProjects ?? []).find(project => project.id === query.project);
+  const sourceAssessment = (assessments ?? []).find(item => item.factory_case_id === returnProject?.factory_case_id)
+    ?? (assessments ?? [])[0];
+  const recommendation = recommendGie360Package(sourceAssessment?.answers);
+  const suggestedPackage = (packages ?? []).find(item => item.code === recommendation?.code);
+  const chosenPackage = organization.package_code
+    ? (packages ?? []).find(item => item.code === organization.package_code)
+    : suggestedPackage;
+  const initialModules = organization.contract_approved ? (organization.approved_modules ?? []) :
+    (chosenPackage?.modules ?? []);
 
   return (
     <>
@@ -70,13 +80,15 @@ export default async function Gie360AssessmentPage({
         <p className="mt-2 text-sm text-[var(--cc-secondary)]">
           A escolha confirma um contrato real e define os módulos autorizados; o sistema valida o pacote antes de permitir o uso da IA. Nenhum preço ou contrato é inventado.
         </p>
+        {recommendation && !organization.contract_approved && <p className="mt-3 rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-muted)] p-3 text-sm">Proposta calculada a partir do diagnóstico: <strong>{recommendation.code}</strong>. {recommendation.basis} Esta escolha não equivale a contrato assinado nem autoriza execução ou IA.</p>}
+        {!recommendation && !organization.contract_approved && <p className="mt-3 text-sm text-[var(--cc-secondary)]">O diagnóstico disponível não identifica necessidades suficientes para recomendar um pacote automaticamente. A selecção requer confirmação do gestor.</p>}
         {packageError ? <p role="alert" className="mt-3 text-sm text-red-700">Não foi possível consultar os pacotes definidos.</p> :
           <form action={configureGie360Scope} className="mt-4 space-y-4">
             <input type="hidden" name="organization_id" value={organization.id}/>
             {returnProject && <input type="hidden" name="return_project_id" value={returnProject.id}/>}
 
             <label className="block text-sm font-medium">Pacote contratado
-              <select name="package_code" required defaultValue={organization.package_code ?? ""} className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2.5">
+              <select name="package_code" required defaultValue={organization.package_code ?? suggestedPackage?.code ?? ""} className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2.5">
                 <option value="" disabled>Seleccione o pacote aprovado</option>
                 {(packages ?? []).map(item=><option key={item.code} value={item.code}>{item.code}</option>)}
               </select>
@@ -84,7 +96,7 @@ export default async function Gie360AssessmentPage({
             <fieldset className="grid gap-2 sm:grid-cols-2">
               <legend className="mb-2 text-sm font-semibold">Módulos expressamente autorizados</legend>
               {modulesAvailable.map(module=><label key={module} className="flex gap-2 text-sm">
-                <input type="checkbox" name="approved_modules" value={module} defaultChecked={organization.approved_modules.includes(module)}/>
+                <input type="checkbox" name="approved_modules" value={module} defaultChecked={initialModules.includes(module)}/>
                 {module}
               </label>)}
             </fieldset>
