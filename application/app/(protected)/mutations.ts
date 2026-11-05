@@ -609,6 +609,28 @@ export async function reviewClientDiagnosticResponse(formData: FormData) {
 
   if (statusError) fail(path, statusError.message);
 
+  // The existing human review remains authoritative. A GIE360-specific
+  // accepted response enters GIE360 without needing a client Auth account.
+  // Other questionnaires and PCC review paths remain unchanged.
+  if (reviewStatus.data !== "clarification_needed") {
+    const { data: gieRequest, error: gieRequestError } = await supabase
+      .from("client_diagnostic_requests")
+      .select("questionnaire_version")
+      .eq("id", request.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (gieRequestError) fail(path, "Não foi possível confirmar a modalidade do diagnóstico.");
+    if (gieRequest?.questionnaire_version === "executive-v3-gie360") {
+      const intake = await supabase.rpc("gie360_intake_from_diagnostic", {
+        p_case_id: factoryCaseId.data,
+      });
+      if (intake.error || !intake.data) {
+        fail(path, "A revisão foi guardada, mas o encaminhamento GIE360° não foi concluído. Não repita a aprovação; verifique o encaminhamento no GIE360°.");
+      }
+      revalidatePath("/gie360");
+    }
+  }
+
   revalidatePath(path);
   redirect(`${path}?client_diagnostic=reviewed`);
 }
