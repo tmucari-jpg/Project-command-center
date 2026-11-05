@@ -52,10 +52,6 @@ export default async function Gie360Page({
   const byId = new Map(cases.map((item) => [item.id, item]));
   const orgById = new Map(organizations.map((org) => [org.id, org]));
   const linkedCaseIds = new Set(assessments.map((item) => item.factory_case_id));
-  const requestByCase = new Map<string, ClientRequest>();
-  for (const request of requests) {
-    if (!requestByCase.has(request.factory_case_id)) requestByCase.set(request.factory_case_id, request);
-  }
   const candidates = cases.filter((item) =>
     !linkedCaseIds.has(item.id) && requests.some((request) => request.factory_case_id === item.id && request.submitted_at && request.questionnaire_version === "executive-v3-gie360"),
   );
@@ -114,7 +110,6 @@ export default async function Gie360Page({
         ) : (
           <div className="mt-4 space-y-4">
             {candidates.map((item) => {
-              const request = requestByCase.get(item.id);
               const accepted = requests.some((r) => r.factory_case_id === item.id && r.submitted_at && r.questionnaire_version === "executive-v3-gie360" && ["reviewed", "incorporated"].includes(r.status));
               return (
                 <section key={item.id} className="rounded-xl border border-[var(--cc-border)] p-4">
