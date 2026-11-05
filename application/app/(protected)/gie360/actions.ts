@@ -201,3 +201,20 @@ export async function progressGie360WorkItem(formData: FormData) {
   if (error || !data) redirect(back + "?error=" + encodeURIComponent("Não foi possível actualizar a tarefa com a evidência indicada."));
   redirect("/gie360/project/" + item.project_id + "?work=updated");
 }
+
+/** Retry an already-approved GIE360 intake without recreating the client or case. */
+export async function reconcileGie360Intake(formData: FormData) {
+  const caseId = z.string().uuid().safeParse(formData.get("case_id"));
+  if (!caseId.success) redirect("/gie360?error=" + encodeURIComponent("Caso PCC inválido."));
+  const { supabase, user } = await requireUser();
+  const { data: owned } = await supabase.from("project_factory_cases")
+    .select("id").eq("id", caseId.data).eq("user_id", user.id).maybeSingle();
+  if (!owned) redirect("/gie360?error=" + encodeURIComponent("Caso PCC não autorizado."));
+  const { data, error } = await supabase.rpc("gie360_intake_from_diagnostic", {
+    p_case_id: caseId.data,
+  });
+  if (error || !data) {
+    redirect("/gie360?error=" + encodeURIComponent("O diagnóstico deve estar respondido e aceite para ser encaminhado ao GIE360°."));
+  }
+  redirect("/gie360/project/" + String(data) + "?handoff=created");
+}

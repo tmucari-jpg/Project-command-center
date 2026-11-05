@@ -51,6 +51,16 @@ jobs:
           PGPASSWORD: isolated-test-only
         run: bash scripts/test-private-document-link-migration.sh
 
+      - name: Verify GIE360 approved-diagnostic intake in disposable PostgreSQL
+        working-directory: application
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGDATABASE: pcc_diagnostic_ci
+          PGUSER: postgres
+          PGPASSWORD: isolated-test-only
+        run: bash scripts/test-gie360-intake.sh
+
   application:
     runs-on: ubuntu-latest
     defaults:
@@ -87,7 +97,7 @@ jobs:
             const factory = fs.readFileSync("app/(protected)/project-factory/[id]/page.tsx", "utf8");
             for (const [name, source, tokens] of [
               ["sidebar", nav, ["href=\"/gie360\"", "label=\"GIE360°\"", "grid-cols-5"]],
-              ["GIE360 route", page, ["Avaliações GIE360°", "client_diagnostic_requests", "gie360_assessments", "createGie360Assessment"]],
+              ["GIE360 route", page, ["Avaliações GIE360°", "client_diagnostic_requests", "gie360_assessments", "reconcileGie360Intake"]],
               ["GIE360 activation", actions, ["gie360_provision", "factory_case_id", "reviewed", "incorporated"]],
               ["PCC case link", factory, ["Encaminhamento para GIE360°", "href=\"/gie360\""]],
             ]) {
