@@ -12,6 +12,12 @@ const statusLabels: Record<string,string> = {
   paused:"Em pausa",completed:"Concluído",open:"Por iniciar",
   in_progress:"Em curso",blocked:"Bloqueado",
 };
+const moduleLabels: Record<string,string> = {
+  data:"Dados e informação",plans:"Planeamento",sales:"Vendas",
+  crm:"Gestão de clientes",billing:"Facturação",exports:"Exportação de dados",
+  accounting:"Contabilidade",treasury:"Tesouraria",operations:"Operações",
+  strategy:"Estratégia",ai:"Inteligência artificial",
+};
 const diagnosticLabels: Record<string,string> = {
   context:"Situação inicial",focus:"Foco principal",desired_result:"Resultado pretendido",
   conditions:"Condições",deadline_urgency:"Prioridade e prazo",success_criteria:"Critérios de sucesso",
@@ -158,7 +164,7 @@ export default async function GieProjectPage({
             return <section key={code} id={`module-${code.replace(/[^a-z0-9-]/gi,"-")}`}
               className="rounded-xl border border-[var(--cc-border)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div><h3 className="font-semibold">{code}</h3>
+                <div><h3 className="font-semibold">{moduleLabels[code]??code}</h3><p className="text-xs text-[var(--cc-secondary)]">Módulo: {code}</p>
                   <p className="mt-1 text-sm text-[var(--cc-secondary)]">{completed} de {scopedTasks.length} actividades concluídas</p>
                 </div>
                 <span className="text-xs font-semibold text-[var(--cc-secondary)]">
@@ -205,7 +211,7 @@ export default async function GieProjectPage({
       {!workError && tasks.length===0 && <p className="mt-3 text-sm text-[var(--cc-secondary)]">Ainda não existem tarefas registadas.</p>}
       {!workError && <div className="mt-4 space-y-3">{tasks.map(item=><article key={item.id} id={`work-${item.id}`} className="rounded-lg border border-[var(--cc-border)] p-4">
         <div className="flex flex-wrap justify-between gap-2"><strong>{item.title}</strong><span className="text-sm">{statusLabels[item.status]??item.status}</span></div>
-        <p className="mt-1 text-sm text-[var(--cc-secondary)]">Módulo: {item.module_code}</p>
+        <p className="mt-1 text-sm text-[var(--cc-secondary)]">Módulo: {moduleLabels[item.module_code]??item.module_code}</p>
         <p className="mt-1 text-sm">Resultado verificável: {item.completion_criterion}</p>
         {item.evidence_reference && <p className="mt-2 text-sm">Evidência: {item.evidence_reference}</p>}
         {started && item.status!=="completed" && <form className="mt-3 space-y-3" action={progressGie360WorkItem}>
