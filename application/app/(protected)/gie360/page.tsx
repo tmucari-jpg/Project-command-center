@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
-import { createGie360Assessment, inviteGie360Client } from "./actions";
+import { createGie360Assessment } from "./actions";
 
 type FactoryCase = { id: string; title: string; stage: string; created_at: string };
 type ClientRequest = {
@@ -106,7 +106,7 @@ export default async function Gie360Page({
       <Card className="mt-5 p-5 sm:p-6">
         <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Encaminhar diagnóstico para o GIE360°</h2>
         <p className="mt-2 text-sm text-[var(--cc-secondary)]">
-          A activação preserva o caso e exige um diagnóstico revisto e aceite. Se o cliente ainda não tiver conta, envie primeiro um link de acesso para confirmar o email. A conta de cliente tem de ser distinta da do gestor.
+          A activação preserva o caso e exige uma resposta revista, aceite e uma conta de cliente existente e confirmada. Não cria outro caso PCC.
         </p>
         {candidates.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--cc-secondary)]">Não há respostas por encaminhar.</p>
@@ -125,27 +125,7 @@ export default async function Gie360Page({
                     {accepted ? "Consultar caso PCC" : "Rever diagnóstico no PCC"}
                   </Link>
                   {accepted && (
-                    <form action={inviteGie360Client} className="mt-4 grid gap-3 rounded-xl border border-[var(--cc-border)] p-4 sm:grid-cols-2">
-                      <input type="hidden" name="case_id" value={item.id} />
-                      <div className="sm:col-span-2">
-                        <h4 className="text-sm font-semibold">1. Convidar cliente sem conta</h4>
-                        <p className="mt-1 text-xs text-[var(--cc-secondary)]">
-                          Envie um link de acesso ao email do cliente. Este deverá confirmar o email e aceder com a sua própria conta. O convite não aprova contratos, não activa módulos e não cria projectos.
-                        </p>
-                      </div>
-                      <label className="text-sm font-medium">
-                        Email do cliente
-                        <input name="client_email" required type="email" maxLength={254}
-                          className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-2.5" />
-                      </label>
-                      <div className="flex items-end">
-                        <button className={secondaryButtonClass} type="submit">Enviar convite de acesso</button>
-                      </div>
-                    </form>
-                  )}
-                  {accepted && (
                     <form action={createGie360Assessment} className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <p className="text-sm font-semibold sm:col-span-2">2. Associar conta confirmada ao GIE360°</p>
                       <input type="hidden" name="case_id" value={item.id} />
                       <label className="text-sm font-medium">
                         Organização
