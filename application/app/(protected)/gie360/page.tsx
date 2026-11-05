@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
-import { createGie360Assessment } from "./actions";
+import { reconcileGie360Intake } from "./actions";
 
 type FactoryCase = { id: string; title: string; stage: string; created_at: string };
 type ClientRequest = {
@@ -11,6 +11,7 @@ type ClientRequest = {
   submitted_at: string | null;
   client_organization: string | null;
   client_name: string | null;
+  questionnaire_version: string;
 };
 type Organization = { id: string; name: string; contract_approved: boolean; created_at: string };
 type Assessment = { organization_id: string; factory_case_id: string; status: string; submitted_at: string | null };
@@ -33,7 +34,7 @@ export default async function Gie360Page({
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase.from("client_diagnostic_requests")
-      .select("factory_case_id,status,submitted_at,client_organization,client_name")
+      .select("factory_case_id,status,submitted_at,client_organization,client_name,questionnaire_version")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
   ]);
@@ -56,7 +57,7 @@ export default async function Gie360Page({
     if (!requestByCase.has(request.factory_case_id)) requestByCase.set(request.factory_case_id, request);
   }
   const candidates = cases.filter((item) =>
-    !linkedCaseIds.has(item.id) && requests.some((request) => request.factory_case_id === item.id && request.submitted_at),
+    !linkedCaseIds.has(item.id) && requests.some((request) => request.factory_case_id === item.id && request.submitted_at && request.questionnaire_version === "executive-v3-gie360"),
   );
 
   return (
@@ -64,7 +65,7 @@ export default async function Gie360Page({
       <PageHeader eyebrow="Gestão Inteligente Empresarial" title="GIE360°" />
       <div className="mb-5 space-y-3">
         <p className="text-sm leading-6 text-[var(--cc-secondary)]">
-          O GIE360° recebe os resultados de diagnósticos dos casos PCC. Cada avaliação mantém a ligação ao caso de origem. Não há criação automática de projectos ou alteração de respostas.
+          O GIE360° recebe os resultados de diagnósticos dos casos PCC. Cada avaliação mantém a ligação ao caso de origem. O encaminhamento de diagnósticos GIE360° aceites aproveita os dados existentes e não altera as respostas.
         </p>
         {params.error && <p role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">{params.error}</p>}
         {params.notice && <p role="status" className="rounded-xl border border-[var(--cc-border)] p-3 text-sm">{params.notice}</p>}
@@ -106,7 +107,7 @@ export default async function Gie360Page({
       <Card className="mt-5 p-5 sm:p-6">
         <h2 className="text-lg font-semibold text-[var(--cc-foreground)]">Encaminhar diagnóstico para o GIE360°</h2>
         <p className="mt-2 text-sm text-[var(--cc-secondary)]">
-          A activação preserva o caso e exige uma resposta revista, aceite e uma conta de cliente existente e confirmada. Não cria outro caso PCC.
+          Depois da revisão e aceitação do diagnóstico GIE360°, o cadastro e o projecto são associados automaticamente. A conta de acesso do cliente não é necessária nesta etapa. Contrato, âmbito e autorizações permanecem sujeitos aos controlos existentes.
         </p>
         {candidates.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--cc-secondary)]">Não há respostas por encaminhar.</p>
@@ -114,7 +115,7 @@ export default async function Gie360Page({
           <div className="mt-4 space-y-4">
             {candidates.map((item) => {
               const request = requestByCase.get(item.id);
-              const accepted = requests.some((r) => r.factory_case_id === item.id && r.submitted_at && ["reviewed", "incorporated"].includes(r.status));
+              const accepted = requests.some((r) => r.factory_case_id === item.id && r.submitted_at && r.questionnaire_version === "executive-v3-gie360" && ["reviewed", "incorporated"].includes(r.status));
               return (
                 <section key={item.id} className="rounded-xl border border-[var(--cc-border)] p-4">
                   <h3 className="font-semibold">{item.title}</h3>
@@ -125,22 +126,9 @@ export default async function Gie360Page({
                     {accepted ? "Consultar caso PCC" : "Rever diagnóstico no PCC"}
                   </Link>
                   {accepted && (
-                    <form action={createGie360Assessment} className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <form action={reconcileGie360Intake} className="mt-4">
                       <input type="hidden" name="case_id" value={item.id} />
-                      <label className="text-sm font-medium">
-                        Organização
-                        <input name="organization_name" required minLength={2} maxLength={200}
-                          defaultValue={request?.client_organization ?? ""}
-                          className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-2.5" />
-                      </label>
-                      <label className="text-sm font-medium">
-                        Email da conta do cliente GIE360°
-                        <input name="client_email" required type="email" maxLength={320}
-                          className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-strong)] p-2.5" />
-                      </label>
-                      <div className="sm:col-span-2">
-                        <button className={primaryButtonClass} type="submit">Criar avaliação GIE360° associada</button>
-                      </div>
+                      <button className={primaryButtonClass} type="submit">Concluir encaminhamento GIE360°</button>
                     </form>
                   )}
                 </section>
