@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { Gie360Assistant } from "@/components/gie360-assistant";
-import { configureGie360Scope } from "../actions";
+import { configureGie360Scope, linkGie360ExistingClient } from "../actions";
 import { recommendGie360Package } from "@/lib/gie360-package-recommendation";
 
 export default async function Gie360AssessmentPage({
@@ -12,7 +12,7 @@ export default async function Gie360AssessmentPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ project?: string; scope?: string; error?: string }>;
+  searchParams: Promise<{ project?: string; scope?: string; error?: string; client?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
@@ -32,6 +32,11 @@ export default async function Gie360AssessmentPage({
     .select("id,factory_case_id,questionnaire_version,status,answers,revision,submitted_at")
     .eq("organization_id", organization.id)
     .order("updated_at", { ascending: false });
+
+  const { data: clientMemberships, error: membershipError } = await supabase
+    .from("gie360_memberships")
+    .select("client_user_id")
+    .eq("organization_id",organization.id);
 
   const { data: operationalProjects, error: projectError } = await supabase
     .from("gie360_projects")
@@ -113,6 +118,30 @@ export default async function Gie360AssessmentPage({
             <button type="submit" className="rounded-lg bg-[#073f36] px-4 py-2 text-sm font-semibold text-white">Guardar âmbito aprovado</button>
           </form>}
       </Card>
+      <Card className="mt-5 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold">Acesso do cliente ao acompanhamento</h2>
+        <p className="mt-2 text-sm text-[var(--cc-secondary)]">
+          O cliente usa uma conta própria, distinta do gestor, para acompanhar apenas os seus projectos.
+          A associação não aprova contratos, não activa IA e não lhe atribui comandos de gestão.
+        </p>
+        {membershipError ? <p role="alert" className="mt-3 text-sm text-red-700">Não foi possível verificar os acessos do cliente.</p> :
+          <p className="mt-3 text-sm">Contas de cliente associadas: <strong>{clientMemberships?.length ?? 0}</strong></p>}
+        {query.client==="linked" && <p role="status" className="mt-2 text-sm">Conta de cliente associada. O cliente pode iniciar sessão no portal GIE360°.</p>}
+        <form action={linkGie360ExistingClient} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <input type="hidden" name="organization_id" value={organization.id}/>
+          <label className="flex-1 text-sm font-medium">Email da conta separada e já confirmada do cliente
+            <input type="email" name="client_email" required maxLength={320} placeholder="cliente@empresa.com"
+              className="mt-1 block w-full rounded-lg border border-[var(--cc-border)] p-2.5"/>
+          </label>
+          <button className={primaryButtonClass} type="submit">Associar conta do cliente</button>
+        </form>
+        <p className="mt-3 text-xs text-[var(--cc-secondary)]">
+          Se o cliente ainda não tem conta confirmada, não envie um link como se o acesso já estivesse activo.
+          A criação de acesso sem email exige um método de autenticação próprio, ainda não validado.
+        </p>
+        <Link href="/gie-login" className={secondaryButtonClass+" mt-3 inline-flex"}>Abrir o portal do cliente</Link>
+      </Card>
+
       <Card className="mt-5 p-5 sm:p-6">
         <h2 className="text-lg font-semibold">Projectos da organização</h2>
         <p className="mt-2 text-sm text-[var(--cc-secondary)]">

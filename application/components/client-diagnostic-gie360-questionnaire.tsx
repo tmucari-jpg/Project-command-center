@@ -90,8 +90,13 @@ export function ClientDiagnosticGie360Questionnaire({ token, clientName, clientO
             <input id="gie-person" className={styles.field} name="respondent_name" type="text" defaultValue={clientName ?? ""} placeholder="Nome de quem responde" required maxLength={200} />
           </div>
           <div className={styles.question}>
-            <label className={styles.title} htmlFor="gie-email">Email de contacto <span className={styles.required}>*</span></label>
-            <input id="gie-email" className={styles.field} name="email" type="email" placeholder="nome@empresa.com" required maxLength={320} />
+            <label className={styles.title} htmlFor="gie-email">Email de contacto (opcional se indicar telefone)</label>
+            <input id="gie-email" className={styles.field} name="email" type="email" placeholder="nome@empresa.com" maxLength={320} />
+          </div>
+          <div className={styles.question}>
+            <label className={styles.title} htmlFor="gie-phone">Telefone / WhatsApp (opcional se indicar email)</label>
+            <input id="gie-phone" className={styles.field} name="contact_phone" type="tel" placeholder="+258 84 000 0000" maxLength={24} />
+            <p className={styles.why}>Informe pelo menos um contacto válido: email ou telefone.</p>
           </div>
           <div className={styles.question}>
             <span className={styles.title}>Sector principal <span className={styles.required}>*</span></span>

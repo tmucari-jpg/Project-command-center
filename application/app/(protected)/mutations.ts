@@ -242,8 +242,9 @@ export async function createClientDiagnosticRequest(
     return { ok: false, error: "Não foi possível renovar o questionário. O link anterior permanece válido." };
   }
 
-  revalidatePath(`/project-factory/${factoryCase.id}`);
-
+  // Do not invalidate this page before the manager can share the plaintext
+  // bearer link. It is intentionally never stored recoverably in the database.
+  // The manager refreshes the case after copying or sharing the link.
   return {
     ok: true,
     url: clientDiagnosticPublicUrl(token),
