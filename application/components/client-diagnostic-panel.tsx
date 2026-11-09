@@ -252,7 +252,7 @@ export function ClientDiagnosticPanel({
 
           <details open className="border-t border-[var(--cc-border)] pt-5">
             <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
-              Gerar e partilhar novo link por email ou WhatsApp
+              Mais opções do diagnóstico — Gerar e partilhar novo link por email ou WhatsApp
             </summary>
             <p className="mt-2 text-xs text-[var(--cc-secondary)]">
               Os links anteriores não podem ser recuperados depois da emissão, por segurança.
