@@ -57,7 +57,7 @@ test("PCC × GIE360: approved four-stage form, adaptive fields, real server acti
 
 test("Integrated GIE360 accepts a phone contact without requiring an email", async ({ page, request }) => {
   await page.goto("/client-diagnostic/" + INTEGRATED);
-  await page.locator('input[name="empresa"]').fill("Empresa Fictícia QA");
+  await page.locator('input[name="empresa"]').fill("Organização Fictícia QA");
   await page.locator('input[name="respondent_name"]').fill("Cliente Fictício QA");
   await page.locator('input[name="contact_phone"]').fill("+258840000000");
   await page.locator('input[name="sector"][value="Serviços"]').check();
