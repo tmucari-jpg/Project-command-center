@@ -42,7 +42,8 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.gie360_link_existing_client(uuid,text) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION private.gie360_link_existing_client(uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION private.gie360_link_existing_client(uuid,text) TO authenticated;
 CREATE OR REPLACE FUNCTION public.gie360_link_existing_client(
   p_organization_id uuid,
   p_client_email text
