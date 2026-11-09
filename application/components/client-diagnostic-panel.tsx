@@ -250,10 +250,14 @@ export function ClientDiagnosticPanel({
             </p>
           )}
 
-          <details className="border-t border-[var(--cc-border)] pt-5">
+          <details open={!response} className="border-t border-[var(--cc-border)] pt-5">
             <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
-              Mais opções do diagnóstico
+              Gerar e partilhar novo link por email ou WhatsApp
             </summary>
+            <p className="mt-2 text-xs text-[var(--cc-secondary)]">
+              Os links anteriores não podem ser recuperados depois da emissão, por segurança.
+              Gerar uma nova solicitação preserva a anterior se a renovação falhar.
+            </p>
             <div className="mt-4">
               <ClientDiagnosticLinkGenerator
                 factoryCaseId={factoryCaseId}
