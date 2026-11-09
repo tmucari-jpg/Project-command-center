@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run",
+    "test": "node --experimental-vm-modules --test tests/auth-callback.test.mjs && vitest run",
     "ui:standard": "node scripts/validate-ui-standard.mjs",
     "icons:validate": "node scripts/validate-icon-assets.mjs"
   },
