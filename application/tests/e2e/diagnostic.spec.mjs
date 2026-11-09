@@ -55,6 +55,22 @@ test("PCC × GIE360: approved four-stage form, adaptive fields, real server acti
   expect(state.integrated.attempts).toBe(2);
 });
 
+test("Integrated GIE360 accepts a phone contact without requiring an email", async ({ page, request }) => {
+  await page.goto("/client-diagnostic/" + INTEGRATED);
+  await page.locator('input[name="empresa"]').fill("Empresa Fictícia QA");
+  await page.locator('input[name="respondent_name"]').fill("Cliente Fictício QA");
+  await page.locator('input[name="contact_phone"]').fill("+258840000000");
+  await page.locator('input[name="sector"][value="Serviços"]').check();
+  await page.locator('input[name="necessidades"][value="Vendas e clientes"]').check();
+  await page.locator('input[name="consent"]').check();
+  await page.getByRole("button", { name: "Enviar respostas ao PCC" }).click();
+  await expect(page.getByRole("heading", { name: "Resposta recebida" })).toBeVisible({timeout:30_000});
+  const {integrated}=await (await request.get(MOCK + "/__qa/state")).json();
+  expect(integrated.status).toBe("analyzing");
+  expect(integrated.submitted.p_respondent_email).toBeNull();
+  expect(integrated.submitted.p_answers.contact_phone).toBe("+258840000000");
+});
+
 test("Existing executive-v3 link uses approved layout on mobile without regenerating request", async ({ page, request }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/client-diagnostic/" + LEGACY);
