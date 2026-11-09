@@ -14,7 +14,8 @@ CREATE SCHEMA private;
 CREATE FUNCTION private.gie360_activate_project(uuid) RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $$ SELECT $1 $$;
 CREATE FUNCTION private.gie360_create_work_item(uuid,text,text,text) RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $$ SELECT $1 $$;
 CREATE FUNCTION private.gie360_progress_work_item(uuid,text,text) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT true $$;
-CREATE FUNCTION private.gie360_transfer_approved_case(uuid,uuid) RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $$ SELECT $1 $$;
+CREATE FUNCTION private.gie360_transfer_approved_case(uuid,uuid) RETURNS uuid LANGUAGE sql SECURITY DEFINER AS $ SELECT $1 $;
+CREATE FUNCTION private.gie360_finish_ai_request(uuid,text,text,text) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $ SELECT true $;
 REVOKE ALL ON SCHEMA private FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA private FROM PUBLIC,authenticated,anon;
 GRANT USAGE ON SCHEMA private TO authenticated;
@@ -28,7 +29,8 @@ BEGIN
   'private.gie360_activate_project(uuid)'::regprocedure,
   'private.gie360_create_work_item(uuid,text,text,text)'::regprocedure,
   'private.gie360_progress_work_item(uuid,text,text)'::regprocedure,
-  'private.gie360_transfer_approved_case(uuid,uuid)'::regprocedure
+  'private.gie360_transfer_approved_case(uuid,uuid)'::regprocedure,
+  'private.gie360_finish_ai_request(uuid,text,text,text)'::regprocedure
  ] LOOP
   IF NOT has_function_privilege('authenticated',v_procedure,'EXECUTE') THEN
    RAISE EXCEPTION 'Missing authenticated execution grant for %',v_procedure;
