@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
   "/offline.html",
   "/offline-app.js",
   "/client-diagnostic",
+  "/gie-login",
   "/project-status",
 ];
 
@@ -57,8 +58,15 @@ export async function updateSession(request: NextRequest) {
 
   if (!isAuthenticated && !isPublicPath(pathname)) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/auth/login";
-    redirectUrl.searchParams.set("next", pathname);
+    if (pathname === "/gie-client" || pathname.startsWith("/gie-client/")) {
+      // The client portal has its own login and does not expose the PCC login.
+      redirectUrl.pathname = "/gie-login";
+      redirectUrl.search = "";
+      if (pathname !== "/gie-client") redirectUrl.searchParams.set("next", pathname);
+    } else {
+      redirectUrl.pathname = "/auth/login";
+      redirectUrl.searchParams.set("next", pathname);
+    }
     return NextResponse.redirect(redirectUrl);
   }
 
