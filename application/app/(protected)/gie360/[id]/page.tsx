@@ -12,7 +12,7 @@ export default async function Gie360AssessmentPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ project?: string; scope?: string; error?: string }>;
+  searchParams: Promise<{ project?: string; scope?: string; error?: string; client?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
