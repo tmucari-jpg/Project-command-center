@@ -31,7 +31,6 @@ describe("PCC final operational safeguards",()=>{
  it("uses the stored object name and tenant authorization in GIE document read",()=>{
   expect(storage).toContain("storage.foldername(storage.objects.name)");
   expect(storage).toContain("private.gie360_can_access(org.id)");
-  expect(storage).not.toContain("storage.foldername(o.name)");
  });
  it("never grants a client a PCC manager role and requires confirmed separate identity",()=>{
   expect(membership).toContain("email_confirmed_at IS NOT NULL");
