@@ -86,7 +86,8 @@ const gie360Schema = z.object({
   consent: z.literal("confirmed"),
   respondent_name: z.string().trim().min(2).max(200),
   empresa: z.string().trim().min(2).max(300),
-  email: z.string().trim().email().max(320),
+  email: z.union([z.literal(""), z.string().trim().email().max(320)]),
+  contact_phone: z.string().trim().max(24),
   sector: z.enum(["Comércio", "Serviços", "Indústria", "Outro"]),
   necessidades: z.array(z.enum([
     "Vendas e clientes", "Cobranças e tesouraria", "Custos e operações", "Gestão e indicadores",
@@ -98,6 +99,8 @@ const gie360Schema = z.object({
   dados: z.array(z.string().trim().max(100)).max(10),
   objectivo: z.string().trim().max(6000),
   prazo: z.string().trim().max(100),
+}).refine(value => Boolean(value.email || /^[+\d][\d\s().-]{6,23}$/.test(value.contact_phone)), {
+  message: "Indique um email ou telefone válido para contacto.",
 });
 
 export async function submitGie360Diagnostic(formData: FormData) {
@@ -109,6 +112,7 @@ export async function submitGie360Diagnostic(formData: FormData) {
     respondent_name: String(formData.get("respondent_name") ?? ""),
     empresa: String(formData.get("empresa") ?? ""),
     email: String(formData.get("email") ?? ""),
+    contact_phone: String(formData.get("contact_phone") ?? ""),
     sector: String(formData.get("sector") ?? ""),
     necessidades: formData.getAll("necessidades").map(String),
     crm: String(formData.get("crm") ?? ""),
@@ -122,7 +126,7 @@ export async function submitGie360Diagnostic(formData: FormData) {
   if (!values.success) {
     redirect(`${back}?error=${encodeURIComponent("Revise a identificação, seleccione pelo menos uma necessidade e confirme o envio.")}`);
   }
-  const { token: rawToken, consent, respondent_name, email, ...details } = values.data;
+  const { token: rawToken, consent, respondent_name, email, contact_phone, ...details } = values.data;
   const supabase = createPublicClient();
   const tokenHash = hashClientDiagnosticToken(rawToken);
   const { data: requestRows, error: lookupError } = await supabase.rpc("client_diagnostic_lookup", {
@@ -135,6 +139,7 @@ export async function submitGie360Diagnostic(formData: FormData) {
   const answers = {
     respondent_type: "organization",
     organization: details.empresa,
+    contact_phone: contact_phone || null,
     request_nature: "organization_solution",
     context: details.necessidades.join("; "),
     focus: [details.crm, details.cobrancas, details.custos, details.indicadores].filter(Boolean).join("; "),
@@ -157,7 +162,7 @@ export async function submitGie360Diagnostic(formData: FormData) {
     p_token_hash: tokenHash,
     p_respondent_name: respondent_name,
     p_respondent_role: "",
-    p_respondent_email: email,
+    p_respondent_email: email || null,
     p_answers: answers,
   });
   if (error || data !== true) {
