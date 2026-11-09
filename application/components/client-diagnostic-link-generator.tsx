@@ -25,6 +25,8 @@ export function ClientDiagnosticLinkGenerator({
 }) {
   const [state, action, pending] = useActionState(createClientDiagnosticRequest, initialState);
   const [copied, setCopied] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -37,6 +39,17 @@ export function ClientDiagnosticLinkGenerator({
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   }
+
+  const shareText = state.url
+    ? `Bom dia. Partilho o link para preenchimento do diagnóstico PCC. Agradecemos a sua resposta no prazo indicado: ${state.url}`
+    : "";
+  const mailto = state.url
+    ? `mailto:${encodeURIComponent(recipientEmail.trim())}?subject=${encodeURIComponent("Questionário de diagnóstico PCC")}&body=${encodeURIComponent(shareText)}`
+    : "";
+  const whatsappNumber = recipientPhone.replace(/\D/g, "");
+  const whatsappHref = state.url
+    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(shareText)}`
+    : "";
 
   return (
     <div className="space-y-4">
@@ -98,13 +111,37 @@ export function ClientDiagnosticLinkGenerator({
             Link do questionário
           </p>
           <p className="mt-2 break-all text-sm text-[var(--cc-foreground)]">{state.url}</p>
-          <button
-            type="button"
-            onClick={copyLink}
-            className="mt-3 rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--cc-foreground)]"
-          >
-            {copied ? "Copiado" : "Copiar link"}
-          </button>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label className="text-sm font-medium text-[var(--cc-foreground)]">
+              Email do destinatário (opcional)
+              <input type="email" value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)}
+                placeholder="cliente@empresa.com" maxLength={254}
+                className="mt-1 block w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-white px-3 py-2.5"/>
+            </label>
+            <label className="text-sm font-medium text-[var(--cc-foreground)]">
+              WhatsApp do destinatário (opcional, com indicativo)
+              <input type="tel" value={recipientPhone} onChange={event => setRecipientPhone(event.target.value)}
+                placeholder="+258 84 000 0000" maxLength={24}
+                className="mt-1 block w-full rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-white px-3 py-2.5"/>
+            </label>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={copyLink}
+              className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--cc-foreground)]">
+              {copied ? "Copiado" : "Copiar link"}
+            </button>
+            <a href={mailto} className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--cc-foreground)]">
+              Preparar email
+            </a>
+            <a href={whatsappHref} target="_blank" rel="noopener noreferrer"
+              className="rounded-[var(--cc-radius-md)] border border-[var(--cc-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--cc-foreground)]">
+              Partilhar por WhatsApp
+            </a>
+          </div>
+          <p className="mt-2 text-xs text-[var(--cc-secondary)]">
+            O email e o WhatsApp abrem a aplicação de envio com a mensagem preparada. Confirme o destinatário
+            e envie nessa aplicação; o PCC não afirma que a mensagem foi entregue.
+          </p>
         </div>
       )}
     </div>
