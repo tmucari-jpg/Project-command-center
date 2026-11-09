@@ -71,6 +71,16 @@ jobs:
           PGPASSWORD: isolated-test-only
         run: bash scripts/test-gie360-client-membership.sh
 
+      - name: Verify protected GIE360 execution RPC grants in disposable PostgreSQL
+        working-directory: application
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGDATABASE: pcc_diagnostic_ci
+          PGUSER: postgres
+          PGPASSWORD: isolated-test-only
+        run: bash scripts/test-gie360-execution-acl.sh
+
   application:
     runs-on: ubuntu-latest
     defaults:
