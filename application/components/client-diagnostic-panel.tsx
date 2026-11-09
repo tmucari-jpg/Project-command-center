@@ -250,7 +250,7 @@ export function ClientDiagnosticPanel({
             </p>
           )}
 
-          <details open={!response} className="border-t border-[var(--cc-border)] pt-5">
+          <details open className="border-t border-[var(--cc-border)] pt-5">
             <summary className="cursor-pointer text-sm font-semibold text-[var(--cc-accent)]">
               Gerar e partilhar novo link por email ou WhatsApp
             </summary>
