@@ -61,6 +61,16 @@ jobs:
           PGPASSWORD: isolated-test-only
         run: bash scripts/test-gie360-intake.sh
 
+      - name: Verify manager-to-client association without duplicate tenant access
+        working-directory: application
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGDATABASE: pcc_diagnostic_ci
+          PGUSER: postgres
+          PGPASSWORD: isolated-test-only
+        run: bash scripts/test-gie360-client-membership.sh
+
   application:
     runs-on: ubuntu-latest
     defaults:
