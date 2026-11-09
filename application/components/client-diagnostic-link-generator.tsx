@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createClientDiagnosticRequest,
@@ -29,10 +29,9 @@ export function ClientDiagnosticLinkGenerator({
   const [recipientPhone, setRecipientPhone] = useState("");
   const router = useRouter();
 
-  useEffect(() => {
-    if (state.ok && state.requestId) router.refresh();
-  }, [state.ok, state.requestId, router]);
-
+  // Do not refresh automatically here: a refresh changes the case into its
+  // existing-request branch and unmounts this component, losing the only
+  // plaintext copy of the bearer link. Let the manager share it first.
   async function copyLink() {
     if (!state.url) return;
     await navigator.clipboard.writeText(state.url);
@@ -142,6 +141,10 @@ export function ClientDiagnosticLinkGenerator({
             O email e o WhatsApp abrem a aplicação de envio com a mensagem preparada. Confirme o destinatário
             e envie nessa aplicação; o PCC não afirma que a mensagem foi entregue.
           </p>
+          <button type="button" onClick={() => router.refresh()}
+            className="mt-3 text-sm font-semibold underline text-[var(--cc-accent)]">
+            Já partilhei o link — actualizar o estado do diagnóstico
+          </button>
         </div>
       )}
     </div>
