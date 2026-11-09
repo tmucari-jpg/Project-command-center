@@ -218,3 +218,31 @@ export async function reconcileGie360Intake(formData: FormData) {
   }
   redirect("/gie360/project/" + String(data) + "?handoff=created");
 }
+
+/** Associate a separate, already-confirmed GIE360 client login with this organization.
+ * No administrative privileges, impersonation, duplicate client or new contract.
+ */
+export async function linkGie360ExistingClient(formData: FormData) {
+  const input = z.object({
+    organization_id: z.string().uuid(),
+    client_email: z.string().trim().email().max(320),
+  }).safeParse({
+    organization_id: formData.get("organization_id"),
+    client_email: formData.get("client_email"),
+  });
+  if (!input.success) redirect("/gie360?error=" + encodeURIComponent("Email ou organização inválidos."));
+  const {supabase,user} = await requireUser();
+  const {data:organization} = await supabase.from("gie360_organizations")
+    .select("id").eq("id",input.data.organization_id)
+    .eq("manager_user_id",user.id).maybeSingle();
+  if (!organization) redirect("/gie360?error=" + encodeURIComponent("Organização não autorizada."));
+  const {data,error} = await supabase.rpc("gie360_link_existing_client",{
+    p_organization_id:organization.id,
+    p_client_email:input.data.client_email,
+  });
+  if (error || !data) {
+    redirect("/gie360/" + organization.id + "?error=" +
+      encodeURIComponent("Não foi possível associar. Verifique que existe uma conta de cliente separada, com email confirmado e sem acesso administrativo PCC."));
+  }
+  redirect("/gie360/" + organization.id + "?client=linked");
+}
