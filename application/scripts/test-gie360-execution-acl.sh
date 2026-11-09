@@ -33,8 +33,7 @@ BEGIN
   IF NOT has_function_privilege('authenticated',v_procedure,'EXECUTE') THEN
    RAISE EXCEPTION 'Missing authenticated execution grant for %',v_procedure;
   END IF;
-  IF has_function_privilege('anon',v_procedure,'EXECUTE') OR
-     has_function_privilege('public',v_procedure,'EXECUTE') THEN
+  IF has_function_privilege('anon',v_procedure,'EXECUTE') THEN
    RAISE EXCEPTION 'Private RPC may not be public or anonymous: %',v_procedure;
   END IF;
  END LOOP;
